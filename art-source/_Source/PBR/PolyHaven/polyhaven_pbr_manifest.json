@@ -1,0 +1,559 @@
+{
+  "license": "CC0",
+  "source": "https://polyhaven.com/textures",
+  "downloaded_assets": {
+    "denim_fabric": {
+      "usage": "Kid hoodie, shorts, backpack, and shoe fabric base",
+      "source_url": "https://polyhaven.com/a/denim_fabric",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric/2k/denim_fabric_BaseColor_2k.jpg",
+            "bytes": 3980719,
+            "md5": "5d84c58b94a3094ea1edff88f4ed39d0",
+            "expected_md5": "5d84c58b94a3094ea1edff88f4ed39d0",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/denim_fabric/denim_fabric_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric/2k/denim_fabric_Normal_2k.jpg",
+            "bytes": 2110796,
+            "md5": "147f1a6f1eaa07d54b79377141ef7b33",
+            "expected_md5": "147f1a6f1eaa07d54b79377141ef7b33",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/denim_fabric/denim_fabric_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric/2k/denim_fabric_AO_2k.jpg",
+            "bytes": 1556229,
+            "md5": "597060b1217de5bfafb3dca07c92f4dd",
+            "expected_md5": "597060b1217de5bfafb3dca07c92f4dd",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/denim_fabric/denim_fabric_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric/2k/denim_fabric_Roughness_2k.jpg",
+            "bytes": 2221998,
+            "md5": "b857cc1a739a05e02f402ed587fc362f",
+            "expected_md5": "b857cc1a739a05e02f402ed587fc362f",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/denim_fabric/denim_fabric_rough_2k.jpg"
+          }
+        },
+        "4k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric/4k/denim_fabric_BaseColor_4k.jpg",
+            "bytes": 13827238,
+            "md5": "ad33865a62ad6ed7254fdd5a78268590",
+            "expected_md5": "ad33865a62ad6ed7254fdd5a78268590",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/denim_fabric/denim_fabric_diff_4k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric/4k/denim_fabric_Normal_4k.jpg",
+            "bytes": 7594220,
+            "md5": "7a12dcf035f7aa7a3edaa1a54f9adbca",
+            "expected_md5": "7a12dcf035f7aa7a3edaa1a54f9adbca",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/denim_fabric/denim_fabric_nor_gl_4k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric/4k/denim_fabric_AO_4k.jpg",
+            "bytes": 7608431,
+            "md5": "2f7865e94820f1fe66b814ec0b8b0b17",
+            "expected_md5": "2f7865e94820f1fe66b814ec0b8b0b17",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/denim_fabric/denim_fabric_ao_4k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric/4k/denim_fabric_Roughness_4k.jpg",
+            "bytes": 7977708,
+            "md5": "2f1af425227f2ac0ce83f47cb4e9aec5",
+            "expected_md5": "2f1af425227f2ac0ce83f47cb4e9aec5",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/denim_fabric/denim_fabric_rough_4k.jpg"
+          }
+        }
+      }
+    },
+    "fabric_leather_01": {
+      "usage": "Villain coat/hood/glove dark leather-fabric base",
+      "source_url": "https://polyhaven.com/a/fabric_leather_01",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/fabric_leather_01/2k/fabric_leather_01_BaseColor_2k.jpg",
+            "bytes": 2467670,
+            "md5": "f9c0c71ebadf92071d5779257c12d73a",
+            "expected_md5": "f9c0c71ebadf92071d5779257c12d73a",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_leather_01/fabric_leather_01_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/fabric_leather_01/2k/fabric_leather_01_Normal_2k.jpg",
+            "bytes": 2764483,
+            "md5": "cd8a6ea40e5e732e30e8d004ea62ffba",
+            "expected_md5": "cd8a6ea40e5e732e30e8d004ea62ffba",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_leather_01/fabric_leather_01_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/fabric_leather_01/2k/fabric_leather_01_AO_2k.jpg",
+            "bytes": 2333298,
+            "md5": "4008c692fcf41c73d1013bfac37474cb",
+            "expected_md5": "4008c692fcf41c73d1013bfac37474cb",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_leather_01/fabric_leather_01_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/fabric_leather_01/2k/fabric_leather_01_Roughness_2k.jpg",
+            "bytes": 2621259,
+            "md5": "6166d7bbd6a96f99a3bc528cfa518506",
+            "expected_md5": "6166d7bbd6a96f99a3bc528cfa518506",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_leather_01/fabric_leather_01_rough_2k.jpg"
+          }
+        },
+        "4k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/fabric_leather_01/4k/fabric_leather_01_BaseColor_4k.jpg",
+            "bytes": 9414710,
+            "md5": "efc17589fc24476ef033e5063a54d4cb",
+            "expected_md5": "efc17589fc24476ef033e5063a54d4cb",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/fabric_leather_01/fabric_leather_01_diff_4k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/fabric_leather_01/4k/fabric_leather_01_Normal_4k.jpg",
+            "bytes": 9071432,
+            "md5": "ecc34cc12eec85f2c5850e09328fdf18",
+            "expected_md5": "ecc34cc12eec85f2c5850e09328fdf18",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/fabric_leather_01/fabric_leather_01_nor_gl_4k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/fabric_leather_01/4k/fabric_leather_01_AO_4k.jpg",
+            "bytes": 11234205,
+            "md5": "8710d6d580d362183166462c1576b501",
+            "expected_md5": "8710d6d580d362183166462c1576b501",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/fabric_leather_01/fabric_leather_01_ao_4k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/fabric_leather_01/4k/fabric_leather_01_Roughness_4k.jpg",
+            "bytes": 10121508,
+            "md5": "f0cc8bff978ab30b680b91333b49f72d",
+            "expected_md5": "f0cc8bff978ab30b680b91333b49f72d",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/fabric_leather_01/fabric_leather_01_rough_4k.jpg"
+          }
+        }
+      }
+    },
+    "denim_fabric_03": {
+      "usage": "Police navy uniform fabric base",
+      "source_url": "https://polyhaven.com/a/denim_fabric_03",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric_03/2k/denim_fabric_03_BaseColor_2k.jpg",
+            "bytes": 4357564,
+            "md5": "45a8f73b7995fa723cce650f31295a67",
+            "expected_md5": "45a8f73b7995fa723cce650f31295a67",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/denim_fabric_03/denim_fabric_03_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric_03/2k/denim_fabric_03_Normal_2k.jpg",
+            "bytes": 4224438,
+            "md5": "f32834732639950888f0f09042c82c6f",
+            "expected_md5": "f32834732639950888f0f09042c82c6f",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/denim_fabric_03/denim_fabric_03_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric_03/2k/denim_fabric_03_AO_2k.jpg",
+            "bytes": 2671220,
+            "md5": "0f8214608e0f044946b7dcc01219a011",
+            "expected_md5": "0f8214608e0f044946b7dcc01219a011",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/denim_fabric_03/denim_fabric_03_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric_03/2k/denim_fabric_03_Roughness_2k.jpg",
+            "bytes": 3767058,
+            "md5": "aee684c5d8c277762c9b77b5eb4812e0",
+            "expected_md5": "aee684c5d8c277762c9b77b5eb4812e0",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/denim_fabric_03/denim_fabric_03_rough_2k.jpg"
+          }
+        },
+        "4k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric_03/4k/denim_fabric_03_BaseColor_4k.jpg",
+            "bytes": 15514997,
+            "md5": "04942e6b30ba9f045058fcf45a7a87af",
+            "expected_md5": "04942e6b30ba9f045058fcf45a7a87af",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/denim_fabric_03/denim_fabric_03_diff_4k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric_03/4k/denim_fabric_03_Normal_4k.jpg",
+            "bytes": 15246234,
+            "md5": "e9b5879dc79057453312d49cda41fa74",
+            "expected_md5": "e9b5879dc79057453312d49cda41fa74",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/denim_fabric_03/denim_fabric_03_nor_gl_4k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric_03/4k/denim_fabric_03_AO_4k.jpg",
+            "bytes": 8001992,
+            "md5": "f5a0642fc4957cd31cad18c8326af6ef",
+            "expected_md5": "f5a0642fc4957cd31cad18c8326af6ef",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/denim_fabric_03/denim_fabric_03_ao_4k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/denim_fabric_03/4k/denim_fabric_03_Roughness_4k.jpg",
+            "bytes": 15540331,
+            "md5": "47a4bf1351c85e2200a62cd1af63436c",
+            "expected_md5": "47a4bf1351c85e2200a62cd1af63436c",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/denim_fabric_03/denim_fabric_03_rough_4k.jpg"
+          }
+        }
+      }
+    },
+    "painted_plaster_wall": {
+      "usage": "School painted wall modules",
+      "source_url": "https://polyhaven.com/a/painted_plaster_wall",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/painted_plaster_wall/2k/painted_plaster_wall_BaseColor_2k.jpg",
+            "bytes": 3132937,
+            "md5": "32f4f4e5ded7d20e55e337004d0d9691",
+            "expected_md5": "32f4f4e5ded7d20e55e337004d0d9691",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/painted_plaster_wall/2k/painted_plaster_wall_Normal_2k.jpg",
+            "bytes": 4048392,
+            "md5": "18faf9f7949aefdb3ae7cef7195cba04",
+            "expected_md5": "18faf9f7949aefdb3ae7cef7195cba04",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/painted_plaster_wall/2k/painted_plaster_wall_AO_2k.jpg",
+            "bytes": 2176195,
+            "md5": "b911e43133db837371f58983f5270586",
+            "expected_md5": "b911e43133db837371f58983f5270586",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/painted_plaster_wall/2k/painted_plaster_wall_Roughness_2k.jpg",
+            "bytes": 1595466,
+            "md5": "7cdd5fbbe56f7becb757fc5b52d11d28",
+            "expected_md5": "7cdd5fbbe56f7becb757fc5b52d11d28",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_rough_2k.jpg"
+          }
+        }
+      }
+    },
+    "blue_floor_tiles_01": {
+      "usage": "School hallway tile floor",
+      "source_url": "https://polyhaven.com/a/blue_floor_tiles_01",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/blue_floor_tiles_01/2k/blue_floor_tiles_01_BaseColor_2k.jpg",
+            "bytes": 2276921,
+            "md5": "c506188b16d64ed1e8f9c5df8d1f886d",
+            "expected_md5": "c506188b16d64ed1e8f9c5df8d1f886d",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/blue_floor_tiles_01/blue_floor_tiles_01_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/blue_floor_tiles_01/2k/blue_floor_tiles_01_Normal_2k.jpg",
+            "bytes": 2782530,
+            "md5": "8bb939ee461f3c4e6b6cef8928a3d106",
+            "expected_md5": "8bb939ee461f3c4e6b6cef8928a3d106",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/blue_floor_tiles_01/blue_floor_tiles_01_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/blue_floor_tiles_01/2k/blue_floor_tiles_01_AO_2k.jpg",
+            "bytes": 1740758,
+            "md5": "c40b4bd2f731ae4f72484ff852fc56f3",
+            "expected_md5": "c40b4bd2f731ae4f72484ff852fc56f3",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/blue_floor_tiles_01/blue_floor_tiles_01_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/blue_floor_tiles_01/2k/blue_floor_tiles_01_Roughness_2k.jpg",
+            "bytes": 966978,
+            "md5": "a9a68aec1925baadcaa1de67299a24da",
+            "expected_md5": "a9a68aec1925baadcaa1de67299a24da",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/blue_floor_tiles_01/blue_floor_tiles_01_rough_2k.jpg"
+          }
+        }
+      }
+    },
+    "wood_floor_worn": {
+      "usage": "Classroom worn wooden floor",
+      "source_url": "https://polyhaven.com/a/wood_floor_worn",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/wood_floor_worn/2k/wood_floor_worn_BaseColor_2k.jpg",
+            "bytes": 2531019,
+            "md5": "980427517934e2e6441da8915b0b2283",
+            "expected_md5": "980427517934e2e6441da8915b0b2283",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_worn/wood_floor_worn_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/wood_floor_worn/2k/wood_floor_worn_Normal_2k.jpg",
+            "bytes": 2894278,
+            "md5": "e45c1601f170ea0eb4cd9bb10240899f",
+            "expected_md5": "e45c1601f170ea0eb4cd9bb10240899f",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_worn/wood_floor_worn_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/wood_floor_worn/2k/wood_floor_worn_AO_2k.jpg",
+            "bytes": 3165198,
+            "md5": "95b4c6251382d57c67c3d7dafbe8d5cb",
+            "expected_md5": "95b4c6251382d57c67c3d7dafbe8d5cb",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_worn/wood_floor_worn_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/wood_floor_worn/2k/wood_floor_worn_Roughness_2k.jpg",
+            "bytes": 1316403,
+            "md5": "089661983973885fd8df6dca05953ff4",
+            "expected_md5": "089661983973885fd8df6dca05953ff4",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_worn/wood_floor_worn_rough_2k.jpg"
+          }
+        }
+      }
+    },
+    "rubberized_track": {
+      "usage": "Playground rubber floor",
+      "source_url": "https://polyhaven.com/a/rubberized_track",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/rubberized_track/2k/rubberized_track_BaseColor_2k.jpg",
+            "bytes": 3631740,
+            "md5": "5c0c0fe12441db5a1a52147f95d793f9",
+            "expected_md5": "5c0c0fe12441db5a1a52147f95d793f9",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rubberized_track/rubberized_track_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/rubberized_track/2k/rubberized_track_Normal_2k.jpg",
+            "bytes": 5402713,
+            "md5": "c1f2b1e3d1fbbcb69a898fce59a1d3d7",
+            "expected_md5": "c1f2b1e3d1fbbcb69a898fce59a1d3d7",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rubberized_track/rubberized_track_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/rubberized_track/2k/rubberized_track_AO_2k.jpg",
+            "bytes": 3907645,
+            "md5": "5860c8d7ea80f50b8c6d7db30a57ea85",
+            "expected_md5": "5860c8d7ea80f50b8c6d7db30a57ea85",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rubberized_track/rubberized_track_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/rubberized_track/2k/rubberized_track_Roughness_2k.jpg",
+            "bytes": 1206078,
+            "md5": "f9ec3178827180f55739612271ca128f",
+            "expected_md5": "f9ec3178827180f55739612271ca128f",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rubberized_track/rubberized_track_rough_2k.jpg"
+          }
+        }
+      }
+    },
+    "leafy_grass": {
+      "usage": "Outdoor school grass patches",
+      "source_url": "https://polyhaven.com/a/leafy_grass",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/leafy_grass/2k/leafy_grass_BaseColor_2k.jpg",
+            "bytes": 4766204,
+            "md5": "8014f4dace676a62ed71b3dd76119dae",
+            "expected_md5": "8014f4dace676a62ed71b3dd76119dae",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/leafy_grass/2k/leafy_grass_Normal_2k.jpg",
+            "bytes": 6047262,
+            "md5": "ea5e91abe01dc5e5d7028c68c3bc9194",
+            "expected_md5": "ea5e91abe01dc5e5d7028c68c3bc9194",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/leafy_grass/2k/leafy_grass_AO_2k.jpg",
+            "bytes": 4175463,
+            "md5": "f25065162a26693b29a10587582df688",
+            "expected_md5": "f25065162a26693b29a10587582df688",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/leafy_grass/2k/leafy_grass_Roughness_2k.jpg",
+            "bytes": 2274652,
+            "md5": "b5c551ed91162aab5afbfb03b73ae3f5",
+            "expected_md5": "b5c551ed91162aab5afbfb03b73ae3f5",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_rough_2k.jpg"
+          }
+        }
+      }
+    },
+    "blue_metal_plate": {
+      "usage": "Painted metal doors, lockers, police props",
+      "source_url": "https://polyhaven.com/a/blue_metal_plate",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/blue_metal_plate/2k/blue_metal_plate_BaseColor_2k.jpg",
+            "bytes": 1518621,
+            "md5": "6189f7c443f0b7767d3e046f021b5495",
+            "expected_md5": "6189f7c443f0b7767d3e046f021b5495",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/blue_metal_plate/blue_metal_plate_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/blue_metal_plate/2k/blue_metal_plate_Normal_2k.jpg",
+            "bytes": 948237,
+            "md5": "c460b1b25b5d418218982d8b100822b8",
+            "expected_md5": "c460b1b25b5d418218982d8b100822b8",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/blue_metal_plate/blue_metal_plate_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/blue_metal_plate/2k/blue_metal_plate_AO_2k.jpg",
+            "bytes": 101861,
+            "md5": "3c496e1431121f0e4b48f94af9da332a",
+            "expected_md5": "3c496e1431121f0e4b48f94af9da332a",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/blue_metal_plate/blue_metal_plate_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/blue_metal_plate/2k/blue_metal_plate_Roughness_2k.jpg",
+            "bytes": 1588770,
+            "md5": "4be6436df5c7c5ecce9febb927051d52",
+            "expected_md5": "4be6436df5c7c5ecce9febb927051d52",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/blue_metal_plate/blue_metal_plate_rough_2k.jpg"
+          }
+        }
+      }
+    },
+    "brown_planks_07": {
+      "usage": "Classroom doors, benches, trim",
+      "source_url": "https://polyhaven.com/a/brown_planks_07",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/brown_planks_07/2k/brown_planks_07_BaseColor_2k.jpg",
+            "bytes": 1785085,
+            "md5": "a60f13d0ab893db98285891ac8dd39a6",
+            "expected_md5": "a60f13d0ab893db98285891ac8dd39a6",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_planks_07/brown_planks_07_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/brown_planks_07/2k/brown_planks_07_Normal_2k.jpg",
+            "bytes": 2141354,
+            "md5": "e05e14aa473b77e06056acbb75bf5d95",
+            "expected_md5": "e05e14aa473b77e06056acbb75bf5d95",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_planks_07/brown_planks_07_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/brown_planks_07/2k/brown_planks_07_AO_2k.jpg",
+            "bytes": 1234685,
+            "md5": "99067efad9edb378393078e64a57ad3d",
+            "expected_md5": "99067efad9edb378393078e64a57ad3d",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_planks_07/brown_planks_07_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/brown_planks_07/2k/brown_planks_07_Roughness_2k.jpg",
+            "bytes": 306671,
+            "md5": "9a7d9cbaed4ca9c8e833ef8eff84d277",
+            "expected_md5": "9a7d9cbaed4ca9c8e833ef8eff84d277",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_planks_07/brown_planks_07_rough_2k.jpg"
+          }
+        }
+      }
+    },
+    "metal_plate": {
+      "usage": "Generic worn metal details",
+      "source_url": "https://polyhaven.com/a/metal_plate",
+      "license": "CC0",
+      "maps": {
+        "2k": {
+          "BaseColor": {
+            "path": "art-source/_Source/PBR/PolyHaven/metal_plate/2k/metal_plate_BaseColor_2k.jpg",
+            "bytes": 2670774,
+            "md5": "91b841e7e619e55588f0183a703fb644",
+            "expected_md5": "91b841e7e619e55588f0183a703fb644",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metal_plate/metal_plate_diff_2k.jpg"
+          },
+          "Normal": {
+            "path": "art-source/_Source/PBR/PolyHaven/metal_plate/2k/metal_plate_Normal_2k.jpg",
+            "bytes": 2516654,
+            "md5": "797c3f3de91da0c03f44f493576e158e",
+            "expected_md5": "797c3f3de91da0c03f44f493576e158e",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metal_plate/metal_plate_nor_gl_2k.jpg"
+          },
+          "AO": {
+            "path": "art-source/_Source/PBR/PolyHaven/metal_plate/2k/metal_plate_AO_2k.jpg",
+            "bytes": 2392031,
+            "md5": "00a18906f3bebaa10813d3d0e2356047",
+            "expected_md5": "00a18906f3bebaa10813d3d0e2356047",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metal_plate/metal_plate_ao_2k.jpg"
+          },
+          "Roughness": {
+            "path": "art-source/_Source/PBR/PolyHaven/metal_plate/2k/metal_plate_Roughness_2k.jpg",
+            "bytes": 3045988,
+            "md5": "b2c2bfc0a5e46c1a8bdfddd236daa200",
+            "expected_md5": "b2c2bfc0a5e46c1a8bdfddd236daa200",
+            "md5_matched": true,
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metal_plate/metal_plate_rough_2k.jpg"
+          }
+        }
+      }
+    }
+  }
+}

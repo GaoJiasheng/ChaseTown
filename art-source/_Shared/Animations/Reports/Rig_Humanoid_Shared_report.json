@@ -1,0 +1,112 @@
+{
+  "asset": "Rig_Humanoid_Shared",
+  "task": "Task A",
+  "reference": "docs/02_Codex\u5916\u5305\u8d44\u4ea7\u89c4\u683c.md",
+  "bone_count": 21,
+  "bone_names": [
+    "Hips",
+    "Spine",
+    "Chest",
+    "Neck",
+    "Head",
+    "LeftShoulder",
+    "LeftUpperArm",
+    "LeftLowerArm",
+    "LeftHand",
+    "RightShoulder",
+    "RightUpperArm",
+    "RightLowerArm",
+    "RightHand",
+    "LeftUpperLeg",
+    "LeftLowerLeg",
+    "LeftFoot",
+    "LeftToes",
+    "RightUpperLeg",
+    "RightLowerLeg",
+    "RightFoot",
+    "RightToes"
+  ],
+  "animation_clips": [
+    {
+      "name": "Anim_Celebrate",
+      "start_frame": 1,
+      "end_frame": 40,
+      "fps": 30.0,
+      "loop": false,
+      "root_motion": "off"
+    },
+    {
+      "name": "Anim_Idle",
+      "start_frame": 1,
+      "end_frame": 60,
+      "fps": 30.0,
+      "loop": true,
+      "root_motion": "off"
+    },
+    {
+      "name": "Anim_LookAround",
+      "start_frame": 1,
+      "end_frame": 90,
+      "fps": 30.0,
+      "loop": true,
+      "root_motion": "off"
+    },
+    {
+      "name": "Anim_PointAlert",
+      "start_frame": 1,
+      "end_frame": 42,
+      "fps": 30.0,
+      "loop": false,
+      "root_motion": "off"
+    },
+    {
+      "name": "Anim_Run",
+      "start_frame": 1,
+      "end_frame": 20,
+      "fps": 30.0,
+      "loop": true,
+      "root_motion": "off"
+    },
+    {
+      "name": "Anim_ScaredCaught",
+      "start_frame": 1,
+      "end_frame": 36,
+      "fps": 30.0,
+      "loop": false,
+      "root_motion": "off"
+    },
+    {
+      "name": "Anim_TurnLeft",
+      "start_frame": 1,
+      "end_frame": 24,
+      "fps": 30.0,
+      "loop": false,
+      "root_motion": "off"
+    },
+    {
+      "name": "Anim_TurnRight",
+      "start_frame": 1,
+      "end_frame": 24,
+      "fps": 30.0,
+      "loop": false,
+      "root_motion": "off"
+    },
+    {
+      "name": "Anim_Walk",
+      "start_frame": 1,
+      "end_frame": 40,
+      "fps": 30.0,
+      "loop": true,
+      "root_motion": "off"
+    }
+  ],
+  "unit": "meter",
+  "scale_factor": 1,
+  "axis": "Y-up, character faces +Z",
+  "validation": {
+    "fbx_exported": true,
+    "unity_humanoid_avatar_green": "validated by Assets/_Game/Editor/PrecisionRemodelV21RigValidation.cs",
+    "root_motion_disabled": true,
+    "in_place_clips": true
+  }
+}

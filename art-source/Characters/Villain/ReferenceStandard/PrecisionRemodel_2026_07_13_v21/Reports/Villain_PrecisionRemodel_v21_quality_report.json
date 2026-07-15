@@ -1,0 +1,174 @@
+{
+  "asset": "Villain_PrecisionRemodel_v21",
+  "role": "Villain",
+  "formats": {
+    "static": [
+      "blend",
+      "glb",
+      "fbx"
+    ],
+    "rigged": [
+      "blend",
+      "glb",
+      "fbx"
+    ]
+  },
+  "review_views": {
+    "front": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Villain_PrecisionRemodel_v21_front.png",
+    "side": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Villain_PrecisionRemodel_v21_side.png",
+    "top": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Villain_PrecisionRemodel_v21_top.png",
+    "back": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Villain_PrecisionRemodel_v21_back.png"
+  },
+  "rig_pose_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Villain_v21_PointAlert.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Villain_v21_Walk.png"
+  },
+  "rig_pose_side_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Villain_v21_PointAlert_side.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Villain_v21_Walk_side.png"
+  },
+  "rig_pose_back_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Villain_v21_PointAlert_back.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Villain_v21_Walk_back.png"
+  },
+  "quality_gate": {
+    "applied_unity_basecolor": {
+      "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Villain_PrecisionRemodel_v21_BaseColor_2K.png",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "stddev": 9.603,
+      "threshold": 8.0,
+      "passed": true
+    },
+    "supplemental_pbr": {
+      "basecolor_stddev": 18.806,
+      "normal_stddev": 60.018,
+      "ao_stddev": 5.532
+    }
+  },
+  "geometry": {
+    "min_x": -0.4254538118839264,
+    "max_x": 0.4254538118839264,
+    "min_y": -0.23663124442100525,
+    "max_y": 0.23663124442100525,
+    "min_z": 0.0,
+    "max_z": 1.8499999046325684,
+    "width": 0.8509076237678528,
+    "depth": 0.4732624888420105,
+    "height": 1.8499999046325684,
+    "vertex_count": 78614,
+    "polygon_count": 146076,
+    "triangle_count": 157148
+  },
+  "materials": {
+    "unique_material_count": 6,
+    "unique_material_names": [
+      "M_Villain_EyeWhite_EyeGloss",
+      "M_Villain_FaceLine",
+      "M_Villain_Iris_EyeGloss",
+      "M_Villain_PrecisionRemodel_v21_URP",
+      "M_Villain_Pupil_EyeGloss",
+      "M_Villain_Skin"
+    ]
+  },
+  "visual_review_rounds": 11,
+  "fourview_integrity": "passed_internal_screen",
+  "reference_match": "prototype_candidate_not_aaa_final",
+  "humanoid_rig": {
+    "passed": true,
+    "bone_count": 21,
+    "bone_names": [
+      "Hips",
+      "Spine",
+      "Chest",
+      "Neck",
+      "Head",
+      "LeftShoulder",
+      "LeftUpperArm",
+      "LeftLowerArm",
+      "LeftHand",
+      "RightShoulder",
+      "RightUpperArm",
+      "RightLowerArm",
+      "RightHand",
+      "LeftUpperLeg",
+      "LeftLowerLeg",
+      "LeftFoot",
+      "LeftToes",
+      "RightUpperLeg",
+      "RightLowerLeg",
+      "RightFoot",
+      "RightToes"
+    ],
+    "all_vertices_weighted": true,
+    "maximum_weight_sum_error": 1.1102230246251565e-16
+  },
+  "unity_avatar_validation": {
+    "passed": true,
+    "unity_version": "2022.3.50f1",
+    "avatar_valid": true,
+    "avatar_human": true,
+    "unique_referenced_bone_count": 21,
+    "deformation_passed": true
+  },
+  "animation_validation": {
+    "passed": true,
+    "shared_clips": [
+      "art-source/_Shared/Animations/Anim_PointAlert.fbx",
+      "art-source/_Shared/Animations/Anim_Walk.fbx"
+    ],
+    "frame_rates": [
+      30.0,
+      30.0
+    ],
+    "front_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Villain_v21_PointAlert.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Villain_v21_Walk.png"
+    },
+    "side_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Villain_v21_PointAlert_side.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Villain_v21_Walk_side.png"
+    },
+    "back_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Villain_v21_PointAlert_back.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Villain_v21_Walk_back.png"
+    },
+    "pose_checks": [
+      {
+        "pose": "PointAlert",
+        "passed": true,
+        "moved_bone_count": 3,
+        "nonfinite_vertex_count": 0,
+        "screenshot_pixel_stddev": 81.060546875,
+        "screenshot_content_passed": true,
+        "side_screenshot_pixel_stddev": 71.33229064941406,
+        "side_screenshot_content_passed": true,
+        "back_screenshot_pixel_stddev": 75.95376586914062,
+        "back_screenshot_content_passed": true
+      },
+      {
+        "pose": "Walk",
+        "passed": true,
+        "moved_bone_count": 9,
+        "nonfinite_vertex_count": 0,
+        "screenshot_pixel_stddev": 81.10897064208984,
+        "screenshot_content_passed": true,
+        "side_screenshot_pixel_stddev": 75.70880126953125,
+        "side_screenshot_content_passed": true,
+        "back_screenshot_pixel_stddev": 76.57588958740234,
+        "back_screenshot_content_passed": true
+      }
+    ]
+  },
+  "final_spec_acceptance": {
+    "passed": false,
+    "blocking_requirements": [
+      "Only one reference-standard model exists per role; the required three styles per role are not represented by this v21 package.",
+      "Mobile triangle budgets and the required photoreal LOD chains are not met by this dense reference-standard topology.",
+      "The baked BaseColor is applied; Normal, AO, and MetallicSmoothness remain supplemental maps rather than a fully authored applied PBR set."
+    ]
+  },
+  "notes": "Dense image-to-3D reference-standard sculpt with Blender-native Humanoid binding and real Unity retarget/deformation validation. This report does not claim nine-style or studio-final acceptance."
+}

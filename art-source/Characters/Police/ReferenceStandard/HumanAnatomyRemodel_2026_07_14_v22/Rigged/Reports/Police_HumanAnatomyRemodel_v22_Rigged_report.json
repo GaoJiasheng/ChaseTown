@@ -1,0 +1,489 @@
+{
+  "asset": "Police_HumanAnatomyRemodel_v22_Rigged",
+  "pipeline": "native_mpfb_weights_parent_merged_to_project_humanoid21",
+  "static_source": "art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Police_HumanAnatomyRemodel_v22.blend",
+  "native_rig_source": "art-source/Characters/Police/Photoreal/MPFBRoleRework_2026_07_12_v29/Police_Photoreal_MPFBHuman_v29.blend",
+  "outputs": [
+    "art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Rigged/Police_HumanAnatomyRemodel_v22_Rigged.blend",
+    "art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Rigged/Police_HumanAnatomyRemodel_v22_Rigged.fbx",
+    "art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Rigged/Police_HumanAnatomyRemodel_v22_Rigged.glb"
+  ],
+  "bounds_meters": {
+    "min": [
+      -0.307049959897995,
+      -0.28076544404029846,
+      -7.450580152834618e-09
+    ],
+    "max": [
+      0.3015320897102356,
+      0.11799999326467514,
+      1.7674472332000732
+    ],
+    "height": 1.7674472406506534
+  },
+  "rig": {
+    "armature": "Rig_Humanoid_Shared",
+    "bone_count": 21,
+    "deform_bone_count": 21,
+    "bone_names": [
+      "Hips",
+      "Spine",
+      "Chest",
+      "LeftShoulder",
+      "LeftUpperArm",
+      "LeftLowerArm",
+      "LeftHand",
+      "RightShoulder",
+      "RightUpperArm",
+      "RightLowerArm",
+      "RightHand",
+      "Neck",
+      "Head",
+      "LeftUpperLeg",
+      "LeftLowerLeg",
+      "LeftFoot",
+      "LeftToes",
+      "RightUpperLeg",
+      "RightLowerLeg",
+      "RightFoot",
+      "RightToes"
+    ],
+    "rest_pose": "relaxed neutral source pose applied as rest",
+    "unity_standardized_bone_names": true,
+    "project_humanoid_21_bone_compatible": true
+  },
+  "weighting": {
+    "mesh_count": 38,
+    "zero_weight_vertices": 0,
+    "maximum_influences_per_vertex": 4,
+    "mesh_reports": [
+      {
+        "object": "Police_v22_Body",
+        "mode": "native_mpfb_weights_top4",
+        "vertices": 7992,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 4,
+        "used_bones": [
+          "Chest",
+          "Head",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftUpperArm",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightUpperArm"
+        ]
+      },
+      {
+        "object": "Police_v22_Uniform",
+        "mode": "native_mpfb_weights_top4",
+        "vertices": 2499,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 4,
+        "used_bones": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ]
+      },
+      {
+        "object": "Police_v22_Shoes",
+        "mode": "native_mpfb_weights_top4",
+        "vertices": 1594,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 3,
+        "used_bones": [
+          "LeftFoot",
+          "LeftLowerLeg",
+          "LeftToes",
+          "RightFoot",
+          "RightLowerLeg",
+          "RightToes"
+        ]
+      },
+      {
+        "object": "Police_v22_Hair",
+        "mode": "native_mpfb_weights_top4",
+        "vertices": 2984,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 4,
+        "used_bones": [
+          "Chest",
+          "Head",
+          "LeftShoulder",
+          "Neck",
+          "RightShoulder"
+        ]
+      },
+      {
+        "object": "Police_v22_Eyebrows",
+        "mode": "native_rigid_single_bone",
+        "vertices": 124,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Head"
+        ]
+      },
+      {
+        "object": "Police_v22_Eyelashes",
+        "mode": "native_rigid_single_bone",
+        "vertices": 66,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Head"
+        ]
+      },
+      {
+        "object": "Police_v22_HighPolyEyes",
+        "mode": "native_rigid_single_bone",
+        "vertices": 1064,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Head"
+        ]
+      },
+      {
+        "object": "Police_v22_ServiceCapCrown",
+        "mode": "native_rigid_single_bone",
+        "vertices": 896,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Head"
+        ]
+      },
+      {
+        "object": "Police_v22_ServiceCapHeadband",
+        "mode": "native_rigid_single_bone",
+        "vertices": 512,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Head"
+        ]
+      },
+      {
+        "object": "Police_v22_ServiceCapBrim",
+        "mode": "native_rigid_single_bone",
+        "vertices": 20,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Head"
+        ]
+      },
+      {
+        "object": "Police_v22_CapBadge",
+        "mode": "native_rigid_single_bone",
+        "vertices": 12,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Head"
+        ]
+      },
+      {
+        "object": "Police_v22_ShoulderEpaulet_-1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "LeftShoulder"
+        ]
+      },
+      {
+        "object": "Police_v22_EpauletButton_-1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 266,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "LeftShoulder"
+        ]
+      },
+      {
+        "object": "Police_v22_SleevePatch_-1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 12,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "LeftUpperArm"
+        ]
+      },
+      {
+        "object": "Police_v22_SleevePatchInset_-1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 12,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "LeftUpperArm"
+        ]
+      },
+      {
+        "object": "Police_v22_ShoulderEpaulet_+1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "RightShoulder"
+        ]
+      },
+      {
+        "object": "Police_v22_EpauletButton_+1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 266,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "RightShoulder"
+        ]
+      },
+      {
+        "object": "Police_v22_SleevePatch_+1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 12,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "RightUpperArm"
+        ]
+      },
+      {
+        "object": "Police_v22_SleevePatchInset_+1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 12,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "RightUpperArm"
+        ]
+      },
+      {
+        "object": "Police_v22_DutyBeltWrap",
+        "mode": "native_rigid_single_bone",
+        "vertices": 576,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Hips"
+        ]
+      },
+      {
+        "object": "Police_v22_BeltBuckle",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Hips"
+        ]
+      },
+      {
+        "object": "Police_v22_BeltPouch_-1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Hips"
+        ]
+      },
+      {
+        "object": "Police_v22_ChestPocket_-1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ChestPocketFlap_-1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_BeltPouch_+1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Hips"
+        ]
+      },
+      {
+        "object": "Police_v22_ChestPocket_+1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ChestPocketFlap_+1",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_Nameplate",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ChestBadge",
+        "mode": "native_rigid_single_bone",
+        "vertices": 12,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ShirtPlacket",
+        "mode": "native_rigid_single_bone",
+        "vertices": 238,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ShirtButton_00",
+        "mode": "native_rigid_single_bone",
+        "vertices": 366,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ShirtButton_01",
+        "mode": "native_rigid_single_bone",
+        "vertices": 366,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ShirtButton_02",
+        "mode": "native_rigid_single_bone",
+        "vertices": 366,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ShirtButton_03",
+        "mode": "native_rigid_single_bone",
+        "vertices": 366,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ShirtButton_04",
+        "mode": "native_rigid_single_bone",
+        "vertices": 366,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ShirtButton_05",
+        "mode": "native_rigid_single_bone",
+        "vertices": 366,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      },
+      {
+        "object": "Police_v22_ShoulderRadio",
+        "mode": "native_rigid_single_bone",
+        "vertices": 8,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "LeftShoulder"
+        ]
+      },
+      {
+        "object": "Police_v22_RadioCord",
+        "mode": "native_rigid_single_bone",
+        "vertices": 238,
+        "zero_weight_vertices": 0,
+        "maximum_influences_per_vertex": 1,
+        "used_bones": [
+          "Chest"
+        ]
+      }
+    ]
+  },
+  "validation_summary": {
+    "native_source_weights_parent_merged": true,
+    "all_vertices_weighted": true,
+    "maximum_four_influences": true,
+    "unity_humanoid_avatar": "pending Unity batch validation"
+  }
+}

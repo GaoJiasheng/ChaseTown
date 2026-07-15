@@ -1,0 +1,239 @@
+{
+  "asset": "Villain_PrecisionRemodel_v21_Rigged",
+  "role": "Villain",
+  "pipeline": "blender_native_shared_humanoid_bind",
+  "source_blend": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Villain_PrecisionRemodel_v21.blend",
+  "output_blend": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Villain_PrecisionRemodel_v21_Rigged.blend",
+  "output_fbx": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Villain_PrecisionRemodel_v21_Rigged.fbx",
+  "output_glb": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Villain_PrecisionRemodel_v21_Rigged.glb",
+  "bounds_meters": {
+    "min_x": -0.4254538118839264,
+    "max_x": 0.4254538118839264,
+    "min_y": -0.23663124442100525,
+    "max_y": 0.23663124442100525,
+    "min_z": 0.0,
+    "max_z": 1.8499999046325684,
+    "width": 0.8509076237678528,
+    "depth": 0.4732624888420105,
+    "height": 1.8499999046325684,
+    "vertex_count": 78614,
+    "polygon_count": 146076,
+    "triangle_count": 157148
+  },
+  "rig": {
+    "armature": "Rig_Humanoid_Shared",
+    "bone_count": 21,
+    "bone_names": [
+      "Hips",
+      "Spine",
+      "Chest",
+      "Neck",
+      "Head",
+      "LeftShoulder",
+      "LeftUpperArm",
+      "LeftLowerArm",
+      "LeftHand",
+      "RightShoulder",
+      "RightUpperArm",
+      "RightLowerArm",
+      "RightHand",
+      "LeftUpperLeg",
+      "LeftLowerLeg",
+      "LeftFoot",
+      "LeftToes",
+      "RightUpperLeg",
+      "RightLowerLeg",
+      "RightFoot",
+      "RightToes"
+    ],
+    "shared_rest_pose_source": "relaxed_gameplay_bind_pose_scaled_from_character_bounds",
+    "scale_from_1_82m_master": 1.0164834640838287
+  },
+  "weighting": {
+    "mesh_count": 12,
+    "vertex_count": 78614,
+    "zero_weight_vertices": 0,
+    "maximum_weight_sum_error": 1.1102230246251565e-16,
+    "mesh_reports": [
+      {
+        "object": "Villain_v20_NativeBodyHead",
+        "vertices": 67150,
+        "mode": "semantic_seed_topology_smooth_top4",
+        "rigid_bone": null,
+        "nonzero_bones": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 1.1102230246251565e-16,
+        "maximum_influences_per_vertex": 4
+      },
+      {
+        "object": "Villain_v21_MPFB_HeadNeck",
+        "vertices": 4348,
+        "mode": "humanoid_blended",
+        "rigid_bone": null,
+        "nonzero_bones": [
+          "Chest",
+          "Head",
+          "Neck"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Eye_-1",
+        "vertices": 1514,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Iris_-1",
+        "vertices": 926,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Pupil_-1",
+        "vertices": 614,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Glint_-1",
+        "vertices": 266,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Brow_-1",
+        "vertices": 238,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Eye_+1",
+        "vertices": 1514,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Iris_+1",
+        "vertices": 926,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Pupil_+1",
+        "vertices": 614,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Glint_+1",
+        "vertices": 266,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Villain_v21_Brow_+1",
+        "vertices": 238,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      }
+    ]
+  },
+  "unity_material": {
+    "basecolor": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Villain_PrecisionRemodel_v21_BaseColor_2K.png",
+    "resolution": [
+      2048,
+      2048
+    ],
+    "uv_layer": "UV0",
+    "material": "M_Villain_PrecisionRemodel_v21_URP"
+  },
+  "materials": {
+    "unique_material_count": 6,
+    "unique_material_names": [
+      "M_Villain_EyeWhite_EyeGloss",
+      "M_Villain_FaceLine",
+      "M_Villain_Iris_EyeGloss",
+      "M_Villain_PrecisionRemodel_v21_URP",
+      "M_Villain_Pupil_EyeGloss",
+      "M_Villain_Skin"
+    ]
+  },
+  "validation_summary": {
+    "fbx_written": true,
+    "glb_written": true,
+    "blend_written": true,
+    "all_vertices_weighted": true,
+    "weights_normalized": true,
+    "unity_humanoid_avatar": "pending Unity batch validation"
+  }
+}

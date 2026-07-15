@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+:root { color-scheme:dark; --ink:#eff6ef; --muted:#9caaa2; --panel:#111b17; --line:rgba(255,255,255,.11); }
+* { box-sizing:border-box; }
+html,body { margin:0; min-height:100%; background:#09100d; color:var(--ink); font-family:Arial,"PingFang SC",sans-serif; }
+body { overflow:hidden; background:radial-gradient(circle at 50% -20%,#284234 0,#101a16 42%,#080e0c 100%); }
+button { font:inherit; }
+.game-shell { width:min(1320px,100vw); height:100dvh; margin:auto; display:grid; grid-template-rows:auto 1fr auto; padding:16px 22px 14px; gap:12px; }
+.hud { display:flex; justify-content:space-between; align-items:end; }
+.eyebrow { color:#f6c965; font-size:11px; font-weight:800; letter-spacing:.26em; }
+h1 { margin:2px 0 0; font-size:clamp(22px,3vw,34px); letter-spacing:.04em; }
+.stats { display:flex; align-items:center; gap:9px; color:var(--muted); font-size:13px; }
+.stats span,.stats button { border:1px solid var(--line); background:rgba(255,255,255,.04); padding:8px 11px; border-radius:8px; color:inherit; }
+.stats b { color:var(--ink); font-variant-numeric:tabular-nums; }
+.stats button { cursor:pointer; }
+.stats button:disabled { cursor:wait; opacity:.45; }
+.objective b { color:#6df0a6; }
+.status i { display:inline-block; width:7px; height:7px; background:#48db8d; border-radius:50%; box-shadow:0 0 10px #48db8d; margin-right:7px; }
+.playfield { min-height:0; position:relative; overflow:hidden; border:1px solid rgba(233,215,174,.25); border-radius:18px; background:#111b17; box-shadow:0 28px 80px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,255,255,.035); }
+canvas { display:block; width:100%; height:100%; }
+.three-mount { position:absolute; inset:0; }
+.three-mount canvas { display:block; width:100%; height:100%; }
+.loading-card { position:absolute; z-index:6; left:18px; top:18px; width:min(410px,calc(100% - 36px)); display:grid; grid-template-columns:16px 1fr; gap:13px; padding:15px 17px; color:#f5e6bb; border:1px solid rgba(247,207,111,.38); border-radius:13px; background:rgba(7,14,11,.86); box-shadow:0 16px 40px rgba(0,0,0,.28); backdrop-filter:blur(10px); }
+.loading-card strong { display:block; font-size:13px; line-height:1.45; }
+.loading-card small { display:block; margin-top:7px; color:#98aaa0; font-size:11px; }
+.loading-card.error { color:#ff9a9f; border-color:rgba(255,91,101,.45); }
+.loading-card.error button { margin-top:10px; border:0; border-radius:7px; padding:7px 10px; color:#1d0c0e; background:#ff8d94; font-weight:800; cursor:pointer; }
+.loader-dot { width:12px; height:12px; margin-top:3px; border-radius:50%; background:#f2c761; box-shadow:0 0 0 0 rgba(242,199,97,.55); animation:pulse 1.25s infinite; }
+.load-bar { height:4px; margin-top:10px; overflow:hidden; border-radius:99px; background:rgba(255,255,255,.1); }
+.load-bar i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#f2c761,#6de5a3); transition:width .25s ease; }
+.detail-loading { position:absolute; z-index:2; right:14px; bottom:14px; padding:7px 10px; border:1px solid rgba(255,255,255,.12); border-radius:8px; color:#d6ded9; background:rgba(8,15,12,.68); font-size:11px; backdrop-filter:blur(7px); }
+.overlay { position:absolute; inset:0; z-index:3; pointer-events:none; }
+.overlay-card { position:absolute; top:18px; right:18px; width:min(390px,calc(100% - 36px)); padding:20px 21px; text-align:left; border:1px solid rgba(240,210,143,.32); border-radius:15px; background:linear-gradient(145deg,rgba(7,15,11,.88),rgba(14,26,20,.74)); box-shadow:0 18px 50px rgba(0,0,0,.3); backdrop-filter:blur(10px); pointer-events:auto; }
+.overlay .result { color:#f3cb70; font-weight:800; font-size:11px; letter-spacing:.2em; text-transform:uppercase; }
+.overlay .result.won { color:#54e39a; }
+.overlay .result.lost { color:#ff6670; }
+.overlay h2 { margin:9px 0 7px; font-size:clamp(21px,2.5vw,31px); line-height:1.16; }
+.overlay p { margin:0 0 17px; color:#b3c0b9; font-size:13px; line-height:1.55; }
+.primary { border:0; border-radius:9px; padding:11px 15px 11px 19px; background:#f2c761; color:#172018; font-weight:800; cursor:pointer; box-shadow:0 8px 28px rgba(242,199,97,.22); }
+.primary:hover { filter:brightness(1.06); transform:translateY(-1px); }
+kbd { margin-left:15px; padding:3px 6px; border:1px solid rgba(0,0,0,.25); border-radius:4px; font-size:10px; }
+footer { display:flex; align-items:center; gap:20px; color:var(--muted); font-size:12px; }
+footer span { display:flex; align-items:center; gap:7px; }
+footer i { width:8px; height:8px; border-radius:50%; }
+footer .kid { background:#3187ed; }
+footer .villain { background:#e34650; }
+footer .police { background:#25c9d8; }
+footer small { margin-left:auto; color:#718078; }
+.controls { display:none; position:absolute; z-index:4; bottom:16px; left:16px; grid-template-columns:repeat(3,46px); grid-template-rows:repeat(2,46px); gap:5px; }
+.controls button { border:1px solid rgba(255,255,255,.18); border-radius:12px; color:white; background:rgba(8,16,12,.72); touch-action:none; font-size:20px; backdrop-filter:blur(5px); }
+.controls button:nth-child(1) { grid-column:2; }
+.controls button:nth-child(2) { grid-column:1; }
+.controls button:nth-child(3) { grid-column:2; }
+.controls button:nth-child(4) { grid-column:3; }
+@keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(242,199,97,.55)} 70%{box-shadow:0 0 0 9px rgba(242,199,97,0)} 100%{box-shadow:0 0 0 0 rgba(242,199,97,0)} }
+
+@media (max-width:800px),(pointer:coarse) {
+  .game-shell { padding:9px; gap:8px; }
+  .hud { align-items:center; }
+  .stats .status,.stats button { display:none; }
+  .playfield { border-radius:12px; }
+  .controls { display:grid; }
+  footer small { display:none; }
+  footer { gap:12px; justify-content:center; }
+  .overlay-card { top:auto; right:10px; bottom:10px; width:min(360px,calc(100% - 170px)); padding:15px; }
+  .overlay p { font-size:12px; }
+  .primary kbd { display:none; }
+  .detail-loading { bottom:120px; }
+}
+
+@media (max-width:540px) {
+  .stats .objective { display:none; }
+  .overlay-card { left:10px; right:10px; bottom:116px; width:auto; }
+  .overlay h2 { font-size:20px; }
+  .loading-card { left:10px; top:10px; width:calc(100% - 20px); }
+}

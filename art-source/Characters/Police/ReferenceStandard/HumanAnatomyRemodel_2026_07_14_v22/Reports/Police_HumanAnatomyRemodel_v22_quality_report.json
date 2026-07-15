@@ -1,0 +1,31 @@
+{
+  "asset": "Police_HumanAnatomyRemodel_v22",
+  "source": "art-source/Characters/Police/Photoreal/MPFBRoleRework_2026_07_12_v29/Police_Photoreal_MPFBHuman_v29.blend",
+  "anatomy_basis": "complete matched MPFB adult male human",
+  "stance": "relaxed neutral with finger curl baked before export",
+  "skin_texture": "tools/third_party/makehuman-assets/base/skins/textures/young_lightskinned_male_diffuse2.png",
+  "eye_proxy": "tools/third_party/makehuman-assets/base/eyes/high-poly/high-poly.obj",
+  "eye_texture": "tools/third_party/makehuman-assets/base/eyes/materials/brown_eye.png",
+  "four_view_dir": "docs/art_production/police_human_anatomy_remodel_v22",
+  "stats": {
+    "vertices": 21691,
+    "polygons": 20196,
+    "triangles": 40120,
+    "bounds_min": [
+      -0.309,
+      -0.28129,
+      0.0
+    ],
+    "bounds_max": [
+      0.30476,
+      0.118,
+      1.76745
+    ],
+    "height_m": 1.76745
+  },
+  "files": [
+    "art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Police_HumanAnatomyRemodel_v22.blend",
+    "art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Police_HumanAnatomyRemodel_v22.fbx",
+    "art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Police_HumanAnatomyRemodel_v22.glb"
+  ]
+}

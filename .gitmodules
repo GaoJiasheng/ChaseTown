@@ -1,0 +1,19 @@
+[submodule "tools/third_party/MB-Lab"]
+	path = tools/third_party/MB-Lab
+	url = https://github.com/animate1978/MB-Lab.git
+	shallow = true
+
+[submodule "tools/third_party/TripoSR"]
+	path = tools/third_party/TripoSR
+	url = https://github.com/VAST-AI-Research/TripoSR.git
+	shallow = true
+
+[submodule "tools/third_party/makehuman-assets"]
+	path = tools/third_party/makehuman-assets
+	url = https://github.com/makehumancommunity/makehuman-assets.git
+	shallow = true
+
+[submodule "tools/third_party/mpfb2"]
+	path = tools/third_party/mpfb2
+	url = https://github.com/makehumancommunity/mpfb2.git
+	shallow = true

@@ -1,0 +1,177 @@
+{
+  "asset": "Police_PrecisionRemodel_v21",
+  "role": "Police",
+  "formats": {
+    "static": [
+      "blend",
+      "glb",
+      "fbx"
+    ],
+    "rigged": [
+      "blend",
+      "glb",
+      "fbx"
+    ]
+  },
+  "review_views": {
+    "front": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Police_PrecisionRemodel_v21_front.png",
+    "side": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Police_PrecisionRemodel_v21_side.png",
+    "top": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Police_PrecisionRemodel_v21_top.png",
+    "back": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Police_PrecisionRemodel_v21_back.png"
+  },
+  "rig_pose_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Police_v21_PointAlert.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Police_v21_Walk.png"
+  },
+  "rig_pose_side_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Police_v21_PointAlert_side.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Police_v21_Walk_side.png"
+  },
+  "rig_pose_back_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Police_v21_PointAlert_back.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Police_v21_Walk_back.png"
+  },
+  "quality_gate": {
+    "applied_unity_basecolor": {
+      "path": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Police_PrecisionRemodel_v21_BaseColor_2K.png",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "stddev": 30.748,
+      "threshold": 8.0,
+      "passed": true
+    },
+    "supplemental_pbr": {
+      "basecolor_stddev": 45.524,
+      "normal_stddev": 60.019,
+      "ao_stddev": 5.544
+    }
+  },
+  "geometry": {
+    "min_x": -0.3518138825893402,
+    "max_x": 0.3420290946960449,
+    "min_y": -0.15471917390823364,
+    "max_y": 0.2201302945613861,
+    "min_z": 0.0,
+    "max_z": 1.754499912261963,
+    "width": 0.6938429772853851,
+    "depth": 0.37484946846961975,
+    "height": 1.754499912261963,
+    "vertex_count": 66739,
+    "polygon_count": 109631,
+    "triangle_count": 130468
+  },
+  "materials": {
+    "unique_material_count": 9,
+    "unique_material_names": [
+      "M_Police_BrushedMetal",
+      "M_Police_EyeWhite_EyeGloss",
+      "M_Police_FaceLine",
+      "M_Police_Hair",
+      "M_Police_IrisBrown_EyeGloss",
+      "M_Police_PrecisionRemodel_v21_URP",
+      "M_Police_Pupil_EyeGloss",
+      "M_Police_Skin",
+      "M_Police_UniformNavy"
+    ]
+  },
+  "visual_review_rounds": 11,
+  "fourview_integrity": "passed_internal_screen",
+  "reference_match": "prototype_candidate_not_aaa_final",
+  "humanoid_rig": {
+    "passed": true,
+    "bone_count": 21,
+    "bone_names": [
+      "Hips",
+      "Spine",
+      "Chest",
+      "Neck",
+      "Head",
+      "LeftShoulder",
+      "LeftUpperArm",
+      "LeftLowerArm",
+      "LeftHand",
+      "RightShoulder",
+      "RightUpperArm",
+      "RightLowerArm",
+      "RightHand",
+      "LeftUpperLeg",
+      "LeftLowerLeg",
+      "LeftFoot",
+      "LeftToes",
+      "RightUpperLeg",
+      "RightLowerLeg",
+      "RightFoot",
+      "RightToes"
+    ],
+    "all_vertices_weighted": true,
+    "maximum_weight_sum_error": 1.1102230246251565e-16
+  },
+  "unity_avatar_validation": {
+    "passed": true,
+    "unity_version": "2022.3.50f1",
+    "avatar_valid": true,
+    "avatar_human": true,
+    "unique_referenced_bone_count": 21,
+    "deformation_passed": true
+  },
+  "animation_validation": {
+    "passed": true,
+    "shared_clips": [
+      "art-source/_Shared/Animations/Anim_PointAlert.fbx",
+      "art-source/_Shared/Animations/Anim_Walk.fbx"
+    ],
+    "frame_rates": [
+      30.0,
+      30.0
+    ],
+    "front_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Police_v21_PointAlert.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Police_v21_Walk.png"
+    },
+    "side_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Police_v21_PointAlert_side.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Police_v21_Walk_side.png"
+    },
+    "back_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Police_v21_PointAlert_back.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Police_v21_Walk_back.png"
+    },
+    "pose_checks": [
+      {
+        "pose": "PointAlert",
+        "passed": true,
+        "moved_bone_count": 3,
+        "nonfinite_vertex_count": 0,
+        "screenshot_pixel_stddev": 68.1695327758789,
+        "screenshot_content_passed": true,
+        "side_screenshot_pixel_stddev": 57.44099807739258,
+        "side_screenshot_content_passed": true,
+        "back_screenshot_pixel_stddev": 68.61658477783203,
+        "back_screenshot_content_passed": true
+      },
+      {
+        "pose": "Walk",
+        "passed": true,
+        "moved_bone_count": 9,
+        "nonfinite_vertex_count": 0,
+        "screenshot_pixel_stddev": 68.64494323730469,
+        "screenshot_content_passed": true,
+        "side_screenshot_pixel_stddev": 62.27769088745117,
+        "side_screenshot_content_passed": true,
+        "back_screenshot_pixel_stddev": 69.2056655883789,
+        "back_screenshot_content_passed": true
+      }
+    ]
+  },
+  "final_spec_acceptance": {
+    "passed": false,
+    "blocking_requirements": [
+      "Only one reference-standard model exists per role; the required three styles per role are not represented by this v21 package.",
+      "Mobile triangle budgets and the required photoreal LOD chains are not met by this dense reference-standard topology.",
+      "The baked BaseColor is applied; Normal, AO, and MetallicSmoothness remain supplemental maps rather than a fully authored applied PBR set."
+    ]
+  },
+  "notes": "Dense image-to-3D reference-standard sculpt with Blender-native Humanoid binding and real Unity retarget/deformation validation. This report does not claim nine-style or studio-final acceptance."
+}

@@ -1,0 +1,180 @@
+{
+  "asset": "Kid_PrecisionRemodel_v21",
+  "role": "Kid",
+  "formats": {
+    "static": [
+      "blend",
+      "glb",
+      "fbx"
+    ],
+    "rigged": [
+      "blend",
+      "glb",
+      "fbx"
+    ]
+  },
+  "review_views": {
+    "front": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Kid_PrecisionRemodel_v21_front.png",
+    "side": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Kid_PrecisionRemodel_v21_side.png",
+    "top": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Kid_PrecisionRemodel_v21_top.png",
+    "back": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Previews/Kid_PrecisionRemodel_v21_back.png"
+  },
+  "rig_pose_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Kid_v21_PointAlert.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Kid_v21_Walk.png"
+  },
+  "rig_pose_side_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Kid_v21_PointAlert_side.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Kid_v21_Walk_side.png"
+  },
+  "rig_pose_back_previews": {
+    "PointAlert": "docs/art_production/rig_pose_validation_v21/Kid_v21_PointAlert_back.png",
+    "Walk": "docs/art_production/rig_pose_validation_v21/Kid_v21_Walk_back.png"
+  },
+  "quality_gate": {
+    "applied_unity_basecolor": {
+      "path": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Kid_PrecisionRemodel_v21_BaseColor_2K.png",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "stddev": 41.975,
+      "threshold": 8.0,
+      "passed": true
+    },
+    "supplemental_pbr": {
+      "basecolor_stddev": 47.847,
+      "normal_stddev": 60.019,
+      "ao_stddev": 5.534
+    }
+  },
+  "geometry": {
+    "min_x": -0.2515173554420471,
+    "max_x": 0.2515173554420471,
+    "min_y": -0.18115907907485962,
+    "max_y": 0.28369998931884766,
+    "min_z": 0.0,
+    "max_z": 1.2999999523162842,
+    "width": 0.5030347108840942,
+    "depth": 0.4648590683937073,
+    "height": 1.2999999523162842,
+    "vertex_count": 70676,
+    "polygon_count": 117052,
+    "triangle_count": 140284
+  },
+  "materials": {
+    "unique_material_count": 12,
+    "unique_material_names": [
+      "M_Kid_BackpackLeather",
+      "M_Kid_BackpackNavy",
+      "M_Kid_BackpackTrim",
+      "M_Kid_EyeHighlight",
+      "M_Kid_EyeWhite_EyeGloss",
+      "M_Kid_FacialHair",
+      "M_Kid_HoodieNavy",
+      "M_Kid_IrisBrown_EyeGloss",
+      "M_Kid_PrecisionRemodel_v21_URP",
+      "M_Kid_Pupil_EyeGloss",
+      "M_Kid_Sock",
+      "M_Kid_ZipperMetal"
+    ]
+  },
+  "visual_review_rounds": 11,
+  "fourview_integrity": "passed_internal_screen",
+  "reference_match": "prototype_candidate_not_aaa_final",
+  "humanoid_rig": {
+    "passed": true,
+    "bone_count": 21,
+    "bone_names": [
+      "Hips",
+      "Spine",
+      "Chest",
+      "Neck",
+      "Head",
+      "LeftShoulder",
+      "LeftUpperArm",
+      "LeftLowerArm",
+      "LeftHand",
+      "RightShoulder",
+      "RightUpperArm",
+      "RightLowerArm",
+      "RightHand",
+      "LeftUpperLeg",
+      "LeftLowerLeg",
+      "LeftFoot",
+      "LeftToes",
+      "RightUpperLeg",
+      "RightLowerLeg",
+      "RightFoot",
+      "RightToes"
+    ],
+    "all_vertices_weighted": true,
+    "maximum_weight_sum_error": 1.1102230246251565e-16
+  },
+  "unity_avatar_validation": {
+    "passed": true,
+    "unity_version": "2022.3.50f1",
+    "avatar_valid": true,
+    "avatar_human": true,
+    "unique_referenced_bone_count": 21,
+    "deformation_passed": true
+  },
+  "animation_validation": {
+    "passed": true,
+    "shared_clips": [
+      "art-source/_Shared/Animations/Anim_PointAlert.fbx",
+      "art-source/_Shared/Animations/Anim_Walk.fbx"
+    ],
+    "frame_rates": [
+      30.0,
+      30.0
+    ],
+    "front_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Kid_v21_PointAlert.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Kid_v21_Walk.png"
+    },
+    "side_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Kid_v21_PointAlert_side.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Kid_v21_Walk_side.png"
+    },
+    "back_pose_previews": {
+      "PointAlert": "docs/art_production/rig_pose_validation_v21/Kid_v21_PointAlert_back.png",
+      "Walk": "docs/art_production/rig_pose_validation_v21/Kid_v21_Walk_back.png"
+    },
+    "pose_checks": [
+      {
+        "pose": "PointAlert",
+        "passed": true,
+        "moved_bone_count": 3,
+        "nonfinite_vertex_count": 0,
+        "screenshot_pixel_stddev": 68.613037109375,
+        "screenshot_content_passed": true,
+        "side_screenshot_pixel_stddev": 68.70435333251953,
+        "side_screenshot_content_passed": true,
+        "back_screenshot_pixel_stddev": 71.32127380371094,
+        "back_screenshot_content_passed": true
+      },
+      {
+        "pose": "Walk",
+        "passed": true,
+        "moved_bone_count": 9,
+        "nonfinite_vertex_count": 0,
+        "screenshot_pixel_stddev": 68.92072296142578,
+        "screenshot_content_passed": true,
+        "side_screenshot_pixel_stddev": 70.45638275146484,
+        "side_screenshot_content_passed": true,
+        "back_screenshot_pixel_stddev": 71.5465316772461,
+        "back_screenshot_content_passed": true
+      }
+    ]
+  },
+  "final_spec_acceptance": {
+    "passed": false,
+    "blocking_requirements": [
+      "Only one reference-standard model exists per role; the required three styles per role are not represented by this v21 package.",
+      "Mobile triangle budgets and the required photoreal LOD chains are not met by this dense reference-standard topology.",
+      "The baked BaseColor is applied; Normal, AO, and MetallicSmoothness remain supplemental maps rather than a fully authored applied PBR set."
+    ]
+  },
+  "notes": "Dense image-to-3D reference-standard sculpt with Blender-native Humanoid binding and real Unity retarget/deformation validation. This report does not claim nine-style or studio-final acceptance."
+}

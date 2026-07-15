@@ -1,0 +1,355 @@
+{
+  "asset": "Police_PrecisionRemodel_v21_Rigged",
+  "role": "Police",
+  "pipeline": "blender_native_shared_humanoid_bind",
+  "source_blend": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Police_PrecisionRemodel_v21.blend",
+  "output_blend": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Police_PrecisionRemodel_v21_Rigged.blend",
+  "output_fbx": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Police_PrecisionRemodel_v21_Rigged.fbx",
+  "output_glb": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Police_PrecisionRemodel_v21_Rigged.glb",
+  "bounds_meters": {
+    "min_x": -0.3518138825893402,
+    "max_x": 0.3420290946960449,
+    "min_y": -0.15471917390823364,
+    "max_y": 0.2201302945613861,
+    "min_z": 0.0,
+    "max_z": 1.754499912261963,
+    "width": 0.6938429772853851,
+    "depth": 0.37484946846961975,
+    "height": 1.754499912261963,
+    "vertex_count": 66739,
+    "polygon_count": 109631,
+    "triangle_count": 130468
+  },
+  "rig": {
+    "armature": "Rig_Humanoid_Shared",
+    "bone_count": 21,
+    "bone_names": [
+      "Hips",
+      "Spine",
+      "Chest",
+      "Neck",
+      "Head",
+      "LeftShoulder",
+      "LeftUpperArm",
+      "LeftLowerArm",
+      "LeftHand",
+      "RightShoulder",
+      "RightUpperArm",
+      "RightLowerArm",
+      "RightHand",
+      "LeftUpperLeg",
+      "LeftLowerLeg",
+      "LeftFoot",
+      "LeftToes",
+      "RightUpperLeg",
+      "RightLowerLeg",
+      "RightFoot",
+      "RightToes"
+    ],
+    "shared_rest_pose_source": "relaxed_gameplay_bind_pose_scaled_from_character_bounds",
+    "scale_from_1_82m_master": 0.9640109408032763
+  },
+  "weighting": {
+    "mesh_count": 22,
+    "vertex_count": 66739,
+    "zero_weight_vertices": 0,
+    "maximum_weight_sum_error": 1.1102230246251565e-16,
+    "mesh_reports": [
+      {
+        "object": "Police_v20_NativeBodyHead",
+        "vertices": 43959,
+        "mode": "semantic_seed_topology_smooth_top4",
+        "rigid_bone": null,
+        "nonzero_bones": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 1.1102230246251565e-16,
+        "maximum_influences_per_vertex": 4
+      },
+      {
+        "object": "Police_v20_CapBadge",
+        "vertices": 1392,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v20_ChestBadge",
+        "vertices": 1696,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Chest",
+        "nonzero_bones": [
+          "Chest"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v20_Nameplate",
+        "vertices": 1096,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Chest",
+        "nonzero_bones": [
+          "Chest"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v20_BeltBuckle",
+        "vertices": 1200,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Hips",
+        "nonzero_bones": [
+          "Hips"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v20_ShirtButton_0",
+        "vertices": 366,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Chest",
+        "nonzero_bones": [
+          "Chest"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v20_ShirtButton_1",
+        "vertices": 366,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Chest",
+        "nonzero_bones": [
+          "Chest"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v20_ShirtButton_2",
+        "vertices": 366,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Chest",
+        "nonzero_bones": [
+          "Chest"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_MPFB_HeadNeck",
+        "vertices": 4320,
+        "mode": "humanoid_blended",
+        "rigid_bone": null,
+        "nonzero_bones": [
+          "Head",
+          "Neck"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_Photoreal_MPFBHuman_v29_SourceHuman.short01_export",
+        "vertices": 2984,
+        "mode": "humanoid_blended",
+        "rigid_bone": null,
+        "nonzero_bones": [
+          "Head",
+          "Neck"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Eye_-1",
+        "vertices": 1514,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Iris_-1",
+        "vertices": 926,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Pupil_-1",
+        "vertices": 614,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Glint_-1",
+        "vertices": 266,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Brow_-1",
+        "vertices": 238,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Eye_+1",
+        "vertices": 1514,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Iris_+1",
+        "vertices": 926,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Pupil_+1",
+        "vertices": 614,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Glint_+1",
+        "vertices": 266,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_Brow_+1",
+        "vertices": 238,
+        "mode": "rigid_single_bone",
+        "rigid_bone": "Head",
+        "nonzero_bones": [
+          "Head"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_AnatomicalNeckBlend",
+        "vertices": 576,
+        "mode": "humanoid_blended",
+        "rigid_bone": null,
+        "nonzero_bones": [
+          "Head",
+          "Neck"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      },
+      {
+        "object": "Police_v21_UniformCollar",
+        "vertices": 1302,
+        "mode": "humanoid_blended",
+        "rigid_bone": null,
+        "nonzero_bones": [
+          "Chest",
+          "Head",
+          "Neck"
+        ],
+        "zero_weight_vertices": 0,
+        "maximum_weight_sum_error": 0.0
+      }
+    ]
+  },
+  "unity_material": {
+    "basecolor": "art-source/Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Police_PrecisionRemodel_v21_BaseColor_2K.png",
+    "resolution": [
+      2048,
+      2048
+    ],
+    "uv_layer": "UV0",
+    "material": "M_Police_PrecisionRemodel_v21_URP"
+  },
+  "materials": {
+    "unique_material_count": 9,
+    "unique_material_names": [
+      "M_Police_BrushedMetal",
+      "M_Police_EyeWhite_EyeGloss",
+      "M_Police_FaceLine",
+      "M_Police_Hair",
+      "M_Police_IrisBrown_EyeGloss",
+      "M_Police_PrecisionRemodel_v21_URP",
+      "M_Police_Pupil_EyeGloss",
+      "M_Police_Skin",
+      "M_Police_UniformNavy"
+    ]
+  },
+  "validation_summary": {
+    "fbx_written": true,
+    "glb_written": true,
+    "blend_written": true,
+    "all_vertices_weighted": true,
+    "weights_normalized": true,
+    "unity_humanoid_avatar": "pending Unity batch validation"
+  }
+}
