@@ -19,5 +19,7 @@ test("renders the Chasing game shell", async () => {
   assert.match(html, /3D 追逐模式/);
   assert.match(html, /正在载入项目美术资产/);
   assert.match(html, /WASD/);
+  assert.match(html, /rel="preload"[^>]+slow-drift-explore\.m4a[^>]+as="audio"/i);
+  assert.match(html, /rel="preload"[^>]+slow-drift-threat\.m4a[^>]+as="audio"/i);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);
 });
