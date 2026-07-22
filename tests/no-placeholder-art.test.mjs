@@ -29,3 +29,9 @@ test("missing production assets cannot silently fall back to primitive actors", 
     "asset failures must stop with a diagnostic instead of rendering primitive substitutes",
   );
 });
+
+test("traditional browser fallback favicon is a real icon asset", async () => {
+  const favicon = await readFile(path.join(ROOT, "public", "favicon.ico"));
+  assert.ok(favicon.length > 1_000);
+  assert.deepEqual([...favicon.subarray(0, 4)], [0, 0, 1, 0]);
+});
