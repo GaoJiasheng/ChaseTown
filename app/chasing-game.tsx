@@ -11,7 +11,7 @@ import {
   type AnimationState,
   type ClipAliases,
 } from "./game/animation/actor-runtime.ts";
-import { AdaptiveScoreController } from "./game/audio/adaptive-score.ts";
+import { AdaptiveScoreController, prewarmAdaptiveScoreAssets } from "./game/audio/adaptive-score.ts";
 import type { ChaserMode, GamePhase, GameState, PlayerMode, Point } from "./game/contracts.ts";
 import { createDefaultLevel, DEFAULT_GAME_CONFIG } from "./game/level.ts";
 import { shouldIgnoreFocusedControlKey } from "./game/input.ts";
@@ -750,6 +750,8 @@ export function ChasingGame() {
     const host = mount.current;
     if (!host) return;
 
+    const scorePrewarmAbort = new AbortController();
+    void prewarmAdaptiveScoreAssets(undefined, scorePrewarmAbort.signal);
     let disposed = false;
     let frame = 0;
     let last = performance.now();
@@ -1822,6 +1824,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     frame = requestAnimationFrame(animate);
 
     return () => {
+      scorePrewarmAbort.abort();
       disposed = true;
       ready = false;
       commands.current = NOOP_COMMANDS;

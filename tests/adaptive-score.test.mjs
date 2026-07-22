@@ -8,10 +8,36 @@ import {
   calculateWrappedDrift,
   clampThreat,
   EXPLORE_SCORE_URL,
+  prewarmAdaptiveScoreAssets,
   reduceAdaptiveScoreStatus,
   smoothingTimeConstant,
   THREAT_SCORE_URL,
 } from "../app/game/audio/adaptive-score.ts";
+
+test("both mastered score stems are materialized in cache before first interaction", async () => {
+  const requests = [];
+  const consumed = [];
+  const fetcher = async (url, init) => {
+    requests.push({ url, init });
+    return {
+      ok: true,
+      status: 200,
+      async arrayBuffer() {
+        consumed.push(url);
+        return new ArrayBuffer(8);
+      },
+    };
+  };
+
+  const result = await prewarmAdaptiveScoreAssets(fetcher);
+  assert.deepEqual(result, {
+    loaded: [EXPLORE_SCORE_URL, THREAT_SCORE_URL],
+    failed: [],
+  });
+  assert.deepEqual(requests.map(({ url }) => url), [EXPLORE_SCORE_URL, THREAT_SCORE_URL]);
+  assert.ok(requests.every(({ init }) => init.cache === "force-cache" && init.credentials === "same-origin"));
+  assert.deepEqual(consumed, [EXPLORE_SCORE_URL, THREAT_SCORE_URL]);
+});
 
 test("floor-preserving equal-power gains hit mastered endpoints", () => {
   assert.deepEqual(calculateAdaptiveGains(0), { explore: 1, threat: 0 });

@@ -27,8 +27,6 @@ export default function RootLayout({
     <html lang="zh-CN">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="preload" href="/audio/slow-drift-explore.m4a" as="audio" />
-        <link rel="preload" href="/audio/slow-drift-threat.m4a" as="audio" />
       </head>
       <body>{children}</body>
     </html>

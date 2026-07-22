@@ -1,6 +1,39 @@
 export const EXPLORE_SCORE_URL = "/audio/slow-drift-explore.m4a";
 export const THREAT_SCORE_URL = "/audio/slow-drift-threat.m4a";
 
+export interface AdaptiveScorePrewarmResult {
+  loaded: string[];
+  failed: string[];
+}
+
+type AudioAssetFetcher = (input: string, init?: RequestInit) => Promise<Response>;
+
+/**
+ * Materialize both mastered stems in the HTTP cache while the 3D scene loads.
+ * Audio elements are still created only inside a user gesture, preserving
+ * mobile autoplay guarantees without making the first chase wait on a fetch.
+ */
+export async function prewarmAdaptiveScoreAssets(
+  fetcher: AudioAssetFetcher = (input, init) => globalThis.fetch(input, init),
+  signal?: AbortSignal,
+): Promise<AdaptiveScorePrewarmResult> {
+  const urls = [EXPLORE_SCORE_URL, THREAT_SCORE_URL];
+  const results = await Promise.all(urls.map(async (url) => {
+    try {
+      const response = await fetcher(url, { cache: "force-cache", credentials: "same-origin", signal });
+      if (!response.ok) throw new Error(`Score prewarm failed with HTTP ${response.status}`);
+      await response.arrayBuffer();
+      return { url, loaded: true };
+    } catch {
+      return { url, loaded: false };
+    }
+  }));
+  return {
+    loaded: results.filter((result) => result.loaded).map((result) => result.url),
+    failed: results.filter((result) => !result.loaded).map((result) => result.url),
+  };
+}
+
 const EXPLORE_GAIN_FLOOR = 0.4;
 const THREAT_GAIN_MAX = 0.94;
 const ATTACK_SECONDS = 0.22;
