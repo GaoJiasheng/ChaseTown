@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
@@ -26,6 +27,7 @@ import {
 import { distanceBetween, GridPathPlanner, hasLineOfSight } from "./game/navigation.ts";
 import { isPlayerVisuallyExposed } from "./game/perception.ts";
 import {
+  baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
   canChaserTakeLockerDoor,
   lockerVisionMix,
@@ -37,7 +39,7 @@ import {
 import { GameSimulation, type HideInteraction } from "./game/simulation.ts";
 
 type ActorName = "kid" | "villain" | "police";
-type CoreAssetName = keyof typeof CORE_ASSETS;
+type StructureAssetName = keyof typeof STRUCTURE_ASSETS;
 type DetailAssetName = keyof typeof DETAIL_ASSETS;
 
 const CELL = 2;
@@ -101,46 +103,65 @@ const ACTOR_SPECS = {
   },
 } as const;
 
-const CORE_ASSETS = {
-  wall: "/models/environment/wall.glb",
-  wallCorner: "/models/environment/wall-corner.glb",
-  wallEnd: "/models/environment/wall-end.glb",
-  floor: "/models/environment/floor.glb",
-  exit: "/models/environment/exit.glb",
-  frontGate: "/models/environment/front-gate.glb",
-  classroomFloor: "/models/environment/classroom-floor.glb",
-  playgroundFloor: "/models/environment/playground-floor.glb",
-  grassFloor: "/models/environment/grass-floor.glb",
+const STRUCTURE_ASSETS = {
+  frontGate: "/models/environment/front-gate.glb?v=4",
+  exit: "/models/environment/exit.glb?v=4",
 } as const;
 
 const DETAIL_ASSETS = {
-  locker: "/models/environment/locker.glb?v=30",
-  bench: "/models/environment/bench.glb",
-  car: "/models/environment/police-car.glb",
-  tree: "/models/environment/tree.glb",
-  classroomDoor: "/models/environment/classroom-door.glb",
-  ceilingLight: "/models/environment/ceiling-light.glb",
-  basketball: "/models/environment/basketball.glb",
-  deskChair: "/models/environment/desk-chair.glb",
-  blackboard: "/models/environment/blackboard.glb",
-  bulletin: "/models/environment/bulletin.glb",
-  podium: "/models/environment/podium.glb",
-  extinguisher: "/models/environment/extinguisher.glb",
-  trash: "/models/environment/trash.glb",
-  books: "/models/environment/books.glb",
-  backpack: "/models/environment/backpack.glb",
-  shrub: "/models/environment/shrub.glb",
-  station: "/models/environment/station.glb",
+  locker: "/models/environment/locker.glb?v=31",
+  bench: "/models/environment/bench.glb?v=4",
+  car: "/models/environment/police-car.glb?v=4",
+  tree: "/models/environment/tree.glb?v=4",
+  classroomDoor: "/models/environment/classroom-door.glb?v=4",
+  ceilingLight: "/models/environment/ceiling-light.glb?v=4",
+  basketball: "/models/environment/basketball.glb?v=4",
+  deskChair: "/models/environment/desk-chair.glb?v=4",
+  blackboard: "/models/environment/blackboard.glb?v=4",
+  bulletin: "/models/environment/bulletin.glb?v=4",
+  podium: "/models/environment/podium.glb?v=4",
+  extinguisher: "/models/environment/extinguisher.glb?v=4",
+  trash: "/models/environment/trash.glb?v=4",
+  books: "/models/environment/books.glb?v=4",
+  backpack: "/models/environment/backpack.glb?v=4",
+  shrub: "/models/environment/shrub.glb?v=4",
+  station: "/models/environment/station.glb?v=4",
 } as const;
 
 const THEME_KIT_ASSETS: Readonly<Record<CampaignTheme, string>> = {
-  campus: "/models/environment/themes/campus-kit.glb",
-  hospital: "/models/environment/themes/hospital-kit.glb",
-  "fire-station": "/models/environment/themes/fire-station-kit.glb",
-  factory: "/models/environment/themes/factory-kit.glb",
+  campus: "/models/environment/themes/campus-kit.glb?v=4",
+  hospital: "/models/environment/themes/hospital-kit.glb?v=4",
+  "fire-station": "/models/environment/themes/fire-station-kit.glb?v=4",
+  factory: "/models/environment/themes/factory-kit.glb?v=4",
 };
 
 type ThemePropSpec = { node: string; height: number };
+
+type StandaloneAnchorRole = "interior-1" | "interior-2" | "interior-3" | "arrival" | "exit";
+
+type StandalonePropPlacement = {
+  readonly asset: DetailAssetName;
+  readonly height: number;
+  readonly role: StandaloneAnchorRole;
+  readonly tangent: number;
+  readonly depth?: number;
+  readonly elevation?: number;
+  readonly rotationOffset?: number;
+};
+
+type ThemeFloorRole = "primary" | "secondary" | "service";
+
+type LevelArtLayout = {
+  readonly key: string;
+  readonly wallVariantSalt: number;
+  readonly floorCycle: readonly ThemeFloorRole[];
+  readonly landmarkNodes: readonly string[];
+  readonly hideDressingNodes: readonly string[];
+  readonly arrivalNodes: readonly string[];
+  readonly exitNodes: readonly string[];
+  readonly lightIntensity: number;
+  readonly warmLightMix: number;
+};
 
 const THEME_PROP_SPECS: Readonly<Record<CampaignTheme, readonly ThemePropSpec[]>> = {
   campus: [
@@ -176,11 +197,197 @@ const THEME_PROP_SPECS: Readonly<Record<CampaignTheme, readonly ThemePropSpec[]>
   ],
 };
 
+const MOVEMENT_PROP_CONTRACT: readonly (readonly [DetailAssetName, number, number])[] = [
+  ["bench", 1.05, 0],
+  ["tree", 3.9, 0.35],
+  ["shrub", 0.9, -0.2],
+  ["car", 1.55, Math.PI / 2],
+  ["basketball", 2.65, 0],
+  ["deskChair", 1.2, 0.58],
+  ["podium", 1.1, -0.25],
+];
+
+const THEME_SHARED_PROPS: Readonly<Record<CampaignTheme, readonly (readonly [DetailAssetName, number])[]>> = {
+  campus: [["bulletin", 1.25], ["trash", 0.75], ["tree", 3.9]],
+  hospital: [["bulletin", 1.2], ["trash", 0.72]],
+  "fire-station": [["extinguisher", 0.86], ["trash", 0.72]],
+  factory: [["extinguisher", 0.86], ["trash", 0.76]],
+};
+
+// Shared props are deliberately bound to authored narrative roles. This keeps
+// recognizable classroom assets out of unrelated hospital/industrial scenes
+// and makes the ten-level art contract deterministic enough for automated QA.
+const PROP_SET_STANDALONE_PROPS: Readonly<Record<string, readonly StandalonePropPlacement[]>> = {
+  "campus-classic": [
+    { asset: "classroomDoor", height: 2.2, role: "interior-1", tangent: -1.38, depth: -0.12 },
+    { asset: "blackboard", height: 1.5, role: "interior-2", tangent: 1.2, depth: -0.16 },
+    { asset: "backpack", height: 0.52, role: "arrival", tangent: -1.85, depth: -0.3 },
+    { asset: "station", height: 3.25, role: "exit", tangent: 2.15, depth: -0.72 },
+  ],
+  "campus-library": [
+    { asset: "books", height: 0.22, role: "interior-1", tangent: 1.08, depth: -0.12, elevation: 0.03 },
+    { asset: "backpack", height: 0.5, role: "interior-2", tangent: -1.05, depth: -0.2 },
+  ],
+  "campus-science": [
+    { asset: "classroomDoor", height: 2.2, role: "interior-1", tangent: -1.32, depth: -0.12 },
+    { asset: "blackboard", height: 1.48, role: "interior-2", tangent: 1.18, depth: -0.16 },
+    { asset: "books", height: 0.2, role: "interior-3", tangent: -0.95, depth: -0.12, elevation: 0.03 },
+  ],
+};
+
+type FeaturedThemeProps = {
+  readonly interior: readonly string[];
+  readonly arrival: readonly string[];
+};
+
+const PROP_SET_FEATURED_THEME_PROPS: Readonly<Record<string, FeaturedThemeProps>> = {
+  "hospital-outpatient": {
+    interior: ["HospitalIVStation", "HospitalCrashCart"],
+    arrival: ["HospitalWheelchair", "HospitalWayfinding"],
+  },
+  "hospital-isolation": {
+    interior: ["HospitalIVStation", "HospitalPrivacyScreen"],
+    arrival: ["HospitalWayfinding"],
+  },
+  "fire-engine-bay": {
+    interior: ["FireGearRack", "FireHoseReel"],
+    arrival: ["FireEngine", "FireStationWayfinding", "FireSafetyCones"],
+  },
+  "fire-training": {
+    interior: ["FireGearRack", "FireHoseReel"],
+    arrival: ["FireStationWayfinding", "FireSafetyCones", "FireHydrant"],
+  },
+};
+
 const THEME_WALL_NODES: Readonly<Record<CampaignTheme, string>> = {
   campus: "CampusArchitectureWall",
   hospital: "HospitalArchitectureWall",
   "fire-station": "FireArchitectureWall",
   factory: "FactoryArchitectureWall",
+};
+
+const THEME_NODE_PREFIXES: Readonly<Record<CampaignTheme, readonly string[]>> = {
+  campus: ["Campus"],
+  hospital: ["Hospital"],
+  "fire-station": ["FireStation", "Fire"],
+  factory: ["Factory"],
+};
+
+// These profiles turn campaign art-direction metadata into concrete scene
+// choices. Every optional named cluster has a deterministic generic fallback,
+// so a partially exported theme kit remains playable while the source-art pass
+// is being rolled out one prop set at a time.
+const PROP_SET_ART_LAYOUTS: Readonly<Record<string, LevelArtLayout>> = {
+  "campus-classic": {
+    key: "CampusClassic",
+    wallVariantSalt: 11,
+    floorCycle: ["primary", "secondary", "primary", "primary", "service"],
+    landmarkNodes: ["CampusClassroomCluster", "CampusCourtyardCluster", "CampusClassicLandmark"],
+    hideDressingNodes: ["CampusClassicHideDressing", "CampusHideDressing"],
+    arrivalNodes: ["CampusClassicArrivalCluster", "CampusArrivalCluster"],
+    exitNodes: ["CampusGateDressing", "CampusExitCluster"],
+    lightIntensity: 4.25,
+    warmLightMix: 0.62,
+  },
+  "campus-library": {
+    key: "CampusLibrary",
+    wallVariantSalt: 23,
+    floorCycle: ["secondary", "secondary", "primary", "service"],
+    landmarkNodes: ["CampusLibraryShelves", "CampusReadingCluster", "CampusArchiveCluster"],
+    hideDressingNodes: ["CampusLibraryHideDressing", "CampusHideDressing"],
+    arrivalNodes: ["CampusLibraryArrivalCluster", "CampusArrivalCluster"],
+    exitNodes: ["CampusLibraryExitCluster", "CampusExitCluster"],
+    lightIntensity: 3.75,
+    warmLightMix: 0.78,
+  },
+  "campus-science": {
+    key: "CampusScience",
+    wallVariantSalt: 37,
+    floorCycle: ["service", "primary", "service", "secondary"],
+    landmarkNodes: ["CampusLabBenchCluster", "CampusFumeHoodCluster", "CampusGreenhouseCluster"],
+    hideDressingNodes: ["CampusScienceHideDressing", "CampusHideDressing"],
+    arrivalNodes: ["CampusScienceArrivalCluster", "CampusArrivalCluster"],
+    exitNodes: ["CampusScienceExitCluster", "CampusExitCluster"],
+    lightIntensity: 4.8,
+    warmLightMix: 0.26,
+  },
+  "hospital-outpatient": {
+    key: "HospitalOutpatient",
+    wallVariantSalt: 41,
+    floorCycle: ["primary", "primary", "secondary", "service"],
+    landmarkNodes: ["HospitalTriageCluster", "HospitalWaitingCluster", "HospitalPharmacyCluster"],
+    hideDressingNodes: ["HospitalOutpatientHideDressing", "HospitalHideDressing"],
+    arrivalNodes: ["HospitalOutpatientArrivalCluster", "HospitalArrivalCluster"],
+    exitNodes: ["HospitalOutpatientExitCluster", "HospitalExitCluster"],
+    lightIntensity: 4.9,
+    warmLightMix: 0.18,
+  },
+  "hospital-isolation": {
+    key: "HospitalIsolation",
+    wallVariantSalt: 53,
+    floorCycle: ["service", "primary", "service", "primary", "secondary"],
+    landmarkNodes: ["HospitalDeconCluster", "HospitalIsolationWardCluster", "HospitalAirlockCluster"],
+    hideDressingNodes: ["HospitalIsolationHideDressing", "HospitalHideDressing"],
+    arrivalNodes: ["HospitalIsolationArrivalCluster", "HospitalArrivalCluster"],
+    exitNodes: ["HospitalIsolationExitCluster", "HospitalExitCluster"],
+    lightIntensity: 4.25,
+    warmLightMix: 0.12,
+  },
+  "fire-engine-bay": {
+    key: "FireEngineBay",
+    wallVariantSalt: 67,
+    floorCycle: ["service", "primary", "service", "secondary"],
+    landmarkNodes: ["FireStationEngineBayCluster", "FireStationTurnoutCluster", "FireStationHoseServiceCluster"],
+    hideDressingNodes: ["FireStationEngineBayHideDressing", "FireStationHideDressing", "FireHideDressing"],
+    arrivalNodes: ["FireStationEngineBayArrivalCluster", "FireStationArrivalCluster", "FireArrivalCluster"],
+    exitNodes: ["FireStationEngineBayExitCluster", "FireStationExitCluster", "FireExitCluster"],
+    lightIntensity: 4.7,
+    warmLightMix: 0.83,
+  },
+  "fire-training": {
+    key: "FireTraining",
+    wallVariantSalt: 79,
+    floorCycle: ["service", "service", "primary", "secondary"],
+    landmarkNodes: ["FireStationTrainingCluster", "FireStationRopeRescueCluster", "FireStationBreathingGearCluster"],
+    hideDressingNodes: ["FireStationTrainingHideDressing", "FireStationHideDressing", "FireHideDressing"],
+    arrivalNodes: ["FireStationTrainingArrivalCluster", "FireStationArrivalCluster", "FireArrivalCluster"],
+    exitNodes: ["FireStationTrainingExitCluster", "FireStationExitCluster", "FireExitCluster"],
+    lightIntensity: 4.35,
+    warmLightMix: 0.9,
+  },
+  "factory-assembly": {
+    key: "FactoryAssembly",
+    wallVariantSalt: 83,
+    floorCycle: ["primary", "service", "primary", "secondary"],
+    landmarkNodes: ["FactoryAssemblyLineCluster", "FactoryRobotCellCluster", "FactoryInspectionCluster"],
+    hideDressingNodes: ["FactoryAssemblyHideDressing", "FactoryHideDressing"],
+    arrivalNodes: ["FactoryAssemblyArrivalCluster", "FactoryArrivalCluster"],
+    exitNodes: ["FactoryAssemblyExitCluster", "FactoryExitCluster"],
+    lightIntensity: 4.25,
+    warmLightMix: 0.52,
+  },
+  "factory-turbine": {
+    key: "FactoryTurbine",
+    wallVariantSalt: 97,
+    floorCycle: ["service", "primary", "service", "service", "secondary"],
+    landmarkNodes: ["FactoryTurbineCluster", "FactoryHighPressurePipeCluster", "FactoryBreakerCluster"],
+    hideDressingNodes: ["FactoryTurbineHideDressing", "FactoryHideDressing"],
+    arrivalNodes: ["FactoryTurbineArrivalCluster", "FactoryArrivalCluster"],
+    exitNodes: ["FactoryTurbineExitCluster", "FactoryExitCluster"],
+    lightIntensity: 4.65,
+    warmLightMix: 0.36,
+  },
+  "factory-foundry": {
+    key: "FactoryFoundry",
+    wallVariantSalt: 109,
+    floorCycle: ["service", "service", "primary", "secondary"],
+    landmarkNodes: ["FactoryFurnaceCluster", "FactoryCastingCluster", "FactoryCoolingCluster"],
+    hideDressingNodes: ["FactoryFoundryHideDressing", "FactoryHideDressing"],
+    arrivalNodes: ["FactoryFoundryArrivalCluster", "FactoryArrivalCluster"],
+    exitNodes: ["FactoryFoundryExitCluster", "FactoryExitCluster"],
+    lightIntensity: 4.85,
+    warmLightMix: 0.94,
+  },
 };
 
 const LOCKER_CLIPS = [
@@ -192,7 +399,7 @@ const LOCKER_CLIPS = [
   "Locker_Door_Check_Close",
 ] as const;
 
-const TOTAL_ASSETS = Object.keys(ACTOR_SPECS).length + Object.keys(CORE_ASSETS).length + Object.keys(DETAIL_ASSETS).length + 1;
+const BOOTSTRAP_ASSET_COUNT = Object.keys(ACTOR_SPECS).length + 1;
 
 function world(point: Point, level: LevelDefinition) {
   return new THREE.Vector3(
@@ -200,6 +407,45 @@ function world(point: Point, level: LevelDefinition) {
     0,
     (point.y - (level.height - 1) / 2) * CELL,
   );
+}
+
+function levelArtLayout(theme: CampaignTheme, propSet: string): LevelArtLayout {
+  const authored = PROP_SET_ART_LAYOUTS[propSet];
+  if (authored) return authored;
+  const prefix = THEME_NODE_PREFIXES[theme][0];
+  return {
+    key: `${prefix}Default`,
+    wallVariantSalt: 17,
+    floorCycle: ["primary", "secondary", "primary", "service"],
+    landmarkNodes: [`${prefix}LandmarkCluster`],
+    hideDressingNodes: [`${prefix}HideDressing`],
+    arrivalNodes: [`${prefix}ArrivalCluster`],
+    exitNodes: [`${prefix}ExitCluster`],
+    lightIntensity: 4.25,
+    warmLightMix: 0.5,
+  };
+}
+
+function resolveThemeNode(
+  root: THREE.Object3D,
+  theme: CampaignTheme,
+  candidates: readonly string[],
+): THREE.Object3D | undefined {
+  for (const candidate of candidates) {
+    const direct = root.getObjectByName(candidate);
+    if (direct) return direct;
+    for (const prefix of THEME_NODE_PREFIXES[theme]) {
+      if (candidate.startsWith(prefix)) continue;
+      const prefixed = root.getObjectByName(`${prefix}${candidate}`);
+      if (prefixed) return prefixed;
+    }
+  }
+  return undefined;
+}
+
+function wallVariantIndex(x: number, y: number, dx: number, dy: number, salt: number) {
+  const hash = Math.abs((x * 73_856_093) ^ (y * 19_349_663) ^ (dx * 83_492_791) ^ (dy * 29_791) ^ salt);
+  return hash % 3;
 }
 
 function createSightHazeTexture() {
@@ -368,6 +614,23 @@ function fitProp(source: THREE.Object3D, height: number, castShadow = false) {
   return flattenStatic(visual, castShadow);
 }
 
+function anchorAuthoredStatic(source: THREE.Object3D, castShadow = false) {
+  const model = source.clone(true);
+  tuneMeshes(model, { castShadow });
+  const visual = new THREE.Group();
+  visual.add(model);
+  visual.updateMatrixWorld(true);
+  const authoredAnchor = visual.getObjectByName("PlacementAnchor");
+  if (authoredAnchor) {
+    visual.position.sub(authoredAnchor.getWorldPosition(new THREE.Vector3()));
+    return flattenStatic(visual, castShadow);
+  }
+  const bounds = new THREE.Box3().setFromObject(visual);
+  const center = bounds.getCenter(new THREE.Vector3());
+  visual.position.set(-center.x, -bounds.min.y, -center.z);
+  return flattenStatic(visual, castShadow);
+}
+
 function fitInteractiveProp(source: THREE.Object3D, height: number) {
   const model = source.clone(true);
   tuneMeshes(model, { castShadow: true });
@@ -400,6 +663,24 @@ function fitModule(source: THREE.Object3D, size: THREE.Vector3) {
   return root;
 }
 
+
+function anchorAuthoredModule(source: THREE.Object3D) {
+  const root = source.clone(true);
+  tuneMeshes(root, { castShadow: true });
+  root.updateMatrixWorld(true);
+  const authoredAnchor = root.getObjectByName("ModuleAnchor") ?? root.getObjectByName("PlacementAnchor");
+  if (authoredAnchor) {
+    root.position.sub(authoredAnchor.getWorldPosition(new THREE.Vector3()));
+    return root;
+  }
+  const bounds = new THREE.Box3().setFromObject(root);
+  const center = bounds.getCenter(new THREE.Vector3());
+  root.position.x -= center.x;
+  root.position.y -= bounds.min.y;
+  root.position.z -= center.z;
+  return root;
+}
+
 function applyThemeSurface(
   root: THREE.Object3D,
   tint: THREE.ColorRepresentation,
@@ -412,12 +693,12 @@ function applyThemeSurface(
     if (existing) return existing;
     const material = source.clone();
     if (material instanceof THREE.MeshStandardMaterial) {
-      material.color.lerp(tintColor, options.blend ?? 0.58);
+      material.color.lerp(tintColor, options.blend ?? 0.16);
       material.roughness = THREE.MathUtils.clamp(material.roughness + (options.roughnessShift ?? 0), 0.16, 0.96);
       material.envMapIntensity = 1.2;
-      if (material.normalMap) material.normalScale.multiplyScalar(1.18);
+      if (material.normalMap) material.normalScale.multiplyScalar(1.04);
       if (options.emissive) {
-        material.emissive.lerp(new THREE.Color(options.emissive), 0.24);
+        material.emissive.lerp(new THREE.Color(options.emissive), 0.08);
         material.emissiveIntensity = Math.max(material.emissiveIntensity, options.emissiveIntensity ?? 0.08);
       }
       material.needsUpdate = true;
@@ -441,13 +722,17 @@ function addInstancedModules(
   placements: readonly ModulePlacement[],
   parent: THREE.Object3D,
   castShadow: boolean,
+  options: { preserveAuthoredScale?: boolean; namePrefix?: string } = {},
 ) {
   const created: THREE.InstancedMesh[] = [];
   if (!placements.length) return created;
   // Authored modules often contain many material-labelled child meshes. Merge
   // children that share a material before instancing so richer architecture
   // does not multiply draw calls for every bevel, trim and bolt.
-  const template = flattenStatic(fitModule(source, size), castShadow);
+  const template = flattenStatic(
+    options.preserveAuthoredScale ? anchorAuthoredModule(source) : fitModule(source, size),
+    castShadow,
+  );
   template.updateMatrixWorld(true);
   const placementMatrix = new THREE.Matrix4();
   const rotation = new THREE.Quaternion();
@@ -455,7 +740,7 @@ function addInstancedModules(
   template.traverse((object) => {
     if (!(object instanceof THREE.Mesh) || object instanceof THREE.SkinnedMesh) return;
     const instances = new THREE.InstancedMesh(object.geometry, object.material, placements.length);
-    instances.name = `campus-${object.name || "module"}`;
+    instances.name = `${options.namePrefix ?? "environment"}-${object.name || "module"}`;
     placements.forEach((placement, index) => {
       rotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), placement.rotation);
       placementMatrix.compose(placement.position, rotation, scale);
@@ -471,6 +756,118 @@ function addInstancedModules(
     created.push(instances);
   });
   return created;
+}
+
+type InstancedModuleBatch = {
+  source: THREE.Object3D;
+  placements: readonly ModulePlacement[];
+  preserveAuthoredScale?: boolean;
+};
+
+function addInstancedModuleBatches(
+  batches: readonly InstancedModuleBatch[],
+  size: THREE.Vector3,
+  parent: THREE.Object3D,
+  castShadow: boolean,
+  namePrefix: string,
+  useMultiDraw = false,
+) {
+  const grouped = new Map<string, { source: THREE.Object3D; placements: ModulePlacement[]; preserveAuthoredScale: boolean }>();
+  for (const batch of batches) {
+    if (!batch.placements.length) continue;
+    const preserveAuthoredScale = batch.preserveAuthoredScale ?? false;
+    const key = `${batch.source.uuid}:${preserveAuthoredScale}`;
+    const entry = grouped.get(key) ?? { source: batch.source, placements: [], preserveAuthoredScale };
+    entry.placements.push(...batch.placements);
+    grouped.set(key, entry);
+  }
+  if (useMultiDraw) {
+    type GeometryBatch = {
+      material: THREE.Material;
+      geometries: Array<{ geometry: THREE.BufferGeometry; placements: readonly ModulePlacement[] }>;
+    };
+    const geometryBatches = new Map<string, GeometryBatch>();
+    for (const [sourceKey, entry] of grouped) {
+      const template = flattenStatic(
+        entry.preserveAuthoredScale ? anchorAuthoredModule(entry.source) : fitModule(entry.source, size),
+        castShadow,
+      );
+      template.updateMatrixWorld(true);
+      template.traverse((object) => {
+        if (!(object instanceof THREE.Mesh) || object instanceof THREE.SkinnedMesh || Array.isArray(object.material)) return;
+        const attributes = (Object.entries(object.geometry.attributes) as [string, THREE.BufferAttribute | THREE.InterleavedBufferAttribute][])
+          .map(([name, attribute]) => {
+            const array = attribute instanceof THREE.InterleavedBufferAttribute ? attribute.data.array : attribute.array;
+            return `${name}:${attribute.itemSize}:${attribute.normalized}:${array.constructor.name}`;
+          })
+          .sort()
+          .join("|");
+        const signature = `${object.material.uuid}:${object.geometry.index ? "indexed" : "plain"}:${attributes}`;
+        const bucket: GeometryBatch = geometryBatches.get(signature) ?? {
+          material: object.material,
+          geometries: [],
+        };
+        bucket.geometries.push({
+          geometry: object.geometry.clone().applyMatrix4(object.matrixWorld),
+          placements: entry.placements,
+        });
+        geometryBatches.set(signature, bucket);
+      });
+      // Keep the source identity in the debugger without splitting a shared
+      // material batch back into one draw per wall/floor variant.
+      template.userData.sourceKey = sourceKey;
+    }
+
+    const created: THREE.BatchedMesh[] = [];
+    for (const [signature, batch] of geometryBatches) {
+      const maxInstanceCount = batch.geometries.reduce((total, item) => total + item.placements.length, 0);
+      const maxVertexCount = batch.geometries.reduce(
+        (total, item) => total + (item.geometry.getAttribute("position")?.count ?? 0),
+        0,
+      );
+      const maxIndexCount = batch.geometries.reduce(
+        (total, item) => total + (item.geometry.index?.count ?? 0),
+        0,
+      );
+      if (!maxInstanceCount || !maxVertexCount) continue;
+      const batched = new THREE.BatchedMesh(
+        maxInstanceCount,
+        maxVertexCount,
+        Math.max(maxIndexCount, maxVertexCount),
+        batch.material,
+      );
+      batched.name = `${namePrefix}-batch-${signature.slice(0, 8)}`;
+      batched.castShadow = castShadow;
+      batched.receiveShadow = true;
+      for (const item of batch.geometries) {
+        const geometryId = batched.addGeometry(item.geometry);
+        for (const placement of item.placements) {
+          const instanceId = batched.addInstance(geometryId);
+          const rotation = new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            placement.rotation,
+          );
+          batched.setMatrixAt(
+            instanceId,
+            new THREE.Matrix4().compose(placement.position, rotation, new THREE.Vector3(1, 1, 1)),
+          );
+        }
+      }
+      batched.computeBoundingBox();
+      batched.computeBoundingSphere();
+      parent.add(batched);
+      created.push(batched);
+    }
+    return created;
+  }
+  return [...grouped.values()].flatMap((entry) => addInstancedModules(
+    entry.source,
+    size,
+    entry.placements,
+    parent,
+    castShadow,
+    { preserveAuthoredScale: entry.preserveAuthoredScale, namePrefix },
+  ));
 }
 
 type ActorView = {
@@ -758,12 +1155,33 @@ type TextureDeduplication = {
   assignmentsShared: number;
 };
 
-function deduplicateAssetTextures(assets: Iterable<GLTF>): TextureDeduplication {
+type LoadedAsset = { id: string; asset: GLTF };
+
+function configureAssetTextures(assets: Iterable<LoadedAsset>, renderer: THREE.WebGLRenderer) {
+  const textures = new Set<THREE.Texture>();
+  const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  for (const { asset } of assets) {
+    asset.scene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        for (const value of Object.values(material)) {
+          if (!(value instanceof THREE.Texture) || textures.has(value)) continue;
+          textures.add(value);
+          value.anisotropy = anisotropy;
+          value.needsUpdate = true;
+        }
+      }
+    });
+  }
+}
+
+function deduplicateAssetTextures(assets: Iterable<LoadedAsset>): TextureDeduplication {
   const canonical = new Map<string, THREE.Texture>();
   const sourceTextures = new Set<THREE.Texture>();
   let assignmentsShared = 0;
 
-  for (const asset of assets) {
+  for (const { id: assetId, asset } of assets) {
     asset.scene.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
@@ -773,14 +1191,26 @@ function deduplicateAssetTextures(assets: Iterable<GLTF>): TextureDeduplication 
           if (!(value instanceof THREE.Texture)) continue;
           sourceTextures.add(value);
           const image = value.image as { width?: number; height?: number; src?: string; currentSrc?: string } | undefined;
-          const sourceName = value.name || image?.currentSrc || image?.src;
+          const externalSource = image?.currentSrc || image?.src;
+          const textureName = value.name.trim();
           // ImageBitmap deliberately omits a URL. GLTFLoader still assigns
-          // the source filename to Texture.name; skip unnamed procedural maps
-          // rather than risk merging unrelated art.
-          if (!sourceName) continue;
+          // the source filename to Texture.name. Only the explicitly shared
+          // Env_* library may cross an asset boundary by name; generic embedded
+          // names such as BaseColor are scoped to their owning GLB so unrelated
+          // high-resolution art can never be merged accidentally.
+          const explicitlyShared = /(?:^|\/)Env_[A-Za-z0-9_-]+(?:\.(?:png|webp|ktx2))?$/u.test(textureName)
+            || textureName.includes("/SharedTextures/");
+          const sourceIdentity = externalSource
+            ? `url:${externalSource}`
+            : explicitlyShared
+              ? `shared:${textureName}`
+              : textureName
+                ? `asset:${assetId}:${textureName}`
+                : "";
+          if (!sourceIdentity) continue;
           const key = [
             slot,
-            sourceName,
+            sourceIdentity,
             image?.width ?? 0,
             image?.height ?? 0,
             value.colorSpace,
@@ -796,6 +1226,12 @@ function deduplicateAssetTextures(assets: Iterable<GLTF>): TextureDeduplication 
             value.center.x,
             value.center.y,
             value.rotation,
+            value.minFilter,
+            value.magFilter,
+            value.anisotropy,
+            value.generateMipmaps,
+            value.premultiplyAlpha,
+            value.unpackAlignment,
           ].join("|");
           const shared = canonical.get(key);
           if (!shared) {
@@ -854,7 +1290,13 @@ function disposeObjectResources(roots: Iterable<THREE.Object3D>) {
   for (const root of roots) {
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line)) return;
-      if (!geometries.has(object.geometry)) {
+      if (object instanceof THREE.BatchedMesh) {
+        // BatchedMesh owns GPU data textures in addition to its combined
+        // geometry. Mesh/geometry disposal alone leaves those allocations
+        // alive across repeated campaign switches.
+        object.dispose();
+        geometries.add(object.geometry);
+      } else if (!geometries.has(object.geometry)) {
         object.geometry.dispose();
         geometries.add(object.geometry);
       }
@@ -970,7 +1412,7 @@ export function ChasingGame() {
   const [interaction, setInteraction] = useState<HideInteraction | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [loadProgress, setLoadProgress] = useState({ done: 0, total: TOTAL_ASSETS, message: "正在载入项目美术资产：角色、校园与互动道具…" });
+  const [loadProgress, setLoadProgress] = useState({ done: 0, total: BOOTSTRAP_ASSET_COUNT, message: "正在载入项目美术资产：角色、校园与互动道具…" });
   const [resultVisible, setResultVisible] = useState(true);
   const [musicMuted, setMusicMuted] = useState(false);
 
@@ -1017,7 +1459,7 @@ export function ChasingGame() {
     if (index === selectedLevelIndex) return;
     setLoading(true);
     setLoadError("");
-    setLoadProgress({ done: 0, total: TOTAL_ASSETS, message: "正在切换主题关卡与高精度环境…" });
+    setLoadProgress({ done: 0, total: BOOTSTRAP_ASSET_COUNT, message: "正在切换主题关卡与高精度环境…" });
     setSelectedLevelIndex(index);
   }, [campaignProgress.unlockedThrough, selectedLevelIndex]);
 
@@ -1074,7 +1516,7 @@ export function ChasingGame() {
     setLoadError("");
     setLoadProgress({
       done: 0,
-      total: TOTAL_ASSETS,
+      total: BOOTSTRAP_ASSET_COUNT,
       message: `正在载入第 ${campaignLevel.campaign.levelNumber} 关 · ${campaignLevel.campaign.themeLabel}高精度场景…`,
     });
     setPhase("ready");
@@ -1101,6 +1543,10 @@ export function ChasingGame() {
     let lastScoreThreat = Number.NaN;
     let captureStageRemaining = 0;
     let capturePerformanceStarted = false;
+    const artLayout = levelArtLayout(
+      campaignLevel.campaign.theme,
+      campaignLevel.campaign.atmosphere.propSet,
+    );
     let simulation = new GameSimulation({ level: campaignLevel, config: gameplayConfig });
     let latestState = simulation.getState();
     const resetFrameClock = () => {
@@ -1110,6 +1556,8 @@ export function ChasingGame() {
     const actors: Partial<Record<ActorName, ActorView>> = {};
     const lockers = new Map<string, LockerView>();
     const sightObscurers: THREE.Points[] = [];
+    const loadedAssetIds = new Set<string>();
+    const placedAssetIds = new Set<string>();
     let renderedMovementBlockers = 0;
     const score = new AdaptiveScoreController();
     try {
@@ -1151,6 +1599,8 @@ export function ChasingGame() {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = campaignLevel.campaign.theme === "hospital" ? 1.06 : campaignLevel.campaign.theme === "factory" ? 0.98 : 1.02;
+    const supportsMultiDraw = renderer.extensions.has("WEBGL_multi_draw")
+      && !new URLSearchParams(location.search).has("no-multi-draw");
     host.appendChild(renderer.domElement);
     document.addEventListener("visibilitychange", resetFrameClock);
     addEventListener("pageshow", resetFrameClock);
@@ -1196,8 +1646,13 @@ export function ChasingGame() {
     moon.shadow.camera.top = 32;
     moon.shadow.camera.bottom = -32;
     moon.shadow.bias = -0.00025;
+    moon.shadow.normalBias = 0.018;
     scene.add(moon);
-    const warmBounce = new THREE.DirectionalLight(campaignLevel.campaign.palette.emissive, 0.62);
+    const warmBounceColor = new THREE.Color(campaignLevel.campaign.palette.emissive).lerp(
+      new THREE.Color(campaignLevel.campaign.palette.accent),
+      artLayout.warmLightMix * 0.32,
+    );
+    const warmBounce = new THREE.DirectionalLight(warmBounceColor, 0.38 + artLayout.warmLightMix * 0.34);
     warmBounce.position.set(-18, 12, -14);
     scene.add(warmBounce);
 
@@ -1205,6 +1660,7 @@ export function ChasingGame() {
     campus.name = "authored-campus";
     scene.add(campus);
     const loader = new GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
     const cameraOcclusionOrigin = { value: new THREE.Vector3() };
     const cameraOcclusionTarget = { value: new THREE.Vector3() };
     const cameraOccluders: CameraOccluder[] = [];
@@ -1532,54 +1988,101 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
     const loadAll = async () => {
       let done = 0;
+      const requiredDetailNames = new Set<DetailAssetName>(["locker", "ceilingLight"]);
+      for (const [name] of THEME_SHARED_PROPS[campaignLevel.campaign.theme]) requiredDetailNames.add(name);
+      for (const placement of PROP_SET_STANDALONE_PROPS[campaignLevel.campaign.atmosphere.propSet] ?? []) {
+        requiredDetailNames.add(placement.asset);
+      }
+      for (let index = 0; index < (campaignLevel.movementBlockers?.length ?? 0); index += 1) {
+        const contract = MOVEMENT_PROP_CONTRACT[index];
+        if (!contract) throw new Error(`${campaignLevel.id} 缺少第 ${index + 1} 个实体障碍美术契约`);
+        requiredDetailNames.add(contract[0]);
+      }
+      const structureEntries = Object.entries(STRUCTURE_ASSETS) as [StructureAssetName, string][];
+      const total = BOOTSTRAP_ASSET_COUNT + structureEntries.length + requiredDetailNames.size;
       const mark = (message: string) => {
         done += 1;
-        if (!disposed) setLoadProgress({ done, total: TOTAL_ASSETS, message: `正在载入项目美术资产：${message} ${done}/${TOTAL_ASSETS}` });
+        if (!disposed) setLoadProgress({ done, total, message: `正在载入项目美术资产：${message} ${done}/${total}` });
       };
       const actorEntries = Object.entries(ACTOR_SPECS) as [ActorName, (typeof ACTOR_SPECS)[ActorName]][];
-      const coreEntries = Object.entries(CORE_ASSETS) as [CoreAssetName, string][];
-      const detailEntries = Object.entries(DETAIL_ASSETS) as [DetailAssetName, string][];
-      const actorAssets = {} as Record<ActorName, GLTF>;
-      const coreAssets = {} as Record<CoreAssetName, GLTF>;
-      const detailAssets = {} as Record<DetailAssetName, GLTF>;
+      const actorAssets: Partial<Record<ActorName, GLTF>> = {};
+      const structureAssets: Partial<Record<StructureAssetName, GLTF>> = {};
+      const detailAssets: Partial<Record<DetailAssetName, GLTF>> = {};
+      const loadedAssets: LoadedAsset[] = [];
       let themeKitAsset: GLTF | undefined;
-      const loads = [
+      if (!disposed) {
+        setLoadProgress({
+          done,
+          total,
+          message: `正在载入第 ${campaignLevel.campaign.levelNumber} 关角色与${campaignLevel.campaign.themeLabel}主题模型…`,
+        });
+      }
+      const bootstrapLoads = [
         ...actorEntries.map(async ([name, spec]) => {
-          actorAssets[name] = await loader.loadAsync(spec.url);
+          const asset = await loader.loadAsync(spec.url);
+          actorAssets[name] = asset;
+          const id = `actor:${name}`;
+          loadedAssets.push({ id, asset });
+          loadedAssetIds.add(id);
           mark(name === "kid" ? "主角动作集" : name === "villain" ? "追捕者动作集" : "出口警察动作集");
         }),
-        ...coreEntries.map(async ([name, url]) => {
-          coreAssets[name] = await loader.loadAsync(url);
-          mark("校园结构");
-        }),
-        ...detailEntries.map(async ([name, url]) => {
-          detailAssets[name] = await loader.loadAsync(url);
-          mark(name === "locker" ? "英雄储物柜与门动画" : "共享场景细节");
-        }),
         (async () => {
-          themeKitAsset = await loader.loadAsync(THEME_KIT_ASSETS[campaignLevel.campaign.theme]);
+          const asset = await loader.loadAsync(THEME_KIT_ASSETS[campaignLevel.campaign.theme]);
+          themeKitAsset = asset;
+          const id = `theme:${campaignLevel.campaign.theme}`;
+          loadedAssets.push({ id, asset });
+          loadedAssetIds.add(id);
           mark(`${campaignLevel.campaign.themeLabel}高精度主题模型`);
         })(),
       ];
-      const settled = await Promise.allSettled(loads);
-      const loadedAssets = [
-        ...Object.values(actorAssets),
-        ...Object.values(coreAssets),
-        ...Object.values(detailAssets),
-        ...(themeKitAsset ? [themeKitAsset] : []),
+      const bootstrapSettled = await Promise.allSettled(bootstrapLoads);
+      const bootstrapRejection = bootstrapSettled.find((result): result is PromiseRejectedResult => result.status === "rejected");
+      if (disposed || bootstrapRejection) {
+        disposeObjectResources(loadedAssets.map(({ asset }) => asset.scene));
+        if (bootstrapRejection) throw bootstrapRejection.reason;
+        return;
+      }
+      if (!themeKitAsset) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型未载入`);
+
+      const detailEntries = [...requiredDetailNames].map((name) => [name, DETAIL_ASSETS[name]] as const);
+      if (!disposed) {
+        setLoadProgress({
+          done,
+          total,
+          message: `正在按本关清单载入 ${detailEntries.length} 件可见环境资产…`,
+        });
+      }
+      const sceneAssetLoads = [
+        ...structureEntries.map(async ([name, url]) => {
+          const asset = await loader.loadAsync(url);
+          structureAssets[name] = asset;
+          const id = `structure:${name}`;
+          loadedAssets.push({ id, asset });
+          loadedAssetIds.add(id);
+          mark(name === "frontGate" ? "入口建筑模型" : "出口建筑模型");
+        }),
+        ...detailEntries.map(async ([name, url]) => {
+          const asset = await loader.loadAsync(url);
+          detailAssets[name] = asset;
+          const id = `detail:${name}`;
+          loadedAssets.push({ id, asset });
+          loadedAssetIds.add(id);
+          mark(name === "locker" ? "英雄储物柜与门动画" : "关卡叙事物件");
+        }),
       ];
-      const rejection = settled.find((result): result is PromiseRejectedResult => result.status === "rejected");
+      const sceneAssetSettled = await Promise.allSettled(sceneAssetLoads);
+      const rejection = sceneAssetSettled.find((result): result is PromiseRejectedResult => result.status === "rejected");
       if (disposed || rejection) {
-        disposeObjectResources(loadedAssets.map((asset) => asset.scene));
+        disposeObjectResources(loadedAssets.map(({ asset }) => asset.scene));
         if (rejection) throw rejection.reason;
         return;
       }
 
-      if (!themeKitAsset) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型未载入`);
+      configureAssetTextures(loadedAssets, renderer);
       textureDeduplication = deduplicateAssetTextures(loadedAssets);
-      buildCampus(coreAssets, themeKitAsset, campus);
+      buildCampus(structureAssets, themeKitAsset, campus);
       buildDetails(detailAssets, themeKitAsset, campus, scene, lockers);
-      placeActors(actorAssets, actors, scene);
+      placeActors(actorAssets as Record<ActorName, GLTF>, actors, scene);
       ready = true;
       setLoading(false);
       setLoadError("");
@@ -1587,156 +2090,384 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (new URLSearchParams(location.search).get("autostart") === "1") beginGame();
     };
 
-    const buildCampus = (assets: Record<CoreAssetName, GLTF>, themeKit: GLTF, parent: THREE.Group) => {
+    const buildCampus = (
+      structureAssets: Partial<Record<StructureAssetName, GLTF>>,
+      themeKit: GLTF,
+      parent: THREE.Group,
+    ) => {
       const { palette, theme } = campaignLevel.campaign;
-      applyThemeSurface(assets.wall.scene, palette.wall, { blend: 0.34, emissive: palette.emissive, emissiveIntensity: 0.035 });
-      applyThemeSurface(assets.wallCorner.scene, palette.wall, { blend: 0.34, emissive: palette.emissive, emissiveIntensity: 0.035 });
-      applyThemeSurface(assets.wallEnd.scene, palette.trim, { blend: 0.46, emissive: palette.emissive, emissiveIntensity: 0.045 });
-      applyThemeSurface(assets.floor.scene, palette.floor, { blend: 0.54, roughnessShift: theme === "hospital" ? -0.12 : 0.02 });
-      applyThemeSurface(assets.classroomFloor.scene, palette.floor, { blend: 0.42, roughnessShift: theme === "hospital" ? -0.1 : 0 });
-      applyThemeSurface(assets.playgroundFloor.scene, palette.trim, { blend: 0.44, roughnessShift: 0.04 });
-      applyThemeSurface(assets.grassFloor.scene, theme === "campus" ? palette.floor : palette.trim, { blend: 0.45, roughnessShift: 0.08 });
-      const floorBatches: Record<"floor" | "grassFloor" | "classroomFloor" | "playgroundFloor", ModulePlacement[]> = {
-        floor: [], grassFloor: [], classroomFloor: [], playgroundFloor: [],
+      placedAssetIds.add(`theme:${theme}`);
+      const requireStructure = (name: StructureAssetName) => {
+        const asset = structureAssets[name];
+        if (!asset) throw new Error(`${campaignLevel.campaign.themeLabel}缺少结构资产 ${name}`);
+        return asset.scene;
       };
-      const wallBatches: Record<"wall" | "wallCorner" | "wallEnd", ModulePlacement[]> = {
-        wall: [], wallCorner: [], wallEnd: [],
+      const requireThemeModule = (candidates: readonly string[], label: string) => {
+        const themeModule = resolveThemeNode(themeKit.scene, theme, candidates);
+        if (!themeModule) {
+          throw new Error(`${campaignLevel.campaign.themeLabel}主题套件缺少${label}模块`);
+        }
+        return themeModule;
       };
-      const groundMarginCells = 7;
+
+      const floorBatches: Record<ThemeFloorRole, ModulePlacement[]> = {
+        primary: [], secondary: [], service: [],
+      };
+      const wallBatches: Record<"a" | "b" | "c" | "end" | "corner" | "doorway", ModulePlacement[]> = {
+        a: [], b: [], c: [], end: [], corner: [], doorway: [],
+      };
+      const groundMarginCells = 2;
+      const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
+      const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
+      // Every authored wall faces local +Z. Opposite maze edges therefore need
+      // opposite rotations; the previous axis-only rotation showed the back of
+      // roughly half of every asymmetric wall kit.
       const directions = [
-        { dx: 0, dy: -1, ox: 0, oz: -CELL / 2, rotation: 0 },
-        { dx: 0, dy: 1, ox: 0, oz: CELL / 2, rotation: 0 },
-        { dx: -1, dy: 0, ox: -CELL / 2, oz: 0, rotation: Math.PI / 2 },
-        { dx: 1, dy: 0, ox: CELL / 2, oz: 0, rotation: Math.PI / 2 },
+        { dx: 0, dy: -1, ox: 0, oz: -CELL / 2, rotation: 0, tx: 1, ty: 0 },
+        { dx: 0, dy: 1, ox: 0, oz: CELL / 2, rotation: Math.PI, tx: 1, ty: 0 },
+        { dx: -1, dy: 0, ox: -CELL / 2, oz: 0, rotation: Math.PI / 2, tx: 0, ty: 1 },
+        { dx: 1, dy: 0, ox: CELL / 2, oz: 0, rotation: -Math.PI / 2, tx: 0, ty: 1 },
       ] as const;
+      const cornerKeys = new Set<string>();
+      const isAnchorEdge = (x: number, y: number, dx: number, dy: number, anchor: Point, outward: Point) => (
+        Math.round(anchor.x) === x
+        && Math.round(anchor.y) === y
+        && dx === outward.x
+        && dy === outward.y
+      );
       for (let y = 0; y < campaignLevel.height; y += 1) {
         for (let x = 0; x < campaignLevel.width; x += 1) {
+          if (!campaignLevel.walkable[y][x]) continue;
           const position = world({ x, y }, campaignLevel);
-          if (!campaignLevel.walkable[y][x]) {
-            continue;
-          }
-          // Material changes happen in authored-looking room bands, not on
-          // individual cells; this keeps corridors continuous and avoids a
-          // procedural checkerboard in the elevated gameplay camera.
-          const pattern = (
-            Math.floor(x / 6)
-            + Math.floor(y / 6) * 3
+          const band = Math.abs(
+            Math.floor(x / 5)
+            + Math.floor(y / 5) * 3
             + campaignLevel.campaign.levelNumber
-          ) % 9;
-          const floorName = theme === "campus"
-            ? pattern <= 1 ? "classroomFloor" : pattern === 2 ? "playgroundFloor" : "floor"
-            : theme === "hospital"
-              ? "floor"
-              : theme === "fire-station"
-                ? pattern <= 3 ? "playgroundFloor" : "floor"
-                : pattern <= 4 ? "playgroundFloor" : pattern === 5 ? "classroomFloor" : "floor";
-          floorBatches[floorName].push({ position, rotation: 0 });
+            + artLayout.wallVariantSalt,
+          );
+          const floorRole = artLayout.floorCycle[band % artLayout.floorCycle.length];
+          floorBatches[floorRole].push({ position, rotation: 0 });
+
           const blocked = directions.filter(({ dx, dy }) => !campaignLevel.walkable[y + dy]?.[x + dx]);
           for (const edge of blocked) {
-            const name = blocked.length === 1 ? "wallEnd" : "wall";
-            wallBatches[name].push({
+            const placement = {
               position: position.clone().add(new THREE.Vector3(edge.ox, 0, edge.oz)),
               rotation: edge.rotation,
-            });
+            };
+            if (
+              isAnchorEdge(x, y, edge.dx, edge.dy, campaignLevel.playerStart, entranceDirection)
+              || isAnchorEdge(x, y, edge.dx, edge.dy, campaignLevel.exit, exitDirection)
+            ) {
+              wallBatches.doorway.push(placement);
+              continue;
+            }
+            const boundaryContinues = (sign: -1 | 1) => {
+              const adjacentX = x + edge.tx * sign;
+              const adjacentY = y + edge.ty * sign;
+              return Boolean(campaignLevel.walkable[adjacentY]?.[adjacentX])
+                && !campaignLevel.walkable[adjacentY + edge.dy]?.[adjacentX + edge.dx];
+            };
+            const continuesBefore = boundaryContinues(-1);
+            const continuesAfter = boundaryContinues(1);
+            if (!continuesBefore || !continuesAfter) {
+              wallBatches.end.push(placement);
+            } else {
+              const variant = wallVariantIndex(x, y, edge.dx, edge.dy, artLayout.wallVariantSalt);
+              wallBatches[variant === 0 ? "a" : variant === 1 ? "b" : "c"].push(placement);
+            }
           }
           if (blocked.length >= 2) {
             for (let a = 0; a < blocked.length; a += 1) {
               for (let b = a + 1; b < blocked.length; b += 1) {
                 if (blocked[a].dx === -blocked[b].dx && blocked[a].dy === -blocked[b].dy) continue;
-                wallBatches.wallCorner.push({
-                  position: position.clone().add(new THREE.Vector3((blocked[a].ox + blocked[b].ox), 0, (blocked[a].oz + blocked[b].oz))),
-                  rotation: 0,
+                const cornerPosition = position.clone().add(new THREE.Vector3(
+                  blocked[a].ox + blocked[b].ox,
+                  0,
+                  blocked[a].oz + blocked[b].oz,
+                ));
+                const key = `${Math.round(cornerPosition.x * 100)},${Math.round(cornerPosition.z * 100)}`;
+                if (cornerKeys.has(key)) continue;
+                cornerKeys.add(key);
+                wallBatches.corner.push({
+                  position: cornerPosition,
+                  rotation: Math.atan2(
+                    -(blocked[a].dx + blocked[b].dx),
+                    -(blocked[a].dy + blocked[b].dy),
+                  ),
                 });
               }
             }
           }
         }
       }
+
       const wallHeight = theme === "hospital" ? 2.2 : theme === "factory" ? 2.16 : 2.1;
-      const architectureWall = themeKit.scene.getObjectByName(THEME_WALL_NODES[theme]);
-      if (!architectureWall) throw new Error(`${campaignLevel.campaign.themeLabel}建筑墙体模型缺失`);
+      const authoredArchitectureWall = themeKit.scene.getObjectByName(THEME_WALL_NODES[theme])
+        ?? resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallA", "ArchitectureWall_A", "WallA"]);
+      if (!authoredArchitectureWall) throw new Error(`${campaignLevel.campaign.themeLabel}主题套件缺少建筑墙体模块`);
+      const architectureWall = authoredArchitectureWall;
+      const wallA = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallA", "ArchitectureWall_A", "WallA"]) ?? architectureWall;
+      const wallB = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallB", "ArchitectureWall_B", "WallB"]) ?? architectureWall;
+      const wallC = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallC", "ArchitectureWall_C", "WallC"]) ?? architectureWall;
+      const wallEnd = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallEnd", "ArchitectureEndWall", "WallEnd"]) ?? architectureWall;
+      const wallCorner = requireThemeModule(["ArchitectureCorner", "ArchitectureCornerPost", "CornerPost"], "墙角");
+      const wallDoorway = requireThemeModule(["ArchitectureDoorway", "ArchitectureDoorFrame", "Doorway"], "门洞");
+      // InstancedMesh cannot combine distinct geometry variants into one draw.
+      // On devices without WEBGL_multi_draw, retain the premium authored A/end
+      // silhouettes but fold the two cosmetic middle variants into A. This is
+      // an explicit quality-preserving fallback rather than a hidden failure.
+      const runtimeWallB = supportsMultiDraw ? wallB : wallA;
+      const runtimeWallC = supportsMultiDraw ? wallC : wallA;
+      for (const [source, placements] of [
+        [wallA, wallBatches.a],
+        [runtimeWallB, wallBatches.b],
+        [runtimeWallC, wallBatches.c],
+        [wallEnd, wallBatches.end],
+        [wallDoorway, wallBatches.doorway],
+      ] as const) {
+        if (placements.length) placedAssetIds.add(`theme-node:${source.name}`);
+      }
+      if (wallBatches.corner.length) placedAssetIds.add(`theme-node:${wallCorner.name}`);
       const wallMeshes = [
-        ...addInstancedModules(architectureWall, new THREE.Vector3(CELL + 0.08, wallHeight, 0.23), wallBatches.wall, parent, true),
-        ...addInstancedModules(architectureWall, new THREE.Vector3(CELL + 0.08, wallHeight, 0.23), wallBatches.wallEnd, parent, true),
-        ...addInstancedModules(assets.wallCorner.scene, new THREE.Vector3(0.32, wallHeight, 0.32), wallBatches.wallCorner, parent, true),
+        ...addInstancedModuleBatches([
+          { source: wallA, placements: wallBatches.a, preserveAuthoredScale: true },
+          { source: runtimeWallB, placements: wallBatches.b, preserveAuthoredScale: true },
+          { source: runtimeWallC, placements: wallBatches.c, preserveAuthoredScale: true },
+          { source: wallEnd, placements: wallBatches.end, preserveAuthoredScale: true },
+          { source: wallDoorway, placements: wallBatches.doorway, preserveAuthoredScale: true },
+        ], new THREE.Vector3(CELL + 0.08, wallHeight, 0.23), parent, true, `${theme}-wall`, supportsMultiDraw),
+        ...addInstancedModuleBatches([
+          { source: wallCorner, placements: wallBatches.corner, preserveAuthoredScale: true },
+        ], new THREE.Vector3(0.32, wallHeight, 0.32), parent, true, `${theme}-corner`, supportsMultiDraw),
       ];
-      registerCameraOccluder("campus-walls", wallMeshes);
-      addInstancedModules(assets.floor.scene, new THREE.Vector3(CELL, 0.12, CELL), floorBatches.floor, parent, false);
-      addInstancedModules(assets.grassFloor.scene, new THREE.Vector3(CELL, 0.12, CELL), floorBatches.grassFloor, parent, false);
-      addInstancedModules(assets.classroomFloor.scene, new THREE.Vector3(CELL, 0.12, CELL), floorBatches.classroomFloor, parent, false);
-      addInstancedModules(assets.playgroundFloor.scene, new THREE.Vector3(CELL, 0.12, CELL), floorBatches.playgroundFloor, parent, false);
-      const groundAsset = theme === "campus" ? assets.grassFloor : theme === "hospital" ? assets.floor : assets.playgroundFloor;
+      registerCameraOccluder(`${theme}-walls`, wallMeshes);
+
+      const authoredFloorPrimary = requireThemeModule(
+        [`${artLayout.key}FloorPrimary`, "FloorPrimary", "ArchitectureFloorPrimary"],
+        "主地面",
+      );
+      const authoredFloorSecondary = requireThemeModule(
+        [`${artLayout.key}FloorSecondary`, "FloorSecondary", "ArchitectureFloorSecondary"],
+        "辅地面",
+      );
+      const authoredFloorService = requireThemeModule(
+        [`${artLayout.key}FloorService`, "FloorService", "ArchitectureFloorService"],
+        "功能地面",
+      );
+      const floorSources: Record<ThemeFloorRole, THREE.Object3D> = {
+        primary: authoredFloorPrimary,
+        secondary: authoredFloorSecondary,
+        service: authoredFloorService,
+      };
+      for (const role of ["primary", "secondary", "service"] as const) {
+        if (!floorBatches[role].length) continue;
+        const source = floorSources[role];
+        placedAssetIds.add(`theme-node:${source.name}`);
+      }
+      addInstancedModuleBatches([
+        { source: floorSources.primary, placements: floorBatches.primary, preserveAuthoredScale: true },
+        { source: floorSources.secondary, placements: floorBatches.secondary, preserveAuthoredScale: true },
+        { source: floorSources.service, placements: floorBatches.service, preserveAuthoredScale: true },
+      ], new THREE.Vector3(CELL, 0.12, CELL), parent, false, `${theme}-floor`, supportsMultiDraw);
+
+      const authoredGround = requireThemeModule(
+        [`${artLayout.key}ExteriorGround`, "ExteriorGround", "GroundPrimary"],
+        "外部地面",
+      );
+      const groundAsset = authoredGround;
       let groundMaterial: THREE.MeshStandardMaterial | undefined;
-      groundAsset.scene.traverse((object) => {
+      groundAsset.traverse((object) => {
         if (groundMaterial || !(object instanceof THREE.Mesh)) return;
         const source = Array.isArray(object.material) ? object.material[0] : object.material;
         if (source instanceof THREE.MeshStandardMaterial) groundMaterial = source.clone();
       });
       if (!groundMaterial) throw new Error(`${campaignLevel.campaign.themeLabel}地表材质缺失`);
+      const exteriorTone: Readonly<Record<CampaignTheme, THREE.ColorRepresentation>> = {
+        campus: 0x18382d,
+        hospital: 0x31434b,
+        "fire-station": 0x202426,
+        factory: 0x22292e,
+      };
+      // Preserve the authored maps and normal response, but use an explicit
+      // albedo factor: retaining a bright source factor lets the key light turn
+      // charcoal asphalt into a beige/white exhibition slab.
+      groundMaterial.color.set(exteriorTone[theme]);
+      groundMaterial.roughness = theme === "fire-station" ? 0.9 : theme === "campus" ? 0.88 : 0.84;
+      groundMaterial.metalness = Math.min(groundMaterial.metalness, 0.04);
+      groundMaterial.emissive.set(0x000000);
+      groundMaterial.emissiveIntensity = 0;
+      groundMaterial.emissiveMap = null;
+
+      // A giant rectangular plane made the maze read like a model sitting on
+      // an empty white exhibition table. Build a two-cell, maze-shaped
+      // exterior patch instead: it follows the navigable silhouette, leaves
+      // no enormous unused slab in concave voids, and costs only two instanced
+      // draws (main paving plus a darker perimeter transition).
+      const groundPatch: Array<{ point: Point }> = [];
+      const plazaCenters = [
+        {
+          x: campaignLevel.playerStart.x + entranceDirection.x * 3.15,
+          y: campaignLevel.playerStart.y + entranceDirection.y * 3.15,
+        },
+        {
+          x: campaignLevel.exit.x + exitDirection.x * 3.05,
+          y: campaignLevel.exit.y + exitDirection.y * 3.05,
+        },
+      ];
+      const plazaDirections = [entranceDirection, exitDirection];
+      const authoredPlazaPlacements = plazaCenters.map((center, index) => {
+        const position = world(center, campaignLevel);
+        // The authored slab includes its own curb, cracks and markings. Sink
+        // its structural base into the continuous courtyard patch so the
+        // detailed top surface meets the route without a visible step.
+        position.y = -0.115;
+        return {
+          position,
+          rotation: Math.atan2(-plazaDirections[index].x, -plazaDirections[index].y),
+        };
+      });
+      addInstancedModuleBatches([
+        { source: authoredGround, placements: authoredPlazaPlacements, preserveAuthoredScale: true },
+      ], new THREE.Vector3(CELL * 2, 0.18, CELL * 2), parent, false, `${theme}-authored-plaza`, supportsMultiDraw);
+      placedAssetIds.add(`theme-node:${authoredGround.name}:entrance-plaza`);
+      placedAssetIds.add(`theme-node:${authoredGround.name}:exit-plaza`);
+      const groundSearchMargin = 7;
+      for (let y = -groundSearchMargin; y < campaignLevel.height + groundSearchMargin; y += 1) {
+        for (let x = -groundSearchMargin; x < campaignLevel.width + groundSearchMargin; x += 1) {
+          if (campaignLevel.walkable[y]?.[x]) continue;
+          let nearest = groundMarginCells + 1;
+          for (let oy = -groundMarginCells; oy <= groundMarginCells; oy += 1) {
+            for (let ox = -groundMarginCells; ox <= groundMarginCells; ox += 1) {
+              if (!campaignLevel.walkable[y + oy]?.[x + ox]) continue;
+              nearest = Math.min(nearest, Math.max(Math.abs(ox), Math.abs(oy)));
+            }
+          }
+          const plazaDistance = Math.min(...plazaCenters.map((center) => Math.hypot(x - center.x, y - center.y)));
+          const inPlaza = plazaDistance <= 3.25;
+          if (nearest <= groundMarginCells || inPlaza) {
+            groundPatch.push({ point: { x, y } });
+          }
+        }
+      }
+      const groundGeometry = new THREE.PlaneGeometry(CELL * 1.035, CELL * 1.035);
+      const groundRotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+      const ground = new THREE.InstancedMesh(groundGeometry, groundMaterial.clone(), groundPatch.length);
+      ground.name = `${theme}-courtyard-ground-patch`;
+      groundPatch.forEach((patch, index) => {
+        const position = world(patch.point, campaignLevel);
+        position.y = -0.125;
+        ground.setMatrixAt(index, new THREE.Matrix4().compose(position, groundRotation, new THREE.Vector3(1, 1, 1)));
+      });
+      ground.instanceMatrix.needsUpdate = true;
+      ground.receiveShadow = true;
+      ground.computeBoundingBox();
+      ground.computeBoundingSphere();
+      parent.add(ground);
+
+      // The local tile patch supplies readable courtyard/service detail. A
+      // separate, very dark repeated ground field continues beneath the fog so
+      // an ultrawide or zoomed-out camera never reveals a blue void or a hard
+      // rectangular edge. Its low-saturation theme tone stays background, not
+      // a brightly lit exhibition table.
+      const horizonMaterial = groundMaterial.clone();
+      const horizonTone: Readonly<Record<CampaignTheme, THREE.ColorRepresentation>> = {
+        campus: 0x162b26,
+        hospital: 0x202a2d,
+        "fire-station": 0x25292b,
+        factory: 0x22282c,
+      };
+      horizonMaterial.color
+        .set(horizonTone[theme])
+        .lerp(new THREE.Color(campaignLevel.campaign.palette.sky), 0.22);
+      horizonMaterial.roughness = 0.94;
+      horizonMaterial.metalness = 0.02;
+      horizonMaterial.emissive.set(0x000000);
+      horizonMaterial.emissiveIntensity = 0;
+      horizonMaterial.emissiveMap = null;
       for (const key of ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap"] as const) {
-        const texture = groundMaterial[key];
+        const texture = horizonMaterial[key];
         if (!texture) continue;
         const repeated = texture.clone();
         repeated.wrapS = THREE.RepeatWrapping;
         repeated.wrapT = THREE.RepeatWrapping;
-        repeated.repeat.set(campaignLevel.width + groundMarginCells * 2, campaignLevel.height + groundMarginCells * 2);
+        repeated.repeat.set(56, 56);
         repeated.needsUpdate = true;
-        groundMaterial[key] = repeated;
+        horizonMaterial[key] = repeated;
       }
-      groundMaterial.roughness = theme === "hospital" ? 0.34 : theme === "campus" ? 0.78 : 0.62;
-      const groundGeometry = new THREE.PlaneGeometry(
-        (campaignLevel.width + groundMarginCells * 2) * CELL,
-        (campaignLevel.height + groundMarginCells * 2) * CELL,
-      );
-      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-      ground.name = `${theme}-continuous-ground`;
-      ground.rotation.x = -Math.PI / 2;
-      ground.position.y = -0.13;
-      ground.receiveShadow = true;
-      parent.add(ground);
+      const horizonGround = new THREE.Mesh(new THREE.PlaneGeometry(224, 224), horizonMaterial);
+      horizonGround.name = `${theme}-fog-horizon-ground`;
+      horizonGround.rotation.x = -Math.PI / 2;
+      horizonGround.position.y = -0.16;
+      horizonGround.receiveShadow = true;
+      parent.add(horizonGround);
 
-      const gate = fitModule(assets.frontGate.scene, new THREE.Vector3(1.9, 2.55, 0.42));
-      applyThemeSurface(gate, palette.accent, { blend: 0.48, emissive: palette.emissive, emissiveIntensity: 0.09 });
-      const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
-      gate.rotation.y = Math.abs(entranceDirection.x) > 0 ? Math.PI / 2 : 0;
+      const authoredGate = resolveThemeNode(
+        themeKit.scene,
+        theme,
+        [`${artLayout.key}EntranceGate`, "EntranceGate", "ArchitectureEntranceGate"],
+      );
+      const gate = authoredGate
+        ? anchorAuthoredModule(authoredGate)
+        : fitModule(requireStructure("frontGate"), new THREE.Vector3(1.9, 2.55, 0.42));
+      if (!authoredGate) {
+        applyThemeSurface(gate, palette.accent, { blend: 0.12, emissive: palette.emissive, emissiveIntensity: 0.06 });
+      }
+      gate.rotation.y = Math.atan2(-entranceDirection.x, -entranceDirection.y);
       gate.position.add(world(campaignLevel.playerStart, campaignLevel)).add(new THREE.Vector3(
         entranceDirection.x * CELL * 0.5,
         0,
         entranceDirection.y * CELL * 0.5,
       ));
       parent.add(gate);
+      placedAssetIds.add(authoredGate ? `theme-node:${authoredGate.name}` : "structure:frontGate");
       registerCameraOccluder("front-gate", [gate]);
-      const exitDoor = fitModule(assets.exit.scene, new THREE.Vector3(1.9, 2.55, 0.42));
-      const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
-      exitDoor.rotation.y = Math.abs(exitDirection.x) > 0 ? Math.PI / 2 : 0;
+
+      const authoredExit = resolveThemeNode(
+        themeKit.scene,
+        theme,
+        [`${artLayout.key}ExitDoor`, "ExitDoor", "ArchitectureExitDoor"],
+      );
+      const exitDoor = authoredExit
+        ? anchorAuthoredModule(authoredExit)
+        : fitModule(requireStructure("exit"), new THREE.Vector3(1.9, 2.55, 0.42));
+      exitDoor.rotation.y = Math.atan2(-exitDirection.x, -exitDirection.y);
       exitDoor.position.add(world(campaignLevel.exit, campaignLevel)).add(new THREE.Vector3(
         exitDirection.x * CELL * 0.5,
         0,
         exitDirection.y * CELL * 0.5,
       ));
-      exitDoor.traverse((object) => {
-        if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)) return;
-        object.material = object.material.clone();
-        object.material.emissive.set(0x1f8a63);
-        object.material.emissiveIntensity = 0.45;
-      });
+      if (!authoredExit) {
+        exitDoor.traverse((object) => {
+          if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)) return;
+          object.material = object.material.clone();
+          object.material.emissive.lerp(new THREE.Color(palette.emissive), 0.18);
+          object.material.emissiveIntensity = Math.max(object.material.emissiveIntensity, 0.24);
+        });
+      }
       parent.add(exitDoor);
+      placedAssetIds.add(authoredExit ? `theme-node:${authoredExit.name}` : "structure:exit");
       registerCameraOccluder("exit-door", [exitDoor]);
-      const exitLight = new THREE.SpotLight(0x83ffc0, 28, 11, Math.PI / 5, 0.52, 1.6);
-      exitLight.color.set(palette.emissive);
-      exitLight.position.copy(world(campaignLevel.exit, campaignLevel)).add(new THREE.Vector3(0, 5.2, 0));
+      const exitLight = new THREE.SpotLight(palette.emissive, 18, 10, Math.PI / 5.4, 0.58, 1.7);
+      exitLight.position.copy(world(campaignLevel.exit, campaignLevel)).add(new THREE.Vector3(0, 4.8, 0));
       exitLight.target.position.copy(world(campaignLevel.exit, campaignLevel));
       parent.add(exitLight, exitLight.target);
     };
 
     const buildDetails = (
-      assets: Record<DetailAssetName, GLTF>,
+      assets: Partial<Record<DetailAssetName, GLTF>>,
       themeKit: GLTF,
       parent: THREE.Group,
       targetScene: THREE.Scene,
       lockerViews: Map<string, LockerView>,
     ) => {
+      const requireDetail = (name: DetailAssetName) => {
+        const asset = assets[name];
+        if (!asset) throw new Error(`本关需要叙事物件 detail:${name}，但资源清单未载入它`);
+        return asset;
+      };
       const propTemplates = new Map<string, THREE.Object3D>();
+      const themeDressing = new THREE.Group();
+      themeDressing.name = `${campaignLevel.campaign.theme}-authored-dressing-source`;
       const cameraOccludingProps = new Set<DetailAssetName>([
         "bench",
         "car",
@@ -1750,19 +2481,20 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       ]);
       const addProp = (name: DetailAssetName, point: Point, height: number, rotation = 0, offset = new THREE.Vector3()) => {
         const key = `${name}:${height}`;
-        const template = propTemplates.get(key) ?? fitProp(assets[name].scene, height);
+        const template = propTemplates.get(key) ?? fitProp(requireDetail(name).scene, height);
         propTemplates.set(key, template);
         const object = template.clone(true);
         object.position.add(world(point, campaignLevel)).add(offset);
         object.rotation.y = rotation;
         parent.add(object);
+        placedAssetIds.add(`detail:${name}`);
         if (cameraOccludingProps.has(name)) {
           registerCameraOccluder(`${name}-${point.x}-${point.y}`, [object]);
         }
         return object;
       };
       const addThemeProp = (spec: ThemePropSpec, point: Point, rotation = 0) => {
-        const source = themeKit.scene.getObjectByName(spec.node);
+        const source = resolveThemeNode(themeKit.scene, campaignLevel.campaign.theme, [spec.node]);
         if (!source) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型缺少节点 ${spec.node}`);
         const key = `theme:${spec.node}:${spec.height}`;
         const template = propTemplates.get(key) ?? fitProp(source, spec.height, true);
@@ -1771,20 +2503,46 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         object.name = `theme-prop-${spec.node}`;
         object.position.add(world(point, campaignLevel));
         object.rotation.y = rotation;
-        parent.add(object);
-        registerCameraOccluder(`${spec.node}-${point.x}-${point.y}`, [object]);
+        themeDressing.add(object);
+        placedAssetIds.add(`theme-node:${source.name || spec.node}`);
+        return object;
+      };
+      const addAuthoredCluster = (
+        candidates: readonly string[],
+        point: Point,
+        rotation: number,
+        name: string,
+      ) => {
+        const source = resolveThemeNode(themeKit.scene, campaignLevel.campaign.theme, candidates);
+        if (!source) return false;
+        const key = `authored-cluster:${source.uuid}`;
+        const template = propTemplates.get(key) ?? anchorAuthoredStatic(source, true);
+        propTemplates.set(key, template);
+        const object = template.clone(true);
+        object.name = name;
+        object.position.copy(world(point, campaignLevel));
+        object.rotation.y = rotation;
+        themeDressing.add(object);
+        placedAssetIds.add(`theme-node:${source.name || candidates[0]}`);
+        return true;
       };
 
-      const lockerSource = assets.locker;
+      const lockerSource = requireDetail("locker");
       const clipMap = new Map(lockerSource.animations.map((clip) => [clip.name, clip]));
       const missingLockerClips = LOCKER_CLIPS.filter((name) => !clipMap.has(name));
       if (missingLockerClips.length) throw new Error(`Hero locker animation contract failed: ${missingLockerClips.join(", ")}`);
+      const hideDressingSource = resolveThemeNode(
+        themeKit.scene,
+        campaignLevel.campaign.theme,
+        artLayout.hideDressingNodes,
+      );
+      const hideDressingPlacements: ModulePlacement[] = [];
       for (const spot of campaignLevel.hideSpots) {
         const root = fitInteractiveProp(lockerSource.scene, 2.12);
         applyThemeSurface(root, campaignLevel.campaign.palette.accent, {
-          blend: 0.22,
+          blend: 0.08,
           emissive: campaignLevel.campaign.palette.emissive,
-          emissiveIntensity: 0.055,
+          emissiveIntensity: 0.035,
         });
         root.name = `hero-locker-${spot.id}`;
         root.rotation.y = Math.atan2(spot.facing.x, spot.facing.y);
@@ -1796,6 +2554,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const anchorWorld = anchor.getWorldPosition(new THREE.Vector3());
         root.position.add(world(spot.concealed, campaignLevel).sub(anchorWorld));
         parent.add(root);
+        placedAssetIds.add("detail:locker");
         const view: LockerView = {
           id: spot.id,
           root,
@@ -1812,22 +2571,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           owner: "idle",
         };
         lockerViews.set(spot.id, view);
+        if (hideDressingSource) {
+          hideDressingPlacements.push({
+            position: world(spot.concealed, campaignLevel),
+            rotation: Math.atan2(spot.facing.x, spot.facing.y),
+          });
+        }
+      }
+      if (hideDressingSource && hideDressingPlacements.length) {
+        const hideDressingMeshes = addInstancedModuleBatches([
+          { source: hideDressingSource, placements: hideDressingPlacements, preserveAuthoredScale: true },
+        ], new THREE.Vector3(1.5, 2.3, 0.8), parent, true, `${campaignLevel.campaign.theme}-hide-dressing`, supportsMultiDraw);
+        registerCameraOccluder(`${campaignLevel.campaign.theme}-hide-dressings`, hideDressingMeshes);
+        placedAssetIds.add(`theme-node:${hideDressingSource.name}`);
       }
 
       // The original school layout deliberately reserves seven path cells for
       // solid hero props. Keep presentation and collision authored from the
       // same ordered contract so the player never hits an invisible blocker.
-      const movementPropContract: readonly [DetailAssetName, number, number][] = [
-        ["bench", 1.05, 0],
-        ["tree", 3.9, 0.35],
-        ["shrub", 0.9, -0.2],
-        ["car", 1.55, Math.PI / 2],
-        ["basketball", 2.65, 0],
-        ["deskChair", 1.2, 0.58],
-        ["podium", 1.1, -0.25],
-      ];
       for (const [index, point] of (campaignLevel.movementBlockers ?? []).entries()) {
-        const spec = movementPropContract[index];
+        const spec = MOVEMENT_PROP_CONTRACT[index];
         if (!spec) throw new Error(`${campaignLevel.id} 缺少第 ${index + 1} 个实体障碍美术契约`);
         const object = addProp(spec[0], point, spec[1], spec[2]);
         object.name = `movement-blocker-${index + 1}-${spec[0]}`;
@@ -1877,6 +2640,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           parent.add(cloud);
           sightObscurers.push(cloud);
         });
+        placedAssetIds.add("runtime:vision-obscurer-vfx");
       }
 
       const occupiedAnchors = [
@@ -1885,158 +2649,236 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         campaignLevel.exit,
         ...campaignLevel.hideSpots.flatMap((spot) => [spot.approach, spot.concealed]),
       ];
-      const decorCandidates: Point[] = [];
+      type SceneryAnchor = { cell: Point; point: Point; rotation: number };
+      const decorCandidates: SceneryAnchor[] = [];
       for (let y = 1; y < campaignLevel.height - 1; y += 1) {
         for (let x = 1; x < campaignLevel.width - 1; x += 1) {
           if (campaignLevel.walkable[y][x]) continue;
-          const adjacentPath = [
-            campaignLevel.walkable[y - 1]?.[x],
-            campaignLevel.walkable[y + 1]?.[x],
-            campaignLevel.walkable[y]?.[x - 1],
-            campaignLevel.walkable[y]?.[x + 1],
-          ].filter(Boolean).length;
-          if (!adjacentPath) continue;
+          const towardPath = { x: 0, y: 0 };
+          for (const direction of [{ x: -1, y: 0 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: 0, y: 1 }]) {
+            if (!campaignLevel.walkable[y + direction.y]?.[x + direction.x]) continue;
+            towardPath.x += direction.x;
+            towardPath.y += direction.y;
+          }
+          if (Math.hypot(towardPath.x, towardPath.y) < 0.1) continue;
           const candidate = { x, y };
           if (occupiedAnchors.some((anchor) => distanceBetween(anchor, candidate) < 1.35)) continue;
-          decorCandidates.push(candidate);
+          const length = Math.hypot(towardPath.x, towardPath.y);
+          const direction = { x: towardPath.x / length, y: towardPath.y / length };
+          decorCandidates.push({
+            cell: candidate,
+            // Pull the model footprint away from the navigation boundary while
+            // keeping its authored +Z front aimed at the adjacent corridor.
+            point: { x: x - direction.x * 0.72, y: y - direction.y * 0.72 },
+            rotation: Math.atan2(direction.x, direction.y),
+          });
         }
       }
       decorCandidates.sort((a, b) => {
-        const hash = (point: Point) => (point.x * 37 + point.y * 61 + campaignLevel.campaign.levelNumber * 17) % 101;
+        const hash = (anchor: SceneryAnchor) => (
+          anchor.cell.x * 37
+          + anchor.cell.y * 61
+          + campaignLevel.campaign.levelNumber * 17
+          + artLayout.wallVariantSalt
+        ) % 101;
         return hash(a) - hash(b);
       });
-      const decorPoints: Point[] = [];
+      const decorAnchors: SceneryAnchor[] = [];
       for (const candidate of decorCandidates) {
-        if (decorPoints.every((existing) => distanceBetween(existing, candidate) >= 3.2)) decorPoints.push(candidate);
-        if (decorPoints.length >= 14) break;
+        if (decorAnchors.every((existing) => distanceBetween(existing.cell, candidate.cell) >= 3.4)) decorAnchors.push(candidate);
+        if (decorAnchors.length >= 14) break;
       }
 
-      const exteriorPoint = (anchor: Point, distance: number, side: number): Point => {
+      const exteriorAnchor = (anchor: Point, distance: number, side: number): SceneryAnchor => {
         const direction = nearestExteriorDirection(anchor, campaignLevel);
         const perpendicular = { x: -direction.y, y: direction.x };
-        return {
+        const point = {
           x: anchor.x + direction.x * distance + perpendicular.x * side,
           y: anchor.y + direction.y * distance + perpendicular.y * side,
         };
-      };
-      const pushIntoScenery = (candidate: Point): Point => {
-        let x = 0;
-        let y = 0;
-        for (const direction of [{ x: -1, y: 0 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: 0, y: 1 }]) {
-          if (campaignLevel.walkable[Math.round(candidate.y + direction.y)]?.[Math.round(candidate.x + direction.x)]) {
-            x -= direction.x;
-            y -= direction.y;
-          }
-        }
-        const length = Math.hypot(x, y) || 1;
-        return { x: candidate.x + x / length * 0.72, y: candidate.y + y / length * 0.72 };
+        return {
+          cell: point,
+          point,
+          rotation: Math.atan2(-direction.x, -direction.y),
+        };
       };
       const themeSpecs = THEME_PROP_SPECS[campaignLevel.campaign.theme];
-      themeSpecs.forEach((spec, index) => {
-        const point = index === 0
-          ? exteriorPoint(campaignLevel.playerStart, 2.35, 2.15)
-          : index === 1
-            ? exteriorPoint(campaignLevel.exit, 2.5, -1.8)
-            : decorPoints[index - 2]
-              ? pushIntoScenery(decorPoints[index - 2])
-              : exteriorPoint(campaignLevel.playerStart, 3 + index, index - 2);
-        addThemeProp(spec, point, (campaignLevel.campaign.levelNumber * 0.47 + index * 1.23) % (Math.PI * 2));
-      });
-
-      // Build a compact authored arrival vignette instead of leaving the
-      // exterior camera side as an empty texture plane. Reusing two secondary
-      // hero props keeps each theme unmistakable without bloating downloads.
-      themeSpecs.slice(2, 4).forEach((spec, index) => {
-        const point = exteriorPoint(
-          campaignLevel.playerStart,
-          3.15 + index * 0.9,
-          -2.25 + index * 3.6,
-        );
-        addThemeProp(spec, point, (campaignLevel.campaign.levelNumber * 0.31 + index * 1.71 + Math.PI) % (Math.PI * 2));
-      });
-
-      const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
-      const entranceSide = { x: -entranceDirection.y, y: entranceDirection.x };
-      const yardCenter = world({
-        x: campaignLevel.playerStart.x + entranceDirection.x * 3.35,
-        y: campaignLevel.playerStart.y + entranceDirection.y * 3.35,
-      }, campaignLevel);
-      const markingMaterial = new THREE.MeshStandardMaterial({
-        color: campaignLevel.campaign.palette.accent,
-        emissive: campaignLevel.campaign.palette.emissive,
-        emissiveIntensity: 0.08,
-        roughness: 0.58,
-        metalness: 0.04,
-        transparent: true,
-        opacity: 0.62,
-        depthWrite: false,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-      });
-      const stripeGeometry = new THREE.BoxGeometry(0.11, 0.022, CELL * 1.32);
-      const stripeCount = 7;
-      const yardStripes = new THREE.InstancedMesh(stripeGeometry, markingMaterial, stripeCount);
-      const stripeRotation = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(0, 1, 0),
-        Math.atan2(entranceDirection.x, entranceDirection.y),
-      );
-      for (let index = 0; index < stripeCount; index += 1) {
-        const side = (index - (stripeCount - 1) / 2) * 0.72;
-        const position = yardCenter.clone().add(new THREE.Vector3(
-          entranceSide.x * side * CELL,
-          0.076,
-          entranceSide.y * side * CELL,
-        ));
-        yardStripes.setMatrixAt(index, new THREE.Matrix4().compose(position, stripeRotation, new THREE.Vector3(1, 1, 1)));
+      const offsetAnchor = (anchor: SceneryAnchor, tangent: number, depth = 0): SceneryAnchor => {
+        const facing = { x: Math.sin(anchor.rotation), y: Math.cos(anchor.rotation) };
+        const side = { x: Math.cos(anchor.rotation), y: -Math.sin(anchor.rotation) };
+        const point = {
+          x: anchor.point.x + side.x * tangent + facing.x * depth,
+          y: anchor.point.y + side.y * tangent + facing.y * depth,
+        };
+        return { cell: point, point, rotation: anchor.rotation };
+      };
+      const interiorNarrativeAnchors = artLayout.landmarkNodes.map((_, index) => (
+        decorAnchors[index]
+        ?? offsetAnchor(
+          exteriorAnchor(campaignLevel.playerStart, 2.8, 0),
+          (index - (artLayout.landmarkNodes.length - 1) / 2) * 2.45,
+          -1.2,
+        )
+      ));
+      for (const [index, node] of artLayout.landmarkNodes.entries()) {
+        const anchor = interiorNarrativeAnchors[index];
+        const genericVariant = ["DressingClusterA", "DressingClusterC", "DressingClusterB"][index % 3];
+        // The cluster remains a complete authored vignette; runtime never
+        // breaks its books, seating, tools or medical kit into loose props.
+        addAuthoredCluster([node, genericVariant], anchor.point, anchor.rotation, `landmark-${artLayout.key}-${index + 1}`);
       }
-      yardStripes.instanceMatrix.needsUpdate = true;
-      yardStripes.name = `${campaignLevel.campaign.theme}-arrival-bay-markings`;
-      yardStripes.receiveShadow = true;
-      parent.add(yardStripes);
-
-      const emblemMaterial = markingMaterial.clone();
-      emblemMaterial.opacity = 0.18;
-      const yardEmblem = new THREE.Mesh(
-        new THREE.CircleGeometry(0.9, 40),
-        emblemMaterial,
+      const arrivalAnchor = exteriorAnchor(campaignLevel.playerStart, 3.05, 0);
+      const exitClusterAnchor = exteriorAnchor(campaignLevel.exit, 3.1, 0);
+      addAuthoredCluster(
+        [...artLayout.arrivalNodes, "DressingClusterB"],
+        arrivalAnchor.point,
+        arrivalAnchor.rotation,
+        `${artLayout.key}-arrival-cluster`,
       );
-      yardEmblem.name = `${campaignLevel.campaign.theme}-arrival-bay-emblem`;
-      yardEmblem.rotation.x = -Math.PI / 2;
-      yardEmblem.position.copy(yardCenter).add(new THREE.Vector3(0, 0.09, 0));
-      parent.add(yardEmblem);
-
-      const sharedSet: readonly [DetailAssetName, number][] = campaignLevel.campaign.theme === "campus"
-        ? [
-            ["classroomDoor", 2.2], ["blackboard", 1.5],
-            ["bulletin", 1.25], ["extinguisher", 0.8], ["trash", 0.75], ["books", 0.18], ["backpack", 0.5],
-          ]
+      addAuthoredCluster(
+        [...artLayout.exitNodes, "DressingClusterA"],
+        exitClusterAnchor.point,
+        exitClusterAnchor.rotation,
+        `${artLayout.key}-exit-cluster`,
+      );
+      const arrivalPropNodes = new Set<string>(campaignLevel.campaign.theme === "campus"
+        ? ["CampusBikeRack", "CampusWayfinding"]
         : campaignLevel.campaign.theme === "hospital"
-          ? [["bench", 1.0], ["bulletin", 1.2], ["extinguisher", 0.82], ["trash", 0.72], ["books", 0.16]]
+          ? ["HospitalWheelchair", "HospitalWayfinding"]
           : campaignLevel.campaign.theme === "fire-station"
-            ? [["bench", 1.0], ["extinguisher", 0.86], ["trash", 0.72], ["bulletin", 1.15]]
-            : [["bench", 1.0], ["extinguisher", 0.86], ["trash", 0.76], ["backpack", 0.5]];
-      sharedSet.forEach(([name, height], index) => {
-        const rawPoint = decorPoints[themeSpecs.length - 2 + index] ?? exteriorPoint(campaignLevel.playerStart, 4 + index, -2);
-        const point = decorPoints.includes(rawPoint) ? pushIntoScenery(rawPoint) : rawPoint;
-        addProp(name, point, height, (index * 1.37 + campaignLevel.campaign.levelNumber) % (Math.PI * 2));
+            ? ["FireEngine", "FireHydrant", "FireStationWayfinding", "FireSafetyCones"]
+            : ["FactorySafetyBarrier", "FactoryCrateStack"]);
+      const wallThemeSpecs = themeSpecs.filter((spec) => !arrivalPropNodes.has(spec.node));
+      const arrivalThemeSpecs = themeSpecs.filter((spec) => arrivalPropNodes.has(spec.node));
+      const wallSelectionOffset = (campaignLevel.campaign.levelNumber - 1) % Math.max(1, wallThemeSpecs.length);
+      const featuredThemeProps = PROP_SET_FEATURED_THEME_PROPS[campaignLevel.campaign.atmosphere.propSet];
+      const requireThemeSpec = (node: string) => {
+        const spec = themeSpecs.find((candidate) => candidate.node === node);
+        if (!spec) throw new Error(`${campaignLevel.campaign.atmosphere.propSet} 未定义主题物件 ${node}`);
+        return spec;
+      };
+      const selectedWallSpecs = featuredThemeProps
+        ? featuredThemeProps.interior.map(requireThemeSpec)
+        : [...wallThemeSpecs, ...wallThemeSpecs]
+          .slice(wallSelectionOffset, wallSelectionOffset + Math.min(2, wallThemeSpecs.length));
+      const selectedArrivalSpecs = featuredThemeProps
+        ? featuredThemeProps.arrival.map(requireThemeSpec)
+        : arrivalThemeSpecs.slice(0, 2);
+      selectedWallSpecs.forEach((spec, index) => {
+        const narrativeAnchor = interiorNarrativeAnchors[index % Math.max(1, interiorNarrativeAnchors.length)]
+          ?? exteriorAnchor(campaignLevel.playerStart, 2.8, -2.2);
+        const anchor = offsetAnchor(narrativeAnchor, index % 2 === 0 ? 1.2 : -1.2);
+        addThemeProp(spec, anchor.point, anchor.rotation);
+      });
+      selectedArrivalSpecs.forEach((spec, index) => {
+        const tangent = selectedArrivalSpecs.length === 1
+          ? 0
+          : (index - (selectedArrivalSpecs.length - 1) / 2) * (selectedArrivalSpecs.length > 2 ? 2.15 : 2.9);
+        const anchor = offsetAnchor(arrivalAnchor, tangent, -0.62);
+        addThemeProp(spec, anchor.point, anchor.rotation);
       });
 
-      const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
-      const exitSide = { x: -exitDirection.y, y: exitDirection.x };
-      addProp("station", {
-        x: campaignLevel.exit.x + exitDirection.x * 3.9 + exitSide.x * 2.2,
-        y: campaignLevel.exit.y + exitDirection.y * 3.9 + exitSide.y * 2.2,
-      }, 3.25, Math.atan2(-exitDirection.x, -exitDirection.y));
-      addProp("car", {
-        x: campaignLevel.exit.x + exitDirection.x * 2.4 - exitSide.x * 2.3,
-        y: campaignLevel.exit.y + exitDirection.y * 2.4 - exitSide.y * 2.3,
-      }, 1.55, Math.atan2(exitSide.x, exitSide.y));
+      const standaloneRoleAnchor = (role: StandaloneAnchorRole) => {
+        if (role === "arrival") return arrivalAnchor;
+        if (role === "exit") return exitClusterAnchor;
+        const index = Number(role.slice(-1)) - 1;
+        return interiorNarrativeAnchors[index] ?? interiorNarrativeAnchors[0] ?? arrivalAnchor;
+      };
+      for (const placement of PROP_SET_STANDALONE_PROPS[campaignLevel.campaign.atmosphere.propSet] ?? []) {
+        const anchor = offsetAnchor(
+          standaloneRoleAnchor(placement.role),
+          placement.tangent,
+          placement.depth ?? 0,
+        );
+        const object = addProp(
+          placement.asset,
+          anchor.point,
+          placement.height,
+          anchor.rotation + (placement.rotationOffset ?? 0),
+          new THREE.Vector3(0, placement.elevation ?? 0, 0),
+        );
+        object.name = `semantic-${campaignLevel.campaign.atmosphere.propSet}-${placement.asset}`;
+      }
+
+      // Theme-kit props and complete A/B/C clusters share a compact material
+      // library. Collapse the whole non-interactive authored dressing pass by
+      // material after semantic placement; the visual result is unchanged but
+      // avoids paying a fresh draw for every trophy, planter and service cart.
+      if (themeDressing.children.length) {
+        if (new URLSearchParams(location.search).has("debug-art-nodes")) {
+          parent.add(themeDressing);
+        } else {
+          const flattenedThemeDressing = flattenStatic(themeDressing, true);
+          flattenedThemeDressing.name = `${campaignLevel.campaign.theme}-authored-dressing`;
+          parent.add(flattenedThemeDressing);
+        }
+      }
+
+      if (["fire-station", "factory"].includes(campaignLevel.campaign.theme)) {
+        const industrialTheme = campaignLevel.campaign.theme;
+        const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
+        const entranceSide = { x: -entranceDirection.y, y: entranceDirection.x };
+        const yardCenter = world({
+          x: campaignLevel.playerStart.x + entranceDirection.x * 3.35,
+          y: campaignLevel.playerStart.y + entranceDirection.y * 3.35,
+        }, campaignLevel);
+        const markingMaterial = new THREE.MeshStandardMaterial({
+          color: industrialTheme === "fire-station" ? 0xf2e3bd : 0xf1b927,
+          emissive: industrialTheme === "fire-station" ? 0x6c241e : 0x4a3200,
+          emissiveIntensity: 0.05,
+          roughness: 0.62,
+          metalness: 0.02,
+          transparent: true,
+          opacity: industrialTheme === "fire-station" ? 0.58 : 0.72,
+          depthWrite: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+        });
+        const stripeGeometry = new THREE.BoxGeometry(
+          industrialTheme === "fire-station" ? 0.11 : 0.18,
+          0.022,
+          CELL * (industrialTheme === "fire-station" ? 1.42 : 1.05),
+        );
+        const stripeCount = industrialTheme === "fire-station" ? 5 : 4;
+        const yardStripes = new THREE.InstancedMesh(stripeGeometry, markingMaterial, stripeCount);
+        const stripeRotation = new THREE.Quaternion().setFromAxisAngle(
+          new THREE.Vector3(0, 1, 0),
+          Math.atan2(entranceDirection.x, entranceDirection.y) + (industrialTheme === "factory" ? Math.PI / 4 : 0),
+        );
+        for (let index = 0; index < stripeCount; index += 1) {
+          const side = (index - (stripeCount - 1) / 2) * 0.72;
+          const position = yardCenter.clone().add(new THREE.Vector3(
+            entranceSide.x * side * CELL,
+            0.076,
+            entranceSide.y * side * CELL,
+          ));
+          yardStripes.setMatrixAt(index, new THREE.Matrix4().compose(position, stripeRotation, new THREE.Vector3(1, 1, 1)));
+        }
+        yardStripes.instanceMatrix.needsUpdate = true;
+        yardStripes.name = `${campaignLevel.campaign.theme}-arrival-bay-markings`;
+        yardStripes.receiveShadow = true;
+        parent.add(yardStripes);
+        placedAssetIds.add("runtime:arrival-bay-markings");
+      }
+
+      THEME_SHARED_PROPS[campaignLevel.campaign.theme].forEach(([name, height]) => {
+        const anchor = name === "trash"
+          ? offsetAnchor(arrivalAnchor, -2.35, -0.35)
+          : name === "tree"
+            ? offsetAnchor(arrivalAnchor, 2.65, -0.75)
+            : offsetAnchor(interiorNarrativeAnchors[0] ?? arrivalAnchor, -1.25);
+        addProp(name, anchor.point, height, anchor.rotation);
+      });
 
       const lightPoints = [campaignLevel.playerStart, ...campaignLevel.patrol.filter((_, index) => index % 2 === 0), campaignLevel.exit]
-        .slice(0, 6);
+        .slice(0, 4);
       for (const point of lightPoints) {
         addProp("ceilingLight", point, 0.16, 0, new THREE.Vector3(0, 2.35, 0));
-        const lamp = new THREE.PointLight(campaignLevel.campaign.palette.emissive, 5.2, 8.5, 2);
+        const lampColor = new THREE.Color(campaignLevel.campaign.palette.emissive).lerp(
+          new THREE.Color(campaignLevel.campaign.palette.accent),
+          artLayout.warmLightMix * 0.22,
+        );
+        const lamp = new THREE.PointLight(lampColor, artLayout.lightIntensity, 7.6, 2);
         lamp.position.copy(world(point, campaignLevel)).add(new THREE.Vector3(0, 2.2, 0));
         targetScene.add(lamp);
       }
@@ -2066,6 +2908,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         root.position.copy(world(initialPoint, campaignLevel));
         root.rotation.y = Math.atan2(initialHeading.x, initialHeading.y);
         targetScene.add(root);
+        placedAssetIds.add(`actor:${name}`);
         const durationByState: Partial<Record<AnimationState, number>> = {};
         const clipsByName = new Map(assets[name].animations.map((clip) => [clip.name.toLowerCase(), clip]));
         for (const [state, alias] of Object.entries(spec.aliases) as [AnimationState, string | readonly string[]][]) {
@@ -2362,22 +3205,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             ? playerAnchor.clone().lerp(chaserAnchor, 0.3)
             : playerAnchor.clone().lerp(chaserAnchor, chaseFocus);
         cameraFocus.lerp(targetFocus, 1 - Math.exp(-(framingThreat ? 12 : 6.5) * delta));
-        const baseDistance = THREE.MathUtils.clamp(16.25 + Math.max(0, 1.15 - camera.aspect) * 6, 16.25, 24);
-        const chaseSeparation = framingThreat
-          ? distanceBetween(latestState.player.position, latestState.chaser.position) * CELL
-          : 0;
-        const chaseFramingDistance = framingThreat
-          ? THREE.MathUtils.clamp(chaseSeparation * 0.42, 3.4, 8.5)
-          : 0;
+        const baseDistance = baseCameraDistanceForAspect(camera.aspect);
         const dynamicDistance = baseDistance
-          + threatForMode(latestState.chaser.mode) * 1.8
-          + chaseFramingDistance;
+          + threatForMode(latestState.chaser.mode) * 0.9;
         const framingRequest = () => ({
           focus: cameraFocus,
           points: [playerAnchor, chaserAnchor],
           cameraDirection,
           verticalFovDegrees: camera.fov,
           aspect: camera.aspect,
+          ...(camera.aspect < 0.72 ? {
+            horizontalMargin: 0.38,
+            verticalMargin: 0.92,
+            safeHorizontalNdc: 0.9,
+            safeVerticalNdc: 0.84,
+          } : {}),
         });
         const requiredFramingDistance = framingThreat
           ? requiredCameraDistanceForFraming(framingRequest())
@@ -2457,6 +3299,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         getState: () => unknown;
         start: () => void;
         interact: () => void;
+        inspectScene: () => unknown;
         setScenario: (positions: { player: Point; chaser: Point }) => void;
         selectLevel: (level: number | string) => void;
         setUnlockedThrough: (levelNumber: number) => void;
@@ -2472,6 +3315,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             number: campaignLevel.campaign.levelNumber,
             name: campaignLevel.campaign.name,
             theme: campaignLevel.campaign.theme,
+            propSet: campaignLevel.campaign.atmosphere.propSet,
             config: simulation.config,
             progress: campaignProgressRef.current,
             themeAsset: THEME_KIT_ASSETS[campaignLevel.campaign.theme],
@@ -2497,6 +3341,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             renderedMovementBlockers,
             expectedVisionObscurers: campaignLevel.visionOnlyBlockers?.length ?? 0,
             renderedVisionObscurers: sightObscurers.length,
+          },
+          assets: {
+            loadedAssetIds: [...loadedAssetIds].sort(),
+            placedAssetIds: [...placedAssetIds].sort(),
+            unusedLoadedAssetIds: [...loadedAssetIds].filter((id) => !placedAssetIds.has(id)).sort(),
           },
           lockers: Object.fromEntries([...lockers].map(([id, view]) => [id, {
             action: view.actionName,
@@ -2531,6 +3380,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             },
           },
           render: {
+            batching: supportsMultiDraw ? "multi-draw" : "instanced-mesh",
             calls: renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
             memory: renderer.info.memory,
@@ -2542,6 +3392,29 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }),
         start: beginGame,
         interact: () => { interactPressed.current = true; },
+        inspectScene: () => {
+          camera.updateMatrixWorld();
+          const objects: Array<Record<string, unknown>> = [];
+          scene.traverse((object) => {
+            if (!(object instanceof THREE.Mesh) || !object.visible) return;
+            const bounds = new THREE.Box3().setFromObject(object);
+            if (bounds.isEmpty()) return;
+            const center = bounds.getCenter(new THREE.Vector3());
+            const size = bounds.getSize(new THREE.Vector3());
+            const projected = center.clone().project(camera);
+            const materials = (Array.isArray(object.material) ? object.material : [object.material])
+              .map((material) => material.name);
+            objects.push({
+              name: object.name,
+              parent: object.parent?.name ?? "",
+              materials,
+              center: { x: center.x, y: center.y, z: center.z },
+              size: { x: size.x, y: size.y, z: size.z },
+              viewport: { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2, depth: projected.z },
+            });
+          });
+          return objects;
+        },
         selectLevel: (requested) => {
           const index = typeof requested === "number"
             ? requested

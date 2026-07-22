@@ -21,7 +21,7 @@
 
 - 项目已成为纯 Web 3D 游戏：React 19、TypeScript、Three.js 0.185.1、vinext / Vite 与 WebGL 渲染，不再依赖 Unity 工程或桌面游戏引擎。
 - 第一关形成从出生点、探索、追逐、断开视线、躲藏 / 窥视、重新逃跑到抵达警察局的完整闭环。
-- 浏览器只加载 `public/models/` 中的 29 个 GLB；`.blend`、`.fbx` 和制作贴图只作为源美术保留，不进入运行请求。
+- 浏览器按关卡清单从 `public/models/` 的 26 个正式 GLB 中按需加载角色、当前主题套件与语义道具；七个与主题套件重复且永不请求的旧墙体 / 地面回退 GLB 已删除，`.blend`、`.fbx` 和制作贴图仍作为源美术保留，不进入运行请求。
 - Kid / Villain 使用 v21 批准母版，Police 使用修复后的 v22 母版；三个正式角色均有 skin、骨架、PBR 贴图和专用动作集。
 - 音乐采用两条同拍、同长度 AAC stem，由危险值连续混音；不使用振荡器蜂鸣或单一 loop 直出代替配乐。
 
@@ -68,11 +68,15 @@
 
 | 资产 | 大小 | SHA-256 | 说明 |
 |---|---:|---|---|
-| `public/models/environment/locker.glb` | 4,965,160 bytes | `edf6a1bf46de553b08c90039d64031a06968a02aefd8f9afc0a2bed371026eb7` | Hero Locker 与柜门动作 |
-| `public/models/environment/ceiling-light.glb` | 34,660 bytes | `676f43e9ec97e011946916c60ffba803fff52d3ce874d8f1d353b5453b358db5` | 已把超范围 emissiveFactor 规范化，并使用 `KHR_materials_emissive_strength` 保持亮度 |
-| `public/models/environment/station.glb` | 145,764 bytes | `73b211be69688e594f0dff333acc0279933abedcaec331d47a364534a9b29462` | 已把超范围 emissiveFactor 规范化，并使用 `KHR_materials_emissive_strength` 保持亮度 |
+| `public/models/environment/locker.glb` | 1,602,276 bytes | `6442702bb232543e2c9aad680b7a9ffccc1de2a09707a7dbf77ed9f41f5fbf04` | Hero Locker；真实百叶、门内骨架、三点锁杆、层架与六段柜门动作；Meshopt 压缩 |
+| `public/models/environment/themes/campus-kit.glb` | 1,751,288 bytes | `c9846edfd3402d62ad44e0e245fd541afa8b48f3b4458881c2683fd626c1847a` | 校园经典、图书馆、科学楼三套独占叙事模块；无量化 Meshopt |
+| `public/models/environment/themes/hospital-kit.glb` | 1,108,964 bytes | `01a4f2b87ceb98c598b450cb5b5358fc4ab1aa16402db974b568127e570457e0` | 门诊与隔离区两套独占叙事模块；药房柜正反两面完整精修；无量化 Meshopt |
+| `public/models/environment/themes/fire-station-kit.glb` | 1,160,524 bytes | `a11811d2081dffe6e643dca1a04d6315c482f3d7662275ec6429dd043cb60836` | 车库与训练区两套独占叙事模块；无量化 Meshopt |
+| `public/models/environment/themes/factory-kit.glb` | 1,710,888 bytes | `9cfb9ed643106d904987497e7cade87bc2d4335985613cd3292fcfeb2a1f74b3` | 装配、涡轮与铸造三套独占叙事模块；无量化 Meshopt |
+| `public/models/environment/ceiling-light.glb` | 37,164 bytes | `587e11a8bbddb1ed8c967b9a08bda0b6ab369f69940c2998c2d85b7693fdd596` | 精修灯体、紧固件、真实 PBR 表面、显式切线与规范化自发光 |
+| `public/models/environment/station.glb` | 184,976 bytes | `1ee9145154bcf93c6a4c574f838cd6dd3a1d94b626596dc7593d4ba1560543f5` | 精修警察站建筑、门窗、立面构件、显式切线与规范化自发光 |
 
-29 个运行 GLB 必须全部被应用代码引用；26 张外部环境纹理必须全部被 GLB 引用。`tests/model-assets.test.mjs` 同时检查材质数值范围和 emissive strength 扩展，防止本次修复回退。使用 `@gltf-transform/cli 4.4.1 validate` 对 29 / 29 个运行 GLB 逐个验证，全部 exit 0，聚合结果为 0 error、551 warning、304 information、0 hint；分类与接受边界见第 8.1 节。
+26 个运行 GLB 必须全部被应用代码引用；22 张外部环境纹理必须全部被 GLB 引用。23 个环境 GLB 全部使用仓库固定版本的 Meshopt，894 个使用 Normal Map 的 primitive 全部随包携带有效 `TANGENT`。主题套件还必须满足 10 关共 60 个非 alias 独占叙事根节点、节点 / mesh / 三角面 / 材质 / 图片 / 字节预算。`tests/model-assets.test.mjs` 同时检查结构、引用、PBR、Meshopt、切线与主题语义合同，防止精修资产回退。
 
 ### 4.3 音乐与展示图
 
@@ -81,7 +85,7 @@
 | `public/audio/slow-drift-explore.m4a` | 935,976 bytes | `03f0f72bc50758234fe7d50dc419802debfe190abc275c504292672c0c73a611` | AAC-LC、48 kHz、Stereo、38.02 s、-22.24 LUFS |
 | `public/audio/slow-drift-threat.m4a` | 958,523 bytes | `300df04317f93e27a830d18bd0713104e3618042771afd984634fca2c2caf3b1` | AAC-LC、48 kHz、Stereo、38.02 s、-20.19 LUFS |
 | `public/audio/adaptive-score-manifest.json` | 3,505 bytes | `552da54f73eb70949337304ee59838209402f92c59e540e8b2400e0e967c2dc1` | 源哈希、响度、峰值、时长、循环边界与建议混音 |
-| `public/og.png` | 2,042,699 bytes | `9c5b38677cd58618ae3b6752591395d8e707c147be3e697902c571362c2cc27d` | 1,731 × 909 正式分享图 |
+| `public/chasing-environment-key-art.jpg` | 272,901 bytes | `7dc1c698748be90a46dc02df6b06b4d33be1c967c71ddf4c6106e439986d90f6` | 1,200 × 630 四主题正式分享图 |
 
 音频许可与原创编排边界见 [Apple Loops 音乐来源与许可记录](licenses/APPLE_LOOPS_AUDIO.md)。角色动作、MakeHuman 与 Poly Haven 来源分别见 [Quaternius CC0](licenses/QUATERNIUS_UNIVERSAL_ANIMATION_LIBRARY_CC0.md)、[MakeHuman CC0](licenses/MAKEHUMAN_CORE_ASSETS_CC0.md) 和 [Poly Haven CC0](licenses/POLY_HAVEN_CC0.md)。生产 Web 包的开源软件 notices 位于 [`public/THIRD_PARTY_NOTICES.txt`](../public/THIRD_PARTY_NOTICES.txt)。
 
@@ -94,11 +98,11 @@
 | TypeScript | `npm run typecheck` | PASS，0 error |
 | ESLint | `npm run lint` | PASS，0 error |
 | 生产构建 | `npm run build` | PASS；仅保留单个 client chunk 大于 500 kB 的非阻断体积 warning |
-| 全量自动测试 | `npm test` | PASS，70 / 70，失败 0 |
+| 全量自动测试 | `npm test` | PASS，104 / 104，失败 0 |
 | 生产依赖安全审计 | `npm audit --omit=dev` | PASS，0 vulnerability |
 | Git 补丁完整性 | `git diff --check` | PASS |
 | Git / LFS 对象完整性 | `git fsck --full`、`git lfs fsck` | PASS |
-| 29 个 GLB 结构与引用 | Node 测试 + `@gltf-transform/cli 4.4.1 validate` | `PASS — 29 / 29 exit 0；0 error、551 warning、304 information、0 hint` |
+| 23 个环境 GLB 结构与引用 | Node 测试 + `@gltf-transform/cli 4.4.1 validate` | `PASS — 23 / 23 exit 0；0 error、0 warning、218 information、0 hint` |
 | 生产包 notices | 构建后检查 `dist/client/THIRD_PARTY_NOTICES.txt` | PASS |
 | 凭据与大文件扫描 | 工作树、构建产物与 Git 差异扫描 | PASS，未发现私钥、常见访问令牌或误入环境文件 |
 
@@ -117,7 +121,7 @@
 | 低于 20 FPS 时游戏与动作相对真实时间减速 | 主 rAF 把所有 delta 固定截断为 0.05 秒 | 模拟、角色、柜门和相机共用 0.25 秒安全上限内的真实 delta；页面恢复重置帧钟 | `tests/presentation.test.mjs` 的 10 FPS / 长停顿用例 |
 | 本地 favicon 请求旧线上私有地址并触发 ORB | icon metadata 被 `metadataBase` 解析为绝对生产 URL | 改为显式同源 `/favicon.svg`；最终网络日志为 200 `image/svg+xml`、0 loading failure | [最终 smoke 摘要](web-rendering/evidence/runtime-smoke-summary.json) |
 | WebGL context 丢失后缺少恢复反馈 | canvas 未监听 context lost / restored | 丢失时停止推进、清输入与 ready 标记并显示恢复卡；恢复后自动 reload | [WebGL 故障注入摘要](web-rendering/evidence/webgl-context-summary.json) |
-| 模型并行加载中卸载可能留下未挂载资源 | `GLTFLoader` promise 完成后只检查 disposed，没有主动释放 | 29 项加载改为 `allSettled`；失败或卸载后统一 dispose 已完成的几何、材质、纹理与骨架 | TypeScript / ESLint / 构建回归 |
+| 模型并行加载中卸载可能留下未挂载资源 | `GLTFLoader` promise 完成后只检查 disposed，没有主动释放 | 按关卡清单的模型加载改为 `allSettled`；失败或卸载后统一 dispose 已完成的几何、材质、纹理与骨架 | TypeScript / ESLint / 构建回归 |
 | 线上首次开始后 Threat 音乐轨可能晚约 20 秒就绪 | 音频元素遵守首次手势才创建，私有 CDN 冷请求使第二条 stem 尚未缓存 | 3D 加载期间并行 fetch 并完整物化双轨缓存，仍在用户手势内创建 AudioContext / Audio 元素；失败保持可重试退路 | [Sites v13 smoke](web-rendering/evidence/deployed-v13-smoke.json)：两轨 readyState 4、漂移约 1 μs |
 | 站点截图机器人额外请求 `/favicon.ico` 产生 404 | 页面显式提供 SVG 图标，但传统 crawler 仍探测 ICO 默认路径 | 增加真实 64 × 64 ICO 与文件签名回归；线上返回 200 `image/vnd.microsoft.icon` | [Sites v13 smoke](web-rendering/evidence/deployed-v13-smoke.json) |
 | 上下左右操作会按反，转向后更难判断 | 移动输入直接使用世界坐标，而镜头又持续根据玩家 heading 旋转；不同阻尼还造成残余 bearing 漂移 | 锁定单一世界方位；键盘与触控先按屏幕坐标统一，再由同一固定基向量转换；删除 heading look-ahead 和相机朝向插值 | `tests/input.test.mjs` 的 Three.js 投影用例 + [真实浏览器四向摘要](web-rendering/evidence/camera-visibility-summary.json) |
@@ -132,7 +136,7 @@
 
 | 场景 | 验收点 | 最终证据 |
 |---|---|---|
-| 首屏与开始 | 页面无报错；29 个模型和两条音乐资源可达；开始后 Kid 清晰可见 | PASS；[首屏](web-rendering/evidence/desktop-ready.jpg)、[移动后](web-rendering/evidence/desktop-gameplay.jpg) |
+| 首屏与开始 | 页面无报错；本关模型清单和两条音乐资源可达；开始后 Kid 清晰可见 | PASS；[首屏](web-rendering/evidence/desktop-ready.jpg)、[移动后](web-rendering/evidence/desktop-gameplay.jpg) |
 | 移动与碰撞 | WASD / 方向键与四个触控按钮始终对应屏幕上下左右；墙体与大型实体碰撞可靠；滑墙朝向取实际位移；连续转向不改变镜头方位 | PASS；键盘/触控八组真实输入方向点积均为 1.0000，实际 bearing 误差 < 1e-9；[移动端截图](web-rendering/evidence/fixed-camera-mobile-controls.jpg) |
 | 相机遮挡与恢复 | 障碍只局部淡出；人物不丢失；离开后材质恢复且不残留透明 | PASS；[遮挡视角](web-rendering/evidence/camera-occlusion.jpg)，峰值 strength 约 1，离开后回到约 0 |
 | Locker 进入 | 对齐转身、开门、进入、关门顺序完整；角色不穿柜；隐藏后不可见 | PASS；0.6 秒转身，hidden `rootVisible=false / alpha=0`，[截图](web-rendering/evidence/locker-hidden.jpg) |
@@ -149,21 +153,22 @@
 
 ## 8. 已知警告、限制与不可误报项
 
-### 8.1 接受但需记录的 Validator warning
+### 8.1 Validator 信息项
 
-`@gltf-transform/cli 4.4.1 validate` 已对 29 / 29 个运行 GLB 完成逐文件验证，全部 exit 0。聚合 severity 结果如下；warning 和 information 均不得误称为 error：
+`@gltf-transform/cli 4.4.1 validate` 已对 23 / 23 个环境运行 GLB 完成逐文件验证，全部 exit 0。聚合 severity 结果如下；warning 和 information 均不得误称为 error：
 
 | Severity | 数量 | 分类 |
 |---:|---:|---|
 | 0 — Error | 0 | 无 |
-| 1 — Warning | 551 | `MESH_PRIMITIVE_GENERATED_TANGENT_SPACE` 466；`NODE_SKINNED_MESH_NON_ROOT` 85 |
-| 2 — Information | 304 | `URI_GLB` 188；`UNUSED_OBJECT` 75；`UNSUPPORTED_EXTENSION` 25；`IMAGE_NPOT_DIMENSIONS` 9；`UNUSED_MESH_TANGENT` 7 |
+| 1 — Warning | 0 | 无 |
+| 2 — Information | 218 | `UNSUPPORTED_EXTENSION` 23；`URI_GLB` 152；`UNUSED_OBJECT` 31；`UNUSED_MESH_TANGENT` 12 |
 | 3 — Hint | 0 | 无 |
 
-两类 severity 1 warning 均为已接受的源资产 / 运行时兼容警告：
+上一轮的 1,572 条 `MESH_PRIMITIVE_GENERATED_TANGENT_SPACE` 已全部清零。所有 Normal Map primitive 都随包携带与 `POSITION` 数量一致的有效 `TANGENT`，不再依赖不同浏览器自行生成 tangent space。当前 severity 2 仅为信息项：
 
-- `MESH_PRIMITIVE_GENERATED_TANGENT_SPACE`：相关 primitive 不保存显式 tangent accessor。Three.js 在 Normal Map 与 UV 存在时生成所需 tangent space；此前强制写入 tangent 曾产生零长度数据，因此当前导出策略有意省略。材质、UV 和 Normal Map 槽位已通过资产门禁。
-- `NODE_SKINNED_MESH_NON_ROOT`：正式角色保留源资产的蒙皮节点层级，而 skinned mesh node 不是场景根节点。该层级已被 Three.js 角色加载、skin、动作混合与运行态门禁覆盖，不为消除 warning 而破坏批准骨架或附件关系。
+- `UNSUPPORTED_EXTENSION`：当前 Validator 版本不解析 `EXT_meshopt_compression`，但 Three.js 已注册官方 Meshopt decoder，浏览器双路径 smoke 通过；
+- `URI_GLB`：公用资产有意从 GLB 复用同一组外部 PBR 纹理，避免跨文件重复嵌入；
+- `UNUSED_OBJECT` / `UNUSED_MESH_TANGENT`：为压缩容器记录和 Locker 无 Normal Map primitive 的冗余属性提示，不影响结构与渲染。
 
 当前已执行设备上的实机浏览器渲染验证正常：未观察到材质闪烁、黑面、法线方向异常、蒙皮错位或动作层级失效。这一结果只关闭上述兼容警告，不扩大第 8.2 节所列的低端手机实机覆盖范围。
 
@@ -179,7 +184,7 @@
 
 ### 8.3 体积与性能风险
 
-当前 `public/` 约 49 MiB，三个角色约 29 MiB，运行场景以画质优先且尚未引入角色 LOD / KTX2。桌面运行统计已记录在第 7 节；低端移动设备若出现内存或首屏等待问题，应优先采用分阶段加载、KTX2 和经视觉对比验收的 LOD，而不是删除正式模型、降低身份贴图或回退到几何占位体。
+当前 `public/` 为 50,973,478 bytes（48.61 MiB），三个角色约 29 MiB，运行场景以画质优先且尚未引入角色 LOD / KTX2。无量化 Meshopt 在不简化三角面、不改写纹理字节的前提下，把四套主题包从 9,824,920 bytes 降到 5,731,664 bytes，把 18 个公用环境模型从 4,055,108 bytes 降到 2,185,108 bytes。桌面运行统计已记录在第 7 节；低端移动设备若出现内存或首屏等待问题，应优先采用分阶段加载、KTX2 和经视觉对比验收的 LOD，而不是删除正式模型、降低身份贴图或回退到几何占位体。
 
 ### 8.4 依赖审计边界
 

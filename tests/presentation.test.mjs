@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { DEFAULT_GAME_CONFIG } from "../app/game/level.ts";
 import {
+  baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
   canChaserTakeLockerDoor,
   lockerVisionMix,
@@ -138,4 +139,26 @@ test("portrait chase framing derives a safe distance from FOV and actor separati
   });
   assert.ok(portrait > 35 && portrait < 38, `unexpected portrait distance ${portrait}`);
   assert.ok(desktop < 14, `desktop framing should not over-zoom: ${desktop}`);
+
+  const readablePortrait = requiredCameraDistanceForFraming({
+    focus,
+    points,
+    cameraDirection,
+    verticalFovDegrees: 56,
+    aspect: 0.5,
+    horizontalMargin: 0.38,
+    verticalMargin: 0.92,
+    safeHorizontalNdc: 0.9,
+    safeVerticalNdc: 0.84,
+  });
+  assert.ok(readablePortrait > 29 && readablePortrait < 32, `unexpected readable portrait distance ${readablePortrait}`);
+  assert.ok(readablePortrait < portrait * 0.88, "portrait framing must materially enlarge both actors");
+});
+
+test("portrait baseline keeps actors readable without weakening safe framing", () => {
+  assert.equal(baseCameraDistanceForAspect(16 / 9), 16.25);
+  assert.equal(baseCameraDistanceForAspect(0.46), 14.25);
+  assert.ok(baseCameraDistanceForAspect(0.7) > 14.25);
+  assert.ok(baseCameraDistanceForAspect(0.7) < 16.25);
+  assert.equal(baseCameraDistanceForAspect(Number.NaN), 16.25);
 });

@@ -7,8 +7,8 @@
 
 `public/models/` 是浏览器唯一的 3D 资产入口：
 
-- 29 个运行 GLB：3 个角色、26 个环境模块与道具。
-- 26 张被 GLB 实际引用的 BaseColor/Normal 纹理。
+- 26 个运行 GLB：3 个角色、23 个环境模块与道具。
+- 22 张被 GLB 实际引用的 BaseColor/Normal 纹理。
 - 三个角色均保留 skin/rig；当前运行模型为 Kid / Villain v21 与 Police v22 的验收绑定版。
 
 自动化测试会解析每个 GLB 的 glTF JSON，验证文件头、长度、骨骼和外部纹理；还会要求所有运行 GLB 都被代码引用，并拒绝未引用贴图。`public/` 解除 Git LFS 过滤，部署拿到的是可直接加载的真实文件。

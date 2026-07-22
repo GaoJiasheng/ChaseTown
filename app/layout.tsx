@@ -8,13 +8,18 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Chasing · 3D 主题逃生战役",
     description: "校园、医院、消防站、工厂四大主题；切断追捕者视线，藏好，再冲向出口。",
-    images: [{ url: "/og.png", width: 1731, height: 909, alt: "Chasing 3D 主题逃生战役" }],
+    images: [{
+      url: "/chasing-environment-key-art.jpg",
+      width: 1200,
+      height: 630,
+      alt: "孩子穿过校园、医院、消防站与工厂主题迷宫躲避追捕",
+    }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Chasing · 3D 主题逃生战役",
     description: "10 关四主题 3D 潜逃：断开视线、藏好、再冲向出口。",
-    images: ["/og.png"],
+    images: ["/chasing-environment-key-art.jpg"],
   },
 };
 

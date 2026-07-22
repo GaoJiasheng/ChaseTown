@@ -115,6 +115,18 @@ export function requiredCameraDistanceForFraming(request: CameraFramingRequest):
   return Math.max(0, required);
 }
 
+/**
+ * Portrait screens need a slightly closer default composition because their
+ * vertical canvas otherwise spends too much space on empty foreground. The
+ * exact two-actor framing solver still wins whenever separation requires a
+ * wider shot, so this never crops a visible pursuer.
+ */
+export function baseCameraDistanceForAspect(aspect: number): number {
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
+  const portraitBlend = Math.min(1, Math.max(0, (0.86 - safeAspect) / 0.4));
+  return 16.25 - portraitBlend * 2;
+}
+
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
 /**

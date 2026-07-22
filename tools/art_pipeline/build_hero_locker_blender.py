@@ -17,6 +17,8 @@ import json
 import math
 import os
 import struct
+import subprocess
+import tempfile
 
 import bpy
 from mathutils import Vector
@@ -251,14 +253,18 @@ def textured_material(
 
 def make_materials() -> dict[str, bpy.types.Material]:
     return {
-        "paint": textured_material("M_Locker_BluePaint", "BluePaintedMetal", 0.35, 0.12, 0.50),
-        "metal": textured_material("M_Locker_WornMetal", "WornMetal", 0.32, 0.72, 0.42),
+        # Moderately rough paint keeps the campaign tint readable under the
+        # strong maze key light instead of blowing out into a white card.
+        "paint": textured_material("M_Locker_BluePaint", "BluePaintedMetal", 0.46, 0.10, 0.38),
+        "metal": plain_material("M_Locker_BrushedSteel", (0.20, 0.235, 0.265, 1.0), 0.39, 0.82),
+        "wear": textured_material("M_Locker_WornMetal", "WornMetal", 0.43, 0.66, 0.30),
         "paper": textured_material("M_Locker_Paper", "Paper", 0.82, 0.0, 0.24),
         "interior": plain_material("M_Locker_Interior", (0.042, 0.055, 0.066, 1.0), 0.42, 0.35),
         "recess": plain_material("M_Locker_VentShadow", (0.008, 0.012, 0.015, 1.0), 0.58, 0.05),
         "rubber": plain_material("M_Locker_Rubber", (0.012, 0.014, 0.016, 1.0), 0.66, 0.0),
         "letter": plain_material("M_Locker_Lettering", (0.035, 0.045, 0.052, 1.0), 0.52, 0.15),
         "brass": plain_material("M_Locker_Brass", (0.36, 0.21, 0.065, 1.0), 0.24, 0.82),
+        "canvas": plain_material("M_Locker_Canvas", (0.035, 0.060, 0.043, 1.0), 0.88, 0.0),
     }
 
 
@@ -342,6 +348,96 @@ def build_door(materials: dict[str, bpy.types.Material], root: bpy.types.Object)
     finish_mesh(door, materials["paint"], bevel=0.0065, segments=4)
     parent_keep_world(door, pivot)
 
+    # Real folded louver lips catch a thin highlight and cast a self-shadow at
+    # gameplay distance. The openings stay boolean-cut all the way through.
+    for index, (x, _y, z) in enumerate(slot_locations):
+        louver = box(
+            f"Vent_LouverLip_{index:02d}",
+            (x, DOOR_Y - 0.035, z + 0.018),
+            (0.215, 0.030, 0.016),
+            materials["paint"],
+            bevel=0.006,
+            segments=3,
+        )
+        louver.rotation_euler.x = math.radians(-12.0)
+        parent_keep_world(louver, pivot)
+
+    # The inner skin, rolled returns and hat-section braces make the moving
+    # door credible from the hiding camera. They retain a shadow gap behind
+    # the punched front panel and do not change DoorPivot or any anchor.
+    inside_y = DOOR_Y + 0.036
+    inner_skin = box(
+        "Door_InnerSkin",
+        (0.0, inside_y, door_center_z),
+        (DOOR_WIDTH - 0.065, 0.014, DOOR_HEIGHT - 0.080),
+        materials["interior"],
+        bevel=0.008,
+        segments=3,
+    )
+    parent_keep_world(inner_skin, pivot)
+    inner_returns = [
+        ("Door_InnerReturn_Left", (-0.385, inside_y + 0.012, door_center_z), (0.035, 0.035, DOOR_HEIGHT - 0.050)),
+        ("Door_InnerReturn_Right", (0.385, inside_y + 0.012, door_center_z), (0.035, 0.035, DOOR_HEIGHT - 0.050)),
+        ("Door_InnerReturn_Top", (0.0, inside_y + 0.012, 1.865), (0.740, 0.035, 0.035)),
+        ("Door_InnerReturn_Bottom", (0.0, inside_y + 0.012, 0.145), (0.740, 0.035, 0.035)),
+    ]
+    for name, location, dimensions in inner_returns:
+        member = box(name, location, dimensions, materials["metal"], bevel=0.006, segments=3)
+        parent_keep_world(member, pivot)
+    for index, z in enumerate((0.610, 1.100, 1.535)):
+        brace = box(
+            f"Door_InnerHatBrace_{index}",
+            (0.0, inside_y + 0.024, z),
+            (0.630, 0.030, 0.055),
+            materials["metal"],
+            bevel=0.008,
+            segments=3,
+        )
+        parent_keep_world(brace, pivot)
+
+    # Three-point latch hardware remains visible when the door opens.
+    latch_rod = cylinder(
+        "Door_InnerLatchRod",
+        (0.335, inside_y + 0.040, 1.065),
+        0.010,
+        1.335,
+        materials["metal"],
+        vertices=24,
+        bevel=0.002,
+    )
+    parent_keep_world(latch_rod, pivot)
+    for index, z in enumerate((0.500, 1.065, 1.630)):
+        guide = box(
+            f"Door_LatchRodGuide_{index}",
+            (0.335, inside_y + 0.038, z),
+            (0.075, 0.035, 0.060),
+            materials["wear"],
+            bevel=0.009,
+            segments=3,
+        )
+        parent_keep_world(guide, pivot)
+    latch_tongue = box(
+        "Door_LatchTongue",
+        (0.430, inside_y + 0.030, 1.070),
+        (0.100, 0.032, 0.080),
+        materials["wear"],
+        bevel=0.010,
+        segments=3,
+    )
+    parent_keep_world(latch_tongue, pivot)
+    for index, (x, z) in enumerate(((-0.345, 0.185), (0.345, 0.185), (-0.345, 1.825), (0.345, 1.825))):
+        bumper = cylinder(
+            f"Door_InnerBumper_{index}",
+            (x, inside_y + 0.048, z),
+            0.018,
+            0.016,
+            materials["rubber"],
+            vertices=24,
+            rotation=(math.radians(90), 0.0, 0.0),
+            bevel=0.003,
+        )
+        parent_keep_world(bumper, pivot)
+
     # Pressed-steel reinforcement profile. The thin beveled rails produce a
     # readable embossed door silhouette without painting fake line art.
     rail_y = DOOR_Y - 0.031
@@ -356,7 +452,7 @@ def build_door(materials: dict[str, bpy.types.Material], root: bpy.types.Object)
         ("Door_Press_UpperRight", (0.302, rail_y, 0.975), (0.018, 0.016, 0.635)),
     ]
     for name, location, dimensions in rails:
-        rail = box(name, location, dimensions, materials["metal"], bevel=0.006, segments=3)
+        rail = box(name, location, dimensions, materials["paint"], bevel=0.006, segments=3)
         parent_keep_world(rail, pivot)
 
     # Recessed center panel and a softly beveled school identity panel.
@@ -512,10 +608,10 @@ def build_body(materials: dict[str, bpy.types.Material], root: bpy.types.Object)
         box("Cabinet_Top", (0.0, 0.0, top_z), (WIDTH, DEPTH, SHELL), materials["paint"], 0.010, 4),
         box("Cabinet_Floor", (0.0, 0.0, bottom_z), (WIDTH, DEPTH, SHELL), materials["interior"], 0.010, 4),
         box("Cabinet_InnerBack", (0.0, back_y - 0.023, 0.960), (WIDTH - 0.095, 0.018, HEIGHT - 0.130), materials["interior"], 0.006, 3),
-        box("Cabinet_UpperShelf", (0.0, 0.015, 1.535), (WIDTH - 0.105, DEPTH - 0.100, 0.040), materials["metal"], 0.008, 3),
+        box("Cabinet_UpperShelf", (0.0, 0.015, 1.535), (WIDTH - 0.105, DEPTH - 0.100, 0.040), materials["wear"], 0.008, 3),
         box("Cabinet_ShelfFrontLip", (0.0, FRONT_Y + 0.080, 1.510), (WIDTH - 0.105, 0.030, 0.090), materials["metal"], 0.006, 3),
-        box("Cabinet_TopCap", (0.0, 0.0, HEIGHT + 0.025), (WIDTH + 0.050, DEPTH + 0.035, 0.055), materials["metal"], 0.014, 4),
-        box("Cabinet_ToeKick", (0.0, FRONT_Y + 0.035, 0.085), (WIDTH - 0.040, 0.055, 0.135), materials["metal"], 0.008, 3),
+        box("Cabinet_TopCap", (0.0, 0.0, HEIGHT + 0.025), (WIDTH + 0.050, DEPTH + 0.035, 0.055), materials["wear"], 0.014, 4),
+        box("Cabinet_ToeKick", (0.0, FRONT_Y + 0.035, 0.085), (WIDTH - 0.040, 0.055, 0.135), materials["wear"], 0.008, 3),
     ]
     for obj in body_parts:
         parent_keep_world(obj, root)
@@ -541,6 +637,97 @@ def build_body(materials: dict[str, bpy.types.Material], root: bpy.types.Object)
     for name, location, dimensions in gasket_specs:
         obj = box(name, location, dimensions, materials["rubber"], bevel=0.006, segments=3)
         parent_keep_world(obj, root)
+
+    # Folded ribs and side channels stop the open cabinet reading as a simple
+    # empty box. Their depth stays outside the player concealment envelope.
+    for index, x in enumerate((-0.275, 0.0, 0.275)):
+        rib = box(
+            f"Interior_BackHatChannel_{index}",
+            (x, back_y - 0.045, 0.920),
+            (0.055, 0.028, 1.260),
+            materials["metal"],
+            bevel=0.010,
+            segments=3,
+        )
+        parent_keep_world(rib, root)
+    for index, (x, z) in enumerate((
+        (-0.330, 0.420), (0.330, 0.420),
+        (-0.330, 1.230), (0.330, 1.230),
+    )):
+        rivet = cylinder(
+            f"Interior_BackRivet_{index}",
+            (x, back_y - 0.065, z),
+            0.009,
+            0.008,
+            materials["metal"],
+            vertices=12,
+            rotation=(math.radians(90), 0.0, 0.0),
+            bevel=0.0015,
+        )
+        parent_keep_world(rivet, root)
+    for index, x in enumerate((-0.395, 0.395)):
+        side_channel = box(
+            f"Interior_SideFold_{index}",
+            (x, 0.055, 0.845),
+            (0.030, DEPTH - 0.145, 1.290),
+            materials["interior"],
+            bevel=0.008,
+            segments=3,
+        )
+        parent_keep_world(side_channel, root)
+
+    # Shelf understructure and neutral service items create believable close
+    # detail without taking space from the hidden character.
+    for x in (-0.315, 0.315):
+        rail = box(
+            f"Shelf_UndersideRail_{x:+.3f}",
+            (x, 0.035, 1.495),
+            (0.042, DEPTH - 0.165, 0.045),
+            materials["metal"],
+            bevel=0.008,
+            segments=3,
+        )
+        parent_keep_world(rail, root)
+    pouch = box(
+        "Interior_CanvasPouch",
+        (-0.190, 0.035, 1.575),
+        (0.350, 0.270, 0.075),
+        materials["canvas"],
+        bevel=0.025,
+        segments=5,
+    )
+    pouch.rotation_euler.z = math.radians(-4.0)
+    parent_keep_world(pouch, root)
+    pouch_strap = box(
+        "Interior_CanvasPouchStrap",
+        (-0.190, -0.105, 1.578),
+        (0.070, 0.012, 0.082),
+        materials["rubber"],
+        bevel=0.010,
+        segments=3,
+    )
+    pouch_strap.rotation_euler.z = math.radians(-4.0)
+    parent_keep_world(pouch_strap, root)
+    service_card = box(
+        "Interior_ServiceCard",
+        (0.245, -0.020, 1.580),
+        (0.185, 0.130, 0.018),
+        materials["paper"],
+        bevel=0.009,
+        segments=3,
+    )
+    service_card.rotation_euler.z = math.radians(7.0)
+    parent_keep_world(service_card, root)
+
+    strike = box(
+        "Cabinet_LatchStrike",
+        (WIDTH / 2 - 0.045, FRONT_Y - 0.055, 1.070),
+        (0.030, 0.045, 0.135),
+        materials["wear"],
+        bevel=0.008,
+        segments=3,
+    )
+    parent_keep_world(strike, root)
 
     # Interior hanger rail and two real hooks.
     hanger = cylinder(
@@ -814,6 +1001,14 @@ def sanitize_exported_glb(path: Path) -> int:
         if image.get("uri"):
             image.pop("bufferView", None)
 
+    # NLA tracks keep every action discoverable by Blender's exporter, but the
+    # final check-close track can otherwise leak its first frame into the GLB's
+    # static rest transform. Runtime must always receive an idle closed door;
+    # animation samplers still carry the complete authored open/close poses.
+    for node in document.get("nodes", []):
+        if node.get("name") == "DoorPivot":
+            node["rotation"] = [0.0, 0.0, 0.0, 1.0]
+
     component_sizes = {5126: 4}
 
     def accessor_info(index: int, components: int) -> tuple[int, int, int]:
@@ -867,39 +1062,128 @@ def sanitize_exported_glb(path: Path) -> int:
     return repaired
 
 
+def meshopt_compress_export(source_path: Path, destination_path: Path) -> None:
+    """Produce the compact runtime GLB with the repository-pinned gltfpack.
+
+    `-tr` is essential: the locker intentionally shares its six PBR images
+    with the rest of the environment set. Embedding those images would undo
+    most of the geometry compression and duplicate deploy bytes. Precision is
+    kept above the visually lossless thresholds verified by the browser A/B
+    test, while named anchors/materials/extras remain available to runtime.
+    """
+    executable = ROOT / "node_modules" / ".bin" / "gltfpack"
+    if not executable.is_file():
+        raise FileNotFoundError(
+            "Pinned gltfpack is missing; run npm install before building the Hero Locker"
+        )
+    command = [
+        str(executable),
+        "-i", str(source_path),
+        "-o", str(destination_path),
+        "-c",
+        "-tr",
+        "-kn",
+        "-km",
+        "-ke",
+        "-vp", "16",
+        "-vn", "12",
+        "-vt", "14",
+        "-ar", "16",
+        "-af", "0",
+        "-kv",
+    ]
+    completed = subprocess.run(
+        command,
+        cwd=ROOT,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if completed.stdout.strip():
+        print(completed.stdout.strip())
+
+    document = glb_json(destination_path)
+    required_extensions = set(document.get("extensionsRequired", []))
+    if "EXT_meshopt_compression" not in required_extensions:
+        raise RuntimeError("Hero Locker runtime export is missing EXT_meshopt_compression")
+    node_names = {node.get("name") for node in document.get("nodes", [])}
+    required_nodes = {"DoorPivot", "HideAnchor", "HandIK", "PeekAnchor", "CameraAnchor", "SearchAnchor"}
+    missing_nodes = sorted(required_nodes - node_names)
+    if missing_nodes:
+        raise RuntimeError(f"Meshopt export dropped required Hero Locker nodes: {missing_nodes}")
+    if any(not image.get("uri") for image in document.get("images", [])):
+        raise RuntimeError("Meshopt export embedded a shared Hero Locker texture")
+
+
+def glb_json(path: Path) -> dict:
+    payload = path.read_bytes()
+    if payload[:4] != b"glTF" or struct.unpack_from("<I", payload, 4)[0] != 2:
+        raise RuntimeError(f"Not a glTF 2.0 GLB: {path}")
+    offset = 12
+    while offset + 8 <= len(payload):
+        chunk_length, chunk_type = struct.unpack_from("<II", payload, offset)
+        data_start = offset + 8
+        if chunk_type == 0x4E4F534A:
+            return json.loads(bytes(payload[data_start:data_start + chunk_length]).decode("utf-8").rstrip(" \0"))
+        offset = data_start + chunk_length
+    raise RuntimeError(f"GLB has no JSON chunk: {path}")
+
+
 def save_and_export(root: bpy.types.Object) -> None:
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
     GLB_PATH.parent.mkdir(parents=True, exist_ok=True)
     set_relative_image_paths()
     bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), check_existing=False)
 
-    bpy.ops.object.select_all(action="DESELECT")
-    for obj in production_objects(root):
-        obj.select_set(True)
-    bpy.context.view_layer.objects.active = root
-    bpy.ops.export_scene.gltf(
-        filepath=str(GLB_PATH),
-        export_format="GLB",
-        use_selection=True,
-        export_yup=True,
-        export_texcoords=True,
-        export_normals=True,
-        export_tangents=True,
-        export_materials="EXPORT",
-        export_animations=True,
-        export_animation_mode="ACTIONS",
-        export_merge_animation="ACTION",
-        export_force_sampling=True,
-        export_frame_step=1,
-        export_optimize_animation_size=False,
-        export_extras=True,
-        export_cameras=False,
-        export_lights=False,
-        export_image_format="AUTO",
-        export_keep_originals=True,
-    )
-    repaired_tangents = sanitize_exported_glb(GLB_PATH)
-    print(f"HERO_LOCKER_REPAIRED_TANGENTS={repaired_tangents}")
+    with tempfile.NamedTemporaryFile(
+        prefix=".locker-uncompressed-",
+        suffix=".glb",
+        dir=GLB_PATH.parent,
+        delete=False,
+    ) as uncompressed_file:
+        uncompressed_path = Path(uncompressed_file.name)
+    with tempfile.NamedTemporaryFile(
+        prefix=".locker-meshopt-",
+        suffix=".glb",
+        dir=GLB_PATH.parent,
+        delete=False,
+    ) as compressed_file:
+        compressed_path = Path(compressed_file.name)
+    try:
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in production_objects(root):
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = root
+        bpy.ops.export_scene.gltf(
+            filepath=str(uncompressed_path),
+            export_format="GLB",
+            use_selection=True,
+            export_yup=True,
+            export_texcoords=True,
+            export_normals=True,
+            export_tangents=True,
+            export_materials="EXPORT",
+            export_animations=True,
+            export_animation_mode="ACTIONS",
+            export_merge_animation="ACTION",
+            export_force_sampling=True,
+            export_frame_step=1,
+            export_optimize_animation_size=False,
+            export_extras=True,
+            export_cameras=False,
+            export_lights=False,
+            export_image_format="AUTO",
+            export_keep_originals=True,
+        )
+        repaired_tangents = sanitize_exported_glb(uncompressed_path)
+        meshopt_compress_export(uncompressed_path, compressed_path)
+        os.replace(compressed_path, GLB_PATH)
+        print(f"HERO_LOCKER_REPAIRED_TANGENTS={repaired_tangents}")
+        print(f"HERO_LOCKER_MESHOPT_BYTES={GLB_PATH.stat().st_size}")
+    finally:
+        uncompressed_path.unlink(missing_ok=True)
+        compressed_path.unlink(missing_ok=True)
     pivot = bpy.data.objects.get("DoorPivot")
     if pivot is not None and pivot.animation_data is not None:
         for track in list(pivot.animation_data.nla_tracks):
@@ -945,10 +1229,10 @@ def setup_review_scene(materials: dict[str, bpy.types.Material]) -> bpy.types.Ob
     floor["reviewOnly"] = True
 
     lights = [
-        ("Review_Key", "AREA", (3.3, -4.2, 4.5), 690.0, 3.0, (0.95, 0.82, 0.68)),
-        ("Review_Fill", "AREA", (-3.0, -2.0, 2.8), 430.0, 3.8, (0.48, 0.68, 1.0)),
-        ("Review_Rim", "AREA", (2.0, 2.7, 3.8), 760.0, 2.2, (0.34, 0.56, 1.0)),
-        ("Review_Interior", "AREA", (0.0, -0.65, 1.45), 190.0, 1.1, (1.0, 0.70, 0.44)),
+        ("Review_Key", "AREA", (3.3, -4.2, 4.5), 220.0, 3.0, (0.95, 0.82, 0.68)),
+        ("Review_Fill", "AREA", (-3.0, -2.0, 2.8), 145.0, 3.8, (0.48, 0.68, 1.0)),
+        ("Review_Rim", "AREA", (2.0, 2.7, 3.8), 310.0, 2.2, (0.34, 0.56, 1.0)),
+        ("Review_Interior", "AREA", (0.0, -0.65, 1.45), 88.0, 1.1, (1.0, 0.70, 0.44)),
     ]
     for name, light_type, location, energy, size, color in lights:
         bpy.ops.object.light_add(type=light_type, location=location)
@@ -975,8 +1259,8 @@ def render_reviews(pivot: bpy.types.Object, materials: dict[str, bpy.types.Mater
     camera = setup_review_scene(materials)
     reviews = [
         ("locker_closed_three_quarter.png", 0.0, (2.8, -4.25, 2.55), (0.0, 0.0, 1.00), 58),
-        ("locker_open_interior.png", OPEN_ANGLE_DEG, (3.1, -4.0, 2.42), (-0.05, 0.0, 1.00), 55),
-        ("locker_open_detail.png", -74.0, (1.80, -2.55, 1.78), (0.10, -0.18, 1.14), 67),
+        ("locker_open_midframe.png", -62.0, (3.1, -4.0, 2.42), (-0.05, 0.0, 1.00), 55),
+        ("locker_open_interior.png", OPEN_ANGLE_DEG, (1.80, -2.55, 1.78), (0.10, -0.18, 1.14), 67),
     ]
     for filename, angle, camera_location, target, lens in reviews:
         pivot.rotation_euler = (0.0, 0.0, math.radians(angle))

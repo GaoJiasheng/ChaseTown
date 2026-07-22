@@ -1,0 +1,295 @@
+{
+  "pipeline": "premium_common_environment_v2",
+  "sourceMaster": "art-source/Environment/Premium/Chasing_Premium_Common_Environment.blend",
+  "sharedTextureDirectory": "public/models/SharedTextures",
+  "assetCount": 18,
+  "totalRuntimeBytes": 2185108,
+  "totalTriangles": 104946,
+  "assets": [
+    {
+      "source": "Door_FrontGate",
+      "runtime": "front-gate.glb",
+      "bytes": 75768,
+      "nodes": 20,
+      "meshes": 11,
+      "materials": 4,
+      "images": 8,
+      "triangles": 3616,
+      "uniqueTriangles": 2112
+    },
+    {
+      "source": "Door_Classroom",
+      "runtime": "classroom-door.glb",
+      "bytes": 69104,
+      "nodes": 17,
+      "meshes": 10,
+      "materials": 4,
+      "images": 8,
+      "triangles": 3052,
+      "uniqueTriangles": 1924
+    },
+    {
+      "source": "Door_RearExit",
+      "runtime": "exit.glb",
+      "bytes": 69136,
+      "nodes": 17,
+      "meshes": 10,
+      "materials": 4,
+      "images": 8,
+      "triangles": 3052,
+      "uniqueTriangles": 1924
+    },
+    {
+      "source": "Light_Ceiling_Emissive",
+      "runtime": "ceiling-light.glb",
+      "bytes": 37164,
+      "nodes": 10,
+      "meshes": 7,
+      "materials": 3,
+      "images": 4,
+      "triangles": 1464,
+      "uniqueTriangles": 960
+    },
+    {
+      "source": "Prop_BulletinBoard",
+      "runtime": "bulletin.glb",
+      "semanticMaterials": [
+        "BluePaintedMetal",
+        "Paper",
+        "RedPaintedMetal",
+        "WoodTrim",
+        "WornMetal"
+      ],
+      "bytes": 75136,
+      "nodes": 22,
+      "meshes": 10,
+      "materials": 5,
+      "images": 10,
+      "triangles": 7624,
+      "uniqueTriangles": 2100
+    },
+    {
+      "source": "Prop_FireExtinguisher",
+      "runtime": "extinguisher.glb",
+      "semanticMaterials": [
+        "Paper",
+        "RedPaintedMetal",
+        "RubberBlack",
+        "WornMetal"
+      ],
+      "bytes": 53148,
+      "nodes": 11,
+      "meshes": 9,
+      "materials": 4,
+      "images": 8,
+      "triangles": 1524,
+      "uniqueTriangles": 1512
+    },
+    {
+      "source": "Prop_TrashBin",
+      "runtime": "trash.glb",
+      "semanticMaterials": [
+        "BluePaintedMetal",
+        "Paper",
+        "RubberBlack",
+        "WornMetal"
+      ],
+      "bytes": 58592,
+      "nodes": 13,
+      "meshes": 8,
+      "materials": 4,
+      "images": 8,
+      "triangles": 1832,
+      "uniqueTriangles": 1784
+    },
+    {
+      "source": "Prop_DeskChair_Set",
+      "runtime": "desk-chair.glb",
+      "semanticMaterials": [
+        "BluePaintedMetal",
+        "Paper",
+        "RedPaintedMetal",
+        "RubberBlack",
+        "WoodTrim",
+        "WornMetal"
+      ],
+      "bytes": 189268,
+      "nodes": 51,
+      "meshes": 29,
+      "materials": 6,
+      "images": 12,
+      "triangles": 11352,
+      "uniqueTriangles": 5484
+    },
+    {
+      "source": "Prop_Blackboard",
+      "runtime": "blackboard.glb",
+      "semanticMaterials": [
+        "Blackboard",
+        "Paper",
+        "WoodTrim",
+        "WornMetal"
+      ],
+      "bytes": 66584,
+      "nodes": 15,
+      "meshes": 10,
+      "materials": 4,
+      "images": 8,
+      "triangles": 2632,
+      "uniqueTriangles": 1880
+    },
+    {
+      "source": "Prop_TeacherPodium",
+      "runtime": "podium.glb",
+      "semanticMaterials": [
+        "Paper",
+        "RubberBlack",
+        "WoodTrim",
+        "WornMetal"
+      ],
+      "bytes": 75936,
+      "nodes": 16,
+      "meshes": 10,
+      "materials": 4,
+      "images": 8,
+      "triangles": 4288,
+      "uniqueTriangles": 2196
+    },
+    {
+      "source": "Prop_ScatteredBooks",
+      "runtime": "books.glb",
+      "semanticMaterials": [
+        "BluePaintedMetal",
+        "Paper",
+        "RedPaintedMetal",
+        "WoodTrim",
+        "WornMetal"
+      ],
+      "bytes": 289632,
+      "nodes": 49,
+      "meshes": 38,
+      "materials": 5,
+      "images": 10,
+      "triangles": 11532,
+      "uniqueTriangles": 8748
+    },
+    {
+      "source": "Prop_DroppedBackpack",
+      "runtime": "backpack.glb",
+      "semanticMaterials": [
+        "BluePaintedMetal",
+        "RubberBlack",
+        "WornMetal"
+      ],
+      "bytes": 59128,
+      "nodes": 22,
+      "meshes": 12,
+      "materials": 3,
+      "images": 6,
+      "triangles": 3128,
+      "uniqueTriangles": 1436
+    },
+    {
+      "source": "Prop_Bench",
+      "runtime": "bench.glb",
+      "semanticMaterials": [
+        "WoodTrim",
+        "WornMetal"
+      ],
+      "bytes": 86152,
+      "nodes": 34,
+      "meshes": 15,
+      "materials": 2,
+      "images": 4,
+      "triangles": 8988,
+      "uniqueTriangles": 2276
+    },
+    {
+      "source": "Prop_Tree_Set",
+      "runtime": "tree.glb",
+      "semanticMaterials": [
+        "Grass",
+        "WoodTrim"
+      ],
+      "bytes": 256260,
+      "nodes": 37,
+      "meshes": 36,
+      "materials": 2,
+      "images": 4,
+      "triangles": 7848,
+      "uniqueTriangles": 7848
+    },
+    {
+      "source": "Prop_Shrub_Set",
+      "runtime": "shrub.glb",
+      "semanticMaterials": [
+        "Grass",
+        "RubberBlack",
+        "WoodTrim"
+      ],
+      "bytes": 230424,
+      "nodes": 16,
+      "meshes": 15,
+      "materials": 3,
+      "images": 6,
+      "triangles": 7826,
+      "uniqueTriangles": 7826
+    },
+    {
+      "source": "Prop_BasketballHoop",
+      "runtime": "basketball.glb",
+      "semanticMaterials": [
+        "Paper",
+        "RedPaintedMetal",
+        "RubberBlack",
+        "WornMetal"
+      ],
+      "bytes": 145244,
+      "nodes": 37,
+      "meshes": 27,
+      "materials": 4,
+      "images": 8,
+      "triangles": 7180,
+      "uniqueTriangles": 4080
+    },
+    {
+      "source": "Prop_PoliceCar",
+      "runtime": "police-car.glb",
+      "semanticMaterials": [
+        "BluePaintedMetal",
+        "GlassBlue",
+        "Paper",
+        "RedPaintedMetal",
+        "RubberBlack",
+        "WornMetal"
+      ],
+      "bytes": 163456,
+      "nodes": 48,
+      "meshes": 26,
+      "materials": 6,
+      "images": 12,
+      "triangles": 9844,
+      "uniqueTriangles": 4872
+    },
+    {
+      "source": "Prop_PoliceStationFacade",
+      "runtime": "station.glb",
+      "semanticMaterials": [
+        "BluePaintedMetal",
+        "GlassBlue",
+        "HallwayTile",
+        "PaintedWall",
+        "Paper",
+        "RedPaintedMetal",
+        "WornMetal"
+      ],
+      "bytes": 184976,
+      "nodes": 44,
+      "meshes": 29,
+      "materials": 8,
+      "images": 14,
+      "triangles": 8164,
+      "uniqueTriangles": 5276
+    }
+  ]
+}
