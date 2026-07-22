@@ -6,7 +6,9 @@ import type { MoveIntent, Point } from "./contracts.ts";
  * share one immutable basis instead of drifting apart as the player turns.
  */
 export const FIXED_CAMERA_GROUND_DIRECTION: Readonly<Point> = Object.freeze({
-  x: 0,
+  // A fixed three-quarter azimuth reveals wall depth and prop silhouettes.
+  // Input is projected through this same basis below, so controls never flip.
+  x: 0.34,
   y: -0.58,
 });
 

@@ -1,4 +1,4 @@
-import type { ChaserMode, GameConfig, GamePhase, PlayerState } from "./contracts.ts";
+import type { ChaserMode, GameConfig, GamePhase, PlayerMode, PlayerState } from "./contracts.ts";
 import type { AnimationState } from "./animation/actor-runtime.ts";
 
 export interface LockerDoorClaim {
@@ -148,6 +148,152 @@ export function baseCameraDistanceForAspect(aspect: number): number {
   const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
   const portraitBlend = Math.min(1, Math.max(0, (0.86 - safeAspect) / 0.4));
   return 16.25 - portraitBlend * 2;
+}
+
+/**
+ * Preserve the player's wide exploration view, then move in only for authored
+ * character performances that would otherwise be unreadable at maze scale.
+ * Threat framing can still push the camera back when both actors must fit.
+ */
+export function cameraDistanceScaleForPlayerMode(mode: PlayerMode): number {
+  switch (mode) {
+    case "aligning-hide":
+    case "entering-hide":
+    case "exiting-hide":
+      return 0.78;
+    case "entering-peek":
+    case "peeking":
+    case "exiting-peek":
+      return 0.84;
+    case "caught":
+    case "escaped":
+      return 0.86;
+    case "hidden":
+      return 0.9;
+    case "free":
+      return 1;
+  }
+}
+
+export interface CameraFocusBounds {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+export interface EdgeHideCameraFocusRequest {
+  focus: CameraFramingVector;
+  bounds: CameraFocusBounds;
+  mode: PlayerMode;
+  cameraDirection: CameraFramingVector;
+  cameraDistance: number;
+  verticalFovDegrees: number;
+  aspect: number;
+  edgeInset?: number;
+  maximumShift?: number;
+  safeHorizontalNdc?: number;
+  safeVerticalNdc?: number;
+}
+
+const EDGE_HIDE_CAMERA_MODES: ReadonlySet<PlayerMode> = new Set([
+  "aligning-hide",
+  "entering-hide",
+  "hidden",
+  "entering-peek",
+  "peeking",
+  "exiting-peek",
+  "exiting-hide",
+]);
+
+/**
+ * Moves the look-at point slightly into the playfield for locker performances
+ * on an outer map edge. This is a framing translation only: the immutable
+ * camera direction (and therefore the player's screen-relative controls) is
+ * never rotated. The final shift is projection-limited so a portrait viewport
+ * keeps the performer inside a conservative central safe frame.
+ */
+export function cameraFocusForEdgeHide(request: EdgeHideCameraFocusRequest): CameraFramingVector {
+  if (!EDGE_HIDE_CAMERA_MODES.has(request.mode)) return { ...request.focus };
+  const values = [
+    request.focus.x,
+    request.focus.y,
+    request.focus.z,
+    request.bounds.minX,
+    request.bounds.maxX,
+    request.bounds.minZ,
+    request.bounds.maxZ,
+    request.cameraDistance,
+    request.verticalFovDegrees,
+    request.aspect,
+  ];
+  if (!values.every(Number.isFinite)
+    || request.bounds.maxX <= request.bounds.minX
+    || request.bounds.maxZ <= request.bounds.minZ
+    || request.cameraDistance <= 0
+    || request.aspect <= 0) {
+    return { ...request.focus };
+  }
+
+  const requestedInset = Math.max(0, request.edgeInset ?? 8);
+  const xInset = Math.min(requestedInset, (request.bounds.maxX - request.bounds.minX) / 2);
+  const zInset = Math.min(requestedInset, (request.bounds.maxZ - request.bounds.minZ) / 2);
+  const safeMinX = request.bounds.minX + xInset;
+  const safeMaxX = request.bounds.maxX - xInset;
+  const safeMinZ = request.bounds.minZ + zInset;
+  const safeMaxZ = request.bounds.maxZ - zInset;
+  let shift = {
+    x: Math.min(safeMaxX, Math.max(safeMinX, request.focus.x)) - request.focus.x,
+    y: 0,
+    z: Math.min(safeMaxZ, Math.max(safeMinZ, request.focus.z)) - request.focus.z,
+  };
+  const shiftLength = vectorLength3(shift);
+  if (shiftLength <= 1e-9) return { ...request.focus };
+  // Two grid metres per cell: at most two cells of translation is enough to
+  // move the boundary off centre without turning this into a detached camera.
+  const maximumShift = Math.max(0, request.maximumShift ?? 4);
+  if (maximumShift <= 1e-9) return { ...request.focus };
+  if (shiftLength > maximumShift) {
+    const scale = maximumShift / shiftLength;
+    shift = { x: shift.x * scale, y: 0, z: shift.z * scale };
+  }
+
+  const direction = normalize3(request.cameraDirection, { x: 0, y: 1, z: 0 });
+  const forward = { x: -direction.x, y: -direction.y, z: -direction.z };
+  const right = normalize3(cross3(forward, { x: 0, y: 1, z: 0 }), { x: 1, y: 0, z: 0 });
+  const up = normalize3(cross3(right, forward), { x: 0, y: 1, z: 0 });
+  const halfFovRadians = Math.min(89, Math.max(1, request.verticalFovDegrees / 2)) * Math.PI / 180;
+  const verticalSlope = Math.tan(halfFovRadians);
+  const horizontalSlope = verticalSlope * Math.max(0.1, request.aspect);
+  const safeHorizontal = Math.min(0.9, Math.max(0.05, request.safeHorizontalNdc ?? 0.32));
+  const safeVertical = Math.min(0.9, Math.max(0.05, request.safeVerticalNdc ?? 0.26));
+  const isProjectionSafe = (scale: number) => {
+    // The performer remains at the original focus while the camera looks at
+    // focus + shift, hence its camera-space offset is the negative shift.
+    const relative = { x: -shift.x * scale, y: 0, z: -shift.z * scale };
+    const depth = request.cameraDistance + dot3(relative, forward);
+    if (depth <= 0.1) return false;
+    const horizontalNdc = Math.abs(dot3(relative, right)) / (depth * horizontalSlope);
+    const verticalNdc = Math.abs(dot3(relative, up)) / (depth * verticalSlope);
+    return horizontalNdc <= safeHorizontal && verticalNdc <= safeVertical;
+  };
+
+  let projectionScale = 1;
+  if (!isProjectionSafe(1)) {
+    let low = 0;
+    let high = 1;
+    for (let iteration = 0; iteration < 18; iteration += 1) {
+      const middle = (low + high) / 2;
+      if (isProjectionSafe(middle)) low = middle;
+      else high = middle;
+    }
+    projectionScale = low;
+  }
+  return {
+    x: request.focus.x + shift.x * projectionScale,
+    y: request.focus.y,
+    z: request.focus.z + shift.z * projectionScale,
+  };
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));

@@ -62,6 +62,11 @@ function runCertifiedHideRoute(level, hideSpotId) {
     config: getCampaignGameplayConfig(level),
   });
   const seenModes = new Set();
+  const modeSequence = [];
+  const recordMode = (mode) => {
+    seenModes.add(mode);
+    if (modeSequence.at(-1) !== mode) modeSequence.push(mode);
+  };
   let stage = "draw-attention";
   let hiddenSeconds = 0;
   let patrolSeconds = 0;
@@ -71,7 +76,7 @@ function runCertifiedHideRoute(level, hideSpotId) {
   for (let frame = 0; frame < maxFrames && simulation.getState().phase === "playing"; frame += 1) {
     const state = simulation.getState();
     const input = {};
-    seenModes.add(state.chaser.mode);
+    recordMode(state.chaser.mode);
 
     if (stage === "draw-attention" && ["suspicious", "chase", "lost-sight"].includes(state.chaser.mode)) {
       stage = "reach-hide-spot";
@@ -103,10 +108,10 @@ function runCertifiedHideRoute(level, hideSpotId) {
     }
 
     const next = simulation.advance(FRAME_SECONDS, input);
-    seenModes.add(next.chaser.mode);
+    recordMode(next.chaser.mode);
   }
 
-  return { state: simulation.getState(), seenModes, reachedHidden, stage };
+  return { state: simulation.getState(), seenModes, modeSequence, reachedHidden, stage };
 }
 
 test("all ten campaign levels punish a shortest-path sprint with chase and capture at 60 Hz", async (t) => {
@@ -131,6 +136,12 @@ test("all ten certified hide routes break pursuit and reach the exit at 60 Hz", 
       const result = runCertifiedHideRoute(level, CERTIFIED_HIDE_SPOTS[level.id]);
       assert.equal(result.seenModes.has("suspicious") || result.seenModes.has("chase"), true, `${level.id} route never draws attention`);
       assert.equal(result.reachedHidden, true, `${level.id} never completes its hide transition`);
+      const lastKnownIndex = result.modeSequence.indexOf("go-to-last-known");
+      const scanIndex = result.modeSequence.indexOf("scan-last-known");
+      const searchIndex = result.modeSequence.indexOf("search");
+      assert.ok(lastKnownIndex >= 0, `${level.id} chaser never reaches the last sighting`);
+      assert.ok(scanIndex > lastKnownIndex, `${level.id} chaser never scans after reaching the last sighting`);
+      assert.ok(searchIndex > scanIndex, `${level.id} chaser never searches after the last-sighting scan`);
       assert.equal(result.state.phase, "won", `${level.id} safe route ended at ${result.stage}`);
       assert.equal(result.state.player.mode, "escaped", `${level.id} must finish at the exit`);
     });

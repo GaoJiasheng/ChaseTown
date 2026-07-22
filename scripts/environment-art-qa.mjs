@@ -158,7 +158,7 @@ const LEVELS = [
     semanticAssets: ["theme-node:FactoryStorageTank", "theme-node:FactoryControlConsole", "theme-node:FactorySafetyBarrier", "theme-node:FactoryCrateStack"],
     representative: {
       hide: { id: "foundry-slag-shield", player: { x: 2, y: 7 }, chaser: { x: 23, y: 1 } },
-      chase: { player: { x: 23, y: 6 }, chaser: { x: 23, y: 1 } },
+      chase: { player: { x: 9, y: 4 }, chaser: { x: 5, y: 4 } },
     },
   },
 ];
@@ -286,10 +286,10 @@ function assertRuntimeIntegrity(state, level, { fallback = false } = {}) {
   assert.ok(state.render.calls <= 520, `${level.id} draw calls exceeded 520: ${state.render.calls}`);
   assert.ok(state.render.triangles <= 3_000_000, `${level.id} exceeded 3M rendered triangles: ${state.render.triangles}`);
   assert.ok(state.render.memory.geometries <= 300, `${level.id} geometry count exceeded 300`);
-  // One shared 384x192 CanvasTexture drives the diegetic hide marker across
-  // every locker; retain a small explicit allowance without relaxing the
-  // live-scene texture budget below.
-  assert.ok(state.render.memory.textures <= 224, `${level.id} texture count exceeded 224`);
+  // The complete BaseColor/Normal/ORM material chain adds one compact packed
+  // texture per surface family. Keep the live-scene limit at 80 below and a
+  // hard renderer-memory ceiling of 256 so the PBR upgrade remains bounded.
+  assert.ok(state.render.memory.textures <= 256, `${level.id} texture count exceeded 256`);
   assert.ok(state.render.programs <= 48, `${level.id} shader program count exceeded 48`);
   assert.ok(state.render.sceneTextures <= 80, `${level.id} live scene texture count exceeded 80`);
   if (fallback) assert.equal(state.render.batching, "instanced-mesh", `${level.id} did not enter the no-multi-draw fallback`);
@@ -300,6 +300,22 @@ function assertSemanticCoverage(state, level) {
   assert.deepEqual(state.assets.unusedLoadedAssetIds, [], `${level.id} loaded assets that never reached the scene`);
   const placed = new Set(state.assets.placedAssetIds);
   assert.ok(placed.has(`theme:${level.theme}`), `${level.id} did not place its ${level.theme} kit`);
+  for (const runtimeAsset of [
+    "runtime:ambient-room-clusters",
+    "runtime:authored-room-floors",
+    "runtime:prop-contact-shadows",
+    "runtime:wall-contact-shadows",
+  ]) {
+    assert.ok(placed.has(runtimeAsset), `${level.id} did not place ${runtimeAsset}`);
+  }
+  assert.ok(
+    [...placed].some((asset) => asset.startsWith("theme-node:") && asset.includes("ArchitectureWallWide")),
+    `${level.id} did not place a continuous four-metre wall elevation`,
+  );
+  assert.ok(
+    [...placed].some((asset) => asset.startsWith("theme-node:") && asset.includes("ArchitectureJunction")),
+    `${level.id} did not place a choice-landmark junction`,
+  );
 
   const storyNodes = [...level.landmarks, level.arrival, level.exit, level.hideDressing];
   assert.equal(new Set(storyNodes).size, storyNodes.length, `${level.id} story-role nodes must be exclusive`);

@@ -5,6 +5,8 @@ import { DEFAULT_GAME_CONFIG } from "../app/game/level.ts";
 import {
   baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
+  cameraDistanceScaleForPlayerMode,
+  cameraFocusForEdgeHide,
   canChaserTakeLockerDoor,
   chaserAnimationForMode,
   lockerVisionMix,
@@ -171,4 +173,61 @@ test("portrait baseline keeps actors readable without weakening safe framing", (
   assert.ok(baseCameraDistanceForAspect(0.7) > 14.25);
   assert.ok(baseCameraDistanceForAspect(0.7) < 16.25);
   assert.equal(baseCameraDistanceForAspect(Number.NaN), 16.25);
+});
+
+test("locker performances receive a close readable camera without shrinking exploration", () => {
+  assert.equal(cameraDistanceScaleForPlayerMode("free"), 1);
+  assert.equal(cameraDistanceScaleForPlayerMode("entering-hide"), 0.78);
+  assert.equal(cameraDistanceScaleForPlayerMode("exiting-hide"), 0.78);
+  assert.ok(cameraDistanceScaleForPlayerMode("peeking") < 1);
+  assert.ok(cameraDistanceScaleForPlayerMode("hidden") > cameraDistanceScaleForPlayerMode("entering-hide"));
+});
+
+test("edge lockers bias only the hide-performance focus into the maze", () => {
+  const cameraDirection = { x: 0.3451465392455413, y: 0.7308985536964403, z: -0.588779390477688 };
+  const bounds = { minX: -24, maxX: 24, minZ: -24, maxZ: 24 };
+  const request = {
+    bounds,
+    cameraDirection,
+    cameraDistance: 13,
+    verticalFovDegrees: 56,
+    aspect: 1.7039627039627039,
+  };
+  for (const focus of [
+    { x: -20, y: 0.92, z: 12 }, // L4 outpatient locker
+    { x: -20, y: 0.92, z: -10 }, // L10 foundry locker
+  ]) {
+    const framed = cameraFocusForEdgeHide({ ...request, focus, mode: "entering-hide" });
+    assert.ok(framed.x > focus.x + 3.9 && framed.x <= focus.x + 4 + 1e-9);
+    assert.equal(framed.y, focus.y);
+    assert.equal(framed.z, focus.z);
+  }
+
+  const center = { x: 0, y: 0.92, z: 0 };
+  assert.deepEqual(
+    cameraFocusForEdgeHide({ ...request, focus: center, mode: "entering-hide" }),
+    center,
+    "central lockers must keep the authored focus",
+  );
+  assert.deepEqual(
+    cameraFocusForEdgeHide({ ...request, focus: { x: -20, y: 0.92, z: 12 }, mode: "free" }),
+    { x: -20, y: 0.92, z: 12 },
+    "ordinary traversal must never inherit cinematic edge bias",
+  );
+});
+
+test("portrait edge framing automatically limits performer displacement", () => {
+  const common = {
+    focus: { x: -20, y: 0.92, z: 12 },
+    bounds: { minX: -24, maxX: 24, minZ: -24, maxZ: 24 },
+    mode: "hidden",
+    cameraDirection: { x: 0.3451465392455413, y: 0.7308985536964403, z: -0.588779390477688 },
+    cameraDistance: 13,
+    verticalFovDegrees: 56,
+  };
+  const landscape = cameraFocusForEdgeHide({ ...common, aspect: 1.7 });
+  const portrait = cameraFocusForEdgeHide({ ...common, aspect: 0.5 });
+  assert.ok(landscape.x - common.focus.x > 3);
+  assert.ok(portrait.x > common.focus.x, "portrait still removes some exterior dominance");
+  assert.ok(portrait.x - common.focus.x < 1.5, "portrait must keep the performer in its central safe frame");
 });

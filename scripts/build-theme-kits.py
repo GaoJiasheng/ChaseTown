@@ -5,8 +5,9 @@ Run with:
 
 The source master is saved as one .blend while each theme is exported as a
 small GLB containing named, independently cloneable props.  The kits reuse the
-project's compact 512px PBR color/normal library, embedded once per GLB, so the
-walls and hero props retain real surface grain without extra runtime requests.
+project's compact 512px BaseColor/Normal/ORM library, embedded once per GLB, so
+walls and hero props retain full glTF PBR surface variation without extra
+runtime requests.
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "public" / "models" / "environment" / "themes"
 MASTER = ROOT / "art-source" / "Environment" / "ThemeKits" / "Chasing_Theme_Environment_Kits.blend"
 SHARED_TEXTURES = ROOT / "public" / "models" / "SharedTextures"
+ORM_TEXTURES = ROOT / "work" / "art_pipeline" / "environment-orm"
+ORM_GENERATOR = ROOT / "tools" / "art_pipeline" / "generate_environment_runtime_orm.mjs"
 GLTFPACK = ROOT / "node_modules" / ".bin" / "gltfpack"
 
 
@@ -67,6 +70,16 @@ def material(
     return mat
 
 
+def ensure_gltf_occlusion_group() -> bpy.types.NodeTree:
+    """Create the exporter-recognized, non-rendering glTF occlusion socket."""
+    group = bpy.data.node_groups.get("glTF Material Output")
+    if group is None:
+        group = bpy.data.node_groups.new("glTF Material Output", "ShaderNodeTree")
+    if "Occlusion" not in group.interface.items_tree:
+        group.interface.new_socket(name="Occlusion", in_out="INPUT", socket_type="NodeSocketColor")
+    return group
+
+
 def attach_texture_pair(
     mat: bpy.types.Material,
     texture_stem: str,
@@ -74,11 +87,12 @@ def attach_texture_pair(
     normal_strength: float = 0.72,
     use_base_color: bool = True,
 ) -> None:
-    """Attach an export-safe base-color/normal pair from the shared PBR set."""
+    """Attach an export-safe BaseColor/Normal/ORM set from the shared library."""
     base_path = SHARED_TEXTURES / f"{texture_stem}_BaseColor_2K.png"
     normal_path = SHARED_TEXTURES / f"{texture_stem}_Normal_2K.png"
-    if not base_path.is_file() or not normal_path.is_file():
-        raise FileNotFoundError(f"Missing shared PBR pair for {texture_stem}")
+    orm_path = ORM_TEXTURES / f"{texture_stem}_ORM_512.png"
+    if not base_path.is_file() or not normal_path.is_file() or not orm_path.is_file():
+        raise FileNotFoundError(f"Missing shared PBR set for {texture_stem}")
 
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
@@ -102,6 +116,26 @@ def attach_texture_pair(
     normal_map.inputs["Strength"].default_value = normal_strength
     links.new(normal_node.outputs["Color"], normal_map.inputs["Color"])
     links.new(normal_map.outputs["Normal"], shader.inputs["Normal"])
+
+    orm_image = bpy.data.images.load(str(orm_path), check_existing=True)
+    orm_image.colorspace_settings.name = "Non-Color"
+    orm_node = nodes.new("ShaderNodeTexImage")
+    orm_node.name = f"{texture_stem}_ORM"
+    orm_node.label = "glTF ORM: AO / roughness / metallic"
+    orm_node.image = orm_image
+    separate = nodes.new("ShaderNodeSeparateColor")
+    separate.mode = "RGB"
+    links.new(orm_node.outputs["Color"], separate.inputs["Color"])
+    # Factors remain at one so the packed physical response is not attenuated
+    # a second time in glTF. Surface-family differentiation lives in the ORM.
+    shader.inputs["Roughness"].default_value = 1.0
+    shader.inputs["Metallic"].default_value = 1.0
+    links.new(separate.outputs["Green"], shader.inputs["Roughness"])
+    links.new(separate.outputs["Blue"], shader.inputs["Metallic"])
+    gltf_output = nodes.new("ShaderNodeGroup")
+    gltf_output.name = "glTF Material Output"
+    gltf_output.node_tree = ensure_gltf_occlusion_group()
+    links.new(orm_node.outputs["Color"], gltf_output.inputs["Occlusion"])
 
 
 def theme_collection(name: str) -> bpy.types.Collection:
@@ -235,6 +269,113 @@ def torus(
         polygon.use_smooth = True
     link_to_collection(obj, owner.users_collection[0])
     return parent(obj, owner)
+
+
+def add_projected_uv(mesh: bpy.types.Mesh) -> None:
+    """Give authored profile meshes a stable metre-scaled UV0 for glTF PBR."""
+    uv_layer = mesh.uv_layers.new(name="UVMap")
+    for polygon in mesh.polygons:
+        normal = polygon.normal
+        for loop_index in polygon.loop_indices:
+            vertex = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            if abs(normal.y) >= max(abs(normal.x), abs(normal.z)):
+                uv = (vertex.x * .5, vertex.z * .5)
+            elif abs(normal.x) >= abs(normal.z):
+                uv = (vertex.y * .5, vertex.z * .5)
+            else:
+                uv = (vertex.x * .5, vertex.y * .5)
+            uv_layer.data[loop_index].uv = uv
+
+
+def profile_prism(
+    name: str,
+    profile: tuple[tuple[float, float], ...],
+    center_x: float,
+    center_y: float,
+    depth: float,
+    mat: bpy.types.Material,
+    owner: bpy.types.Object,
+    *,
+    bevel: float = .018,
+) -> bpy.types.Object:
+    """Extrude a hand-authored X/Z construction profile through Y."""
+    count = len(profile)
+    vertices = [
+        (px, -depth / 2, pz)
+        for px, pz in profile
+    ] + [
+        (px, depth / 2, pz)
+        for px, pz in profile
+    ]
+    faces = [tuple(reversed(range(count))), tuple(range(count, count * 2))]
+    for index in range(count):
+        next_index = (index + 1) % count
+        faces.append((index, next_index, count + next_index, count + index))
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    add_projected_uv(mesh)
+    obj = bpy.data.objects.new(name, mesh)
+    obj.data.materials.append(mat)
+    link_to_collection(obj, owner.users_collection[0])
+    obj.parent = owner
+    obj.matrix_parent_inverse = Matrix.Identity(4)
+    obj.location = (0, center_y, 0)
+    if bevel:
+        modifier = obj.modifiers.new("Authored profile edge roll", "BEVEL")
+        modifier.width = bevel
+        modifier.segments = 2
+    return obj
+
+
+def arch_band(
+    name: str,
+    center_x: float,
+    center_y: float,
+    spring_z: float,
+    radius: float,
+    thickness: float,
+    depth: float,
+    mat: bpy.types.Material,
+    owner: bpy.types.Object,
+    *,
+    axis: str = "x",
+    segments: int = 14,
+) -> bpy.types.Object:
+    """Build a single continuous masonry/steel arch instead of box segments."""
+    outer = []
+    inner = []
+    for index in range(segments + 1):
+        angle = math.pi * index / segments
+        horizontal = math.cos(angle)
+        height = math.sin(angle)
+        outer.append((horizontal * radius, spring_z + height * radius))
+        inner_radius = radius - thickness
+        inner.append((horizontal * inner_radius, spring_z + height * inner_radius))
+    ring = outer + list(reversed(inner))
+    count = len(ring)
+    vertices: list[tuple[float, float, float]] = []
+    for side in (-1, 1):
+        for horizontal, z in ring:
+            if axis == "x":
+                vertices.append((horizontal, side * depth / 2, z))
+            else:
+                vertices.append((side * depth / 2, horizontal, z))
+    faces = [tuple(reversed(range(count))), tuple(range(count, count * 2))]
+    for index in range(count):
+        next_index = (index + 1) % count
+        faces.append((index, next_index, count + next_index, count + index))
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    add_projected_uv(mesh)
+    obj = bpy.data.objects.new(name, mesh)
+    obj.data.materials.append(mat)
+    link_to_collection(obj, owner.users_collection[0])
+    obj.parent = owner
+    obj.matrix_parent_inverse = Matrix.Identity(4)
+    obj.location = (0, center_y, 0)
+    return obj
 
 
 def text_mesh(
@@ -890,9 +1031,56 @@ def add_wall_shell(owner, m, theme: str, x: float) -> None:
         box("WallTopBeam", (2.05, .31, .17), (x, -.04, 2.25), m["steel_dark"], owner, bevel=.015)
 
 
+def add_wall_silhouette(owner, m, theme: str, x: float, variant: str) -> None:
+    """Give B/C bays distinct skyline profiles, not merely different decals."""
+    if variant == "A":
+        return
+    if theme == "campus":
+        if variant == "B":
+            profile_prism(
+                "LibraryGableCrown",
+                ((-1.01, 2.19), (-.72, 2.39), (0, 2.64), (.72, 2.39), (1.01, 2.19)),
+                x, -.025, .27, m["navy"], owner, bevel=.022,
+            )
+            profile_prism(
+                "LibraryGableInset",
+                ((-.72, 2.27), (0, 2.53), (.72, 2.27), (.6, 2.22), (0, 2.43), (-.6, 2.22)),
+                x, -.18, .035, m["brass"], owner, bevel=.009,
+            )
+        else:
+            arch_band("ScienceClerestoryArch", x, -.02, 2.16, .49, .115, .28, m["steel_light"], owner, segments=16)
+            box("ScienceClerestoryGlow", (.55, .035, .12), (x, -.185, 2.48), m["screen"], owner, bevel=.025)
+    elif theme == "hospital":
+        profile = (
+            ((-1.01, 2.18), (-.78, 2.4), (-.36, 2.53), (.36, 2.53), (.78, 2.4), (1.01, 2.18))
+            if variant == "B"
+            else ((-1.01, 2.18), (-.68, 2.34), (-.2, 2.43), (.2, 2.43), (.68, 2.34), (1.01, 2.18))
+        )
+        profile_prism("HospitalCovedHeader", profile, x, -.02, .28, m["hospital_teal"], owner, bevel=.028)
+        for px in (-.58, .58):
+            cylinder(f"HospitalHeaderLamp_{px}", .065, .045, (x + px, -.19, 2.32), m["screen"], owner, rotation=(math.pi / 2, 0, 0), vertices=20, bevel=.008)
+    elif theme == "fire":
+        profile_prism(
+            "FireBayTrussCrown",
+            ((-1.03, 2.17), (-.76, 2.48), (-.2, 2.31), (.38, 2.58), (1.03, 2.2), (1.03, 2.12), (-1.03, 2.12)),
+            x, -.015, .31, m["steel_dark"], owner, bevel=.018,
+        )
+        if variant == "C":
+            arch_band("FireBayPipeLoop", x, -.19, 2.09, .58, .07, .095, m["fire_red"], owner, segments=14)
+    else:
+        profile = (
+            ((-1.03, 2.15), (-.65, 2.53), (-.25, 2.19), (.17, 2.5), (.58, 2.2), (1.03, 2.45), (1.03, 2.12), (-1.03, 2.12))
+            if variant == "B"
+            else ((-1.03, 2.16), (-.72, 2.35), (-.42, 2.22), (-.08, 2.56), (.3, 2.2), (.68, 2.44), (1.03, 2.2), (1.03, 2.12), (-1.03, 2.12))
+        )
+        profile_prism("FactorySawtoothCrown", profile, x, -.02, .32, m["steel_dark"], owner, bevel=.016)
+        box("FactoryCrownWarning", (1.15, .035, .1), (x, -.205, 2.27), m["hazard_yellow"], owner, bevel=.008)
+
+
 def build_wall_variant(collection, m, theme: str, name: str, x: float, variant: str) -> bpy.types.Object:
     owner = semantic_root(name, collection, x, f"architecture-wall-{variant.lower()}")
     add_wall_shell(owner, m, theme, x)
+    add_wall_silhouette(owner, m, theme, x, variant)
 
     if theme == "campus":
         if variant == "A":
@@ -962,6 +1150,90 @@ def build_wall_variant(collection, m, theme: str, name: str, x: float, variant: 
     return owner
 
 
+def build_wall_wide(collection, m, theme: str, name: str, x: float) -> bpy.types.Object:
+    """Author a continuous four-metre bay for long corridor boundaries.
+
+    The runtime replaces pairs of two-metre panels with this module.  It has a
+    genuinely continuous wall field, cap and handrail, so the long elevation
+    no longer reads as two duplicated boxes with a post at every grid cell.
+    """
+    owner = semantic_root(name, collection, x, "architecture-wall-wide")
+    if theme == "campus":
+        box("WideWallCore", (4.0, .21, 2.34), (x, 0, 1.17), m["concrete"], owner, bevel=.018)
+        box("WideWainscot", (3.96, .255, .7), (x, -.025, .4), m["wood"], owner, bevel=.025)
+        box("WideChairRail", (4.02, .3, .095), (x, -.045, .81), m["brass"], owner, bevel=.014)
+        profile_prism(
+            "WideLibraryCrown",
+            ((-2.04, 2.18), (-1.62, 2.34), (-1.02, 2.34), (-.7, 2.48),
+             (0, 2.68), (.7, 2.48), (1.02, 2.34), (1.62, 2.34), (2.04, 2.18)),
+            x, -.025, .29, m["navy"], owner, bevel=.022,
+        )
+        for px in (-1.86, 0, 1.86):
+            box(f"WidePilaster_{px}", (.13, .3, 2.22), (x + px, -.045, 1.11), m["navy"], owner, bevel=.012)
+        for index, px in enumerate((-1.18, 0, 1.18)):
+            frame_mat = m["wood_dark"] if index != 1 else m["steel"]
+            box(f"WideDisplayFrame_{index}", (.88, .075, .72), (x + px, -.17, 1.5), frame_mat, owner, bevel=.03)
+            box(f"WideDisplayInset_{index}", (.72, .025, .55), (x + px, -.225, 1.5), m["black" if index != 1 else "glass"], owner, bevel=.016)
+            box(f"WideDisplayLabel_{index}", (.4, .018, .09), (x + px, -.248, 1.72), m["paper" if index != 1 else "screen"], owner, bevel=.006)
+            cylinder(f"WideDisplayMedallion_{index}", .095, .035, (x + px, -.235, 2.0), m["brass"], owner, rotation=(math.pi / 2, 0, 0), vertices=24, bevel=.006)
+    elif theme == "hospital":
+        box("WideWallCore", (4.0, .2, 2.34), (x, 0, 1.17), m["linoleum"], owner, bevel=.016)
+        box("WideLowerPanel", (3.98, .25, .66), (x, -.02, .39), m["hospital_teal"], owner, bevel=.018)
+        box("WideKickPlate", (4.0, .28, .17), (x, -.04, .105), m["steel_light"], owner, bevel=.008)
+        box("WideWayfindingBand", (4.0, .285, .14), (x, -.045, 1.48), m["hospital_teal"], owner, bevel=.008)
+        cylinder("WideHandrail", .044, 3.72, (x, -.205, .9), m["chrome"], owner, rotation=(0, math.pi / 2, 0), vertices=18, bevel=.008)
+        profile_prism(
+            "WideCovedHeader",
+            ((-2.02, 2.18), (-1.72, 2.36), (-1.18, 2.48), (-.55, 2.53),
+             (.55, 2.53), (1.18, 2.48), (1.72, 2.36), (2.02, 2.18)),
+            x, -.02, .28, m["hospital_teal"], owner, bevel=.028,
+        )
+        for index, px in enumerate((-1.25, 0, 1.25)):
+            box(f"WideObservationFrame_{index}", (.92, .08, .68), (x + px, -.16, 1.83), m["steel_light"], owner, bevel=.025)
+            box(f"WideObservationGlass_{index}", (.76, .022, .52), (x + px, -.22, 1.83), m["glass"], owner, bevel=.018)
+            cylinder(f"WideHeaderLamp_{index}", .055, .04, (x + px, -.2, 2.36), m["screen"], owner, rotation=(math.pi / 2, 0, 0), vertices=18, bevel=.006)
+    elif theme == "fire":
+        box("WideWallCore", (4.0, .2, 2.34), (x, 0, 1.17), m["brick_fire"], owner, bevel=.012)
+        box("WideSteelBase", (4.0, .28, .37), (x, -.035, .22), m["black"], owner, bevel=.012)
+        add_hazard_band(owner, m, x - .98, -.198, .51, width=1.92, prefix="WideFireHazardLeft")
+        add_hazard_band(owner, m, x + .98, -.198, .51, width=1.92, prefix="WideFireHazardRight")
+        profile_prism(
+            "WideFireTruss",
+            ((-2.05, 2.15), (-1.58, 2.5), (-.96, 2.26), (-.34, 2.56),
+             (.34, 2.3), (.96, 2.57), (1.58, 2.3), (2.05, 2.18), (2.05, 2.1), (-2.05, 2.1)),
+            x, -.02, .31, m["steel_dark"], owner, bevel=.018,
+        )
+        for px in (-1.86, 0, 1.86):
+            box(f"WideFireColumn_{px}", (.15, .31, 2.18), (x + px, -.04, 1.09), m["fire_red"], owner, bevel=.014)
+        for index, px in enumerate((-1.18, 0, 1.18)):
+            box(f"WideFireServiceFrame_{index}", (.8, .085, .72), (x + px, -.17, 1.48), m["fire_red"], owner, bevel=.03)
+            arch_band(f"WideFireHose_{index}", x + px, -.235, 1.34, .27, .045, .07, m["hose"], owner, segments=12)
+            cylinder(f"WideFireBell_{index}", .075, .035, (x + px, -.23, 1.86), m["brass"], owner, rotation=(math.pi / 2, 0, 0), vertices=18, bevel=.006)
+    else:
+        box("WideWallCore", (4.0, .21, 2.34), (x, 0, 1.17), m["concrete_dark"], owner, bevel=.01)
+        box("WideLowerArmor", (3.98, .28, .7), (x, -.035, .39), m["factory_blue"], owner, bevel=.008)
+        for col in range(21):
+            px = x - 1.8 + col * .18
+            box(f"WideCorrugation_{col}", (.045, .3, 2.12), (px, -.04, 1.15), m["steel"], owner, bevel=.006)
+        add_hazard_band(owner, m, x - .98, -.21, .78, width=1.92, prefix="WideFactoryHazardLeft")
+        add_hazard_band(owner, m, x + .98, -.21, .78, width=1.92, prefix="WideFactoryHazardRight")
+        profile_prism(
+            "WideSawtoothCrown",
+            ((-2.04, 2.14), (-1.63, 2.55), (-1.2, 2.2), (-.75, 2.5),
+             (-.3, 2.2), (.18, 2.58), (.64, 2.2), (1.1, 2.5), (1.56, 2.2),
+             (2.04, 2.45), (2.04, 2.11), (-2.04, 2.11)),
+            x, -.02, .32, m["steel_dark"], owner, bevel=.016,
+        )
+        for px in (-1.86, 0, 1.86):
+            box(f"WideFactoryColumn_{px}", (.16, .32, 2.2), (x + px, -.04, 1.1), m["hazard_yellow"], owner, bevel=.012)
+        for index, px in enumerate((-1.2, 0, 1.2)):
+            box(f"WideFactoryPanel_{index}", (.76, .11, .72), (x + px, -.19, 1.48), m["steel_dark"], owner, bevel=.03)
+            box(f"WideFactoryInset_{index}", (.6, .03, .54), (x + px, -.255, 1.48), m["factory_blue" if index != 1 else "black"], owner, bevel=.016)
+            box(f"WideFactoryStatus_{index}", (.31, .025, .08), (x + px, -.278, 1.72), m["screen" if index == 1 else "hazard_yellow"], owner, bevel=.006)
+    owner["chasing_continuous_span_meters"] = 4.0
+    return owner
+
+
 def build_wall_end(collection, m, theme: str, name: str, x: float) -> bpy.types.Object:
     owner = semantic_root(name, collection, x, "architecture-wall-end")
     add_wall_shell(owner, m, theme, x)
@@ -1015,6 +1287,54 @@ def build_architecture_doorway(collection, m, theme: str, name: str, x: float) -
         box("CampusDoorInset", (1.22, .035, 1.55), (x, -.005, .98), m["navy"], owner, bevel=.018)
         box("CampusDoorWindow", (.34, .025, .67), (x, -.025, 1.42), m["glass"], owner, bevel=.018)
         cylinder("CampusDoorHandle", .035, .17, (x + .52, -.06, .95), m["brass"], owner, rotation=(math.pi / 2, 0, 0), vertices=16, bevel=.006)
+    return owner
+
+
+def build_architecture_junction(collection, m, theme: str, name: str, x: float) -> bpy.types.Object:
+    """Create a theme-specific overhead landmark for meaningful maze choices."""
+    owner = semantic_root(name, collection, x, "architecture-junction")
+    frame_mat = m["navy"] if theme == "campus" else m["hospital_teal"] if theme == "hospital" else m["fire_red"] if theme == "fire" else m["factory_blue"]
+    trim_mat = m["brass"] if theme == "campus" else m["steel_light"] if theme == "hospital" else m["steel_dark"]
+    arch_band("JunctionArchEastWest", x, 0, 1.62, .9, .12, .18, frame_mat, owner, axis="x", segments=18)
+    arch_band("JunctionArchNorthSouth", x, 0, 1.62, .9, .12, .18, frame_mat, owner, axis="y", segments=18)
+    # Four tapered upper brackets visually carry the crossing while the lower
+    # 1.62m remains clear, so the landmark never changes navigation collision.
+    for index, (px, py, rotation) in enumerate(((-.76, -.76, .78), (.76, -.76, -.78), (-.76, .76, -.78), (.76, .76, .78))):
+        box(
+            f"JunctionKnee_{index}",
+            (.42, .1, .11),
+            (x + px * .72, py * .72, 2.05),
+            trim_mat,
+            owner,
+            bevel=.025,
+            rotation=(0, rotation, 0),
+        )
+    cylinder("JunctionCeilingBoss", .23, .11, (x, 0, 2.55), trim_mat, owner, vertices=32, bevel=.025)
+    if theme == "campus":
+        box("CampusJunctionSign", (.92, .08, .3), (x, -.08, 2.08), m["blue"], owner, bevel=.045)
+        text_mesh("CampusJunctionLettering", "HALL", (x, -.13, 2.08), .16, m["white"], owner)
+    elif theme == "hospital":
+        box("HospitalJunctionLight", (.86, .86, .055), (x, 0, 2.46), m["screen"], owner, bevel=.09)
+        for angle in range(0, 360, 90):
+            radians = math.radians(angle)
+            box(
+                f"HospitalDirectionTab_{angle}",
+                (.42, .08, .18),
+                (x + math.cos(radians) * .52, math.sin(radians) * .52, 2.18),
+                m["white"], owner, bevel=.025, rotation=(0, -radians, 0),
+            )
+    elif theme == "fire":
+        for axis, rotation in (("EW", (0, math.pi / 2, 0)), ("NS", (math.pi / 2, 0, 0))):
+            cylinder(f"FireJunctionPipe_{axis}", .055, 1.55, (x, 0, 2.42), m["brass"], owner, rotation=rotation, vertices=20, bevel=.009)
+        cylinder("FireJunctionBeacon", .105, .18, (x, 0, 2.72), m["beacon"], owner, vertices=24, bevel=.015)
+    else:
+        profile_prism(
+            "FactoryJunctionTruss",
+            ((-.92, 2.15), (-.62, 2.49), (-.18, 2.2), (.22, 2.5), (.64, 2.18), (.92, 2.42), (.92, 2.1), (-.92, 2.1)),
+            x, 0, .16, m["steel_dark"], owner, bevel=.014,
+        )
+        add_fastener_line(owner, m, x=x, y=-.13, z=2.26, count=5, spacing=.31, prefix="FactoryJunctionRivet")
+    owner["chasing_choice_landmark"] = True
     return owner
 
 
@@ -1872,14 +2192,16 @@ def build_production_theme_extension(collection, m, theme: str) -> None:
     wall_end = build_wall_end(collection, m, theme, f"{prefix}ArchitectureWallEnd", 49.0)
     corner = build_architecture_corner(collection, m, theme, f"{prefix}ArchitectureCorner", 52.0)
     doorway = build_architecture_doorway(collection, m, theme, f"{prefix}ArchitectureDoorway", 55.0)
+    wide_wall = build_wall_wide(collection, m, theme, f"{prefix}ArchitectureWallWide", 58.0)
+    junction = build_architecture_junction(collection, m, theme, f"{prefix}ArchitectureJunction", 64.0)
     floors = [
-        build_floor_module(collection, m, theme, f"{prefix}Floor{variant}", 58.0 + index * 3.0, variant)
+        build_floor_module(collection, m, theme, f"{prefix}Floor{variant}", 68.0 + index * 3.0, variant)
         for index, variant in enumerate(("Primary", "Secondary", "Service"))
     ]
-    exterior = build_exterior_ground(collection, m, theme, f"{prefix}ExteriorGround", 67.0)
-    clusters = build_dressing_clusters(collection, m, theme, prefix, 71.0)
-    hide = build_hide_dressing(collection, m, theme, f"{prefix}HideDressing", 85.0)
-    story_roots = build_level_story_library(collection, m, theme, 90.0)
+    exterior = build_exterior_ground(collection, m, theme, f"{prefix}ExteriorGround", 78.0)
+    clusters = build_dressing_clusters(collection, m, theme, prefix, 82.0)
+    hide = build_hide_dressing(collection, m, theme, f"{prefix}HideDressing", 96.0)
+    story_roots = build_level_story_library(collection, m, theme, 101.0)
     polish_existing_hero_props(collection, m, theme)
 
     # Replace the first-pass single wall node with a mesh-sharing alias of the
@@ -1947,6 +2269,9 @@ def export_collection(collection: bpy.types.Collection, filename: str) -> None:
 
 
 def main() -> None:
+    expected_orm = ORM_TEXTURES / "Env_PaintedWall_ORM_512.png"
+    if not expected_orm.is_file():
+        subprocess.run(["node", str(ORM_GENERATOR)], cwd=ROOT, check=True)
     reset_scene()
     OUT.mkdir(parents=True, exist_ok=True)
     MASTER.parent.mkdir(parents=True, exist_ok=True)

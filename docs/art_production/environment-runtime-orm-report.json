@@ -1,0 +1,149 @@
+{
+  "generated": [
+    {
+      "family": "Env_PaintedWall",
+      "output": "work/art_pipeline/environment-orm/Env_PaintedWall_ORM_512.png",
+      "channels": "R=AO, G=roughness, B=metallic",
+      "resolution": [
+        512,
+        512
+      ],
+      "aoRange": [
+        0.925,
+        0.982
+      ],
+      "roughnessRange": [
+        0.657,
+        0.808
+      ],
+      "metallicBase": 0
+    },
+    {
+      "family": "Env_BluePaintedMetal",
+      "output": "work/art_pipeline/environment-orm/Env_BluePaintedMetal_ORM_512.png",
+      "channels": "R=AO, G=roughness, B=metallic",
+      "resolution": [
+        512,
+        512
+      ],
+      "aoRange": [
+        0.881,
+        0.928
+      ],
+      "roughnessRange": [
+        0.342,
+        0.552
+      ],
+      "metallicBase": 0.68
+    },
+    {
+      "family": "Env_RedPaintedMetal",
+      "output": "work/art_pipeline/environment-orm/Env_RedPaintedMetal_ORM_512.png",
+      "channels": "R=AO, G=roughness, B=metallic",
+      "resolution": [
+        512,
+        512
+      ],
+      "aoRange": [
+        0.875,
+        0.922
+      ],
+      "roughnessRange": [
+        0.309,
+        0.521
+      ],
+      "metallicBase": 0.62
+    },
+    {
+      "family": "Env_WoodTrim",
+      "output": "work/art_pipeline/environment-orm/Env_WoodTrim_ORM_512.png",
+      "channels": "R=AO, G=roughness, B=metallic",
+      "resolution": [
+        512,
+        512
+      ],
+      "aoRange": [
+        0.745,
+        0.946
+      ],
+      "roughnessRange": [
+        0.56,
+        0.796
+      ],
+      "metallicBase": 0
+    },
+    {
+      "family": "Env_WornMetal",
+      "output": "work/art_pipeline/environment-orm/Env_WornMetal_ORM_512.png",
+      "channels": "R=AO, G=roughness, B=metallic",
+      "resolution": [
+        512,
+        512
+      ],
+      "aoRange": [
+        0.844,
+        0.933
+      ],
+      "roughnessRange": [
+        0.229,
+        0.51
+      ],
+      "metallicBase": 0.91
+    },
+    {
+      "family": "Env_RubberBlack",
+      "output": "work/art_pipeline/environment-orm/Env_RubberBlack_ORM_512.png",
+      "channels": "R=AO, G=roughness, B=metallic",
+      "resolution": [
+        512,
+        512
+      ],
+      "aoRange": [
+        0.814,
+        0.918
+      ],
+      "roughnessRange": [
+        0.831,
+        0.98
+      ],
+      "metallicBase": 0
+    },
+    {
+      "family": "Env_Grass",
+      "output": "work/art_pipeline/environment-orm/Env_Grass_ORM_512.png",
+      "channels": "R=AO, G=roughness, B=metallic",
+      "resolution": [
+        512,
+        512
+      ],
+      "aoRange": [
+        0.65,
+        0.925
+      ],
+      "roughnessRange": [
+        0.869,
+        0.971
+      ],
+      "metallicBase": 0
+    },
+    {
+      "family": "Env_Paper",
+      "output": "work/art_pipeline/environment-orm/Env_Paper_ORM_512.png",
+      "channels": "R=AO, G=roughness, B=metallic",
+      "resolution": [
+        512,
+        512
+      ],
+      "aoRange": [
+        0.933,
+        0.985
+      ],
+      "roughnessRange": [
+        0.732,
+        0.854
+      ],
+      "metallicBase": 0
+    }
+  ],
+  "familyCount": 8
+}

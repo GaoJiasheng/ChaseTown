@@ -75,6 +75,13 @@ export function createDefaultLevel(): LevelDefinition {
   carve(walkable, [{ x: 15, y: 5 }, { x: 17, y: 5 }]);
   carve(walkable, [{ x: 17, y: 14 }, { x: 19, y: 14 }]);
 
+  // Replace the lower straight crossbar with a longer dogleg. Sealing happens
+  // after all carving so a future route cannot accidentally reopen the wall.
+  carve(walkable, [{ x: 9, y: 20 }, { x: 9, y: 22 }, { x: 13, y: 22 }, { x: 13, y: 20 }]);
+  for (const cell of [{ x: 10, y: 20 }, { x: 11, y: 20 }, { x: 12, y: 20 }]) {
+    walkable[cell.y][cell.x] = false;
+  }
+
   return createLevel({
     id: "school-maze-v1",
     width: SIZE,

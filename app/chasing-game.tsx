@@ -26,9 +26,12 @@ import {
 } from "./game/input.ts";
 import { distanceBetween, GridPathPlanner, hasLineOfSight } from "./game/navigation.ts";
 import { isPlayerVisuallyExposed } from "./game/perception.ts";
+import { authoredRoomFloorRegions } from "./game/room-floor.ts";
 import {
   baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
+  cameraDistanceScaleForPlayerMode,
+  cameraFocusForEdgeHide,
   canChaserTakeLockerDoor,
   chaserAnimationForMode,
   lockerVisionMix,
@@ -131,10 +134,10 @@ const DETAIL_ASSETS = {
 } as const;
 
 const THEME_KIT_ASSETS: Readonly<Record<CampaignTheme, string>> = {
-  campus: "/models/environment/themes/campus-kit.glb?v=4",
-  hospital: "/models/environment/themes/hospital-kit.glb?v=4",
-  "fire-station": "/models/environment/themes/fire-station-kit.glb?v=4",
-  factory: "/models/environment/themes/factory-kit.glb?v=4",
+  campus: "/models/environment/themes/campus-kit.glb?v=5",
+  hospital: "/models/environment/themes/hospital-kit.glb?v=5",
+  "fire-station": "/models/environment/themes/fire-station-kit.glb?v=5",
+  factory: "/models/environment/themes/factory-kit.glb?v=5",
 };
 
 type ThemePropSpec = { node: string; height: number };
@@ -446,8 +449,13 @@ function resolveThemeNode(
 }
 
 function wallVariantIndex(x: number, y: number, dx: number, dy: number, salt: number) {
-  const hash = Math.abs((x * 73_856_093) ^ (y * 19_349_663) ^ (dx * 83_492_791) ^ (dy * 29_791) ^ salt);
-  return hash % 3;
+  const tangentCoordinate = dy !== 0 ? x : y;
+  const laneCoordinate = dy !== 0 ? y : x;
+  const orientation = dx !== 0 ? 1 : dy > 0 ? 2 : 0;
+  // Adjacent bays along one straight boundary always advance A→B→C, while
+  // the lane/orientation salt prevents distant corridors sharing a pattern.
+  // This guarantees that the new skyline profiles never repeat three times.
+  return Math.abs(tangentCoordinate + laneCoordinate * 2 + orientation + salt) % 3;
 }
 
 function createSightHazeTexture() {
@@ -477,6 +485,27 @@ function createSightHazeTexture() {
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.generateMipmaps = true;
+  return texture;
+}
+
+function createContactShadowTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 96;
+  canvas.height = 48;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("无法创建接触阴影纹理");
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  const gradient = context.createRadialGradient(48, 24, 1, 48, 24, 46);
+  gradient.addColorStop(0, "rgba(0,0,0,.92)");
+  gradient.addColorStop(0.38, "rgba(0,0,0,.52)");
+  gradient.addColorStop(1, "rgba(0,0,0,0)");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
   return texture;
 }
 
@@ -538,7 +567,7 @@ function createFixedCameraDirection() {
   // are allowed to move.
   return new THREE.Vector3(
     FIXED_CAMERA_GROUND_DIRECTION.x,
-    0.82,
+    0.72,
     FIXED_CAMERA_GROUND_DIRECTION.y,
   ).normalize();
 }
@@ -1674,6 +1703,12 @@ export function ChasingGame() {
     const camera = new THREE.PerspectiveCamera(56, 1, 0.08, 150);
     const cameraDirection = createFixedCameraDirection();
     const cameraFocus = world(campaignLevel.playerStart, campaignLevel).add(new THREE.Vector3(0, 0.92, 0));
+    const cameraPlayfieldBounds = {
+      minX: -((campaignLevel.width - 1) / 2) * CELL,
+      maxX: ((campaignLevel.width - 1) / 2) * CELL,
+      minZ: -((campaignLevel.height - 1) / 2) * CELL,
+      maxZ: ((campaignLevel.height - 1) / 2) * CELL,
+    };
     camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
 
     let renderer: THREE.WebGLRenderer;
@@ -1692,7 +1727,7 @@ export function ChasingGame() {
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = campaignLevel.campaign.theme === "hospital" ? 1.06 : campaignLevel.campaign.theme === "factory" ? 0.98 : 1.02;
+    renderer.toneMappingExposure = campaignLevel.campaign.theme === "hospital" ? 1.0 : campaignLevel.campaign.theme === "factory" ? 0.94 : 0.98;
     const supportsMultiDraw = renderer.extensions.has("WEBGL_multi_draw")
       && !new URLSearchParams(location.search).has("no-multi-draw");
     host.appendChild(renderer.domElement);
@@ -1720,17 +1755,18 @@ export function ChasingGame() {
     const roomEnvironment = new RoomEnvironment();
     const environmentTarget = pmrem.fromScene(roomEnvironment, 0.04);
     scene.environment = environmentTarget.texture;
+    scene.environmentIntensity = campaignLevel.campaign.theme === "hospital" ? 0.64 : 0.57;
     roomEnvironment.dispose();
     pmrem.dispose();
 
     scene.add(new THREE.HemisphereLight(
       new THREE.Color(campaignLevel.campaign.palette.sky).offsetHSL(0, 0, 0.25),
       new THREE.Color(campaignLevel.campaign.palette.floor).multiplyScalar(0.34),
-      campaignLevel.campaign.theme === "hospital" ? 0.92 : 0.76,
+      campaignLevel.campaign.theme === "hospital" ? 0.56 : 0.48,
     ));
     const moon = new THREE.DirectionalLight(
       campaignLevel.campaign.theme === "factory" ? 0x91dced : 0xb9d7ff,
-      campaignLevel.campaign.theme === "hospital" ? 2.8 : 2.58,
+      campaignLevel.campaign.theme === "hospital" ? 2.08 : 1.88,
     );
     moon.position.set(14, 28, 18);
     moon.castShadow = true;
@@ -1746,10 +1782,11 @@ export function ChasingGame() {
       new THREE.Color(campaignLevel.campaign.palette.accent),
       artLayout.warmLightMix * 0.32,
     );
-    const warmBounce = new THREE.DirectionalLight(warmBounceColor, 0.38 + artLayout.warmLightMix * 0.34);
+    const warmBounce = new THREE.DirectionalLight(warmBounceColor, 0.18 + artLayout.warmLightMix * 0.2);
     warmBounce.position.set(-18, 12, -14);
     scene.add(warmBounce);
 
+    const contactTexture = createContactShadowTexture();
     const campus = new THREE.Group();
     campus.name = "authored-campus";
     scene.add(campus);
@@ -2211,9 +2248,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const floorBatches: Record<ThemeFloorRole, ModulePlacement[]> = {
         primary: [], secondary: [], service: [],
       };
-      const wallBatches: Record<"a" | "b" | "c" | "end" | "corner" | "doorway", ModulePlacement[]> = {
-        a: [], b: [], c: [], end: [], corner: [], doorway: [],
+      const wallBatches: Record<"a" | "b" | "c" | "wide" | "end" | "corner" | "doorway" | "junction", ModulePlacement[]> = {
+        a: [], b: [], c: [], wide: [], end: [], corner: [], doorway: [], junction: [],
       };
+      const junctionCandidates: Array<ModulePlacement & { degree: number; hash: number }> = [];
       const groundMarginCells = 2;
       const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
       const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
@@ -2245,6 +2283,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           );
           const floorRole = artLayout.floorCycle[band % artLayout.floorCycle.length];
           floorBatches[floorRole].push({ position, rotation: 0 });
+
+          const degree = directions.reduce(
+            (count, { dx, dy }) => count + (campaignLevel.walkable[y + dy]?.[x + dx] ? 1 : 0),
+            0,
+          );
+          if (degree >= 3) {
+            junctionCandidates.push({
+              position: position.clone(),
+              rotation: ((x * 17 + y * 29 + artLayout.wallVariantSalt) % 4) * Math.PI / 2,
+              degree,
+              hash: (x * 73 + y * 101 + artLayout.wallVariantSalt) % 257,
+            });
+          }
 
           const blocked = directions.filter(({ dx, dy }) => !campaignLevel.walkable[y + dy]?.[x + dx]);
           for (const edge of blocked) {
@@ -2299,6 +2350,57 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }
       }
 
+      // Replace pairs along continuous boundaries with an authored four-metre
+      // elevation. Besides reducing the picket-fence rhythm, this removes the
+      // fake structural post that used to appear at every two-metre cell.
+      const consumedStraightWalls = new Set<ModulePlacement>();
+      const straightWallLanes = new Map<string, Array<{ placement: ModulePlacement; tangent: number }>>();
+      for (const variant of ["a", "b", "c"] as const) {
+        for (const placement of wallBatches[variant]) {
+          const normalizedRotation = ((placement.rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+          const tangentUsesX = Math.abs(Math.cos(normalizedRotation)) > 0.5;
+          const lane = tangentUsesX ? placement.position.z : placement.position.x;
+          const tangent = tangentUsesX ? placement.position.x : placement.position.z;
+          const key = `${Math.round(normalizedRotation * 1_000)}:${Math.round(lane * 100)}`;
+          const entries = straightWallLanes.get(key) ?? [];
+          entries.push({ placement, tangent });
+          straightWallLanes.set(key, entries);
+        }
+      }
+      for (const entries of straightWallLanes.values()) {
+        entries.sort((left, right) => left.tangent - right.tangent);
+        for (let index = 0; index + 1 < entries.length;) {
+          const left = entries[index];
+          const right = entries[index + 1];
+          if (Math.abs(right.tangent - left.tangent - CELL) <= 0.02) {
+            wallBatches.wide.push({
+              position: left.placement.position.clone().lerp(right.placement.position, 0.5),
+              rotation: left.placement.rotation,
+            });
+            consumedStraightWalls.add(left.placement);
+            consumedStraightWalls.add(right.placement);
+            index += 2;
+          } else {
+            index += 1;
+          }
+        }
+      }
+      for (const variant of ["a", "b", "c"] as const) {
+        wallBatches[variant] = wallBatches[variant].filter((placement) => !consumedStraightWalls.has(placement));
+      }
+
+      // Choice landmarks turn abstract maze nodes into readable places. Keep
+      // them far enough apart that each one marks a genuine route decision,
+      // rather than creating another repeated module rhythm.
+      junctionCandidates.sort((a, b) => b.degree - a.degree || a.hash - b.hash);
+      const junctionLimit = Math.min(8, 3 + Math.ceil(campaignLevel.campaign.difficulty));
+      for (const candidate of junctionCandidates) {
+        if (wallBatches.junction.every(({ position }) => position.distanceTo(candidate.position) >= CELL * 3.25)) {
+          wallBatches.junction.push({ position: candidate.position, rotation: candidate.rotation });
+        }
+        if (wallBatches.junction.length >= junctionLimit) break;
+      }
+
       const wallHeight = theme === "hospital" ? 2.2 : theme === "factory" ? 2.16 : 2.1;
       const authoredArchitectureWall = themeKit.scene.getObjectByName(THEME_WALL_NODES[theme])
         ?? resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallA", "ArchitectureWall_A", "WallA"]);
@@ -2310,35 +2412,88 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const wallEnd = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallEnd", "ArchitectureEndWall", "WallEnd"]) ?? architectureWall;
       const wallCorner = requireThemeModule(["ArchitectureCorner", "ArchitectureCornerPost", "CornerPost"], "墙角");
       const wallDoorway = requireThemeModule(["ArchitectureDoorway", "ArchitectureDoorFrame", "Doorway"], "门洞");
-      // InstancedMesh cannot combine distinct geometry variants into one draw.
-      // On devices without WEBGL_multi_draw, retain the premium authored A/end
-      // silhouettes but fold the two cosmetic middle variants into A. This is
-      // an explicit quality-preserving fallback rather than a hidden failure.
+      const wallWide = requireThemeModule(["ArchitectureWallWide", "ArchitectureWideWall", "WallWide"], "四米连续墙");
+      const wallJunction = requireThemeModule(["ArchitectureJunction", "JunctionPortal", "ChoiceLandmark"], "路口地标");
+      // Long boundaries keep their premium continuous module everywhere. On
+      // browsers without multi-draw, the few unpaired one-cell remainders use
+      // A so quality remains authored while avoiding two entire material sets.
       const runtimeWallB = supportsMultiDraw ? wallB : wallA;
       const runtimeWallC = supportsMultiDraw ? wallC : wallA;
       for (const [source, placements] of [
         [wallA, wallBatches.a],
         [runtimeWallB, wallBatches.b],
         [runtimeWallC, wallBatches.c],
+        [wallWide, wallBatches.wide],
         [wallEnd, wallBatches.end],
         [wallDoorway, wallBatches.doorway],
       ] as const) {
         if (placements.length) placedAssetIds.add(`theme-node:${source.name}`);
       }
       if (wallBatches.corner.length) placedAssetIds.add(`theme-node:${wallCorner.name}`);
+      if (wallBatches.junction.length) placedAssetIds.add(`theme-node:${wallJunction.name}`);
       const wallMeshes = [
         ...addInstancedModuleBatches([
           { source: wallA, placements: wallBatches.a, preserveAuthoredScale: true },
           { source: runtimeWallB, placements: wallBatches.b, preserveAuthoredScale: true },
           { source: runtimeWallC, placements: wallBatches.c, preserveAuthoredScale: true },
+          { source: wallWide, placements: wallBatches.wide, preserveAuthoredScale: true },
           { source: wallEnd, placements: wallBatches.end, preserveAuthoredScale: true },
           { source: wallDoorway, placements: wallBatches.doorway, preserveAuthoredScale: true },
         ], new THREE.Vector3(CELL + 0.08, wallHeight, 0.23), parent, true, `${theme}-wall`, supportsMultiDraw),
         ...addInstancedModuleBatches([
           { source: wallCorner, placements: wallBatches.corner, preserveAuthoredScale: true },
         ], new THREE.Vector3(0.32, wallHeight, 0.32), parent, true, `${theme}-corner`, supportsMultiDraw),
+        ...addInstancedModuleBatches([
+          { source: wallJunction, placements: wallBatches.junction, preserveAuthoredScale: true },
+        ], new THREE.Vector3(CELL, 2.7, CELL), parent, true, `${theme}-junction`, supportsMultiDraw),
       ];
       registerCameraOccluder(`${theme}-walls`, wallMeshes);
+
+      const wallContactGeometry = new THREE.PlaneGeometry(CELL + 0.12, 0.48);
+      wallContactGeometry.rotateX(-Math.PI / 2);
+      const wallContactMaterial = new THREE.MeshBasicMaterial({
+        color: theme === "hospital" ? 0x26383b : 0x11171b,
+        map: contactTexture,
+        transparent: true,
+        opacity: theme === "hospital" ? 0.28 : 0.34,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        side: THREE.DoubleSide,
+      });
+      const wallContactPlacements = [
+        ...wallBatches.a,
+        ...wallBatches.b,
+        ...wallBatches.c,
+        ...wallBatches.wide.flatMap((placement) => {
+          const tangent = new THREE.Vector3(Math.cos(placement.rotation), 0, -Math.sin(placement.rotation));
+          return [
+            { position: placement.position.clone().addScaledVector(tangent, -CELL / 2), rotation: placement.rotation },
+            { position: placement.position.clone().addScaledVector(tangent, CELL / 2), rotation: placement.rotation },
+          ];
+        }),
+        ...wallBatches.end,
+        ...wallBatches.doorway,
+      ];
+      const wallContacts = new THREE.InstancedMesh(
+        wallContactGeometry,
+        wallContactMaterial,
+        wallContactPlacements.length,
+      );
+      const contactScale = new THREE.Vector3(1, 1, 1);
+      wallContactPlacements.forEach((placement, index) => {
+        const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), placement.rotation);
+        const offset = new THREE.Vector3(Math.sin(placement.rotation) * 0.1, 0.112, Math.cos(placement.rotation) * 0.1);
+        wallContacts.setMatrixAt(
+          index,
+          new THREE.Matrix4().compose(placement.position.clone().add(offset), rotation, contactScale),
+        );
+      });
+      wallContacts.instanceMatrix.needsUpdate = true;
+      wallContacts.name = `${theme}-wall-contact-shadows`;
+      wallContacts.renderOrder = 1;
+      parent.add(wallContacts);
+      placedAssetIds.add("runtime:wall-contact-shadows");
 
       const authoredFloorPrimary = requireThemeModule(
         [`${artLayout.key}FloorPrimary`, "FloorPrimary", "ArchitectureFloorPrimary"],
@@ -2566,6 +2721,20 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const propTemplates = new Map<string, THREE.Object3D>();
       const themeDressing = new THREE.Group();
       themeDressing.name = `${campaignLevel.campaign.theme}-authored-dressing-source`;
+      const theme = campaignLevel.campaign.theme;
+      const detailFloorModule = (role: "Primary" | "Secondary" | "Service") => {
+        const source = resolveThemeNode(themeKit.scene, theme, [
+          `${artLayout.key}Floor${role}`,
+          `Floor${role}`,
+          `ArchitectureFloor${role}`,
+        ]);
+        if (!source) throw new Error(`${campaignLevel.campaign.themeLabel}主题套件缺少${role}房间地面`);
+        return source;
+      };
+      const detailFloorSources = {
+        secondary: detailFloorModule("Secondary"),
+        service: detailFloorModule("Service"),
+      };
       const cameraOccludingProps = new Set<DetailAssetName>([
         "bench",
         "car",
@@ -2850,6 +3019,42 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           -1.2,
         )
       ));
+      const roomAnchors = decorAnchors.slice(0, Math.min(decorAnchors.length, 9));
+      const roomFloorPlacements: Record<"secondary" | "service", ModulePlacement[]> = {
+        secondary: [],
+        service: [],
+      };
+      const occupiedRoomFloorCells = new Set<string>();
+      const furnishedRooms = authoredRoomFloorRegions(campaignLevel, roomAnchors.map(({ cell }) => cell));
+      for (const [furnishedRoomIndex, { anchorIndex, cells }] of furnishedRooms.entries()) {
+        // Service floors carry strong hazard bands and anchors. Reserve that
+        // visual language for compact utility closets; large classrooms,
+        // wards and work bays use the calmer secondary finish so repetition
+        // does not turn the whole room into a warning mat.
+        const role = cells.length <= 12 && furnishedRoomIndex % 2 === 1 ? "service" : "secondary";
+        for (const cell of cells) {
+          const key = `${cell.x},${cell.y}`;
+          if (occupiedRoomFloorCells.has(key)) continue;
+          occupiedRoomFloorCells.add(key);
+          roomFloorPlacements[role].push({
+            position: world(cell, campaignLevel).add(new THREE.Vector3(0, -0.025, 0)),
+            rotation: (anchorIndex % 4) * Math.PI / 2,
+          });
+        }
+      }
+      addInstancedModuleBatches([
+        {
+          source: detailFloorSources.secondary,
+          placements: roomFloorPlacements.secondary,
+          preserveAuthoredScale: true,
+        },
+        {
+          source: detailFloorSources.service,
+          placements: roomFloorPlacements.service,
+          preserveAuthoredScale: true,
+        },
+      ], new THREE.Vector3(CELL, 0.12, CELL), parent, false, `${theme}-room-floor`, supportsMultiDraw);
+      if (occupiedRoomFloorCells.size > 0) placedAssetIds.add("runtime:authored-room-floors");
       for (const [index, node] of artLayout.landmarkNodes.entries()) {
         const anchor = interiorNarrativeAnchors[index];
         const genericVariant = ["DressingClusterA", "DressingClusterC", "DressingClusterB"][index % 3];
@@ -2857,8 +3062,58 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         // breaks its books, seating, tools or medical kit into loose props.
         addAuthoredCluster([node, genericVariant], anchor.point, anchor.rotation, `landmark-${artLayout.key}-${index + 1}`);
       }
+      const ambientClusterCount = Math.min(
+        Math.max(0, decorAnchors.length - artLayout.landmarkNodes.length),
+        3 + Math.ceil(campaignLevel.campaign.difficulty / 2),
+      );
+      for (let index = 0; index < ambientClusterCount; index += 1) {
+        const anchor = decorAnchors[artLayout.landmarkNodes.length + index];
+        const genericVariant = ["DressingClusterB", "DressingClusterA", "DressingClusterC"][
+          (index + campaignLevel.campaign.levelNumber) % 3
+        ];
+        addAuthoredCluster(
+          [genericVariant],
+          anchor.point,
+          anchor.rotation,
+          `ambient-room-${artLayout.key}-${index + 1}`,
+        );
+      }
+      if (ambientClusterCount > 0) placedAssetIds.add("runtime:ambient-room-clusters");
       const arrivalAnchor = exteriorAnchor(campaignLevel.playerStart, 3.05, 0);
       const exitClusterAnchor = exteriorAnchor(campaignLevel.exit, 3.1, 0);
+      const propContactGeometry = new THREE.PlaneGeometry(2.45, 1.65);
+      propContactGeometry.rotateX(-Math.PI / 2);
+      const propContactMaterial = new THREE.MeshBasicMaterial({
+        color: 0x111416,
+        map: contactTexture,
+        transparent: true,
+        opacity: 0.26,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        side: THREE.DoubleSide,
+      });
+      const propContactAnchors = [
+        ...roomAnchors,
+        arrivalAnchor,
+        exitClusterAnchor,
+      ];
+      const propContacts = new THREE.InstancedMesh(
+        propContactGeometry,
+        propContactMaterial,
+        propContactAnchors.length,
+      );
+      propContactAnchors.forEach((anchor, index) => {
+        const position = world(anchor.point, campaignLevel);
+        position.y = 0.116;
+        const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), anchor.rotation);
+        propContacts.setMatrixAt(index, new THREE.Matrix4().compose(position, rotation, new THREE.Vector3(1, 1, 1)));
+      });
+      propContacts.instanceMatrix.needsUpdate = true;
+      propContacts.name = `${theme}-prop-contact-shadows`;
+      propContacts.renderOrder = 1;
+      parent.add(propContacts);
+      placedAssetIds.add("runtime:prop-contact-shadows");
       addAuthoredCluster(
         [...artLayout.arrivalNodes, "DressingClusterB"],
         arrivalAnchor.point,
@@ -3388,15 +3643,29 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           chaserKnowledgeObservable,
         );
         const chaseFocus = framingThreat ? 0.5 : 0;
-        const targetFocus = latestState.phase === "won"
+        const baseTargetFocus = latestState.phase === "won"
           ? playerAnchor.clone().lerp(policeAnchor, 0.34)
           : latestState.phase === "lost"
             ? playerAnchor.clone().lerp(chaserAnchor, 0.3)
             : playerAnchor.clone().lerp(chaserAnchor, chaseFocus);
-        cameraFocus.lerp(targetFocus, 1 - Math.exp(-(framingThreat ? 12 : 6.5) * delta));
         const baseDistance = baseCameraDistanceForAspect(camera.aspect);
-        const dynamicDistance = baseDistance
+        const dynamicDistance = baseDistance * cameraDistanceScaleForPlayerMode(latestState.player.mode)
           + threatForMode(latestState.chaser.mode) * 0.9;
+        const edgeFocus = framingThreat
+          ? baseTargetFocus
+          : cameraFocusForEdgeHide({
+              focus: baseTargetFocus,
+              bounds: cameraPlayfieldBounds,
+              mode: latestState.player.mode,
+              cameraDirection,
+              cameraDistance: THREE.MathUtils.clamp(dynamicDistance * cameraZoom.value, 11.6, MAX_CAMERA_DISTANCE),
+              verticalFovDegrees: camera.fov,
+              aspect: camera.aspect,
+            });
+        const targetFocus = edgeFocus instanceof THREE.Vector3
+          ? edgeFocus
+          : new THREE.Vector3(edgeFocus.x, edgeFocus.y, edgeFocus.z);
+        cameraFocus.lerp(targetFocus, 1 - Math.exp(-(framingThreat ? 12 : 6.5) * delta));
         const framingRequest = () => ({
           focus: cameraFocus,
           points: [playerAnchor, chaserAnchor],
@@ -3415,7 +3684,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           : 0;
         const targetDistance = THREE.MathUtils.clamp(
           Math.max(dynamicDistance * cameraZoom.value, requiredFramingDistance),
-          13.5,
+          11.6,
           MAX_CAMERA_DISTANCE,
         );
         const cameraDistanceResponse = targetDistance > cameraDistance ? 8 : 3.2;

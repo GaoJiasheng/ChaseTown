@@ -12,6 +12,92 @@ import {
 import { createLevel } from "../app/game/level.ts";
 import { distanceBetween, findPath, isWalkable, neighbors } from "../app/game/navigation.ts";
 
+const CARDINAL_DIRECTIONS = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+];
+
+const gridKey = (point) => `${point.x},${point.y}`;
+
+function graphDistances(level, origin) {
+  const distances = new Map([[gridKey(origin), 0]]);
+  const queue = [origin];
+  for (let head = 0; head < queue.length; head += 1) {
+    const current = queue[head];
+    const distance = distances.get(gridKey(current));
+    for (const neighbor of neighbors(level, current)) {
+      const key = gridKey(neighbor);
+      if (distances.has(key)) continue;
+      distances.set(key, distance + 1);
+      queue.push(neighbor);
+    }
+  }
+  return distances;
+}
+
+/** Tie-independent shape metrics across the complete shortest-path DAG. */
+function shortestRouteShape(level) {
+  const fromStart = graphDistances(level, level.playerStart);
+  const fromExit = graphDistances(level, level.exit);
+  const shortestEdges = fromStart.get(gridKey(level.exit));
+  assert.notEqual(shortestEdges, undefined, `${level.id} has no escape route`);
+
+  const dagCells = [];
+  for (let y = 0; y < level.height; y += 1) {
+    for (let x = 0; x < level.width; x += 1) {
+      const key = gridKey({ x, y });
+      const startDistance = fromStart.get(key);
+      const exitDistance = fromExit.get(key);
+      if (startDistance !== undefined && exitDistance !== undefined && startDistance + exitDistance === shortestEdges) {
+        dagCells.push({ x, y, startDistance });
+      }
+    }
+  }
+  dagCells.sort((left, right) => left.startDistance - right.startDistance);
+
+  // Direction -1 is the start sentinel.  Turns and straight runs deliberately
+  // use separate dynamic programs so a high-turn route cannot hide a longer
+  // straight sprint lane that has the same endpoints.
+  const minimumTurns = new Map([[gridKey(level.playerStart), new Map([[-1, 0]])]]);
+  const longestCurrentRuns = new Map([[gridKey(level.playerStart), new Map([[-1, 0]])]]);
+  let maximumStraightRun = 0;
+
+  for (const cell of dagCells) {
+    const cellKey = gridKey(cell);
+    const turnsAtCell = minimumTurns.get(cellKey);
+    const runsAtCell = longestCurrentRuns.get(cellKey);
+    for (const [nextDirection, direction] of CARDINAL_DIRECTIONS.entries()) {
+      const next = { x: cell.x + direction.x, y: cell.y + direction.y };
+      const nextKey = gridKey(next);
+      if (fromStart.get(nextKey) !== cell.startDistance + 1) continue;
+      if (cell.startDistance + 1 + fromExit.get(nextKey) !== shortestEdges) continue;
+
+      for (const [previousDirection, turnCount] of turnsAtCell ?? []) {
+        const nextTurns = turnCount + Number(previousDirection !== -1 && previousDirection !== nextDirection);
+        const turnsAtNext = minimumTurns.get(nextKey) ?? new Map();
+        const previousBest = turnsAtNext.get(nextDirection);
+        if (previousBest === undefined || nextTurns < previousBest) turnsAtNext.set(nextDirection, nextTurns);
+        minimumTurns.set(nextKey, turnsAtNext);
+      }
+
+      for (const [previousDirection, runLength] of runsAtCell ?? []) {
+        const nextRun = previousDirection === nextDirection ? runLength + 1 : 1;
+        maximumStraightRun = Math.max(maximumStraightRun, nextRun);
+        const runsAtNext = longestCurrentRuns.get(nextKey) ?? new Map();
+        const previousLongest = runsAtNext.get(nextDirection);
+        if (previousLongest === undefined || nextRun > previousLongest) runsAtNext.set(nextDirection, nextRun);
+        longestCurrentRuns.set(nextKey, runsAtNext);
+      }
+    }
+  }
+
+  const exitTurns = minimumTurns.get(gridKey(level.exit));
+  assert.ok(exitTurns?.size, `${level.id} shortest-path DAG did not reach the exit`);
+  return { minimumTurns: Math.min(...exitTurns.values()), maximumStraightRun };
+}
+
 test("campaign exposes ten ordered, immutable and directly compatible levels", () => {
   assert.equal(CAMPAIGN_LEVEL_COUNT, 10);
   assert.equal(CAMPAIGN_LEVELS.length, 10);
@@ -127,9 +213,9 @@ test("every campaign layout has a meaningful, connected maze and reachable gamep
 });
 
 test("all ten polished layouts meet the authored maze-complexity contract", () => {
-  const minimumCycleRanks = [6, 9, 8, 7, 8, 12, 9, 10, 8, 10];
-  const minimumJunctions = [15, 13, 15, 15, 17, 22, 16, 19, 14, 20];
-  const minimumEscapePathNodes = [46, 44, 44, 43, 45, 41, 29, 41, 55, 45];
+  const minimumCycleRanks = [6, 13, 15, 7, 22, 20, 15, 17, 15, 23];
+  const minimumJunctions = [15, 21, 27, 15, 43, 36, 29, 31, 27, 44];
+  const minimumEscapePathNodes = [46, 44, 44, 43, 51, 41, 33, 41, 55, 45];
 
   for (const [index, level] of CAMPAIGN_LEVELS.entries()) {
     const nodes = [];
@@ -174,5 +260,22 @@ test("all ten polished layouts meet the authored maze-complexity contract", () =
     assert.ok(cycleRank >= minimumCycleRanks[index], `${level.id} needs more meaningful route loops`);
     assert.ok(junctions >= minimumJunctions[index], `${level.id} needs more route decisions`);
     assert.ok(escapePathNodes >= minimumEscapePathNodes[index], `${level.id} escape route became too short`);
+  }
+});
+
+test("every shortest escape option preserves authored turn density and rejects long sprint lanes", () => {
+  const minimumTurns = [8, 5, 6, 7, 15, 6, 9, 8, 14, 14];
+  const maximumStraightRuns = [9, 13, 11, 11, 6, 9, 8, 12, 7, 7];
+
+  for (const [index, level] of CAMPAIGN_LEVELS.entries()) {
+    const shape = shortestRouteShape(level);
+    assert.ok(
+      shape.minimumTurns >= minimumTurns[index],
+      `${level.id} exposes a shortest route with only ${shape.minimumTurns} turns`,
+    );
+    assert.ok(
+      shape.maximumStraightRun <= maximumStraightRuns[index],
+      `${level.id} exposes a ${shape.maximumStraightRun}-cell straight sprint lane`,
+    );
   }
 });

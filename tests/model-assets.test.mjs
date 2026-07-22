@@ -575,12 +575,28 @@ for (const contract of THEME_KIT_CONTRACTS) {
       ["ArchitectureWallEnd"],
       ["ArchitectureDoorway", "ArchitectureDoorBay"],
     ];
+    const wallHeights = [];
     for (const suffixes of wallFamilies) {
       const names = expandNames(prefixes, suffixes);
       const nodeIndex = requiredNodeIndex(gltf, names, `${basename} ${suffixes[0]}`);
       assertWallModule(gltf, nodeIndex, `${basename} ${gltf.nodes[nodeIndex].name}`);
-      assert.ok(subtreeTriangleCount(gltf, nodeIndex) >= 100, `${basename} ${gltf.nodes[nodeIndex].name} is placeholder wall geometry`);
+      const triangleMinimum = suffixes[0] === "ArchitectureWallB" || suffixes[0] === "ArchitectureWallC" ? 260 : 100;
+      assert.ok(subtreeTriangleCount(gltf, nodeIndex) >= triangleMinimum, `${basename} ${gltf.nodes[nodeIndex].name} is placeholder wall geometry`);
+      if (suffixes[0].startsWith("ArchitectureWall") && suffixes[0] !== "ArchitectureWallEnd") {
+        wallHeights.push(boxMetrics(subtreeBounds(gltf, nodeIndex), `${basename} ${gltf.nodes[nodeIndex].name}`).size.y);
+      }
     }
+    assert.ok(Math.max(...wallHeights) - Math.min(...wallHeights) >= 0.08, `${basename} A/B/C walls need visibly different skyline profiles`);
+
+    const wideWallIndex = requiredNodeIndex(gltf, expandNames(prefixes, ["ArchitectureWallWide"]), `${basename} ArchitectureWallWide`);
+    assertCanonicalRootTransform(gltf, wideWallIndex, `${basename} ArchitectureWallWide`);
+    const wideWall = boxMetrics(subtreeBounds(gltf, wideWallIndex), `${basename} ArchitectureWallWide`);
+    assert.ok(wideWall.size.x >= 3.9 && wideWall.size.x <= 4.2, `${basename} ArchitectureWallWide must cover exactly two grid bays`);
+    assert.ok(wideWall.size.z >= 0.18 && wideWall.size.z <= 0.5, `${basename} ArchitectureWallWide has an invalid depth`);
+    assert.ok(wideWall.size.y >= 2.3 && wideWall.size.y <= 2.8, `${basename} ArchitectureWallWide has an invalid skyline`);
+    const wideWallTriangles = subtreeTriangleCount(gltf, wideWallIndex);
+    assert.ok(wideWallTriangles >= 400, `${basename} ArchitectureWallWide lacks continuous authored detail (${wideWallTriangles} tris)`);
+    assert.equal(gltf.nodes[wideWallIndex].extras?.chasing_continuous_span_meters, 4, `${basename} ArchitectureWallWide must declare its four-metre span`);
 
     const cornerIndex = requiredNodeIndex(gltf, expandNames(prefixes, ["ArchitectureCorner"]), `${basename} ArchitectureCorner`);
     assertCanonicalRootTransform(gltf, cornerIndex, `${basename} ArchitectureCorner`);
@@ -590,6 +606,17 @@ for (const contract of THEME_KIT_CONTRACTS) {
     assert.ok(corner.size.y >= 1.6 && corner.size.y <= 3.5, `${basename} ArchitectureCorner has an invalid height`);
     assert.ok(corner.volume <= 24, `${basename} ArchitectureCorner exceeds its volume budget`);
     assert.ok(subtreeTriangleCount(gltf, cornerIndex) >= 120, `${basename} ArchitectureCorner is placeholder geometry`);
+
+    const junctionIndex = requiredNodeIndex(gltf, expandNames(prefixes, ["ArchitectureJunction"]), `${basename} ArchitectureJunction`);
+    assertCanonicalRootTransform(gltf, junctionIndex, `${basename} ArchitectureJunction`);
+    const junction = boxMetrics(subtreeBounds(gltf, junctionIndex), `${basename} ArchitectureJunction`);
+    assert.ok(junction.size.x >= 1.65 && junction.size.x <= 2.4, `${basename} ArchitectureJunction has an invalid X footprint`);
+    assert.ok(junction.size.z >= 1.65 && junction.size.z <= 2.4, `${basename} ArchitectureJunction has an invalid Z footprint`);
+    assert.ok(junction.box.min.y >= 1.5, `${basename} ArchitectureJunction must preserve player head clearance`);
+    assert.ok(junction.box.max.y >= 2.45 && junction.box.max.y <= 3.1, `${basename} ArchitectureJunction has an invalid crown height`);
+    assert.ok(junction.size.y >= 0.8 && junction.size.y <= 1.4, `${basename} ArchitectureJunction overhead structure is too thin or bulky`);
+    assert.ok(subtreeTriangleCount(gltf, junctionIndex) >= 300, `${basename} ArchitectureJunction lacks authored curved silhouette detail`);
+    assert.equal(gltf.nodes[junctionIndex].extras?.chasing_choice_landmark, true, `${basename} ArchitectureJunction must declare its gameplay landmark role`);
 
     const floorFamilies = [
       ["FloorPrimary", "FloorA"],
@@ -693,6 +720,15 @@ for (const contract of THEME_KIT_CONTRACTS) {
       const pbr = material.pbrMetallicRoughness;
       if (pbr?.baseColorTexture) {
         assert.ok(material.normalTexture, `${basename} textured material ${materialIndex} must include a normal map`);
+      }
+      if (pbr?.baseColorTexture && material.normalTexture) {
+        assert.ok(pbr.metallicRoughnessTexture, `${basename} textured material ${materialIndex} must include packed roughness/metallic`);
+        assert.ok(material.occlusionTexture, `${basename} textured material ${materialIndex} must include ambient occlusion`);
+        assert.equal(
+          pbr.metallicRoughnessTexture.index,
+          material.occlusionTexture.index,
+          `${basename} textured material ${materialIndex} must share one compact ORM texture`,
+        );
       }
     }
     for (const [meshIndex, mesh] of gltf.meshes.entries()) {
