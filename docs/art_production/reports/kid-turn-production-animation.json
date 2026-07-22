@@ -1,0 +1,257 @@
+{
+  "role": "kid",
+  "output": "private/tmp/chasing-character-pbr/kid-turn-production-animated.glb",
+  "outputBytes": 8229580,
+  "rig": "Rig_Humanoid_Shared",
+  "bones": 21,
+  "meshes": 35,
+  "clips": [
+    {
+      "name": "Idle",
+      "frames": [
+        0.0,
+        75.0
+      ],
+      "durationSeconds": 2.5,
+      "source": "Quaternius UAL Standard/Idle_Loop",
+      "loop": true
+    },
+    {
+      "name": "Walk",
+      "frames": [
+        0.0,
+        40.0
+      ],
+      "durationSeconds": 1.3333,
+      "source": "Quaternius UAL Standard/Walk_Loop",
+      "loop": true
+    },
+    {
+      "name": "Run",
+      "frames": [
+        0.0,
+        20.0
+      ],
+      "durationSeconds": 0.6667,
+      "source": "Quaternius UAL Standard/Sprint_Loop",
+      "loop": true
+    },
+    {
+      "name": "TurnLeft",
+      "frames": [
+        0.0,
+        18.0
+      ],
+      "durationSeconds": 0.6,
+      "source": "Quaternius UAL Standard/Punch_Cross lower-body grounded pivot refinement",
+      "loop": false
+    },
+    {
+      "name": "TurnRight",
+      "frames": [
+        0.0,
+        18.0
+      ],
+      "durationSeconds": 0.6,
+      "source": "Quaternius UAL Standard/Punch_Cross lower-body grounded pivot refinement",
+      "loop": false
+    },
+    {
+      "name": "HideEnter",
+      "frames": [
+        0.0,
+        39.0
+      ],
+      "durationSeconds": 1.3,
+      "source": "Quaternius UAL Standard/Sitting_Enter -> Sitting_Idle_Loop seam",
+      "loop": false
+    },
+    {
+      "name": "HideIdle",
+      "frames": [
+        0.0,
+        50.0
+      ],
+      "durationSeconds": 1.6667,
+      "source": "Quaternius UAL Standard/Sitting_Idle_Loop",
+      "loop": true
+    },
+    {
+      "name": "HidePeek",
+      "frames": [
+        0.0,
+        48.0
+      ],
+      "durationSeconds": 1.6,
+      "source": "Authored from Quaternius Sitting_Idle_Loop low-pose base",
+      "loop": true
+    },
+    {
+      "name": "HideExit",
+      "frames": [
+        0.0,
+        31.0
+      ],
+      "durationSeconds": 1.0333,
+      "source": "Quaternius UAL Standard/Sitting_Idle_Loop seam -> Sitting_Exit",
+      "loop": false
+    },
+    {
+      "name": "Caught",
+      "frames": [
+        0.0,
+        30.0
+      ],
+      "durationSeconds": 1.0,
+      "source": "Authored Idle_Loop -> restrained Hit_Chest hold",
+      "loop": false
+    },
+    {
+      "name": "EscapeCelebrate",
+      "frames": [
+        0.0,
+        37.0
+      ],
+      "durationSeconds": 1.2195,
+      "source": "Quaternius UAL Standard/Dance_Loop",
+      "loop": true
+    },
+    {
+      "name": "Interact",
+      "frames": [
+        0.0,
+        60.0
+      ],
+      "durationSeconds": 2.0,
+      "source": "Quaternius UAL Standard/Interact",
+      "loop": false
+    }
+  ],
+  "qualityGates": {
+    "hasRuntimeProceduralPose": false,
+    "fullBodySampleRateFps": 30,
+    "requiredBoneMapComplete": true,
+    "sourceLicense": "CC0-1.0",
+    "motionSource": {
+      "bytes": 6671104,
+      "sha256": "1b7bf67866360665426bb99e4c71bd619f19b408453c24e30f0c3071601eee5c",
+      "matchesPinnedQuaterniusStandard": true
+    },
+    "seams": {
+      "HideEnter->HideIdle": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "HideIdle->HidePeek": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "HidePeek->HideIdle": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "HideIdle->HideExit": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "Idle->Caught": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "Idle->TurnLeft": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "TurnLeft->Idle": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "Idle->TurnRight": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "TurnRight->Idle": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "IdleLoop": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "RunLoop": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      }
+    },
+    "turnInPlace": {
+      "TurnLeft": {
+        "authoredDegrees": 90,
+        "durationSeconds": 0.6,
+        "runtimeHeadingSimulated": true,
+        "rootYawRemoved": true,
+        "maximumTransientBakedHipsRotationDeltaDegrees": 13.137662,
+        "endpointBakedHipsRotationDeltaDegrees": 0.0,
+        "supportSequence": [
+          "LeftFoot",
+          "RightFoot"
+        ],
+        "supportWindows": [
+          [
+            0.0,
+            0.42
+          ],
+          [
+            0.68,
+            1.0
+          ]
+        ],
+        "supportBonesAudited": [
+          "Foot",
+          "Toes"
+        ],
+        "maximumSupportDriftMeters": 0.001798,
+        "worstSupportDriftNormalized": 0.3611,
+        "maximumSupportVerticalDriftMeters": 0.000604,
+        "maximumSupportOrientationDriftDegrees": 0.193827,
+        "movingFootClearanceMeters": 0.032828,
+        "exactIdleSeamAllowsTwoPlaysFor180": true
+      },
+      "TurnRight": {
+        "authoredDegrees": 90,
+        "durationSeconds": 0.6,
+        "runtimeHeadingSimulated": true,
+        "rootYawRemoved": true,
+        "maximumTransientBakedHipsRotationDeltaDegrees": 13.137662,
+        "endpointBakedHipsRotationDeltaDegrees": 0.0,
+        "supportSequence": [
+          "RightFoot",
+          "LeftFoot"
+        ],
+        "supportWindows": [
+          [
+            0.0,
+            0.42
+          ],
+          [
+            0.68,
+            1.0
+          ]
+        ],
+        "supportBonesAudited": [
+          "Foot",
+          "Toes"
+        ],
+        "maximumSupportDriftMeters": 0.001747,
+        "worstSupportDriftNormalized": 0.3611,
+        "maximumSupportVerticalDriftMeters": 0.000811,
+        "maximumSupportOrientationDriftDegrees": 0.197823,
+        "movingFootClearanceMeters": 0.043095,
+        "exactIdleSeamAllowsTwoPlaysFor180": true
+      }
+    }
+  },
+  "candidateOnly": true,
+  "sourceBlend": "/private/tmp/chasing-web-production/art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Kid_PrecisionRemodel_v21_Rigged.blend",
+  "sourceGeneration": "v21-plus-grounded-punch-pivot-turn90",
+  "officialRuntimeOverwritten": false
+}

@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "scoreId": "slow-drift-adaptive-v1",
+  "arrangement": "Original two-stem adaptive score for Chasing",
+  "licenseRecord": "docs/licenses/APPLE_LOOPS_AUDIO.md",
+  "licenseUrl": "https://support.apple.com/en-us/102034",
+  "timeline": {
+    "bpm": 101,
+    "timeSignature": "4/4",
+    "key": "Bb minor",
+    "beats": 64,
+    "expectedDurationSeconds": 38.01980198019802,
+    "expectedSamplesAt48k": 1824950
+  },
+  "sources": {
+    "ambient": {
+      "filename": "Slow Drift Ambient Synth.caf",
+      "sha256": "3f403c7ca600af00fc95ee9e14e9c082788fa91a5d6782b022ad29a1863c82ec",
+      "beats": 32,
+      "key": "Bb minor",
+      "redistributed": false
+    },
+    "bass": {
+      "filename": "Slow Drift Bass Synth.caf",
+      "sha256": "1a09204465a976f0f06e6b5cde8826a102850c22745fe60dc450a0ac40006830",
+      "beats": 32,
+      "key": "Bb minor",
+      "redistributed": false
+    },
+    "sub": {
+      "filename": "Slow Drift Sub Bass.caf",
+      "sha256": "05e71a9f6f61f582c12faad42afbb9134360be072b0c31f486adc0ade7cd8f81",
+      "beats": 64,
+      "key": "Bb minor",
+      "redistributed": false
+    },
+    "beat": {
+      "filename": "Slow Drift Beat.caf",
+      "sha256": "2b30e32187ff88fb7c767f6276673abc9fbf5436d3170d22501ae9ce77b8ddd4",
+      "beats": 64,
+      "key": "keyless percussion",
+      "redistributed": false
+    }
+  },
+  "outputs": {
+    "explore": {
+      "file": "public/audio/slow-drift-explore.m4a",
+      "sha256": "03f0f72bc50758234fe7d50dc419802debfe190abc275c504292672c0c73a611",
+      "bytes": 935976,
+      "codec": "aac",
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 38.02,
+      "integratedLufs": -22.24,
+      "truePeakDb": -8.73,
+      "loudnessRangeLu": 8.6,
+      "seam": {
+        "decodedFrames": 1824950,
+        "seamWindowMs": 20,
+        "firstWindowRms": 0.015273714913829195,
+        "lastWindowRms": 0.019027584689966917,
+        "boundaryJump": 0.009414210901013575,
+        "boundaryDerivativeJump": 0.00122620278125396
+      }
+    },
+    "threat": {
+      "file": "public/audio/slow-drift-threat.m4a",
+      "sha256": "300df04317f93e27a830d18bd0713104e3618042771afd984634fca2c2caf3b1",
+      "bytes": 958523,
+      "codec": "aac",
+      "sampleRate": 48000,
+      "channels": 2,
+      "durationSeconds": 38.02,
+      "integratedLufs": -20.19,
+      "truePeakDb": -1.55,
+      "loudnessRangeLu": 6.9,
+      "seam": {
+        "decodedFrames": 1824950,
+        "seamWindowMs": 20,
+        "firstWindowRms": 0.14507516666962542,
+        "lastWindowRms": 0.0076040938075621935,
+        "boundaryJump": 0.0030220242915675044,
+        "boundaryDerivativeJump": 0.001322373398579657
+      }
+    }
+  },
+  "recommendedRuntimeMix": {
+    "model": "Base layer remains audible while the threat layer rises",
+    "exploreGainAtThreat0": 1,
+    "exploreGainAtThreat1": 0.4,
+    "threatGainAtThreat0": 0,
+    "threatGainAtThreat1": 0.94,
+    "smoothing": {
+      "attackSeconds": 0.22,
+      "releaseSeconds": 1.2
+    },
+    "verifiedFullThreatBlend": {
+      "exploreGain": 0.4,
+      "threatGain": 0.94,
+      "integratedLufs": -20.02,
+      "truePeakDb": -1.94,
+      "loudnessRangeLu": 6
+    }
+  },
+  "qualityGates": {
+    "multiLoopArrangement": true,
+    "singleLoopExport": false,
+    "oscillatorOrGeneratedBeeps": false,
+    "exactSourceHashVerification": true,
+    "maxStemDurationDeltaSeconds": 0.001,
+    "maxTruePeakDb": -1.35,
+    "loudnessToleranceLu": 0.6,
+    "manualHeadphoneLoopReviewRequired": true
+  }
+}

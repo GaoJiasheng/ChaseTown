@@ -1,0 +1,182 @@
+{
+  "role": "police",
+  "input": "/private/tmp/chasing-character-pbr/police-v22-production-repaired-animated.glb",
+  "inputBytes": 2116112,
+  "output": "/private/tmp/chasing-character-pbr/police.glb",
+  "sourceUvEvidence": {
+    "Police_v22_Body": {
+      "uvLayer": "UVMap",
+      "uvLoopCount": 47448,
+      "uvMin": [
+        0.009208,
+        0.011054
+      ],
+      "uvMax": [
+        0.993515,
+        0.973856
+      ],
+      "quantizedUvSha256": "56c0bd5d370aeafccabf21d66f764b20de6dd19bdb80fe5305ecff538305ede6"
+    },
+    "Police_v22_Uniform": {
+      "uvLayer": "UVMap",
+      "uvLoopCount": 14400,
+      "uvMin": [
+        0.0085,
+        0.0168
+      ],
+      "uvMax": [
+        0.9823,
+        0.9928
+      ],
+      "quantizedUvSha256": "cefef7bb77f0de39fa91a497fa71437ab5e32694f8b1ce3133b057b042b081c8"
+    }
+  },
+  "appliedMaterials": {
+    "M_Police_v22_SkinUV": {
+      "baseColor": "Police_v22_MakeHuman_Skin_BaseColor_2K",
+      "normal": "Police_v22_Skin_MicroNormal_768",
+      "orm": "Police_v22_Skin_ORM_768",
+      "uvCompatibility": "exact canonical MakeHuman body UV used by Police_v22_Body"
+    },
+    "M_Police_v22_UniformNavy": {
+      "baseColor": "Police_v22_Uniform_BaseColor_768",
+      "normal": "Police_v22_CasualSuit_Normal_1K",
+      "orm": "Police_v22_Uniform_ORM_768",
+      "uvCompatibility": "exact MakeHuman male_casualsuit03 normal UV retained by Police_v22_Uniform"
+    },
+    "M_Police_v22_TrouserNavy": {
+      "baseColor": "Police_v22_Trouser_BaseColor_768",
+      "normal": "Police_v22_CasualSuit_Normal_1K",
+      "orm": "Police_v22_Uniform_ORM_768",
+      "uvCompatibility": "exact MakeHuman male_casualsuit03 normal UV retained by Police_v22_Uniform"
+    }
+  },
+  "unchangedAccessoryMaterialCount": 11,
+  "meshTopologyUnchanged": true,
+  "animationSetUnchanged": true,
+  "exportedGlb": {
+    "bytes": 9791372,
+    "meshes": 38,
+    "materials": 14,
+    "textures": 9,
+    "images": 7,
+    "animations": [
+      "Alert",
+      "Idle",
+      "Interact",
+      "Resolve",
+      "Run"
+    ],
+    "targetMaterialPbrBindings": {
+      "M_Police_v22_SkinUV": {
+        "baseColorTexture": {
+          "name": "young_lightskinned_male_diffuse2",
+          "mimeType": "image/png",
+          "width": 2048,
+          "height": 2048,
+          "bytes": 3595270,
+          "sha256": "03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874"
+        },
+        "normalTexture": {
+          "name": "Police_v22_Skin_MicroNormal_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 1076882,
+          "sha256": "fbbe80605782b6adba32305bfaca133e5d3f971dcb5ee77e28f0b8999890b1ac"
+        },
+        "occlusionTexture": {
+          "name": "Police_v22_Skin_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 697822,
+          "sha256": "474b539c0dc8844621dfa42284cdbb84f5efdc635659a808df152a115d97116b"
+        },
+        "metallicRoughnessTexture": {
+          "name": "Police_v22_Skin_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 697822,
+          "sha256": "474b539c0dc8844621dfa42284cdbb84f5efdc635659a808df152a115d97116b"
+        }
+      },
+      "M_Police_v22_UniformNavy": {
+        "baseColorTexture": {
+          "name": "Police_v22_Uniform_BaseColor_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 399299,
+          "sha256": "7eab670e32f26c80fcc297f9510920b8801a824db1c4f5e55f1e34dc6eca8337"
+        },
+        "normalTexture": {
+          "name": "Police_v22_CasualSuit_Normal_1K",
+          "mimeType": "image/png",
+          "width": 1024,
+          "height": 1024,
+          "bytes": 1170852,
+          "sha256": "bf47739ee7c7deeeb2d67cddea2950da3ae232e43321856eacb336a19435033a"
+        },
+        "occlusionTexture": {
+          "name": "Police_v22_Uniform_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 695705,
+          "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b"
+        },
+        "metallicRoughnessTexture": {
+          "name": "Police_v22_Uniform_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 695705,
+          "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b"
+        }
+      },
+      "M_Police_v22_TrouserNavy": {
+        "baseColorTexture": {
+          "name": "Police_v22_Trouser_BaseColor_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 387483,
+          "sha256": "301e7dc6cc718c338aedb61db056603e5459a1cae0d71e000178c623a0a8cb28"
+        },
+        "normalTexture": {
+          "name": "Police_v22_CasualSuit_Normal_1K",
+          "mimeType": "image/png",
+          "width": 1024,
+          "height": 1024,
+          "bytes": 1170852,
+          "sha256": "bf47739ee7c7deeeb2d67cddea2950da3ae232e43321856eacb336a19435033a"
+        },
+        "occlusionTexture": {
+          "name": "Police_v22_Uniform_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 695705,
+          "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b"
+        },
+        "metallicRoughnessTexture": {
+          "name": "Police_v22_Uniform_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 695705,
+          "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b"
+        }
+      }
+    }
+  },
+  "qualityGates": {
+    "everyPrimaryMaterialHasBaseColorNormalOrm": true,
+    "accessoryMaterialsUntouched": true,
+    "primaryMeshesHaveUVs": true,
+    "noGeometryGenerated": true,
+    "inputNotOverwritten": true
+  }
+}

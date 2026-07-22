@@ -1,0 +1,2077 @@
+{
+  "capture": {
+    "modes": [
+      "spawn-delay",
+      "patrol",
+      "suspicious",
+      "chase"
+    ],
+    "terminal": "lost",
+    "restartPhase": "playing",
+    "restartPlayer": {
+      "position": {
+        "x": 1,
+        "y": 2
+      },
+      "heading": {
+        "x": 0,
+        "y": 1
+      },
+      "mode": "free",
+      "hideSpotId": null,
+      "transitionRemainingSeconds": 0,
+      "hideTurnDirection": 0,
+      "hideTurnCycle": -1,
+      "hideTurnSegmentDurationSeconds": 0
+    },
+    "restartChaser": {
+      "position": {
+        "x": 21,
+        "y": 10
+      },
+      "heading": {
+        "x": -1,
+        "y": 0
+      },
+      "mode": "spawn-delay",
+      "modeElapsedSeconds": 0.30000000000000004,
+      "patrolIndex": 0,
+      "searchSeed": 1,
+      "searchIndex": 0,
+      "searchWaypointElapsedSeconds": 0,
+      "memory": {
+        "lastKnownPosition": null,
+        "lastSeenAtSeconds": null,
+        "witnessedHideSpotId": null
+      }
+    },
+    "restartAudio": {
+      "status": "playing",
+      "unlocked": true,
+      "muted": false,
+      "threat": 0,
+      "targetGains": {
+        "explore": 1,
+        "threat": 0
+      },
+      "contextState": "running",
+      "driftSeconds": -0.005333000000000254,
+      "explore": {
+        "url": "/audio/slow-drift-explore.m4a",
+        "currentTimeSeconds": 11.903515,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "threatTrack": {
+        "url": "/audio/slow-drift-threat.m4a",
+        "currentTimeSeconds": 11.898182,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "lastError": null
+    },
+    "restartVisibility": {
+      "kid": {
+        "rootVisible": true,
+        "alpha": 1
+      },
+      "villain": {
+        "rootVisible": false,
+        "alpha": 0
+      },
+      "police": {
+        "rootVisible": true,
+        "alpha": 1
+      }
+    },
+    "restartLockers": {
+      "locker-north": {
+        "action": null,
+        "peeking": false,
+        "peekClosing": false,
+        "holdFinal": false,
+        "delayRemaining": 0,
+        "owner": "idle"
+      },
+      "locker-south": {
+        "action": null,
+        "peeking": false,
+        "peekClosing": false,
+        "holdFinal": false,
+        "delayRemaining": 0,
+        "owner": "idle"
+      }
+    }
+  },
+  "safe": {
+    "modes": [
+      "spawn-delay",
+      "patrol",
+      "suspicious",
+      "chase",
+      "lost-sight",
+      "go-to-last-known",
+      "search"
+    ],
+    "terminal": "won",
+    "stage": "alternate-route",
+    "restartPhase": "playing",
+    "restartPlayer": {
+      "position": {
+        "x": 1,
+        "y": 2
+      },
+      "heading": {
+        "x": 0,
+        "y": 1
+      },
+      "mode": "free",
+      "hideSpotId": null,
+      "transitionRemainingSeconds": 0,
+      "hideTurnDirection": 0,
+      "hideTurnCycle": -1,
+      "hideTurnSegmentDurationSeconds": 0
+    },
+    "restartChaser": {
+      "position": {
+        "x": 21,
+        "y": 10
+      },
+      "heading": {
+        "x": -1,
+        "y": 0
+      },
+      "mode": "spawn-delay",
+      "modeElapsedSeconds": 0.30000000000000004,
+      "patrolIndex": 0,
+      "searchSeed": 1,
+      "searchIndex": 0,
+      "searchWaypointElapsedSeconds": 0,
+      "memory": {
+        "lastKnownPosition": null,
+        "lastSeenAtSeconds": null,
+        "witnessedHideSpotId": null
+      }
+    },
+    "restartAudio": {
+      "status": "playing",
+      "unlocked": true,
+      "muted": false,
+      "threat": 0,
+      "targetGains": {
+        "explore": 1,
+        "threat": 0
+      },
+      "contextState": "running",
+      "driftSeconds": -0.0053339999999977294,
+      "explore": {
+        "url": "/audio/slow-drift-explore.m4a",
+        "currentTimeSeconds": 28.810667,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "threatTrack": {
+        "url": "/audio/slow-drift-threat.m4a",
+        "currentTimeSeconds": 28.805333,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "lastError": null
+    },
+    "restartVisibility": {
+      "kid": {
+        "rootVisible": true,
+        "alpha": 1
+      },
+      "villain": {
+        "rootVisible": false,
+        "alpha": 0
+      },
+      "police": {
+        "rootVisible": true,
+        "alpha": 1
+      }
+    },
+    "restartLockers": {
+      "locker-north": {
+        "action": null,
+        "peeking": false,
+        "peekClosing": false,
+        "holdFinal": false,
+        "delayRemaining": 0,
+        "owner": "idle"
+      },
+      "locker-south": {
+        "action": null,
+        "peeking": false,
+        "peekClosing": false,
+        "holdFinal": false,
+        "delayRemaining": 0,
+        "owner": "idle"
+      }
+    }
+  },
+  "transitions": [
+    {
+      "run": "50-direct",
+      "at": 0.09999999999999999,
+      "mode": "spawn-delay",
+      "state": {
+        "at": 709.7999999523163,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 0.09999999999999999,
+            "tick": 6,
+            "player": {
+              "position": {
+                "x": 1,
+                "y": 2
+              },
+              "heading": {
+                "x": 0,
+                "y": 1
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 21,
+                "y": 10
+              },
+              "heading": {
+                "x": -1,
+                "y": 0
+              },
+              "mode": "spawn-delay",
+              "modeElapsedSeconds": 0.1,
+              "patrolIndex": 0,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": null,
+                "lastSeenAtSeconds": null,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": -1.3877787807814457e-17,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.04004000000000001,
+              "playing": true
+            },
+            "villain": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.04004000000000001,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.04004000000000001,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": true,
+              "alpha": 0.16500161784638825
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0,
+            "targetGains": {
+              "explore": 1,
+              "threat": 0
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005333000000000001,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 0.032,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 0.026667,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.25,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [],
+              "maxStrength": 0
+            }
+          },
+          "render": {
+            "calls": 506,
+            "triangles": 2119842
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "视野受限"
+      }
+    },
+    {
+      "run": "50-direct",
+      "at": 1.4999999999999996,
+      "mode": "patrol",
+      "state": {
+        "at": 2110.399999976158,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 1.4999999999999996,
+            "tick": 90,
+            "player": {
+              "position": {
+                "x": 3.529999999999997,
+                "y": 1.4500000000000006
+              },
+              "heading": {
+                "x": 1,
+                "y": 0
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 20.986125,
+                "y": 10
+              },
+              "heading": {
+                "x": -1,
+                "y": 0
+              },
+              "mode": "patrol",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 0,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": null,
+                "lastSeenAtSeconds": null,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": -2.0816681711721685e-16,
+            "events": [
+              {
+                "type": "chaser-mode-changed",
+                "from": "spawn-delay",
+                "to": "patrol"
+              }
+            ]
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.999503880646706,
+              "playing": true
+            },
+            "villain": {
+              "state": "walk",
+              "clip": "PatrolWalk",
+              "normalizedTime": 0.003422299829700965,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.6000000000000006,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": false,
+              "alpha": 0
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0,
+            "targetGains": {
+              "explore": 1,
+              "threat": 0
+            },
+            "contextState": "running",
+            "driftSeconds": -0.00533399999999995,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 1.434667,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 1.429333,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.25,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [
+                "campus-walls"
+              ],
+              "maxStrength": 0.9774930654771652
+            }
+          },
+          "render": {
+            "calls": 525,
+            "triangles": 2001370
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "视野受限"
+      }
+    },
+    {
+      "run": "50-direct",
+      "at": 8.71666666666668,
+      "mode": "suspicious",
+      "state": {
+        "at": 9326.099999964237,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 8.71666666666668,
+            "tick": 523,
+            "player": {
+              "position": {
+                "x": 14.530000000000111,
+                "y": 6.32666666666669
+              },
+              "heading": {
+                "x": 0,
+                "y": 1
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 15.081849354189831,
+                "y": 9.917079598761305
+              },
+              "heading": {
+                "x": -0.08889664637343295,
+                "y": -0.9960408557200638
+              },
+              "mode": "suspicious",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 1,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": {
+                  "x": 14.530000000000111,
+                  "y": 6.290000000000023
+                },
+                "lastSeenAtSeconds": 8.700000000000012,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": 0.01666666666666546,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.825003558021771,
+              "playing": true
+            },
+            "villain": {
+              "state": "alert",
+              "clip": "Alert",
+              "normalizedTime": 0.013102232417374958,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.4868000000000022,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0.28,
+            "targetGains": {
+              "explore": 0.8745284443630178,
+              "threat": 0.49740124648014306
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005333999999999506,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 8.650667,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 8.645333,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.29825455073591,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [
+                "campus-walls"
+              ],
+              "maxStrength": 0.999999916222161
+            }
+          },
+          "render": {
+            "calls": 572,
+            "triangles": 2321800
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "巡逻中"
+      }
+    },
+    {
+      "run": "50-direct",
+      "at": 8.91666666666669,
+      "mode": "chase",
+      "state": {
+        "at": 9576,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 8.91666666666669,
+            "tick": 535,
+            "player": {
+              "position": {
+                "x": 14.530000000000111,
+                "y": 6.766666666666695
+              },
+              "heading": {
+                "x": 0,
+                "y": 1
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 15.076367394330138,
+                "y": 9.855657079325233
+              },
+              "heading": {
+                "x": -0.08889664637343454,
+                "y": -0.9960408557200635
+              },
+              "mode": "chase",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 1,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": {
+                  "x": 14.530000000000111,
+                  "y": 6.730000000000028
+                },
+                "lastSeenAtSeconds": 8.900000000000022,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": 0.01666666666666543,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.13685354872791974,
+              "playing": true
+            },
+            "villain": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.040409748371658845,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.5699600000000021,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 1,
+            "targetGains": {
+              "explore": 0.4,
+              "threat": 0.94
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005333999999999506,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 8.900779,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 8.895445,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.887288950498345,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [
+                "campus-walls"
+              ],
+              "maxStrength": 0.9999999930872431
+            }
+          },
+          "render": {
+            "calls": 577,
+            "triangles": 2335208
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "听见动静"
+      }
+    },
+    {
+      "run": "60-safe",
+      "at": 0.35,
+      "mode": "spawn-delay",
+      "state": {
+        "at": 12579.399999976158,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 0.35,
+            "tick": 21,
+            "player": {
+              "position": {
+                "x": 1,
+                "y": 2
+              },
+              "heading": {
+                "x": 0,
+                "y": 1
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 21,
+                "y": 10
+              },
+              "heading": {
+                "x": -1,
+                "y": 0
+              },
+              "mode": "spawn-delay",
+              "modeElapsedSeconds": 0.30000000000000004,
+              "patrolIndex": 0,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": null,
+                "lastSeenAtSeconds": null,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": 0.04999999999999996,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.14331999999999967,
+              "playing": true
+            },
+            "villain": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.14331999999999967,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.14331999999999967,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": false,
+              "alpha": 0
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0,
+            "targetGains": {
+              "explore": 1,
+              "threat": 0
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005333000000000254,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 11.904,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 11.898667,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.25,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [],
+              "maxStrength": 0
+            }
+          },
+          "render": {
+            "calls": 470,
+            "triangles": 1645270
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "视野受限"
+      }
+    },
+    {
+      "run": "60-safe",
+      "at": 1.4999999999999996,
+      "mode": "patrol",
+      "state": {
+        "at": 13725.399999976158,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 1.4999999999999996,
+            "tick": 90,
+            "player": {
+              "position": {
+                "x": 3.0166666666666644,
+                "y": 1.4866666666666672
+              },
+              "heading": {
+                "x": 1,
+                "y": 0
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 20.986125,
+                "y": 10
+              },
+              "heading": {
+                "x": -1,
+                "y": 0
+              },
+              "mode": "patrol",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 0,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": null,
+                "lastSeenAtSeconds": null,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": -2.0816681711721685e-16,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.878603716348109,
+              "playing": true
+            },
+            "villain": {
+              "state": "walk",
+              "clip": "PatrolWalk",
+              "normalizedTime": 0.15303916716738433,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.6029600000000003,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": false,
+              "alpha": 0
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0,
+            "targetGains": {
+              "explore": 1,
+              "threat": 0
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005335999999999785,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 13.050194,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 13.044858,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.25,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [
+                "campus-walls"
+              ],
+              "maxStrength": 0.9994939120046791
+            }
+          },
+          "render": {
+            "calls": 511,
+            "triangles": 1991074
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "视野受限"
+      }
+    },
+    {
+      "run": "60-safe",
+      "at": 8.71666666666668,
+      "mode": "suspicious",
+      "state": {
+        "at": 20943.399999976158,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 8.71666666666668,
+            "tick": 523,
+            "player": {
+              "position": {
+                "x": 14.530000000000111,
+                "y": 5.850000000000018
+              },
+              "heading": {
+                "x": 0,
+                "y": 1
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 15.081849354189831,
+                "y": 9.917079598761305
+              },
+              "heading": {
+                "x": -0.08889664637343295,
+                "y": -0.9960408557200638
+              },
+              "mode": "suspicious",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 1,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": {
+                  "x": 14.530000000000111,
+                  "y": 5.813333333333351
+                },
+                "lastSeenAtSeconds": 8.700000000000012,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": 0.01666666666666546,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.705003393696347,
+              "playing": true
+            },
+            "villain": {
+              "state": "alert",
+              "clip": "Alert",
+              "normalizedTime": 0.019552915009742197,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.4900000000000005,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0.28,
+            "targetGains": {
+              "explore": 0.8745284443630178,
+              "threat": 0.49740124648014306
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005334000000001282,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 20.266667,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 20.261333,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.31915238721279,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [
+                "campus-walls"
+              ],
+              "maxStrength": 0.9999987275170322
+            }
+          },
+          "render": {
+            "calls": 573,
+            "triangles": 2318604
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "巡逻中"
+      }
+    },
+    {
+      "run": "60-safe",
+      "at": 8.900000000000022,
+      "mode": "chase",
+      "state": {
+        "at": 21118.5,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 8.900000000000022,
+            "tick": 534,
+            "player": {
+              "position": {
+                "x": 14.530000000000111,
+                "y": 6.253333333333356
+              },
+              "heading": {
+                "x": 0,
+                "y": 1
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 15.079108374259985,
+                "y": 9.886368339043269
+              },
+              "heading": {
+                "x": -0.08889664637343367,
+                "y": -0.9960408557200636
+              },
+              "mode": "chase",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 1,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": {
+                  "x": 14.530000000000111,
+                  "y": 6.253333333333356
+                },
+                "lastSeenAtSeconds": 8.900000000000022,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": -1.2351231148954867e-15,
+            "events": [
+              {
+                "type": "chaser-mode-changed",
+                "from": "suspicious",
+                "to": "chase"
+              }
+            ]
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.9675033858732399,
+              "playing": true
+            },
+            "villain": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.9886440041143669,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.5600000000000007,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 1,
+            "targetGains": {
+              "explore": 0.4,
+              "threat": 0.94
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005334000000001282,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 20.442667,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 20.437333,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.73408587687204,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [
+                "campus-walls"
+              ],
+              "maxStrength": 0.9999998441762806
+            }
+          },
+          "render": {
+            "calls": 576,
+            "triangles": 2331744
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "听见动静"
+      }
+    },
+    {
+      "run": "60-safe",
+      "at": 9.200000000000037,
+      "mode": "lost-sight",
+      "state": {
+        "at": 21430.899999976158,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 9.200000000000037,
+            "tick": 552,
+            "player": {
+              "position": {
+                "x": 14.42000000000011,
+                "y": 6.803333333333362
+              },
+              "heading": {
+                "x": -1,
+                "y": 0
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 15.039871556127148,
+                "y": 9.36384130029434
+              },
+              "heading": {
+                "x": -0.02922226252556449,
+                "y": -0.9995729384956792
+              },
+              "mode": "lost-sight",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 1,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": {
+                  "x": 14.530000000000111,
+                  "y": 6.693333333333361
+                },
+                "lastSeenAtSeconds": 9.100000000000032,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": -1.27675647831893e-15,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.4299533720911602,
+              "playing": true
+            },
+            "villain": {
+              "state": "loseSight",
+              "clip": "LostSight",
+              "normalizedTime": 0.018439267634797443,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.6833200000000006,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": true,
+              "alpha": 0.46785353099901017
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0.72,
+            "targetGains": {
+              "explore": 0.6286493458200685,
+              "threat": 0.7976164491784256
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005334000000001282,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 20.75573,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 20.750396,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 18.133781395479467,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [
+                "campus-walls"
+              ],
+              "maxStrength": 0.9999999961459469
+            }
+          },
+          "render": {
+            "calls": 595,
+            "triangles": 2510476
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "正在追捕"
+      }
+    },
+    {
+      "run": "60-safe",
+      "at": 9.616666666666724,
+      "mode": "go-to-last-known",
+      "state": {
+        "at": 21834.299999952316,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 9.616666666666724,
+            "tick": 577,
+            "player": {
+              "position": {
+                "x": 13.503333333333433,
+                "y": 6.803333333333362
+              },
+              "heading": {
+                "x": -1,
+                "y": 0
+              },
+              "mode": "free",
+              "hideSpotId": null,
+              "transitionRemainingSeconds": 0,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 15.038285761347426,
+                "y": 9.309597808831974
+              },
+              "heading": {
+                "x": -0.029222262525564133,
+                "y": -0.9995729384956795
+              },
+              "mode": "go-to-last-known",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 1,
+              "searchSeed": 1,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": {
+                  "x": 14.530000000000111,
+                  "y": 6.693333333333361
+                },
+                "lastSeenAtSeconds": 9.100000000000032,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": false
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": 0.016666666666665334,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.04255335383426657,
+              "playing": true
+            },
+            "villain": {
+              "state": "run",
+              "clip": "Run",
+              "normalizedTime": 0.5231768299346066,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.846680000000001,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": false,
+              "alpha": 0
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0.58,
+            "targetGains": {
+              "explore": 0.7161005515987263,
+              "threat": 0.7158826719512073
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005333000000000254,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 21.157333,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 21.152,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 17.22588565806351,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [
+                "campus-walls"
+              ],
+              "maxStrength": 0.9999999999713235
+            }
+          },
+          "render": {
+            "calls": 524,
+            "triangles": 1983046
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "视野受限"
+      }
+    },
+    {
+      "run": "60-safe",
+      "at": 15.816666666667032,
+      "mode": "search",
+      "state": {
+        "at": 28035.099999964237,
+        "qa": {
+          "ready": true,
+          "game": {
+            "phase": "playing",
+            "elapsedSeconds": 15.816666666667032,
+            "tick": 949,
+            "player": {
+              "position": {
+                "x": 9,
+                "y": 5
+              },
+              "heading": {
+                "x": 0,
+                "y": 1
+              },
+              "mode": "entering-hide",
+              "hideSpotId": "locker-north",
+              "transitionRemainingSeconds": 1.3866666666666698,
+              "hideTurnDirection": 0,
+              "hideTurnCycle": -1,
+              "hideTurnSegmentDurationSeconds": 0
+            },
+            "chaser": {
+              "position": {
+                "x": 7.508496879933336,
+                "y": 6.704455640221359
+              },
+              "heading": {
+                "x": 0.8569982980680209,
+                "y": 0.5153192380539616
+              },
+              "mode": "search",
+              "modeElapsedSeconds": 0,
+              "patrolIndex": 1,
+              "searchSeed": 2344417086,
+              "searchIndex": 0,
+              "searchWaypointElapsedSeconds": 0,
+              "memory": {
+                "lastKnownPosition": {
+                  "x": 7.490000000000034,
+                  "y": 6.693333333333361
+                },
+                "lastSeenAtSeconds": 12.400000000000196,
+                "witnessedHideSpotId": null
+              }
+            },
+            "hideSpots": {
+              "locker-north": {
+                "id": "locker-north",
+                "occupiedByPlayer": true
+              },
+              "locker-south": {
+                "id": "locker-south",
+                "occupiedByPlayer": false
+              }
+            },
+            "aiAccumulatorSeconds": 0.016666666666664474,
+            "events": []
+          },
+          "interaction": null,
+          "animations": {
+            "kid": {
+              "state": "enterHide",
+              "clip": "HideEnter",
+              "normalizedTime": 0.463126492710367,
+              "playing": true
+            },
+            "villain": {
+              "state": "walk",
+              "clip": "PatrolWalk",
+              "normalizedTime": 0.30151973441656,
+              "playing": true
+            },
+            "police": {
+              "state": "idle",
+              "clip": "Idle",
+              "normalizedTime": 0.3266800000000004,
+              "playing": true
+            }
+          },
+          "visibility": {
+            "kid": {
+              "rootVisible": true,
+              "alpha": 1
+            },
+            "villain": {
+              "rootVisible": false,
+              "alpha": 0
+            },
+            "police": {
+              "rootVisible": true,
+              "alpha": 1
+            }
+          },
+          "lockers": {
+            "locker-north": {
+              "action": "Locker_Door_Open_Enter",
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "player"
+            },
+            "locker-south": {
+              "action": null,
+              "peeking": false,
+              "peekClosing": false,
+              "holdFinal": false,
+              "delayRemaining": 0,
+              "owner": "idle"
+            }
+          },
+          "audio": {
+            "status": "playing",
+            "unlocked": true,
+            "muted": false,
+            "threat": 0.42,
+            "targetGains": {
+              "explore": 0.8044874144447507,
+              "threat": 0.6091896256503387
+            },
+            "contextState": "running",
+            "driftSeconds": -0.005333000000000254,
+            "explore": {
+              "url": "/audio/slow-drift-explore.m4a",
+              "currentTimeSeconds": 27.3599,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "threatTrack": {
+              "url": "/audio/slow-drift-threat.m4a",
+              "currentTimeSeconds": 27.354567,
+              "durationSeconds": 38.02,
+              "paused": false,
+              "readyState": 4,
+              "mediaErrorCode": null
+            },
+            "lastError": null
+          },
+          "camera": {
+            "fov": 56,
+            "distance": 16.764534654368184,
+            "zoom": 1,
+            "occlusion": {
+              "groups": 23,
+              "obscured": [],
+              "maxStrength": 0.000007315220710291864
+            }
+          },
+          "render": {
+            "calls": 445,
+            "triangles": 1556350
+          }
+        },
+        "overlay": null,
+        "overlayText": null,
+        "status": "视野受限"
+      }
+    }
+  ]
+}

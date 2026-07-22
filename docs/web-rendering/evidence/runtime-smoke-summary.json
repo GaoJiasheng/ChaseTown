@@ -1,0 +1,302 @@
+{
+  "moved": {
+    "position": {
+      "x": 1,
+      "y": 2.8066666666666658
+    },
+    "audio": {
+      "status": "playing",
+      "unlocked": true,
+      "muted": false,
+      "threat": 0,
+      "targetGains": {
+        "explore": 1,
+        "threat": 0
+      },
+      "contextState": "running",
+      "driftSeconds": 0,
+      "explore": {
+        "url": "/audio/slow-drift-explore.m4a",
+        "currentTimeSeconds": 2.346667,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "threatTrack": {
+        "url": "/audio/slow-drift-threat.m4a",
+        "currentTimeSeconds": 2.346667,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "lastError": null
+    }
+  },
+  "locker": {
+    "hidden": {
+      "player": {
+        "position": {
+          "x": 13,
+          "y": 19
+        },
+        "heading": {
+          "x": 1,
+          "y": 0
+        },
+        "mode": "hidden",
+        "hideSpotId": "locker-south",
+        "transitionRemainingSeconds": 0,
+        "hideTurnDirection": 0,
+        "hideTurnCycle": -1,
+        "hideTurnSegmentDurationSeconds": 0
+      },
+      "visibility": {
+        "rootVisible": false,
+        "alpha": 0
+      },
+      "css": {
+        "cover": 1,
+        "peek": 0
+      }
+    },
+    "peek": {
+      "player": {
+        "position": {
+          "x": 13,
+          "y": 19
+        },
+        "heading": {
+          "x": 1,
+          "y": 0
+        },
+        "mode": "peeking",
+        "hideSpotId": "locker-south",
+        "transitionRemainingSeconds": 0,
+        "hideTurnDirection": 0,
+        "hideTurnCycle": -1,
+        "hideTurnSegmentDurationSeconds": 0
+      },
+      "visibility": {
+        "rootVisible": true,
+        "alpha": 1
+      },
+      "css": {
+        "cover": 0,
+        "peek": 1
+      }
+    },
+    "exited": {
+      "player": {
+        "position": {
+          "x": 13,
+          "y": 19
+        },
+        "heading": {
+          "x": 1,
+          "y": 0
+        },
+        "mode": "free",
+        "hideSpotId": null,
+        "transitionRemainingSeconds": 0,
+        "hideTurnDirection": 0,
+        "hideTurnCycle": -1,
+        "hideTurnSegmentDurationSeconds": 0
+      },
+      "visibility": {
+        "rootVisible": true,
+        "alpha": 1
+      },
+      "locker": {
+        "action": null,
+        "peeking": false,
+        "peekClosing": false,
+        "holdFinal": false,
+        "delayRemaining": 0,
+        "owner": "idle"
+      }
+    }
+  },
+  "restart": {
+    "before": {
+      "x": 1,
+      "y": 2.696666666666666
+    },
+    "after": {
+      "phase": "playing",
+      "elapsedSeconds": 0.36666666666666664,
+      "tick": 22,
+      "player": {
+        "position": {
+          "x": 1,
+          "y": 2
+        },
+        "heading": {
+          "x": 0,
+          "y": 1
+        },
+        "mode": "free",
+        "hideSpotId": null,
+        "transitionRemainingSeconds": 0,
+        "hideTurnDirection": 0,
+        "hideTurnCycle": -1,
+        "hideTurnSegmentDurationSeconds": 0
+      },
+      "chaser": {
+        "position": {
+          "x": 21,
+          "y": 10
+        },
+        "heading": {
+          "x": -1,
+          "y": 0
+        },
+        "mode": "spawn-delay",
+        "modeElapsedSeconds": 0.30000000000000004,
+        "patrolIndex": 0,
+        "searchSeed": 1,
+        "searchIndex": 0,
+        "searchWaypointElapsedSeconds": 0,
+        "memory": {
+          "lastKnownPosition": null,
+          "lastSeenAtSeconds": null,
+          "witnessedHideSpotId": null
+        }
+      },
+      "hideSpots": {
+        "locker-north": {
+          "id": "locker-north",
+          "occupiedByPlayer": false
+        },
+        "locker-south": {
+          "id": "locker-south",
+          "occupiedByPlayer": false
+        }
+      },
+      "aiAccumulatorSeconds": 0.06666666666666662,
+      "events": []
+    },
+    "visibility": {
+      "kid": {
+        "rootVisible": true,
+        "alpha": 1
+      },
+      "villain": {
+        "rootVisible": false,
+        "alpha": 0
+      },
+      "police": {
+        "rootVisible": true,
+        "alpha": 1
+      }
+    },
+    "lockers": {
+      "locker-north": {
+        "action": null,
+        "peeking": false,
+        "peekClosing": false,
+        "holdFinal": false,
+        "delayRemaining": 0,
+        "owner": "idle"
+      },
+      "locker-south": {
+        "action": null,
+        "peeking": false,
+        "peekClosing": false,
+        "holdFinal": false,
+        "delayRemaining": 0,
+        "owner": "idle"
+      }
+    },
+    "camera": {
+      "fov": 56,
+      "distance": 16.25,
+      "zoom": 1,
+      "occlusion": {
+        "groups": 23,
+        "obscured": [],
+        "maxStrength": 0
+      }
+    },
+    "audio": {
+      "status": "playing",
+      "unlocked": true,
+      "muted": false,
+      "threat": 0,
+      "targetGains": {
+        "explore": 1,
+        "threat": 0
+      },
+      "contextState": "running",
+      "driftSeconds": 0.000002000000000279556,
+      "explore": {
+        "url": "/audio/slow-drift-explore.m4a",
+        "currentTimeSeconds": 2.437067,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "threatTrack": {
+        "url": "/audio/slow-drift-threat.m4a",
+        "currentTimeSeconds": 2.437069,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "lastError": null
+    }
+  },
+  "mobile": {
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844
+    },
+    "render": {
+      "calls": 424,
+      "triangles": 1515088
+    },
+    "audio": {
+      "status": "playing",
+      "unlocked": true,
+      "muted": false,
+      "threat": 0,
+      "targetGains": {
+        "explore": 1,
+        "threat": 0
+      },
+      "contextState": "running",
+      "driftSeconds": 0,
+      "explore": {
+        "url": "/audio/slow-drift-explore.m4a",
+        "currentTimeSeconds": 0.416,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "threatTrack": {
+        "url": "/audio/slow-drift-threat.m4a",
+        "currentTimeSeconds": 0.416,
+        "durationSeconds": 38.02,
+        "paused": false,
+        "readyState": 4,
+        "mediaErrorCode": null
+      },
+      "lastError": null
+    },
+    "raf": {
+      "frames": 241,
+      "fps": 120.5,
+      "medianMs": 8.300000000000182,
+      "p95Ms": 9.5,
+      "maxMs": 10.299999999999955
+    }
+  },
+  "faviconResponses": [],
+  "diagnostics": []
+}

@@ -1,0 +1,825 @@
+{
+  "input": "/private/tmp/chasing-character-pbr/kid.glb",
+  "contract": {
+    "runtimeOwnsHeading": true,
+    "rootYawRemovedFromClip": true,
+    "singleClipDegrees": 90,
+    "singleClipDurationSeconds": 0.6,
+    "oneRepeatFor180Degrees": true
+  },
+  "camera": "fixed elevated front-three-quarter",
+  "frames": [
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 0,
+      "clipCycle": 1,
+      "clipNormalized": 0.0,
+      "runtimeHeadingDegrees": 0.0,
+      "leftFootWorld": [
+        -0.101924,
+        0.174076,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.135433,
+        -0.080417,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.282186,
+        -0.268219,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.362866,
+        0.369936,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_90_00_+000.0deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 1,
+      "clipCycle": 1,
+      "clipNormalized": 0.25,
+      "runtimeHeadingDegrees": 9.3164,
+      "leftFootWorld": [
+        -0.101224,
+        0.174237,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.174225,
+        -0.038496,
+        0.098191
+      ],
+      "boundsMin": [
+        -0.311597,
+        -0.29244,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.43146,
+        0.40946,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_90_01_+009.3deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 2,
+      "clipCycle": 1,
+      "clipNormalized": 0.5,
+      "runtimeHeadingDegrees": 45.0,
+      "leftFootWorld": [
+        -0.118011,
+        0.181137,
+        0.086055
+      ],
+      "rightFootWorld": [
+        0.157101,
+        0.101772,
+        0.117146
+      ],
+      "boundsMin": [
+        -0.36153,
+        -0.242947,
+        -0.05133
+      ],
+      "boundsMax": [
+        0.471287,
+        0.58987,
+        1.254804
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_90_02_+045.0deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 3,
+      "clipCycle": 1,
+      "clipNormalized": 0.75,
+      "runtimeHeadingDegrees": 80.6836,
+      "leftFootWorld": [
+        -0.209937,
+        -0.056645,
+        0.091663
+      ],
+      "rightFootWorld": [
+        0.07987,
+        0.135564,
+        0.092712
+      ],
+      "boundsMin": [
+        -0.395784,
+        -0.30486,
+        -0.01287
+      ],
+      "boundsMax": [
+        0.294498,
+        0.430063,
+        1.256808
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_90_03_+080.7deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 4,
+      "clipCycle": 1,
+      "clipNormalized": 1.0,
+      "runtimeHeadingDegrees": 90.0,
+      "leftFootWorld": [
+        -0.174076,
+        -0.101924,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.080417,
+        0.135433,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.369936,
+        -0.282186,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.268219,
+        0.362866,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_90_04_+090.0deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 0,
+      "clipCycle": 1,
+      "clipNormalized": 0.0,
+      "runtimeHeadingDegrees": 0.0,
+      "leftFootWorld": [
+        -0.101924,
+        0.174076,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.135433,
+        -0.080417,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.282186,
+        -0.268219,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.362866,
+        0.369936,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_00_+000.0deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 1,
+      "clipCycle": 1,
+      "clipNormalized": 0.25,
+      "runtimeHeadingDegrees": 9.3164,
+      "leftFootWorld": [
+        -0.101224,
+        0.174237,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.174225,
+        -0.038496,
+        0.098191
+      ],
+      "boundsMin": [
+        -0.311597,
+        -0.29244,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.43146,
+        0.40946,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_01_+009.3deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 2,
+      "clipCycle": 1,
+      "clipNormalized": 0.5,
+      "runtimeHeadingDegrees": 45.0,
+      "leftFootWorld": [
+        -0.118011,
+        0.181137,
+        0.086055
+      ],
+      "rightFootWorld": [
+        0.157101,
+        0.101772,
+        0.117146
+      ],
+      "boundsMin": [
+        -0.36153,
+        -0.242947,
+        -0.05133
+      ],
+      "boundsMax": [
+        0.471287,
+        0.58987,
+        1.254804
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_02_+045.0deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 3,
+      "clipCycle": 1,
+      "clipNormalized": 0.75,
+      "runtimeHeadingDegrees": 80.6836,
+      "leftFootWorld": [
+        -0.209937,
+        -0.056645,
+        0.091663
+      ],
+      "rightFootWorld": [
+        0.07987,
+        0.135564,
+        0.092712
+      ],
+      "boundsMin": [
+        -0.395784,
+        -0.30486,
+        -0.01287
+      ],
+      "boundsMax": [
+        0.294498,
+        0.430063,
+        1.256808
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_03_+080.7deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 4,
+      "clipCycle": 2,
+      "clipNormalized": 0.0,
+      "runtimeHeadingDegrees": 90.0,
+      "leftFootWorld": [
+        -0.174076,
+        -0.101924,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.080417,
+        0.135433,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.369936,
+        -0.282186,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.268219,
+        0.362866,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_04_+090.0deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 5,
+      "clipCycle": 2,
+      "clipNormalized": 0.25,
+      "runtimeHeadingDegrees": 99.3164,
+      "leftFootWorld": [
+        -0.174237,
+        -0.101224,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.038496,
+        0.174225,
+        0.098191
+      ],
+      "boundsMin": [
+        -0.409461,
+        -0.311597,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.29244,
+        0.43146,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_05_+099.3deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 6,
+      "clipCycle": 2,
+      "clipNormalized": 0.5,
+      "runtimeHeadingDegrees": 135.0,
+      "leftFootWorld": [
+        -0.181137,
+        -0.118011,
+        0.086055
+      ],
+      "rightFootWorld": [
+        -0.101772,
+        0.157101,
+        0.117146
+      ],
+      "boundsMin": [
+        -0.58987,
+        -0.36153,
+        -0.05133
+      ],
+      "boundsMax": [
+        0.242947,
+        0.471287,
+        1.254804
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_06_+135.0deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 7,
+      "clipCycle": 2,
+      "clipNormalized": 0.75,
+      "runtimeHeadingDegrees": 170.6836,
+      "leftFootWorld": [
+        0.056645,
+        -0.209937,
+        0.091663
+      ],
+      "rightFootWorld": [
+        -0.135564,
+        0.07987,
+        0.092712
+      ],
+      "boundsMin": [
+        -0.430063,
+        -0.395784,
+        -0.01287
+      ],
+      "boundsMax": [
+        0.30486,
+        0.294498,
+        1.256808
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_07_+170.7deg.png"
+    },
+    {
+      "clip": "TurnLeft",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 8,
+      "clipCycle": 2,
+      "clipNormalized": 1.0,
+      "runtimeHeadingDegrees": 180.0,
+      "leftFootWorld": [
+        0.101924,
+        -0.174076,
+        0.09118
+      ],
+      "rightFootWorld": [
+        -0.135433,
+        0.080417,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.362867,
+        -0.369936,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.282186,
+        0.268219,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnLeft_180_08_+180.0deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 0,
+      "clipCycle": 1,
+      "clipNormalized": 0.0,
+      "runtimeHeadingDegrees": -0.0,
+      "leftFootWorld": [
+        -0.101924,
+        0.174076,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.135433,
+        -0.080417,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.282186,
+        -0.268219,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.362866,
+        0.369936,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_90_00_-000.0deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 1,
+      "clipCycle": 1,
+      "clipNormalized": 0.25,
+      "runtimeHeadingDegrees": -9.3164,
+      "leftFootWorld": [
+        -0.057471,
+        0.209748,
+        0.096584
+      ],
+      "rightFootWorld": [
+        0.135563,
+        -0.079871,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.305428,
+        -0.293414,
+        -0.012073
+      ],
+      "boundsMax": [
+        0.422445,
+        0.38845,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_90_01_-009.3deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 2,
+      "clipCycle": 1,
+      "clipNormalized": 0.5,
+      "runtimeHeadingDegrees": -45.0,
+      "leftFootWorld": [
+        0.117238,
+        0.255322,
+        0.12178
+      ],
+      "rightFootWorld": [
+        0.147357,
+        -0.112597,
+        0.086294
+      ],
+      "boundsMin": [
+        -0.267303,
+        -0.375725,
+        -0.036499
+      ],
+      "boundsMax": [
+        0.56747,
+        0.459048,
+        1.252197
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_90_02_-045.0deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 3,
+      "clipCycle": 1,
+      "clipNormalized": 0.75,
+      "runtimeHeadingDegrees": -80.6836,
+      "leftFootWorld": [
+        0.174238,
+        0.101226,
+        0.091179
+      ],
+      "rightFootWorld": [
+        -0.03837,
+        -0.173981,
+        0.092746
+      ],
+      "boundsMin": [
+        -0.292488,
+        -0.425452,
+        -0.013354
+      ],
+      "boundsMax": [
+        0.41719,
+        0.310373,
+        1.256646
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_90_03_-080.7deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 90,
+      "sequenceIndex": 4,
+      "clipCycle": 1,
+      "clipNormalized": 1.0,
+      "runtimeHeadingDegrees": -90.0,
+      "leftFootWorld": [
+        0.174076,
+        0.101924,
+        0.09118
+      ],
+      "rightFootWorld": [
+        -0.080417,
+        -0.135433,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.268219,
+        -0.362866,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.369936,
+        0.282186,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_90_04_-090.0deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 0,
+      "clipCycle": 1,
+      "clipNormalized": 0.0,
+      "runtimeHeadingDegrees": -0.0,
+      "leftFootWorld": [
+        -0.101924,
+        0.174076,
+        0.09118
+      ],
+      "rightFootWorld": [
+        0.135433,
+        -0.080417,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.282186,
+        -0.268219,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.362866,
+        0.369936,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_00_-000.0deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 1,
+      "clipCycle": 1,
+      "clipNormalized": 0.25,
+      "runtimeHeadingDegrees": -9.3164,
+      "leftFootWorld": [
+        -0.057471,
+        0.209748,
+        0.096584
+      ],
+      "rightFootWorld": [
+        0.135563,
+        -0.079871,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.305428,
+        -0.293414,
+        -0.012073
+      ],
+      "boundsMax": [
+        0.422445,
+        0.38845,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_01_-009.3deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 2,
+      "clipCycle": 1,
+      "clipNormalized": 0.5,
+      "runtimeHeadingDegrees": -45.0,
+      "leftFootWorld": [
+        0.117238,
+        0.255322,
+        0.12178
+      ],
+      "rightFootWorld": [
+        0.147357,
+        -0.112597,
+        0.086294
+      ],
+      "boundsMin": [
+        -0.267303,
+        -0.375725,
+        -0.036499
+      ],
+      "boundsMax": [
+        0.56747,
+        0.459048,
+        1.252197
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_02_-045.0deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 3,
+      "clipCycle": 1,
+      "clipNormalized": 0.75,
+      "runtimeHeadingDegrees": -80.6836,
+      "leftFootWorld": [
+        0.174238,
+        0.101226,
+        0.091179
+      ],
+      "rightFootWorld": [
+        -0.03837,
+        -0.173981,
+        0.092746
+      ],
+      "boundsMin": [
+        -0.292488,
+        -0.425452,
+        -0.013354
+      ],
+      "boundsMax": [
+        0.41719,
+        0.310373,
+        1.256646
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_03_-080.7deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 4,
+      "clipCycle": 2,
+      "clipNormalized": 0.0,
+      "runtimeHeadingDegrees": -90.0,
+      "leftFootWorld": [
+        0.174076,
+        0.101924,
+        0.09118
+      ],
+      "rightFootWorld": [
+        -0.080417,
+        -0.135433,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.268219,
+        -0.362866,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.369936,
+        0.282186,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_04_-090.0deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 5,
+      "clipCycle": 2,
+      "clipNormalized": 0.25,
+      "runtimeHeadingDegrees": -99.3164,
+      "leftFootWorld": [
+        0.209748,
+        0.057471,
+        0.096584
+      ],
+      "rightFootWorld": [
+        -0.079871,
+        -0.135563,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.293414,
+        -0.422445,
+        -0.012073
+      ],
+      "boundsMax": [
+        0.38845,
+        0.305428,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_05_-099.3deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 6,
+      "clipCycle": 2,
+      "clipNormalized": 0.5,
+      "runtimeHeadingDegrees": -135.0,
+      "leftFootWorld": [
+        0.255322,
+        -0.117238,
+        0.12178
+      ],
+      "rightFootWorld": [
+        -0.112597,
+        -0.147357,
+        0.086294
+      ],
+      "boundsMin": [
+        -0.375725,
+        -0.56747,
+        -0.036499
+      ],
+      "boundsMax": [
+        0.459048,
+        0.267303,
+        1.252197
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_06_-135.0deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 7,
+      "clipCycle": 2,
+      "clipNormalized": 0.75,
+      "runtimeHeadingDegrees": -170.6836,
+      "leftFootWorld": [
+        0.101226,
+        -0.174238,
+        0.091179
+      ],
+      "rightFootWorld": [
+        -0.173981,
+        0.03837,
+        0.092746
+      ],
+      "boundsMin": [
+        -0.425452,
+        -0.41719,
+        -0.013354
+      ],
+      "boundsMax": [
+        0.310373,
+        0.292488,
+        1.256646
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_07_-170.7deg.png"
+    },
+    {
+      "clip": "TurnRight",
+      "compositeTurnDegrees": 180,
+      "sequenceIndex": 8,
+      "clipCycle": 2,
+      "clipNormalized": 1.0,
+      "runtimeHeadingDegrees": -180.0,
+      "leftFootWorld": [
+        0.101924,
+        -0.174076,
+        0.09118
+      ],
+      "rightFootWorld": [
+        -0.135433,
+        0.080417,
+        0.092714
+      ],
+      "boundsMin": [
+        -0.362867,
+        -0.369936,
+        -0.013353
+      ],
+      "boundsMax": [
+        0.282186,
+        0.268219,
+        1.256471
+      ],
+      "image": "/private/tmp/chasing-character-pbr/kid-turn-pivot-review-v2/kid_TurnRight_180_08_-180.0deg.png"
+    }
+  ]
+}

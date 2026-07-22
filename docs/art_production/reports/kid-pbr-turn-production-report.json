@@ -1,0 +1,96 @@
+{
+  "role": "kid",
+  "input": "/private/tmp/chasing-character-pbr/kid-turn-production-animated.glb",
+  "inputBytes": 8229580,
+  "output": "/private/tmp/chasing-character-pbr/kid.glb",
+  "sourceUvEvidence": {
+    "Kid_v20_NativeBodyHead": {
+      "uvLayer": "UVMap",
+      "uvLoopCount": 279348,
+      "uvMin": [
+        0.006971,
+        0.00697
+      ],
+      "uvMax": [
+        0.993029,
+        0.985535
+      ],
+      "quantizedUvSha256": "efab7c075ca2f5be4ed8852b51780f1a99159ba3b93e888bbeace2d7e1e23b3d"
+    }
+  },
+  "appliedMaterials": {
+    "M_Kid_PrecisionRemodel_v21_URP": {
+      "baseColor": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+      "normal": "Char_Kid_PrecisionRemodel_v21_Normal_768",
+      "orm": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+      "uvCompatibility": "exact v21 rigged main-body UV; runtime mesh is the same approved v21 mesh"
+    }
+  },
+  "unchangedAccessoryMaterialCount": 11,
+  "meshTopologyUnchanged": true,
+  "animationSetUnchanged": true,
+  "exportedGlb": {
+    "bytes": 9997836,
+    "meshes": 35,
+    "materials": 12,
+    "textures": 3,
+    "images": 3,
+    "animations": [
+      "Caught",
+      "EscapeCelebrate",
+      "HideEnter",
+      "HideExit",
+      "HideIdle",
+      "HidePeek",
+      "Idle",
+      "Interact",
+      "Run",
+      "TurnLeft",
+      "TurnRight",
+      "Walk"
+    ],
+    "targetMaterialPbrBindings": {
+      "M_Kid_PrecisionRemodel_v21_URP": {
+        "baseColorTexture": {
+          "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+          "mimeType": "image/png",
+          "width": 2048,
+          "height": 2048,
+          "bytes": 1103463,
+          "sha256": "0ac2b4c10404c7ea68c9647e36acd4d91bd6d9ff293285dfbe018801d0b9d732"
+        },
+        "normalTexture": {
+          "name": "Char_Kid_PrecisionRemodel_v21_Normal_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 733906,
+          "sha256": "6434b8c7c14cd8342acdd36b6ab531883a41124be9863d5f901759be7b3e4109"
+        },
+        "occlusionTexture": {
+          "name": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 717208,
+          "sha256": "33aedcb0b9ea8ae59768477dabbedf6f821a17b2b29dc1f4ea2d8a68711a850e"
+        },
+        "metallicRoughnessTexture": {
+          "name": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 717208,
+          "sha256": "33aedcb0b9ea8ae59768477dabbedf6f821a17b2b29dc1f4ea2d8a68711a850e"
+        }
+      }
+    }
+  },
+  "qualityGates": {
+    "everyPrimaryMaterialHasBaseColorNormalOrm": true,
+    "accessoryMaterialsUntouched": true,
+    "primaryMeshesHaveUVs": true,
+    "noGeometryGenerated": true,
+    "inputNotOverwritten": true
+  }
+}

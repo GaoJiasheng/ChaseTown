@@ -66,6 +66,26 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
     assert.doesNotMatch(buffer.subarray(0, 160).toString("utf8"), /git-lfs/iu, `${publicPath} must not be an LFS pointer`);
     const gltf = readGlbJson(buffer, publicPath);
 
+    for (const [materialIndex, material] of (gltf.materials ?? []).entries()) {
+      for (const value of material.emissiveFactor ?? []) {
+        assert.ok(
+          Number.isFinite(value) && value >= 0 && value <= 1,
+          `${publicPath} material ${materialIndex} has an invalid emissiveFactor component`,
+        );
+      }
+      const emissiveStrength = material.extensions?.KHR_materials_emissive_strength?.emissiveStrength;
+      if (emissiveStrength !== undefined) {
+        assert.ok(
+          Number.isFinite(emissiveStrength) && emissiveStrength >= 0,
+          `${publicPath} material ${materialIndex} has an invalid emissive strength`,
+        );
+        assert.ok(
+          gltf.extensionsUsed?.includes("KHR_materials_emissive_strength"),
+          `${publicPath} must declare KHR_materials_emissive_strength`,
+        );
+      }
+    }
+
     for (const image of gltf.images ?? []) {
       if (!image.uri || image.uri.startsWith("data:")) continue;
       const imagePath = path.resolve(path.dirname(filename), decodeURIComponent(image.uri.split("?")[0]));

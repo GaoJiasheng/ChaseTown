@@ -36,6 +36,12 @@ next-env.d.ts
 /tools/third_party/triposr_venv/
 **/__pycache__/
 *.py[cod]
+*.blend1
+*.blend2
+*.tsbuildinfo
+.pytest_cache/
+.idea/
+.vscode/
 
 # Retired Unity artifacts must not return to the Web project
 /Assets/

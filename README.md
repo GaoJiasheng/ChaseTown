@@ -6,7 +6,10 @@
 
 - 第一关在桌面与手机浏览器中完整可玩。
 - 小孩、坏人和警察都使用正式 3D 角色，而不是几何占位体。
-- 写实卡通、完全写实、盲盒潮玩三套美术风格可以在运行时切换。
+- 小孩、追捕者与警察使用统一骨架的正式动作集，移动、追逐、躲藏、搜索与胜负演出均由 `AnimationMixer` 驱动。
+- 玩家可以借助遮挡断开视线、进入带真实柜门动画的储物柜、从门缝观察并择机继续逃跑。
+- 追捕者只依据视锥、遮挡和已观察证据行动；丢失玩家后前往最后已知位置搜索，不读取隐藏玩家坐标。
+- 探索与威胁音乐使用两条同拍 stem 随 AI 状态连续混音。
 - 相机根据玩家与追捕者的位置动态调整视野，并允许玩家手动缩放。
 - 所有运行时模型使用经过浏览器验证和体积优化的 GLB。
 
@@ -29,13 +32,15 @@ npm run build
 npm test
 ```
 
-`npm test` 会先完成生产构建，再验证页面渲染、29 个运行 GLB、外部纹理、角色骨骼和源美术保留清单。
+`npm test` 会先完成生产构建，再验证页面渲染、29 个运行 GLB、外部纹理、角色骨骼与动作、储物柜动画、公平感知、固定步长模拟、自适应音乐和源美术保留清单。
 
 ## 操作
 
 - 键盘：`WASD` 或方向键移动。
 - 手机：使用屏幕上的方向按钮移动。
+- 躲藏：靠近储物柜按 `E`（手机点“躲藏 / 离开”）；藏好后按住 `Q`（手机按住“观察”）从门缝窥视。
 - 视野：鼠标滚轮缩放；`0` 恢复默认倍率；追逐过程中镜头也会自动拉远。
+- 音乐：`M` 切换静音。
 - 重开：`R` 或页面中的“重新开始”。
 
 ## 仓库结构
@@ -81,3 +86,13 @@ package.json                 开发、构建、测试与依赖入口
 - [`docs/04_Codex返工规格与验收标准.md`](docs/04_Codex返工规格与验收标准.md)
 - [`docs/05_Web版Vertical_Slice_1.0优化实施与验收.md`](docs/05_Web版Vertical_Slice_1.0优化实施与验收.md)
 - [`docs/06_Web迁移与美术资产保留清单.md`](docs/06_Web迁移与美术资产保留清单.md)
+- [`docs/07_Web版统一优化方案与路线图.md`](docs/07_Web版统一优化方案与路线图.md)
+- [`docs/08_躲藏机制与顶级动画执行规格.md`](docs/08_躲藏机制与顶级动画执行规格.md)
+- [`docs/09_Web版实施与验证报告.md`](docs/09_Web版实施与验证报告.md)
+- [`docs/web-rendering/evidence/README.md`](docs/web-rendering/evidence/README.md)
+- [`docs/art_production/character_web_pbr_postprocess.md`](docs/art_production/character_web_pbr_postprocess.md)
+- [`docs/licenses/QUATERNIUS_UNIVERSAL_ANIMATION_LIBRARY_CC0.md`](docs/licenses/QUATERNIUS_UNIVERSAL_ANIMATION_LIBRARY_CC0.md)
+- [`docs/licenses/MAKEHUMAN_CORE_ASSETS_CC0.md`](docs/licenses/MAKEHUMAN_CORE_ASSETS_CC0.md)
+- [`docs/licenses/POLY_HAVEN_CC0.md`](docs/licenses/POLY_HAVEN_CC0.md)
+- [`docs/licenses/APPLE_LOOPS_AUDIO.md`](docs/licenses/APPLE_LOOPS_AUDIO.md)
+- [`public/THIRD_PARTY_NOTICES.txt`](public/THIRD_PARTY_NOTICES.txt)

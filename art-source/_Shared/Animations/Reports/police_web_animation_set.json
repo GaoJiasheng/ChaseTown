@@ -1,0 +1,66 @@
+{
+  "role": "police",
+  "output": "public/models/characters/police.glb",
+  "outputBytes": 2116112,
+  "rig": "Rig_Humanoid_Shared",
+  "bones": 21,
+  "meshes": 38,
+  "clips": [
+    {
+      "name": "Idle",
+      "frames": [
+        0.0,
+        75.0
+      ],
+      "durationSeconds": 2.5,
+      "source": "Quaternius UAL Standard/Idle_Loop",
+      "loop": true
+    },
+    {
+      "name": "Run",
+      "frames": [
+        0.0,
+        28.0
+      ],
+      "durationSeconds": 0.9333,
+      "source": "Quaternius UAL Standard/Jog_Fwd_Loop",
+      "loop": true
+    },
+    {
+      "name": "Alert",
+      "frames": [
+        0.0,
+        42.0
+      ],
+      "durationSeconds": 1.4074,
+      "source": "Quaternius UAL Standard/Idle_Torch_Loop",
+      "loop": true
+    },
+    {
+      "name": "Interact",
+      "frames": [
+        0.0,
+        60.0
+      ],
+      "durationSeconds": 2.0,
+      "source": "Quaternius UAL Standard/Interact",
+      "loop": false
+    },
+    {
+      "name": "Resolve",
+      "frames": [
+        0.0,
+        37.0
+      ],
+      "durationSeconds": 1.2381,
+      "source": "Quaternius UAL Standard/Punch_Enter",
+      "loop": false
+    }
+  ],
+  "qualityGates": {
+    "hasRuntimeProceduralPose": false,
+    "fullBodySampleRateFps": 30,
+    "requiredBoneMapComplete": true,
+    "sourceLicense": "CC0-1.0"
+  }
+}

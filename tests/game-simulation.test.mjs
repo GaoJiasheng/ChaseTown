@@ -1,0 +1,754 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { createInitialChaser, getChaserTarget, stepChaserBrain } from "../app/game/chaser-fsm.ts";
+import { createDefaultLevel, createLevel, DEFAULT_GAME_CONFIG } from "../app/game/level.ts";
+import { distanceBetween, findPath, GridPathPlanner, hasLineOfSight, isWalkable, moveAlongGridPath, moveWithCollision } from "../app/game/navigation.ts";
+import { isPlayerVisuallyExposed } from "../app/game/perception.ts";
+import { chaserSpeedForMode, GameSimulation } from "../app/game/simulation.ts";
+
+function testLevel(rows, options = {}) {
+  const walkable = rows.map((row) => [...row].map((cell) => cell !== "#"));
+  const firstOpen = (() => {
+    for (let y = 0; y < walkable.length; y += 1) {
+      const x = walkable[y].indexOf(true);
+      if (x >= 0) return { x, y };
+    }
+    throw new Error("test level has no walkable cell");
+  })();
+  const playerStart = options.playerStart ?? firstOpen;
+  const chaserStart = options.chaserStart ?? firstOpen;
+  return createLevel({
+    id: options.id ?? "test-level",
+    width: walkable[0].length,
+    height: walkable.length,
+    walkable,
+    playerStart,
+    exit: options.exit ?? firstOpen,
+    chaserStart,
+    chaserStartHeading: options.chaserStartHeading ?? { x: 1, y: 0 },
+    patrol: options.patrol ?? [chaserStart],
+    hideSpots: options.hideSpots ?? [],
+    visionOnlyBlockers: options.visionOnlyBlockers,
+  });
+}
+
+function runFor(simulation, seconds, frameSeconds, input = {}) {
+  let remaining = seconds;
+  while (remaining > 1e-10) {
+    const delta = Math.min(frameSeconds, remaining);
+    simulation.advance(delta, input);
+    remaining -= delta;
+  }
+  return simulation.getState();
+}
+
+function routeIntent(level, state, target) {
+  const waypoint = findPath(level, state.player.position, target)[1] ?? target;
+  const offset = { x: waypoint.x - state.player.position.x, y: waypoint.y - state.player.position.y };
+  const length = Math.hypot(offset.x, offset.y) || 1;
+  return { x: offset.x / length, y: offset.y / length };
+}
+
+function config(overrides = {}) {
+  const result = {
+    ...DEFAULT_GAME_CONFIG,
+    maxFrameDeltaSeconds: 1,
+    ...overrides,
+  };
+  if (Object.hasOwn(overrides, "hideEnterSeconds") && !Object.hasOwn(overrides, "hideEnterExposureSeconds")) {
+    result.hideEnterExposureSeconds = result.hideEnterSeconds
+      * (DEFAULT_GAME_CONFIG.hideEnterExposureSeconds / DEFAULT_GAME_CONFIG.hideEnterSeconds);
+  }
+  if (Object.hasOwn(overrides, "hideExitSeconds") && !Object.hasOwn(overrides, "hideExitExposureSeconds")) {
+    result.hideExitExposureSeconds = result.hideExitSeconds
+      * (DEFAULT_GAME_CONFIG.hideExitExposureSeconds / DEFAULT_GAME_CONFIG.hideExitSeconds);
+  }
+  return result;
+}
+
+test("spawn protection disables both movement and capture", () => {
+  const level = testLevel(["....."], {
+    playerStart: { x: 2, y: 0 },
+    chaserStart: { x: 2, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const simulation = new GameSimulation({
+    level,
+    autoStart: true,
+    config: config({ spawnDelaySeconds: 0.5, chaserSpeed: 0, catchRange: 0.4 }),
+  });
+
+  let state = runFor(simulation, 0.49, 1 / 60);
+  assert.equal(state.phase, "playing");
+  assert.equal(state.chaser.mode, "spawn-delay");
+  assert.deepEqual(state.chaser.position, { x: 2, y: 0 });
+
+  state = runFor(simulation, 0.12, 1 / 60);
+  assert.equal(state.phase, "lost", "capture becomes legal only after protection ends");
+});
+
+test("walls block both visual acquisition and close-range capture", () => {
+  const level = testLevel([".....", "..#..", "....."], {
+    playerStart: { x: 2, y: 2 },
+    chaserStart: { x: 2, y: 0 },
+    chaserStartHeading: { x: 0, y: 1 },
+    exit: { x: 0, y: 2 },
+  });
+  assert.equal(hasLineOfSight(level, level.chaserStart, level.playerStart), false);
+  const simulation = new GameSimulation({
+    level,
+    autoStart: true,
+    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0, catchRange: 3, visionRange: 10 }),
+  });
+  const state = runFor(simulation, 0.5, 1 / 60);
+  assert.equal(state.phase, "playing");
+  assert.equal(state.chaser.mode, "patrol");
+  assert.equal(state.chaser.memory.lastKnownPosition, null);
+});
+
+test("pushing into a wall does not rotate the actor or camera toward empty space", () => {
+  const level = testLevel([".#..."], {
+    playerStart: { x: 0, y: 0 },
+    chaserStart: { x: 4, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const simulation = new GameSimulation({
+    level,
+    autoStart: true,
+    initialPlayerPosition: { x: 0.49, y: 0 },
+    initialPlayerHeading: { x: 0, y: 1 },
+    config: config({ spawnDelaySeconds: 20 }),
+  });
+  const before = simulation.getState().player;
+  const after = simulation.advance(1 / 60, { move: { x: 1, y: 0 } }).player;
+  assert.deepEqual(after.position, before.position);
+  assert.deepEqual(after.heading, before.heading);
+});
+
+test("solid authored props block movement, pathing, and sight without removing their floor", () => {
+  const level = testLevel(["....."], {
+    playerStart: { x: 0, y: 0 },
+    chaserStart: { x: 4, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const blocked = createLevel({ ...level, movementBlockers: [{ x: 2, y: 0 }] });
+  assert.equal(blocked.walkable[0][2], true, "the authored prop still needs a rendered floor tile");
+  assert.equal(isWalkable(blocked, { x: 2, y: 0 }), false);
+  assert.deepEqual(findPath(blocked, { x: 0, y: 0 }, { x: 4, y: 0 }), []);
+  assert.equal(hasLineOfSight(blocked, { x: 0, y: 0 }, { x: 4, y: 0 }), false);
+  const movement = moveWithCollision(blocked, { x: 1.49, y: 0 }, { x: 1, y: 0 }, 1, 0.1);
+  assert.equal(movement.position.x, 1.49, "the player cannot enter the prop's occupied cell");
+});
+
+test("the production level remains escapable after solid-prop collision is applied", () => {
+  const level = createDefaultLevel();
+  assert.ok(findPath(level, level.playerStart, level.exit).length > 0);
+  for (const blocker of level.movementBlockers ?? []) assert.equal(isWalkable(level, blocker), false);
+});
+
+test("production encounter rejects a no-technique shortest-route sprint", () => {
+  const level = createDefaultLevel();
+  const simulation = new GameSimulation({ level, autoStart: true });
+  let sawChase = false;
+  for (let frame = 0; frame < 40 * 60 && simulation.getState().phase === "playing"; frame += 1) {
+    const state = simulation.getState();
+    const next = simulation.advance(1 / 60, { move: routeIntent(level, state, level.exit) });
+    sawChase ||= next.chaser.mode === "chase";
+  }
+  const result = simulation.getState();
+  assert.equal(sawChase, true, "the natural route must deliver a readable chase beat");
+  assert.equal(result.phase, "lost", "holding the shortest route without breaking sight must not bypass the core loop");
+});
+
+test("production north-locker route proves the encounter has a fair hiding solution", () => {
+  const level = createDefaultLevel();
+  const locker = level.hideSpots[0];
+  const simulation = new GameSimulation({ level, autoStart: true });
+  let stage = "approach";
+  let hiddenSeconds = 0;
+  let reachedHidden = false;
+
+  for (let frame = 0; frame < 60 * 60 && simulation.getState().phase === "playing"; frame += 1) {
+    const state = simulation.getState();
+    const input = {};
+    if (stage === "approach") {
+      if (distanceBetween(state.player.position, locker.approach) <= 0.72) {
+        input.interactPressed = true;
+        stage = "entering";
+      } else input.move = routeIntent(level, state, locker.approach);
+    } else if (stage === "entering" && state.player.mode === "hidden") {
+      reachedHidden = true;
+      stage = "waiting";
+    } else if (stage === "waiting") {
+      hiddenSeconds += 1 / 60;
+      if (hiddenSeconds >= 6) {
+        input.interactPressed = true;
+        stage = "exiting";
+      }
+    } else if (stage === "exiting" && state.player.mode === "free") stage = "escape";
+    else if (stage === "escape") input.move = routeIntent(level, state, level.exit);
+    simulation.advance(1 / 60, input);
+  }
+
+  assert.equal(reachedHidden, true);
+  assert.equal(simulation.getState().phase, "won", "a readable pre-encounter hide must create a viable escape window");
+});
+
+test("production route exercises chase, sight break, hiding, search, and escape", () => {
+  const level = createDefaultLevel();
+  const locker = level.hideSpots[0];
+  const simulation = new GameSimulation({ level, autoStart: true });
+  const alternate = [
+    { x: 7, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 10 },
+    { x: 5, y: 10 }, { x: 5, y: 16 }, { x: 13, y: 16 },
+    { x: 13, y: 23 }, level.exit,
+  ];
+  let stage = "escape-direct";
+  let hiddenSeconds = 0;
+  let waypointIndex = 0;
+  const seenModes = new Set();
+  let reachedHidden = false;
+
+  for (let frame = 0; frame < 100 * 60 && simulation.getState().phase === "playing"; frame += 1) {
+    const state = simulation.getState();
+    const input = {};
+    seenModes.add(state.chaser.mode);
+    if (stage === "escape-direct" && ["suspicious", "chase"].includes(state.chaser.mode)) {
+      stage = "retreat-to-north-locker";
+    }
+
+    if (stage === "escape-direct") input.move = routeIntent(level, state, level.exit);
+    else if (stage === "retreat-to-north-locker") {
+      if (distanceBetween(state.player.position, locker.approach) <= 0.72) {
+        input.interactPressed = true;
+        stage = "entering-locker";
+      } else input.move = routeIntent(level, state, locker.approach);
+    } else if (stage === "entering-locker" && state.player.mode === "hidden") {
+      reachedHidden = true;
+      stage = "waiting-hidden";
+    } else if (stage === "waiting-hidden") {
+      hiddenSeconds += 1 / 60;
+      if (hiddenSeconds >= 6) {
+        input.interactPressed = true;
+        stage = "exiting-locker";
+      }
+    } else if (stage === "exiting-locker" && state.player.mode === "free") stage = "alternate-route";
+    else if (stage === "alternate-route") {
+      while (waypointIndex < alternate.length && distanceBetween(state.player.position, alternate[waypointIndex]) < 0.25) waypointIndex += 1;
+      input.move = routeIntent(level, state, alternate[Math.min(waypointIndex, alternate.length - 1)]);
+    }
+    simulation.advance(1 / 60, input);
+  }
+
+  assert.equal(reachedHidden, true);
+  for (const mode of ["chase", "lost-sight", "go-to-last-known", "search", "patrol"]) {
+    assert.equal(seenModes.has(mode), true, `missing ${mode}`);
+  }
+  assert.equal(simulation.getState().phase, "won");
+});
+
+test("last-known target freezes after line of sight is lost", () => {
+  const level = testLevel(["....."], {
+    playerStart: { x: 2, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const cfg = config({ spawnDelaySeconds: 0, suspiciousSeconds: 0.1, lostSightGraceSeconds: 0.2 });
+  let chaser = createInitialChaser(level, cfg);
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "player-visible", position: { x: 2, y: 0 }, observedAtSeconds: 0.1 },
+    reachedTarget: false,
+    nowSeconds: 0.1,
+    deltaSeconds: 0.1,
+  }).state;
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "player-visible", position: { x: 2.25, y: 0 }, observedAtSeconds: 0.2 },
+    reachedTarget: false,
+    nowSeconds: 0.2,
+    deltaSeconds: 0.1,
+  }).state;
+  assert.equal(chaser.mode, "chase");
+  const frozen = { ...chaser.memory.lastKnownPosition };
+
+  for (const nowSeconds of [0.3, 0.4, 0.5, 0.6]) {
+    // The real player may continue moving, but no position is supplied to the
+    // brain once perception returns none.
+    chaser = stepChaserBrain(chaser, level, cfg, {
+      evidence: { kind: "none", observedAtSeconds: nowSeconds },
+      reachedTarget: false,
+      nowSeconds,
+      deltaSeconds: 0.1,
+    }).state;
+    assert.deepEqual(chaser.memory.lastKnownPosition, frozen);
+  }
+  assert.ok(["lost-sight", "go-to-last-known"].includes(chaser.mode));
+  assert.deepEqual(getChaserTarget(chaser, level), frozen);
+});
+
+test("a brief suspicious glimpse retains evidence and enters last-known search", () => {
+  const level = testLevel(["....."], {
+    playerStart: { x: 2, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const cfg = config({ spawnDelaySeconds: 0 });
+  let chaser = createInitialChaser(level, cfg);
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "player-visible", position: { x: 2, y: 0 }, observedAtSeconds: 0.1 },
+    reachedTarget: false,
+    nowSeconds: 0.1,
+    deltaSeconds: 0.1,
+  }).state;
+  assert.equal(chaser.mode, "suspicious");
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "none", observedAtSeconds: 0.2 },
+    reachedTarget: false,
+    nowSeconds: 0.2,
+    deltaSeconds: 0.1,
+  }).state;
+  assert.equal(chaser.mode, "lost-sight");
+  assert.deepEqual(chaser.memory.lastKnownPosition, { x: 2, y: 0 });
+});
+
+test("search order is evidence-seeded, deterministic, and advances only after an authored dwell", () => {
+  const level = testLevel([
+    ".......",
+    ".......",
+    ".......",
+    ".......",
+    ".......",
+    ".......",
+    ".......",
+  ], {
+    playerStart: { x: 3, y: 3 },
+    chaserStart: { x: 3, y: 3 },
+    exit: { x: 6, y: 6 },
+  });
+  const cfg = config({ spawnDelaySeconds: 0, searchSeconds: 20, searchWaypointSeconds: 0.75 });
+  const initial = createInitialChaser(level, cfg);
+  const makeSearch = (searchSeed) => ({
+    ...initial,
+    mode: "search",
+    modeElapsedSeconds: 0,
+    searchSeed,
+    searchIndex: 0,
+    searchWaypointElapsedSeconds: 0,
+    memory: { lastKnownPosition: { x: 3, y: 3 }, lastSeenAtSeconds: 1.2, witnessedHideSpotId: null },
+  });
+  const sequence = (searchSeed) => Array.from({ length: 9 }, (_, searchIndex) =>
+    getChaserTarget({ ...makeSearch(searchSeed), searchIndex }, level));
+  assert.deepEqual(sequence(7), sequence(7), "the same evidence seed must replay exactly");
+  assert.notDeepEqual(sequence(7), sequence(19), "different observed encounters should not be a fixed search pattern");
+
+  let state = makeSearch(7);
+  const target = getChaserTarget(state, level);
+  state = { ...state, position: target };
+  state = stepChaserBrain(state, level, cfg, {
+    evidence: { kind: "none", observedAtSeconds: 1.5 },
+    reachedTarget: true,
+    nowSeconds: 1.5,
+    deltaSeconds: 0.3,
+  }).state;
+  assert.equal(state.searchIndex, 0);
+  assert.equal(state.searchWaypointElapsedSeconds, 0.3);
+  state = stepChaserBrain(state, level, cfg, {
+    evidence: { kind: "none", observedAtSeconds: 1.95 },
+    reachedTarget: true,
+    nowSeconds: 1.95,
+    deltaSeconds: 0.45,
+  }).state;
+  assert.equal(state.searchIndex, 1, "the next node is chosen only after reaching and checking this one");
+  assert.equal(state.searchWaypointElapsedSeconds, 0);
+});
+
+test("path following reaches a continuous last-known point inside its goal cell", () => {
+  const level = testLevel(["....."], {
+    playerStart: { x: 0, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const planner = new GridPathPlanner(level);
+  const target = { x: 2.25, y: 0 };
+  let position = { x: 0, y: 0 };
+  for (let index = 0; index < 30; index += 1) {
+    position = moveAlongGridPath(planner, position, target, 1, 0.1).position;
+  }
+  assert.ok(Math.abs(position.x - target.x) < 1e-9);
+});
+
+test("path following never crosses an unreachable wall component", () => {
+  const level = testLevel(["..#.."], {
+    playerStart: { x: 0, y: 0 },
+    chaserStart: { x: 1, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const planner = new GridPathPlanner(level);
+  const start = { x: 1, y: 0 };
+  const result = moveAlongGridPath(planner, start, { x: 3, y: 0 }, 6, 1);
+  assert.deepEqual(result.position, start);
+  assert.deepEqual(result.heading, { x: 0, y: 0 });
+});
+
+test("FAIR-01: an unwitnessed locker choice cannot alter chaser decisions", () => {
+  const hideSpots = [
+    { id: "locker-left", approach: { x: 2, y: 2 }, concealed: { x: 2, y: 2 }, facing: { x: 0, y: -1 } },
+    { id: "locker-right", approach: { x: 4, y: 2 }, concealed: { x: 4, y: 2 }, facing: { x: 0, y: -1 } },
+  ];
+  const common = {
+    chaserStart: { x: 3, y: 0 },
+    chaserStartHeading: { x: 0, y: 1 },
+    exit: { x: 0, y: 2 },
+    hideSpots,
+  };
+  const left = new GameSimulation({
+    level: testLevel([".......", "...#...", "......."], { ...common, playerStart: hideSpots[0].approach }),
+    autoStart: true,
+    initialPlayerHeading: hideSpots[0].facing,
+    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0, hideEnterSeconds: 0.3, hideInteractRange: 0.2, catchRange: 0.1, visionRange: 10 }),
+  });
+  const right = new GameSimulation({
+    level: testLevel([".......", "...#...", "......."], { ...common, playerStart: hideSpots[1].approach }),
+    autoStart: true,
+    initialPlayerHeading: hideSpots[1].facing,
+    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0, hideEnterSeconds: 0.3, hideInteractRange: 0.2, catchRange: 0.1, visionRange: 10 }),
+  });
+
+  left.advance(1 / 60, { interactPressed: true });
+  right.advance(1 / 60, { interactPressed: true });
+  const leftState = runFor(left, 0.7 - 1 / 60, 1 / 60);
+  const rightState = runFor(right, 0.7 - 1 / 60, 1 / 60);
+  assert.equal(leftState.player.mode, "hidden");
+  assert.equal(rightState.player.mode, "hidden");
+  assert.equal(leftState.chaser.memory.witnessedHideSpotId, null);
+  assert.equal(rightState.chaser.memory.witnessedHideSpotId, null);
+  assert.deepEqual(leftState.chaser, rightState.chaser, "runtime locker occupancy must not enter ChaserBrain");
+});
+
+test("a witnessed hide entry records exact evidence and enters check-hide", () => {
+  const locker = { id: "locker-visible", approach: { x: 2, y: 0 }, concealed: { x: 2, y: 0 }, facing: { x: -1, y: 0 } };
+  const level = testLevel(["....."], {
+    playerStart: locker.approach,
+    chaserStart: { x: 0, y: 0 },
+    chaserStartHeading: { x: 1, y: 0 },
+    exit: { x: 4, y: 0 },
+    hideSpots: [locker],
+  });
+  const simulation = new GameSimulation({
+    level,
+    autoStart: true,
+    initialPlayerHeading: locker.facing,
+    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0, hideEnterSeconds: 0.5, hideInteractRange: 0.2, catchRange: 0.1 }),
+  });
+  simulation.advance(1 / 60, { interactPressed: true });
+  const state = runFor(simulation, 0.25 - 1 / 60, 1 / 60);
+  assert.equal(state.player.mode, "entering-hide");
+  assert.equal(state.chaser.mode, "check-hide");
+  assert.equal(state.chaser.memory.witnessedHideSpotId, locker.id);
+  assert.deepEqual(getChaserTarget(state.chaser, level), locker.approach);
+});
+
+test("fixed-step results are identical at 30, 60, and 120 Hz render cadence", () => {
+  const level = testLevel(["...................."], {
+    playerStart: { x: 2, y: 0 },
+    chaserStart: { x: 18, y: 0 },
+    exit: { x: 19, y: 0 },
+  });
+  const snapshots = [30, 60, 120].map((hz) => {
+    const simulation = new GameSimulation({
+      level,
+      autoStart: true,
+      config: config({ spawnDelaySeconds: 100, playerSpeed: 1, chaserSpeed: 0 }),
+    });
+    return runFor(simulation, 2, 1 / hz, { move: { x: 1, y: 0 } });
+  });
+  for (const state of snapshots) {
+    assert.equal(state.tick, 120);
+    assert.ok(Math.abs(state.player.position.x - 4) < 1e-9);
+  }
+  assert.deepEqual(snapshots[0].player.position, snapshots[1].player.position);
+  assert.deepEqual(snapshots[1].player.position, snapshots[2].player.position);
+  assert.equal(snapshots[0].elapsedSeconds, snapshots[2].elapsedSeconds);
+});
+
+test("one render advance preserves events from every fixed step it contains", () => {
+  const locker = { id: "event-locker", approach: { x: 1, y: 0 }, concealed: { x: 1, y: 0 }, facing: { x: 1, y: 0 } };
+  const simulation = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: locker.approach,
+      chaserStart: { x: 4, y: 0 },
+      exit: { x: 0, y: 0 },
+      hideSpots: [locker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: locker.facing,
+    config: config({ spawnDelaySeconds: 10, hideEnterSeconds: 1 / 60, hideInteractRange: 0.2 }),
+  });
+  const state = simulation.advance(1 / 20, { interactPressed: true });
+  assert.deepEqual(
+    state.events.filter((event) => event.type === "player-mode-changed").map((event) => [event.from, event.to]),
+    [["free", "aligning-hide"], ["aligning-hide", "entering-hide"], ["entering-hide", "hidden"]],
+  );
+});
+
+test("locker alignment walks to the anchor without a first-frame snap", () => {
+  const locker = { id: "align", approach: { x: 2, y: 0 }, concealed: { x: 2, y: 0 }, facing: { x: 1, y: 0 } };
+  const level = testLevel(["....."], {
+    playerStart: { x: 1.25, y: 0 },
+    chaserStart: { x: 4, y: 0 },
+    exit: { x: 0, y: 0 },
+    hideSpots: [locker],
+  });
+  const simulation = new GameSimulation({ level, autoStart: true, config: config({ spawnDelaySeconds: 20 }) });
+  const before = simulation.getState().player.position;
+  const after = simulation.advance(1 / 60, { interactPressed: true });
+  assert.equal(after.player.mode, "aligning-hide");
+  assert.deepEqual(after.player.position, before, "the interaction edge only commits the target; it does not teleport");
+  const next = simulation.advance(1 / 60);
+  assert.ok(distanceBetween(next.player.position, before) <= simulation.config.hideAlignSpeed / 60 + 1e-9);
+});
+
+test("locker entry waits for authored facing after 90 and 180 degree approaches", () => {
+  for (const [label, initialPlayerHeading] of [
+    ["90-degree", { x: 0, y: 1 }],
+    ["180-degree", { x: -1, y: 0 }],
+  ]) {
+    const locker = { id: label, approach: { x: 1, y: 0 }, concealed: { x: 1, y: 0 }, facing: { x: 1, y: 0 } };
+    const simulation = new GameSimulation({
+      level: testLevel(["....."], {
+        playerStart: locker.approach,
+        chaserStart: { x: 4, y: 0 },
+        exit: { x: 0, y: 0 },
+        hideSpots: [locker],
+      }),
+      autoStart: true,
+      initialPlayerHeading,
+      config: config({ spawnDelaySeconds: 20 }),
+    });
+    simulation.advance(1 / 60, { interactPressed: true });
+    const first = simulation.advance(1 / 60);
+    assert.equal(first.player.mode, "aligning-hide", `${label} must not start HideEnter before turning`);
+    const minimumTurnSeconds = Math.acos(Math.max(-1, Math.min(1,
+      initialPlayerHeading.x * locker.facing.x + initialPlayerHeading.y * locker.facing.y,
+    ))) / simulation.config.hideAlignTurnSpeed;
+    const beforeAligned = runFor(simulation, Math.max(0, minimumTurnSeconds - 2 / 60), 1 / 60);
+    assert.equal(beforeAligned.player.mode, "aligning-hide", `${label} keeps the entry clip gated while rotating`);
+    const aligned = runFor(simulation, 4 / 60, 1 / 60);
+    assert.equal(aligned.player.mode, "entering-hide", `${label} starts only after exact facing is reached`);
+    assert.ok(Math.abs(aligned.player.heading.x - locker.facing.x) < 1e-9);
+    assert.ok(Math.abs(aligned.player.heading.y - locker.facing.y) < 1e-9);
+  }
+});
+
+test("180-degree locker alignment exposes two eased 90-degree animation cycles", () => {
+  const locker = { id: "pivot", approach: { x: 1, y: 0 }, concealed: { x: 1, y: 0 }, facing: { x: 0, y: -1 } };
+  const simulation = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: locker.approach,
+      chaserStart: { x: 4, y: 0 },
+      exit: { x: 0, y: 0 },
+      hideSpots: [locker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: { x: 0, y: 1 },
+    config: config({ spawnDelaySeconds: 20 }),
+  });
+  simulation.advance(1 / 60, { interactPressed: true });
+
+  const quarter = runFor(simulation, 0.3, 1 / 60);
+  assert.equal(quarter.player.hideTurnDirection, 1);
+  assert.equal(quarter.player.hideTurnCycle, 0);
+  assert.ok(Math.abs(quarter.player.hideTurnSegmentDurationSeconds - 0.6) < 1e-9);
+  assert.ok(Math.abs(Math.atan2(quarter.player.heading.x, quarter.player.heading.y) - Math.PI / 4) < 1e-6);
+
+  const seam = runFor(simulation, 0.3, 1 / 60);
+  assert.equal(seam.player.hideTurnCycle, 1, "the second authored pivot restarts at the exact 90-degree seam");
+  assert.ok(Math.abs(Math.atan2(seam.player.heading.x, seam.player.heading.y) - Math.PI / 2) < 1e-6);
+
+  const threeQuarter = runFor(simulation, 0.3, 1 / 60);
+  assert.equal(threeQuarter.player.hideTurnCycle, 1);
+  assert.ok(Math.abs(Math.atan2(threeQuarter.player.heading.x, threeQuarter.player.heading.y) - Math.PI * 0.75) < 1e-6);
+});
+
+test("peek exposure begins only after the door gap opens and ends only after it closes", () => {
+  const locker = { id: "peek", approach: { x: 1, y: 0 }, concealed: { x: 1, y: 0 }, facing: { x: 1, y: 0 } };
+  const simulation = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: locker.approach,
+      chaserStart: { x: 4, y: 0 },
+      exit: { x: 0, y: 0 },
+      hideSpots: [locker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: locker.facing,
+    config: config({ spawnDelaySeconds: 20, hideEnterSeconds: 0.1 }),
+  });
+  simulation.advance(1 / 60, { interactPressed: true });
+  let state = runFor(simulation, 0.2, 1 / 60);
+  assert.equal(state.player.mode, "hidden");
+
+  state = simulation.advance(1 / 60, { peekHeld: true });
+  assert.equal(state.player.mode, "entering-peek");
+  assert.equal(isPlayerVisuallyExposed(state.player, simulation.config), false);
+  state = runFor(simulation, simulation.config.peekEnterSeconds + simulation.config.fixedStepSeconds, 1 / 60, { peekHeld: true });
+  assert.equal(state.player.mode, "peeking");
+  assert.equal(isPlayerVisuallyExposed(state.player, simulation.config), true);
+
+  state = simulation.advance(1 / 60, { peekHeld: false });
+  assert.equal(state.player.mode, "exiting-peek");
+  assert.equal(isPlayerVisuallyExposed(state.player, simulation.config), true);
+  state = runFor(simulation, simulation.config.peekExitSeconds + simulation.config.fixedStepSeconds, 1 / 60, { peekHeld: false });
+  assert.equal(state.player.mode, "hidden");
+  assert.equal(isPlayerVisuallyExposed(state.player, simulation.config), false);
+});
+
+test("a zero-open quick peek cannot leak evidence through a visually closed locker", () => {
+  const locker = { id: "quick-peek", approach: { x: 2, y: 0 }, concealed: { x: 2, y: 0 }, facing: { x: 1, y: 0 } };
+  const simulation = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: locker.approach,
+      chaserStart: { x: 0, y: 0 },
+      chaserStartHeading: { x: 1, y: 0 },
+      exit: { x: 4, y: 0 },
+      hideSpots: [locker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: locker.facing,
+    config: config({
+      spawnDelaySeconds: 0.5,
+      aiTickSeconds: 1 / 60,
+      chaserSpeed: 0,
+      catchRange: 0.05,
+      visionRange: 10,
+      hideEnterSeconds: 0.1,
+    }),
+  });
+  simulation.advance(1 / 60, { interactPressed: true });
+  let state = runFor(simulation, 0.65, 1 / 60);
+  assert.equal(state.player.mode, "hidden");
+  assert.equal(state.chaser.memory.lastKnownPosition, null);
+
+  state = simulation.advance(1 / 60, { peekHeld: true });
+  assert.equal(state.player.mode, "entering-peek");
+  state = simulation.advance(1 / 60, { peekHeld: false });
+  assert.equal(state.player.mode, "exiting-peek");
+  assert.equal(state.player.transitionRemainingSeconds, 0);
+  assert.equal(isPlayerVisuallyExposed(state.player, simulation.config), false);
+  assert.equal(state.chaser.memory.lastKnownPosition, null, "a fully closed visual frame must not become AI evidence");
+});
+
+test("exit exposure waits for the authored door-opening marker", () => {
+  const player = { mode: "exiting-hide", transitionRemainingSeconds: DEFAULT_GAME_CONFIG.hideExitSeconds };
+  assert.equal(isPlayerVisuallyExposed(player, DEFAULT_GAME_CONFIG), false);
+  player.transitionRemainingSeconds -= DEFAULT_GAME_CONFIG.hideExitExposureSeconds - 0.01;
+  assert.equal(isPlayerVisuallyExposed(player, DEFAULT_GAME_CONFIG), false);
+  player.transitionRemainingSeconds -= 0.02;
+  assert.equal(isPlayerVisuallyExposed(player, DEFAULT_GAME_CONFIG), true);
+});
+
+test("hide-entry exposure ends at the authored safe-close marker", () => {
+  const player = { mode: "entering-hide", transitionRemainingSeconds: DEFAULT_GAME_CONFIG.hideEnterSeconds };
+  assert.equal(isPlayerVisuallyExposed(player, DEFAULT_GAME_CONFIG), true);
+  player.transitionRemainingSeconds -= DEFAULT_GAME_CONFIG.hideEnterExposureSeconds - 0.01;
+  assert.equal(isPlayerVisuallyExposed(player, DEFAULT_GAME_CONFIG), true);
+  player.transitionRemainingSeconds -= 0.02;
+  assert.equal(isPlayerVisuallyExposed(player, DEFAULT_GAME_CONFIG), false);
+});
+
+test("capture respects protection, exposure, LOS, and completed fair locker checks", () => {
+  const openLevel = testLevel(["....."], {
+    playerStart: { x: 2, y: 0 },
+    chaserStart: { x: 2, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const exposed = new GameSimulation({
+    level: openLevel,
+    autoStart: true,
+    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0 }),
+  });
+  assert.equal(runFor(exposed, 1 / 30, 1 / 60).phase, "lost", "an exposed overlapping player is caught");
+
+  const safeLocker = { id: "safe", approach: { x: 2, y: 0 }, concealed: { x: 2, y: 0 }, facing: { x: 1, y: 0 } };
+  const protectedHide = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: safeLocker.approach,
+      chaserStart: safeLocker.approach,
+      exit: { x: 4, y: 0 },
+      hideSpots: [safeLocker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: safeLocker.facing,
+    config: config({ spawnDelaySeconds: 0.5, chaserSpeed: 0, hideEnterSeconds: 0.1, hideInteractRange: 0.2 }),
+  });
+  protectedHide.advance(1 / 60, { interactPressed: true });
+  const hidden = runFor(protectedHide, 0.8 - 1 / 60, 1 / 60);
+  assert.equal(hidden.player.mode, "hidden");
+  assert.equal(hidden.phase, "playing", "ordinary proximity capture cannot reveal a hidden player");
+
+  const witnessedLocker = { id: "witnessed", approach: { x: 2, y: 0 }, concealed: { x: 2, y: 0 }, facing: { x: -1, y: 0 } };
+  const checked = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: witnessedLocker.approach,
+      chaserStart: { x: 1.9, y: 0 },
+      chaserStartHeading: { x: 1, y: 0 },
+      exit: { x: 4, y: 0 },
+      hideSpots: [witnessedLocker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: witnessedLocker.facing,
+    config: config({
+      spawnDelaySeconds: 0,
+      chaserSpeed: 0,
+      catchRange: 0.05,
+      hideEnterSeconds: 0.15,
+      hideInteractRange: 0.2,
+      checkHideSeconds: 0.25,
+    }),
+  });
+  checked.advance(1 / 60, { interactPressed: true });
+  const caughtInLocker = runFor(checked, 0.7 - 1 / 60, 1 / 60);
+  assert.equal(caughtInLocker.phase, "lost");
+  assert.equal(caughtInLocker.player.mode, "caught");
+  assert.equal(caughtInLocker.player.hideSpotId, null, "capture must release the presentation from the locker anchor");
+  assert.equal(caughtInLocker.hideSpots[witnessedLocker.id].occupiedByPlayer, false, "capture must clear locker occupancy");
+  assert.equal(caughtInLocker.player.transitionRemainingSeconds, 0);
+});
+
+test("capture aligns both authored performances face-to-face even from behind", () => {
+  const level = testLevel(["....."], {
+    playerStart: { x: 1, y: 0 },
+    chaserStart: { x: 2, y: 0 },
+    chaserStartHeading: { x: 1, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const simulation = new GameSimulation({
+    level,
+    autoStart: true,
+    initialPlayerPosition: { x: 1.5, y: 0 },
+    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0, catchRange: 0.6 }),
+  });
+  const state = simulation.advance(1 / 60);
+  assert.equal(state.phase, "lost");
+  assert.deepEqual(state.chaser.heading, { x: -1, y: 0 });
+  assert.equal(state.player.heading.x, 1);
+  assert.equal(Math.abs(state.player.heading.y), 0);
+});
+
+test("chaser movement cadence matches authored locomotion and reaction beats", () => {
+  const topSpeed = DEFAULT_GAME_CONFIG.chaserSpeed;
+  assert.equal(chaserSpeedForMode("spawn-delay", topSpeed), 0);
+  assert.equal(chaserSpeedForMode("suspicious", topSpeed), 0);
+  assert.equal(chaserSpeedForMode("lost-sight", topSpeed), 0, "lost-sight reaction must not foot-slide");
+  assert.ok(chaserSpeedForMode("patrol", topSpeed) < chaserSpeedForMode("chase", topSpeed));
+  assert.ok(chaserSpeedForMode("search", topSpeed) < chaserSpeedForMode("patrol", topSpeed));
+  assert.ok(chaserSpeedForMode("check-hide", topSpeed) < chaserSpeedForMode("chase", topSpeed));
+  const worldUnitsPerCell = 2;
+  const authoredMetersPerSecond = { kidRun: 4.4, villainRun: 3.7, villainWalk: 1.65 };
+  const rates = [
+    DEFAULT_GAME_CONFIG.playerSpeed * worldUnitsPerCell / authoredMetersPerSecond.kidRun,
+    chaserSpeedForMode("chase", topSpeed) * worldUnitsPerCell / authoredMetersPerSecond.villainRun,
+    chaserSpeedForMode("patrol", topSpeed) * worldUnitsPerCell / authoredMetersPerSecond.villainWalk,
+    chaserSpeedForMode("search", topSpeed) * worldUnitsPerCell / authoredMetersPerSecond.villainWalk,
+  ];
+  for (const rate of rates) assert.ok(rate >= 0.65 && rate <= 1.35, `locomotion rate ${rate} would clamp and foot-slide`);
+});

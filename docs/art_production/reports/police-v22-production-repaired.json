@@ -1,0 +1,284 @@
+{
+  "input": "/private/tmp/chasing-web-production/art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Rigged/Police_HumanAnatomyRemodel_v22_Rigged.blend",
+  "inputSha256": "4470d21ecd2f66cddf8993a69df62a9ece01b908a3f24e81fecaf1817e2d31b5",
+  "output": "/private/tmp/chasing-character-pbr/police-v22-production-repaired.blend",
+  "outputSha256": "5a989af5ebe0198315b3a3ff5eb82cc726f726d36e05eb0b827832efeb77f2f7",
+  "candidateOnly": true,
+  "officialRuntimeOverwritten": false,
+  "lateralSemantics": {
+    "reason": "project animation map requires Left X<0 / Right X>0 for every character",
+    "beforeBoneHeadX": {
+      "LeftShoulder": 0.018793,
+      "RightShoulder": -0.018793,
+      "LeftUpperArm": 0.117638,
+      "RightUpperArm": -0.117638,
+      "LeftLowerArm": 0.175292,
+      "RightLowerArm": -0.181941,
+      "LeftHand": 0.183634,
+      "RightHand": -0.198994,
+      "LeftUpperLeg": 0.071577,
+      "RightUpperLeg": -0.071577,
+      "LeftLowerLeg": 0.104713,
+      "RightLowerLeg": -0.104713,
+      "LeftFoot": 0.118006,
+      "RightFoot": -0.118006,
+      "LeftToes": 0.125086,
+      "RightToes": -0.125086
+    },
+    "afterBoneHeadX": {
+      "LeftShoulder": -0.018793,
+      "RightShoulder": 0.018793,
+      "LeftUpperArm": -0.117638,
+      "RightUpperArm": 0.117638,
+      "LeftLowerArm": -0.181941,
+      "RightLowerArm": 0.175292,
+      "LeftHand": -0.198994,
+      "RightHand": 0.183634,
+      "LeftUpperLeg": -0.071577,
+      "RightUpperLeg": 0.071577,
+      "LeftLowerLeg": -0.104713,
+      "RightLowerLeg": 0.104713,
+      "LeftFoot": -0.118006,
+      "RightFoot": 0.118006,
+      "LeftToes": -0.125086,
+      "RightToes": 0.125086
+    },
+    "boneRenameAndAutomaticMeshVertexGroupPropagation": true
+  },
+  "attachmentBindings": {
+    "reason": "geometric +/- X suffix must map to the matching MPFB/project bone pivot",
+    "pivotEvidence": {
+      "Police_v22_ShoulderEpaulet_-1": {
+        "objectCenterX": -0.15,
+        "targetBoneHeadX": -0.018793,
+        "targetBone": "LeftShoulder"
+      },
+      "Police_v22_EpauletButton_-1": {
+        "objectCenterX": -0.107,
+        "targetBoneHeadX": -0.018793,
+        "targetBone": "LeftShoulder"
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "objectCenterX": 0.15,
+        "targetBoneHeadX": 0.018793,
+        "targetBone": "RightShoulder"
+      },
+      "Police_v22_EpauletButton_+1": {
+        "objectCenterX": 0.107,
+        "targetBoneHeadX": 0.018793,
+        "targetBone": "RightShoulder"
+      },
+      "Police_v22_SleevePatch_-1": {
+        "objectCenterX": -0.286,
+        "targetBoneHeadX": -0.117638,
+        "targetBone": "LeftUpperArm"
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "objectCenterX": -0.29,
+        "targetBoneHeadX": -0.117638,
+        "targetBone": "LeftUpperArm"
+      },
+      "Police_v22_SleevePatch_+1": {
+        "objectCenterX": 0.286,
+        "targetBoneHeadX": 0.117638,
+        "targetBone": "RightUpperArm"
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "objectCenterX": 0.29,
+        "targetBoneHeadX": 0.117638,
+        "targetBone": "RightUpperArm"
+      },
+      "Police_v22_ShoulderRadio": {
+        "objectCenterX": -0.155,
+        "targetBoneHeadX": 0.0,
+        "targetBone": "Chest"
+      }
+    },
+    "before": {
+      "Police_v22_ShoulderEpaulet_-1": {
+        "vertices": 8,
+        "groups": {
+          "RightShoulder": 8.0
+        }
+      },
+      "Police_v22_EpauletButton_-1": {
+        "vertices": 266,
+        "groups": {
+          "RightShoulder": 266.0
+        }
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "vertices": 8,
+        "groups": {
+          "LeftShoulder": 8.0
+        }
+      },
+      "Police_v22_EpauletButton_+1": {
+        "vertices": 266,
+        "groups": {
+          "LeftShoulder": 266.0
+        }
+      },
+      "Police_v22_SleevePatch_-1": {
+        "vertices": 12,
+        "groups": {
+          "RightUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "vertices": 12,
+        "groups": {
+          "RightUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatch_+1": {
+        "vertices": 12,
+        "groups": {
+          "LeftUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "vertices": 12,
+        "groups": {
+          "LeftUpperArm": 12.0
+        }
+      },
+      "Police_v22_ShoulderRadio": {
+        "vertices": 8,
+        "groups": {
+          "RightShoulder": 8.0
+        }
+      }
+    },
+    "after": {
+      "Police_v22_ShoulderEpaulet_-1": {
+        "vertices": 8,
+        "groups": {
+          "LeftShoulder": 8.0
+        }
+      },
+      "Police_v22_EpauletButton_-1": {
+        "vertices": 266,
+        "groups": {
+          "LeftShoulder": 266.0
+        }
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "vertices": 8,
+        "groups": {
+          "RightShoulder": 8.0
+        }
+      },
+      "Police_v22_EpauletButton_+1": {
+        "vertices": 266,
+        "groups": {
+          "RightShoulder": 266.0
+        }
+      },
+      "Police_v22_SleevePatch_-1": {
+        "vertices": 12,
+        "groups": {
+          "LeftUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "vertices": 12,
+        "groups": {
+          "LeftUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatch_+1": {
+        "vertices": 12,
+        "groups": {
+          "RightUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "vertices": 12,
+        "groups": {
+          "RightUpperArm": 12.0
+        }
+      },
+      "Police_v22_ShoulderRadio": {
+        "vertices": 8,
+        "groups": {
+          "Chest": 8.0
+        }
+      }
+    }
+  },
+  "uniformCrotchStabilization": {
+    "object": "Police_v22_Uniform",
+    "verticesChanged": 44,
+    "vertexIndices": [
+      1742,
+      1743,
+      1798,
+      1799,
+      1800,
+      1810,
+      1811,
+      1829,
+      1830,
+      1875,
+      1876,
+      1895,
+      1896,
+      1960,
+      1961,
+      1972,
+      1973,
+      2005,
+      2006,
+      2013,
+      2014,
+      2087,
+      2088,
+      2089,
+      2133,
+      2134,
+      2182,
+      2347,
+      2348,
+      2383,
+      2384,
+      2393,
+      2430,
+      2431,
+      2446,
+      2447,
+      2448,
+      2449,
+      2450,
+      2481,
+      2482,
+      2483,
+      2488,
+      2489
+    ],
+    "selection": {
+      "maxAbsLocalX": 0.04,
+      "minLocalZ": 0.72,
+      "fullStrengthLocalZ": 0.76,
+      "topFullStrengthLocalZ": 0.85,
+      "maxLocalZ": 0.9,
+      "minimumCombinedHipsAndUpperLegShare": 0.5
+    },
+    "replacement": {
+      "maximumHipsWeight": 0.9,
+      "horizontalFalloff": "inverse smoothstep from center to maxAbsLocalX",
+      "lowerVerticalFalloff": "smoothstep minLocalZ to fullStrengthLocalZ",
+      "upperVerticalFalloff": "inverse smoothstep topFullStrengthLocalZ to maxLocalZ",
+      "otherInfluenceRatiosPreserved": true
+    },
+    "maximumHipsWeightIncrease": 0.7382424
+  },
+  "qualityGates": {
+    "allAttachmentVerticesWeighted": true,
+    "projectLateralSemantics": true,
+    "meshGeometryUnchanged": true,
+    "materialsUnchanged": true,
+    "uniformCrotchVerticesChanged": 44,
+    "sourceNotOverwritten": true
+  }
+}

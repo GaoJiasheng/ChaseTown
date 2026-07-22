@@ -81,6 +81,95 @@ for label in ("Left", "Right"):
         for segment in ("Proximal", "Intermediate", "Distal"):
             UNITY_BONE_COLLAPSE[f"{label}{finger}{segment}"] = f"{label}Hand"
 
+LATERAL_BONE_PAIRS = tuple(
+    (f"Left{part}", f"Right{part}")
+    for part in (
+        "Shoulder",
+        "UpperArm",
+        "LowerArm",
+        "Hand",
+        "UpperLeg",
+        "LowerLeg",
+        "Foot",
+        "Toes",
+    )
+) + tuple(
+    (f"Left{finger}{segment}", f"Right{finger}{segment}")
+    for finger in ("Thumb", "Index", "Middle", "Ring", "Little")
+    for segment in ("Proximal", "Intermediate", "Distal")
+)
+
+
+def vertex_weight_map(obj: bpy.types.Object, vertex: bpy.types.MeshVertex) -> dict[str, float]:
+    return {
+        obj.vertex_groups[item.group].name: float(item.weight)
+        for item in vertex.groups
+        if item.weight > 1e-8
+    }
+
+
+def replace_vertex_weights(obj: bpy.types.Object, index: int, weights: dict[str, float]) -> None:
+    for group in obj.vertex_groups:
+        group.remove([index])
+    total = sum(weights.values())
+    if total <= 1e-8:
+        raise ValueError(f"Zero replacement weight for {obj.name} vertex {index}")
+    for name, value in weights.items():
+        group = obj.vertex_groups.get(name) or obj.vertex_groups.new(name=name)
+        group.add([index], value / total, "REPLACE")
+
+
+def smoothstep(edge0: float, edge1: float, value: float) -> float:
+    amount = max(0.0, min(1.0, (value - edge0) / (edge1 - edge0)))
+    return amount * amount * (3.0 - 2.0 * amount)
+
+
+def stabilize_uniform_crotch(obj: bpy.types.Object) -> dict[str, object]:
+    """Keep the garment center seam coherent in opposing-leg run poses."""
+    changed: list[int] = []
+    for vertex in obj.data.vertices:
+        point = vertex.co
+        if abs(point.x) >= 0.04 or point.z <= 0.72 or point.z >= 0.90:
+            continue
+        weights = vertex_weight_map(obj, vertex)
+        pelvis_chain_share = (
+            weights.get("Hips", 0.0)
+            + weights.get("LeftUpperLeg", 0.0)
+            + weights.get("RightUpperLeg", 0.0)
+        )
+        if pelvis_chain_share <= 0.5:
+            continue
+        current_hips = weights.get("Hips", 0.0)
+        target_hips = (
+            0.90
+            * (1.0 - smoothstep(0.0, 0.04, abs(float(point.x))))
+            * smoothstep(0.72, 0.76, float(point.z))
+            * (1.0 - smoothstep(0.85, 0.90, float(point.z)))
+        )
+        if target_hips <= current_hips + 1e-8:
+            continue
+        remaining_before = 1.0 - current_hips
+        if remaining_before <= 1e-8:
+            continue
+        remaining_scale = (1.0 - target_hips) / remaining_before
+        replacement = {
+            name: value * remaining_scale
+            for name, value in weights.items()
+            if name != "Hips" and value > 1e-8
+        }
+        replacement["Hips"] = target_hips
+        replace_vertex_weights(obj, vertex.index, replacement)
+        changed.append(vertex.index)
+    if len(changed) != 44:
+        raise RuntimeError(f"Uniform crotch stabilization expected 44 vertices, got {len(changed)}")
+    return {
+        "object": obj.name,
+        "vertices_changed": len(changed),
+        "selection": "abs(x)<0.04, 0.72<z<0.90, combined Hips/upper-leg share>0.5",
+        "maximum_hips_weight": 0.90,
+        "other_influence_ratios_preserved": True,
+    }
+
 
 def append_native_rig() -> dict[str, bpy.types.Object]:
     requested = list(SOURCE_OBJECTS.values())
@@ -188,16 +277,22 @@ def rigid_bone_for(obj: bpy.types.Object) -> str:
         return "head"
     if any(token in name for token in ("belt", "buckle", "pouch")):
         return "pelvis"
+    # The authored +/- suffix is geometric X, not anatomical side.  MPFB's
+    # anatomical ``*_r`` bones lie at X<0 and ``*_l`` at X>0.  Binding these
+    # the other way round appears fine in the rest pose, but rotates every
+    # shoulder detail around the opposite-side pivot during asymmetric clips.
     if any(token in name for token in ("shoulderepaulet_-1", "epauletbutton_-1")):
-        return "clavicle_l"
-    if any(token in name for token in ("shoulderepaulet_+1", "epauletbutton_+1")):
         return "clavicle_r"
-    if any(token in name for token in ("sleevepatch_-1", "sleevepatchinset_-1")):
-        return "upperarm_l"
-    if any(token in name for token in ("sleevepatch_+1", "sleevepatchinset_+1")):
-        return "upperarm_r"
-    if "shoulderradio" in name:
+    if any(token in name for token in ("shoulderepaulet_+1", "epauletbutton_+1")):
         return "clavicle_l"
+    if any(token in name for token in ("sleevepatch_-1", "sleevepatchinset_-1")):
+        return "upperarm_r"
+    if any(token in name for token in ("sleevepatch_+1", "sleevepatchinset_+1")):
+        return "upperarm_l"
+    if "shoulderradio" in name:
+        # The radio is mounted on the upper-chest strap, not the arm cap.
+        # Rigid shoulder binding separates it from the shirt in reach poses.
+        return "spine_03"
     return "spine_03"
 
 
@@ -237,6 +332,39 @@ def standardize_unity_bone_names(
                 group.name = new_name
     for report in reports:
         report["used_bones"] = [UNITY_BONE_NAMES.get(name, name) for name in report["used_bones"]]
+
+
+def standardize_project_lateral_semantics(
+    armature: bpy.types.Object,
+    meshes: list[bpy.types.Object],
+    reports: list[dict[str, object]],
+) -> None:
+    """Match the project's geometric convention: Left X<0, Right X>0.
+
+    MPFB uses anatomical side names, which place Left at positive Blender X.
+    The other approved game rigs and the production animation retarget map use
+    geometric/viewer-side names instead.  Swap both bone names and every skin
+    group so deformation remains identical in rest while animation channels
+    target the correct physical limb.
+    """
+    for left, right in LATERAL_BONE_PAIRS:
+        armature.data.bones[left].name = f"__SIDE_SWAP__{left}"
+    for left, right in LATERAL_BONE_PAIRS:
+        armature.data.bones[right].name = left
+        armature.data.bones[f"__SIDE_SWAP__{left}"].name = right
+    # Blender propagates bone renames to matching groups on armature children.
+    # Renaming the groups again here would undo the semantic repair.
+    for obj in meshes:
+        temporary = [group.name for group in obj.vertex_groups if group.name.startswith("__SIDE_SWAP__")]
+        if temporary:
+            raise RuntimeError(f"Bone rename did not finish propagating on {obj.name}: {temporary}")
+    side_swap = {left: right for left, right in LATERAL_BONE_PAIRS}
+    side_swap.update({right: left for left, right in LATERAL_BONE_PAIRS})
+    for report in reports:
+        report["used_bones"] = [side_swap.get(name, name) for name in report["used_bones"]]
+    for left, right in LATERAL_BONE_PAIRS:
+        if armature.data.bones[left].head_local.x >= 0.0 or armature.data.bones[right].head_local.x <= 0.0:
+            raise RuntimeError(f"Project lateral semantic gate failed for {left}/{right}")
 
 
 def collapse_to_project_humanoid_rig(
@@ -370,7 +498,9 @@ def main() -> None:
         if key != "armature":
             bpy.data.objects.remove(obj, do_unlink=True)
     standardize_unity_bone_names(armature, meshes, reports)
+    standardize_project_lateral_semantics(armature, meshes, reports)
     collapse_to_project_humanoid_rig(armature, meshes, reports)
+    crotch_report = stabilize_uniform_crotch(bpy.data.objects["Police_v22_Uniform"])
     bpy.context.view_layer.update()
 
     model.REVIEW_OUT = ROOT / "docs/art_production/police_human_v22_native_rig_bind"
@@ -397,12 +527,14 @@ def main() -> None:
             "rest_pose": "relaxed neutral source pose applied as rest",
             "unity_standardized_bone_names": True,
             "project_humanoid_21_bone_compatible": True,
+            "project_lateral_semantics": "Left X<0 / Right X>0",
         },
         "weighting": {
             "mesh_count": len(meshes),
             "zero_weight_vertices": sum(int(item["zero_weight_vertices"]) for item in reports),
             "maximum_influences_per_vertex": max(int(item["maximum_influences_per_vertex"]) for item in reports),
             "mesh_reports": reports,
+            "uniform_crotch_stabilization": crotch_report,
         },
         "validation_summary": {
             "native_source_weights_parent_merged": True,

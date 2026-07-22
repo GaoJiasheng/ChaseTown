@@ -1,0 +1,146 @@
+{
+  "role": "kid",
+  "output": "public/models/characters/kid.glb",
+  "outputBytes": 8168372,
+  "rig": "Rig_Humanoid_Shared",
+  "bones": 21,
+  "meshes": 35,
+  "clips": [
+    {
+      "name": "Idle",
+      "frames": [
+        0.0,
+        75.0
+      ],
+      "durationSeconds": 2.5,
+      "source": "Quaternius UAL Standard/Idle_Loop",
+      "loop": true
+    },
+    {
+      "name": "Walk",
+      "frames": [
+        0.0,
+        40.0
+      ],
+      "durationSeconds": 1.3333,
+      "source": "Quaternius UAL Standard/Walk_Loop",
+      "loop": true
+    },
+    {
+      "name": "Run",
+      "frames": [
+        0.0,
+        20.0
+      ],
+      "durationSeconds": 0.6667,
+      "source": "Quaternius UAL Standard/Sprint_Loop",
+      "loop": true
+    },
+    {
+      "name": "HideEnter",
+      "frames": [
+        0.0,
+        39.0
+      ],
+      "durationSeconds": 1.3,
+      "source": "Quaternius UAL Standard/Sitting_Enter -> Sitting_Idle_Loop seam",
+      "loop": false
+    },
+    {
+      "name": "HideIdle",
+      "frames": [
+        0.0,
+        50.0
+      ],
+      "durationSeconds": 1.6667,
+      "source": "Quaternius UAL Standard/Sitting_Idle_Loop",
+      "loop": true
+    },
+    {
+      "name": "HidePeek",
+      "frames": [
+        0.0,
+        48.0
+      ],
+      "durationSeconds": 1.6,
+      "source": "Authored from Quaternius Sitting_Idle_Loop low-pose base",
+      "loop": true
+    },
+    {
+      "name": "HideExit",
+      "frames": [
+        0.0,
+        31.0
+      ],
+      "durationSeconds": 1.0333,
+      "source": "Quaternius UAL Standard/Sitting_Idle_Loop seam -> Sitting_Exit",
+      "loop": false
+    },
+    {
+      "name": "Caught",
+      "frames": [
+        0.0,
+        30.0
+      ],
+      "durationSeconds": 1.0,
+      "source": "Authored Idle_Loop -> restrained Hit_Chest hold",
+      "loop": false
+    },
+    {
+      "name": "EscapeCelebrate",
+      "frames": [
+        0.0,
+        37.0
+      ],
+      "durationSeconds": 1.2195,
+      "source": "Quaternius UAL Standard/Dance_Loop",
+      "loop": true
+    },
+    {
+      "name": "Interact",
+      "frames": [
+        0.0,
+        60.0
+      ],
+      "durationSeconds": 2.0,
+      "source": "Quaternius UAL Standard/Interact",
+      "loop": false
+    }
+  ],
+  "qualityGates": {
+    "hasRuntimeProceduralPose": false,
+    "fullBodySampleRateFps": 30,
+    "requiredBoneMapComplete": true,
+    "sourceLicense": "CC0-1.0",
+    "seams": {
+      "HideEnter->HideIdle": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "HideIdle->HidePeek": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "HidePeek->HideIdle": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "HideIdle->HideExit": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "Idle->Caught": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "IdleLoop": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      },
+      "RunLoop": {
+        "maxRadians": 0.0,
+        "maxMeters": 0.0
+      }
+    }
+  }
+}

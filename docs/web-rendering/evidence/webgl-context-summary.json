@@ -1,0 +1,197 @@
+{
+  "extension": true,
+  "lost": {
+    "qa": {
+      "ready": false,
+      "game": {
+        "phase": "playing",
+        "elapsedSeconds": 0.18333333333333332,
+        "tick": 11,
+        "player": {
+          "position": {
+            "x": 1,
+            "y": 2
+          },
+          "heading": {
+            "x": 0,
+            "y": 1
+          },
+          "mode": "free",
+          "hideSpotId": null,
+          "transitionRemainingSeconds": 0,
+          "hideTurnDirection": 0,
+          "hideTurnCycle": -1,
+          "hideTurnSegmentDurationSeconds": 0
+        },
+        "chaser": {
+          "position": {
+            "x": 21,
+            "y": 10
+          },
+          "heading": {
+            "x": -1,
+            "y": 0
+          },
+          "mode": "spawn-delay",
+          "modeElapsedSeconds": 0.1,
+          "patrolIndex": 0,
+          "searchSeed": 1,
+          "searchIndex": 0,
+          "searchWaypointElapsedSeconds": 0,
+          "memory": {
+            "lastKnownPosition": null,
+            "lastSeenAtSeconds": null,
+            "witnessedHideSpotId": null
+          }
+        },
+        "hideSpots": {
+          "locker-north": {
+            "id": "locker-north",
+            "occupiedByPlayer": false
+          },
+          "locker-south": {
+            "id": "locker-south",
+            "occupiedByPlayer": false
+          }
+        },
+        "aiAccumulatorSeconds": 0.08333333333333331,
+        "events": []
+      },
+      "interaction": null,
+      "animations": {
+        "kid": {
+          "state": "idle",
+          "clip": "Idle",
+          "normalizedTime": 0.07624000000000002,
+          "playing": true
+        },
+        "villain": {
+          "state": "idle",
+          "clip": "Idle",
+          "normalizedTime": 0.07624000000000002,
+          "playing": true
+        },
+        "police": {
+          "state": "idle",
+          "clip": "Idle",
+          "normalizedTime": 0.07624000000000002,
+          "playing": true
+        }
+      },
+      "visibility": {
+        "kid": {
+          "rootVisible": true,
+          "alpha": 1
+        },
+        "villain": {
+          "rootVisible": true,
+          "alpha": 0.03236104158134663
+        },
+        "police": {
+          "rootVisible": true,
+          "alpha": 1
+        }
+      },
+      "lockers": {
+        "locker-north": {
+          "action": null,
+          "peeking": false,
+          "peekClosing": false,
+          "holdFinal": false,
+          "delayRemaining": 0,
+          "owner": "idle"
+        },
+        "locker-south": {
+          "action": null,
+          "peeking": false,
+          "peekClosing": false,
+          "holdFinal": false,
+          "delayRemaining": 0,
+          "owner": "idle"
+        }
+      },
+      "audio": {
+        "status": "playing",
+        "unlocked": true,
+        "muted": false,
+        "threat": 0,
+        "targetGains": {
+          "explore": 1,
+          "threat": 0
+        },
+        "contextState": "running",
+        "driftSeconds": 0,
+        "explore": {
+          "url": "/audio/slow-drift-explore.m4a",
+          "currentTimeSeconds": 0.037333,
+          "durationSeconds": 38.02,
+          "paused": false,
+          "readyState": 4,
+          "mediaErrorCode": null
+        },
+        "threatTrack": {
+          "url": "/audio/slow-drift-threat.m4a",
+          "currentTimeSeconds": 0.037333,
+          "durationSeconds": 38.02,
+          "paused": false,
+          "readyState": 4,
+          "mediaErrorCode": null
+        },
+        "lastError": null
+      },
+      "camera": {
+        "fov": 56,
+        "distance": 16.25,
+        "zoom": 1,
+        "occlusion": {
+          "groups": 23,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      },
+      "render": {
+        "calls": 501,
+        "triangles": 2112582
+      }
+    },
+    "errorText": "3D 渲染上下文已中断；恢复后将自动重新载入游戏。刷新重试",
+    "readyDataset": null
+  },
+  "restored": {
+    "ready": true,
+    "url": "http://127.0.0.1:4179/?qa&webgl-context-final",
+    "overlay": "overlay ready"
+  },
+  "faviconFetch": {
+    "status": 200,
+    "type": "image/svg+xml",
+    "bytes": 712
+  },
+  "faviconResponses": [
+    {
+      "url": "http://127.0.0.1:4179/favicon.svg",
+      "status": 200,
+      "mimeType": "image/svg+xml",
+      "fromDiskCache": false
+    },
+    {
+      "url": "http://127.0.0.1:4179/favicon.svg",
+      "status": 200,
+      "mimeType": "image/svg+xml",
+      "fromDiskCache": false
+    },
+    {
+      "url": "http://127.0.0.1:4179/favicon.svg",
+      "status": 200,
+      "mimeType": "image/svg+xml",
+      "fromDiskCache": false
+    },
+    {
+      "url": "http://127.0.0.1:4179/favicon.svg",
+      "status": 200,
+      "mimeType": "image/svg+xml",
+      "fromDiskCache": false
+    }
+  ],
+  "diagnostics": []
+}

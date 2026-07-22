@@ -28,7 +28,7 @@ test("compact engine-neutral source-art masters remain intact", async () => {
   }
 
   assert.equal(counts.get("fbx"), 39, "29 environment sources and 10 shared rig/animation FBX files must remain");
-  assert.equal(counts.get("blend"), 8, "the static and rigged Blender masters for the current characters must remain");
+  assert.equal(counts.get("blend"), 9, "the character masters and interactive hero-locker master must remain");
   assert.equal(counts.get("glb") ?? 0, 0, "runtime GLB exports belong only in public/models");
   assert.equal(counts.get("blend1") ?? 0, 0, "Blender backup files must not inflate the repository");
   assert.equal(counts.get("zip") ?? 0, 0, "generated archives must not inflate the repository");
@@ -54,6 +54,7 @@ test("compact engine-neutral source-art masters remain intact", async () => {
     "Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Police_HumanAnatomyRemodel_v22.blend",
     "Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Rigged/Police_HumanAnatomyRemodel_v22_Rigged.blend",
     "Environment/ModularKit/Wall_Straight_2m.fbx",
+    "Environment/Interactive/Locker_Hero.blend",
     "Environment/Props/Prop_PoliceStationFacade.fbx",
     "Environment/SampleMaze/SampleMaze_ArtLayout.fbx",
     "Concepts/01_kid_character_sheet.png",

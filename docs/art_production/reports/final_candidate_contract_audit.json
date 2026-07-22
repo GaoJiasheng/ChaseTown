@@ -1,0 +1,5391 @@
+{
+  "generatedAt": "2026-07-22T10:43:43.026Z",
+  "policy": {
+    "comparison": "semantic accessor payloads after canonical de-interleaving",
+    "animationRequirement": "exact Float32 equality to official input",
+    "webBudgetBytesExclusive": 12582912,
+    "pbrRequirement": "embedded BaseColor + Normal + Occlusion + MetallicRoughness, >=512px and >=10KB each"
+  },
+  "roles": {
+    "kid": {
+      "role": "kid",
+      "official": {
+        "path": "/private/tmp/chasing-web-production/public/models/characters/kid.glb",
+        "bytes": 9997836,
+        "sha256": "08952a54915ede2de2c24d9c8abdc7ad2287fa0dff01f1cbd6b3cb71aec2e32a",
+        "glbIssues": []
+      },
+      "candidate": {
+        "path": "/tmp/chasing-character-pbr/kid.glb",
+        "bytes": 9997836,
+        "mebibytes": 9.5347,
+        "sha256": "08952a54915ede2de2c24d9c8abdc7ad2287fa0dff01f1cbd6b3cb71aec2e32a",
+        "below12MiB": true,
+        "glbVersion": 2,
+        "chunks": [
+          "0x4e4f534a",
+          "0x004e4942"
+        ],
+        "embeddedOnly": true,
+        "glbStructuralIssues": []
+      },
+      "skin": {
+        "exactSignatureMatch": true,
+        "official": [
+          {
+            "name": "Rig_Humanoid_Shared",
+            "skeleton": null,
+            "joints": [
+              "Hips",
+              "Spine",
+              "Chest",
+              "Neck",
+              "Head",
+              "LeftShoulder",
+              "LeftUpperArm",
+              "LeftLowerArm",
+              "LeftHand",
+              "RightShoulder",
+              "RightUpperArm",
+              "RightLowerArm",
+              "RightHand",
+              "LeftUpperLeg",
+              "LeftLowerLeg",
+              "LeftFoot",
+              "LeftToes",
+              "RightUpperLeg",
+              "RightLowerLeg",
+              "RightFoot",
+              "RightToes"
+            ]
+          }
+        ],
+        "candidate": [
+          {
+            "name": "Rig_Humanoid_Shared",
+            "skeleton": null,
+            "joints": [
+              "Hips",
+              "Spine",
+              "Chest",
+              "Neck",
+              "Head",
+              "LeftShoulder",
+              "LeftUpperArm",
+              "LeftLowerArm",
+              "LeftHand",
+              "RightShoulder",
+              "RightUpperArm",
+              "RightLowerArm",
+              "RightHand",
+              "LeftUpperLeg",
+              "LeftLowerLeg",
+              "LeftFoot",
+              "LeftToes",
+              "RightUpperLeg",
+              "RightLowerLeg",
+              "RightFoot",
+              "RightToes"
+            ]
+          }
+        ]
+      },
+      "geometry": {
+        "exactStructureMatch": true,
+        "exactSurfaceTopologyMatch": true,
+        "official": [
+          {
+            "name": "geometry_0",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_PrecisionRemodel_v21_URP",
+                "positions": 61659,
+                "indices": 279348,
+                "joints": 61659,
+                "weights": 61659
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Adjuster_-1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_ZipperMetal",
+                "positions": 756,
+                "indices": 4320,
+                "joints": 756,
+                "weights": 756
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Adjuster_+1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_ZipperMetal",
+                "positions": 756,
+                "indices": 4320,
+                "joints": 756,
+                "weights": 756
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Handle_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackTrim",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_LeatherBase_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackLeather",
+                "positions": 2112,
+                "indices": 12288,
+                "joints": 2112,
+                "weights": 2112
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Main_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackNavy",
+                "positions": 2952,
+                "indices": 17280,
+                "joints": 2952,
+                "weights": 2952
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Pocket_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackNavy",
+                "positions": 2952,
+                "indices": 17280,
+                "joints": 2952,
+                "weights": 2952
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_PocketZipper_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_ZipperMetal",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Strap_-1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackTrim",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Strap_+1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackTrim",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Zipper_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_ZipperMetal",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_-1_0_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_-1_1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_-1_2_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_-1_3_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_+1_0_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_+1_1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_+1_2_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_+1_3_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_v20_Brow_-1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_FacialHair",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_v20_Brow_+1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_FacialHair",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_v20_Lid_-1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_FacialHair",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_v20_Lid_+1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_FacialHair",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Sphere",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_EyeWhite_EyeGloss",
+                "positions": 2143,
+                "indices": 11904,
+                "joints": 2143,
+                "weights": 2143
+              }
+            ]
+          },
+          {
+            "name": "Sphere.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_IrisBrown_EyeGloss",
+                "positions": 1223,
+                "indices": 6624,
+                "joints": 1223,
+                "weights": 1223
+              }
+            ]
+          },
+          {
+            "name": "Sphere.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Pupil_EyeGloss",
+                "positions": 859,
+                "indices": 4560,
+                "joints": 859,
+                "weights": 859
+              }
+            ]
+          },
+          {
+            "name": "Sphere.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_EyeHighlight",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Sphere.004",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_EyeWhite_EyeGloss",
+                "positions": 2143,
+                "indices": 11904,
+                "joints": 2143,
+                "weights": 2143
+              }
+            ]
+          },
+          {
+            "name": "Sphere.005",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_IrisBrown_EyeGloss",
+                "positions": 1223,
+                "indices": 6624,
+                "joints": 1223,
+                "weights": 1223
+              }
+            ]
+          },
+          {
+            "name": "Sphere.006",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Pupil_EyeGloss",
+                "positions": 859,
+                "indices": 4560,
+                "joints": 859,
+                "weights": 859
+              }
+            ]
+          },
+          {
+            "name": "Sphere.007",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_EyeHighlight",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Torus",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_HoodieNavy",
+                "positions": 2578,
+                "indices": 3456,
+                "joints": 2578,
+                "weights": 2578
+              }
+            ]
+          },
+          {
+            "name": "Torus.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_HoodieNavy",
+                "positions": 2572,
+                "indices": 3456,
+                "joints": 2572,
+                "weights": 2572
+              }
+            ]
+          },
+          {
+            "name": "Torus.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_HoodieNavy",
+                "positions": 2564,
+                "indices": 3456,
+                "joints": 2564,
+                "weights": 2564
+              }
+            ]
+          },
+          {
+            "name": "Torus.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_HoodieNavy",
+                "positions": 2556,
+                "indices": 3456,
+                "joints": 2556,
+                "weights": 2556
+              }
+            ]
+          }
+        ],
+        "candidate": [
+          {
+            "name": "geometry_0",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_PrecisionRemodel_v21_URP",
+                "positions": 61659,
+                "indices": 279348,
+                "joints": 61659,
+                "weights": 61659
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Adjuster_-1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_ZipperMetal",
+                "positions": 756,
+                "indices": 4320,
+                "joints": 756,
+                "weights": 756
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Adjuster_+1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_ZipperMetal",
+                "positions": 756,
+                "indices": 4320,
+                "joints": 756,
+                "weights": 756
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Handle_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackTrim",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_LeatherBase_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackLeather",
+                "positions": 2112,
+                "indices": 12288,
+                "joints": 2112,
+                "weights": 2112
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Main_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackNavy",
+                "positions": 2952,
+                "indices": 17280,
+                "joints": 2952,
+                "weights": 2952
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Pocket_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackNavy",
+                "positions": 2952,
+                "indices": 17280,
+                "joints": 2952,
+                "weights": 2952
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_PocketZipper_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_ZipperMetal",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Strap_-1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackTrim",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Strap_+1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_BackpackTrim",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_Backpack_Zipper_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_ZipperMetal",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_-1_0_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_-1_1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_-1_2_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_-1_3_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_+1_0_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_+1_1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_+1_2_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_ShoeLace_+1_3_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Sock",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_v20_Brow_-1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_FacialHair",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_v20_Brow_+1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_FacialHair",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_v20_Lid_-1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_FacialHair",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Kid_v20_Lid_+1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_FacialHair",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Sphere",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_EyeWhite_EyeGloss",
+                "positions": 2143,
+                "indices": 11904,
+                "joints": 2143,
+                "weights": 2143
+              }
+            ]
+          },
+          {
+            "name": "Sphere.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_IrisBrown_EyeGloss",
+                "positions": 1223,
+                "indices": 6624,
+                "joints": 1223,
+                "weights": 1223
+              }
+            ]
+          },
+          {
+            "name": "Sphere.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Pupil_EyeGloss",
+                "positions": 859,
+                "indices": 4560,
+                "joints": 859,
+                "weights": 859
+              }
+            ]
+          },
+          {
+            "name": "Sphere.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_EyeHighlight",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Sphere.004",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_EyeWhite_EyeGloss",
+                "positions": 2143,
+                "indices": 11904,
+                "joints": 2143,
+                "weights": 2143
+              }
+            ]
+          },
+          {
+            "name": "Sphere.005",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_IrisBrown_EyeGloss",
+                "positions": 1223,
+                "indices": 6624,
+                "joints": 1223,
+                "weights": 1223
+              }
+            ]
+          },
+          {
+            "name": "Sphere.006",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_Pupil_EyeGloss",
+                "positions": 859,
+                "indices": 4560,
+                "joints": 859,
+                "weights": 859
+              }
+            ]
+          },
+          {
+            "name": "Sphere.007",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_EyeHighlight",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Torus",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_HoodieNavy",
+                "positions": 2578,
+                "indices": 3456,
+                "joints": 2578,
+                "weights": 2578
+              }
+            ]
+          },
+          {
+            "name": "Torus.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_HoodieNavy",
+                "positions": 2572,
+                "indices": 3456,
+                "joints": 2572,
+                "weights": 2572
+              }
+            ]
+          },
+          {
+            "name": "Torus.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_HoodieNavy",
+                "positions": 2564,
+                "indices": 3456,
+                "joints": 2564,
+                "weights": 2564
+              }
+            ]
+          },
+          {
+            "name": "Torus.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Kid_HoodieNavy",
+                "positions": 2556,
+                "indices": 3456,
+                "joints": 2556,
+                "weights": 2556
+              }
+            ]
+          }
+        ]
+      },
+      "animation": {
+        "officialNames": [
+          "Caught",
+          "EscapeCelebrate",
+          "HideEnter",
+          "HideExit",
+          "HideIdle",
+          "HidePeek",
+          "Idle",
+          "Interact",
+          "Run",
+          "TurnLeft",
+          "TurnRight",
+          "Walk"
+        ],
+        "candidateNames": [
+          "Caught",
+          "EscapeCelebrate",
+          "HideEnter",
+          "HideExit",
+          "HideIdle",
+          "HidePeek",
+          "Idle",
+          "Interact",
+          "Run",
+          "TurnLeft",
+          "TurnRight",
+          "Walk"
+        ],
+        "expectedNames": [
+          "Caught",
+          "EscapeCelebrate",
+          "HideEnter",
+          "HideExit",
+          "HideIdle",
+          "HidePeek",
+          "Idle",
+          "Interact",
+          "Run",
+          "TurnLeft",
+          "TurnRight",
+          "Walk"
+        ],
+        "exactAnimationSetMatch": true,
+        "exactAllFloatPayloadsMatch": true,
+        "clips": {
+          "Caught": {
+            "officialDuration": 1,
+            "candidateDuration": 1,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 4.465161542299959,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "EscapeCelebrate": {
+            "officialDuration": 1.2333333492279053,
+            "candidateDuration": 1.2333333492279053,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 8.237002332643486,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "HideEnter": {
+            "officialDuration": 1.2999999523162842,
+            "candidateDuration": 1.2999999523162842,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 13.220170296992515,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "HideExit": {
+            "officialDuration": 1.0333333015441895,
+            "candidateDuration": 1.0333333015441895,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 16.452933411046427,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "HideIdle": {
+            "officialDuration": 1.6666666269302368,
+            "candidateDuration": 1.6666666269302368,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 0.3403659261384746,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "HidePeek": {
+            "officialDuration": 1.600000023841858,
+            "candidateDuration": 1.600000023841858,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 1.2465042236159043,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Idle": {
+            "officialDuration": 2.5,
+            "candidateDuration": 2.5,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 0.9409050032270869,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Interact": {
+            "officialDuration": 2,
+            "candidateDuration": 2,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 4.246373819542757,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Run": {
+            "officialDuration": 0.6666666865348816,
+            "candidateDuration": 0.6666666865348816,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 15.754697924011895,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "TurnLeft": {
+            "officialDuration": 0.6000000238418579,
+            "candidateDuration": 0.6000000238418579,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 3.9834136982891266,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "TurnRight": {
+            "officialDuration": 0.6000000238418579,
+            "candidateDuration": 0.6000000238418579,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 3.619337865525117,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Walk": {
+            "officialDuration": 1.3333333730697632,
+            "candidateDuration": 1.3333333730697632,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 16.800191292374755,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          }
+        },
+        "passedProductionAnimationContract": true,
+        "contractFailures": [],
+        "strictDifferences": []
+      },
+      "pbr": {
+        "materials": {
+          "M_Kid_PrecisionRemodel_v21_URP": {
+            "found": true,
+            "slots": {
+              "baseColor": {
+                "textureIndex": 2,
+                "imageIndex": 2,
+                "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 1103463,
+                "sha256": "0ac2b4c10404c7ea68c9647e36acd4d91bd6d9ff293285dfbe018801d0b9d732",
+                "width": 2048,
+                "height": 2048,
+                "format": "png"
+              },
+              "normal": {
+                "textureIndex": 0,
+                "imageIndex": 0,
+                "name": "Char_Kid_PrecisionRemodel_v21_Normal_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 733906,
+                "sha256": "6434b8c7c14cd8342acdd36b6ab531883a41124be9863d5f901759be7b3e4109",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "occlusion": {
+                "textureIndex": 1,
+                "imageIndex": 1,
+                "name": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 717208,
+                "sha256": "33aedcb0b9ea8ae59768477dabbedf6f821a17b2b29dc1f4ea2d8a68711a850e",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "metallicRoughness": {
+                "textureIndex": 1,
+                "imageIndex": 1,
+                "name": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 717208,
+                "sha256": "33aedcb0b9ea8ae59768477dabbedf6f821a17b2b29dc1f4ea2d8a68711a850e",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              }
+            }
+          }
+        },
+        "failures": []
+      },
+      "khronosValidator": {
+        "official": {
+          "command": "npx --yes @gltf-transform/cli@4.4.1 validate /private/tmp/chasing-web-production/public/models/characters/kid.glb --format csv --limit 100000",
+          "exitCode": 0,
+          "signal": null,
+          "invocationError": null,
+          "errors": 0,
+          "warnings": 36,
+          "information": 31,
+          "hints": 0,
+          "issues": [
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/2/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/6/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/7/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/8/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/9/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/10/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/11/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/12/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/13/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/14/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/15/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/16/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/17/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/18/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/19/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/20/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/21/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/22/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/23/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/24/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/25/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/26/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/27/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/28/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/29/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/30/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/31/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/32/primitives/0/material"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/33/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/34/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/21"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/22"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/23"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/24"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/25"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/26"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/27"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/28"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/29"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/30"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/31"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/32"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/33"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/34"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/35"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/36"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/37"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/38"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/39"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/40"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/41"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/42"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/43"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/44"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/45"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/46"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/47"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/48"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/49"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/50"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/51"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/52"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/53"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/54"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/55"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/0"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/1"
+            }
+          ],
+          "stderr": ""
+        },
+        "candidate": {
+          "command": "npx --yes @gltf-transform/cli@4.4.1 validate /tmp/chasing-character-pbr/kid.glb --format csv --limit 100000",
+          "exitCode": 0,
+          "signal": null,
+          "invocationError": null,
+          "errors": 0,
+          "warnings": 36,
+          "information": 31,
+          "hints": 0,
+          "issues": [
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/2/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/6/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/7/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/8/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/9/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/10/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/11/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/12/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/13/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/14/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/15/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/16/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/17/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/18/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/19/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/20/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/21/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/22/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/23/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/24/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/25/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/26/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/27/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/28/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/29/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/30/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/31/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/32/primitives/0/material"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/33/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/34/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/21"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/22"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/23"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/24"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/25"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/26"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/27"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/28"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/29"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/30"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/31"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/32"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/33"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/34"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/35"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/36"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/37"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/38"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/39"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/40"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/41"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/42"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/43"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/44"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/45"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/46"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/47"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/48"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/49"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/50"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/51"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/52"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/53"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/54"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/55"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/0"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/1"
+            }
+          ],
+          "stderr": ""
+        }
+      },
+      "passedProductionContract": true,
+      "passedStrictRoundTripIdentity": true,
+      "contractFailures": [],
+      "strictDifferences": []
+    },
+    "villain": {
+      "role": "villain",
+      "official": {
+        "path": "/private/tmp/chasing-web-production/public/models/characters/villain.glb",
+        "bytes": 10748024,
+        "sha256": "cee4c14fbf0a5d4d9598b611eddd8998a6f42a44261bd7fd2bb03b8790a67392",
+        "glbIssues": []
+      },
+      "candidate": {
+        "path": "/tmp/chasing-character-pbr/villain.glb",
+        "bytes": 10748024,
+        "mebibytes": 10.2501,
+        "sha256": "cee4c14fbf0a5d4d9598b611eddd8998a6f42a44261bd7fd2bb03b8790a67392",
+        "below12MiB": true,
+        "glbVersion": 2,
+        "chunks": [
+          "0x4e4f534a",
+          "0x004e4942"
+        ],
+        "embeddedOnly": true,
+        "glbStructuralIssues": []
+      },
+      "skin": {
+        "exactSignatureMatch": true,
+        "official": [
+          {
+            "name": "Rig_Humanoid_Shared",
+            "skeleton": null,
+            "joints": [
+              "Hips",
+              "Spine",
+              "Chest",
+              "Neck",
+              "Head",
+              "LeftShoulder",
+              "LeftUpperArm",
+              "LeftLowerArm",
+              "LeftHand",
+              "RightShoulder",
+              "RightUpperArm",
+              "RightLowerArm",
+              "RightHand",
+              "LeftUpperLeg",
+              "LeftLowerLeg",
+              "LeftFoot",
+              "LeftToes",
+              "RightUpperLeg",
+              "RightLowerLeg",
+              "RightFoot",
+              "RightToes"
+            ]
+          }
+        ],
+        "candidate": [
+          {
+            "name": "Rig_Humanoid_Shared",
+            "skeleton": null,
+            "joints": [
+              "Hips",
+              "Spine",
+              "Chest",
+              "Neck",
+              "Head",
+              "LeftShoulder",
+              "LeftUpperArm",
+              "LeftLowerArm",
+              "LeftHand",
+              "RightShoulder",
+              "RightUpperArm",
+              "RightLowerArm",
+              "RightHand",
+              "LeftUpperLeg",
+              "LeftLowerLeg",
+              "LeftFoot",
+              "LeftToes",
+              "RightUpperLeg",
+              "RightLowerLeg",
+              "RightFoot",
+              "RightToes"
+            ]
+          }
+        ]
+      },
+      "geometry": {
+        "exactStructureMatch": true,
+        "exactSurfaceTopologyMatch": true,
+        "official": [
+          {
+            "name": "base.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Skin",
+                "positions": 4539,
+                "indices": 25920,
+                "joints": 4539,
+                "weights": 4539
+              }
+            ]
+          },
+          {
+            "name": "geometry_0",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_PrecisionRemodel_v21_URP",
+                "positions": 79684,
+                "indices": 403092,
+                "joints": 79684,
+                "weights": 79684
+              }
+            ]
+          },
+          {
+            "name": "Sphere",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_EyeWhite_EyeGloss",
+                "positions": 1651,
+                "indices": 9072,
+                "joints": 1651,
+                "weights": 1651
+              }
+            ]
+          },
+          {
+            "name": "Sphere.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Iris_EyeGloss",
+                "positions": 1033,
+                "indices": 5544,
+                "joints": 1033,
+                "weights": 1033
+              }
+            ]
+          },
+          {
+            "name": "Sphere.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Pupil_EyeGloss",
+                "positions": 701,
+                "indices": 3672,
+                "joints": 701,
+                "weights": 701
+              }
+            ]
+          },
+          {
+            "name": "Sphere.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_EyeWhite_EyeGloss",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Sphere.004",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_EyeWhite_EyeGloss",
+                "positions": 1651,
+                "indices": 9072,
+                "joints": 1651,
+                "weights": 1651
+              }
+            ]
+          },
+          {
+            "name": "Sphere.005",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Iris_EyeGloss",
+                "positions": 1033,
+                "indices": 5544,
+                "joints": 1033,
+                "weights": 1033
+              }
+            ]
+          },
+          {
+            "name": "Sphere.006",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Pupil_EyeGloss",
+                "positions": 701,
+                "indices": 3672,
+                "joints": 701,
+                "weights": 701
+              }
+            ]
+          },
+          {
+            "name": "Sphere.007",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_EyeWhite_EyeGloss",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Villain_v21_Brow_-1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_FaceLine",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Villain_v21_Brow_+1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_FaceLine",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          }
+        ],
+        "candidate": [
+          {
+            "name": "base.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Skin",
+                "positions": 4539,
+                "indices": 25920,
+                "joints": 4539,
+                "weights": 4539
+              }
+            ]
+          },
+          {
+            "name": "geometry_0",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_PrecisionRemodel_v21_URP",
+                "positions": 79684,
+                "indices": 403092,
+                "joints": 79684,
+                "weights": 79684
+              }
+            ]
+          },
+          {
+            "name": "Sphere",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_EyeWhite_EyeGloss",
+                "positions": 1651,
+                "indices": 9072,
+                "joints": 1651,
+                "weights": 1651
+              }
+            ]
+          },
+          {
+            "name": "Sphere.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Iris_EyeGloss",
+                "positions": 1033,
+                "indices": 5544,
+                "joints": 1033,
+                "weights": 1033
+              }
+            ]
+          },
+          {
+            "name": "Sphere.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Pupil_EyeGloss",
+                "positions": 701,
+                "indices": 3672,
+                "joints": 701,
+                "weights": 701
+              }
+            ]
+          },
+          {
+            "name": "Sphere.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_EyeWhite_EyeGloss",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Sphere.004",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_EyeWhite_EyeGloss",
+                "positions": 1651,
+                "indices": 9072,
+                "joints": 1651,
+                "weights": 1651
+              }
+            ]
+          },
+          {
+            "name": "Sphere.005",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Iris_EyeGloss",
+                "positions": 1033,
+                "indices": 5544,
+                "joints": 1033,
+                "weights": 1033
+              }
+            ]
+          },
+          {
+            "name": "Sphere.006",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_Pupil_EyeGloss",
+                "positions": 701,
+                "indices": 3672,
+                "joints": 701,
+                "weights": 701
+              }
+            ]
+          },
+          {
+            "name": "Sphere.007",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_EyeWhite_EyeGloss",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Villain_v21_Brow_-1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_FaceLine",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Villain_v21_Brow_+1_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Villain_FaceLine",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          }
+        ]
+      },
+      "animation": {
+        "officialNames": [
+          "Alert",
+          "Catch",
+          "CheckHide",
+          "Idle",
+          "LostSight",
+          "PatrolWalk",
+          "Run",
+          "Search"
+        ],
+        "candidateNames": [
+          "Alert",
+          "Catch",
+          "CheckHide",
+          "Idle",
+          "LostSight",
+          "PatrolWalk",
+          "Run",
+          "Search"
+        ],
+        "expectedNames": [
+          "Alert",
+          "Catch",
+          "CheckHide",
+          "Idle",
+          "LostSight",
+          "PatrolWalk",
+          "Run",
+          "Search"
+        ],
+        "exactAnimationSetMatch": true,
+        "exactAllFloatPayloadsMatch": true,
+        "clips": {
+          "Alert": {
+            "officialDuration": 0.6000000238418579,
+            "candidateDuration": 0.6000000238418579,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 1.5997485245461576,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Catch": {
+            "officialDuration": 1.2000000476837158,
+            "candidateDuration": 1.2000000476837158,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 9.549552195007946,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "CheckHide": {
+            "officialDuration": 2.2666666507720947,
+            "candidateDuration": 2.2666666507720947,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 4.243098300354063,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Idle": {
+            "officialDuration": 2.5,
+            "candidateDuration": 2.5,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 0.9409042677432318,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "LostSight": {
+            "officialDuration": 1.7666666507720947,
+            "candidateDuration": 1.7666666507720947,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 0.9779449827412208,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "PatrolWalk": {
+            "officialDuration": 1.4666666984558105,
+            "candidateDuration": 1.4666666984558105,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 15.196740862083644,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Run": {
+            "officialDuration": 0.8666666746139526,
+            "candidateDuration": 0.8666666746139526,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 15.968702621211328,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Search": {
+            "officialDuration": 1.4333332777023315,
+            "candidateDuration": 1.4333332777023315,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 0.9774535576307883,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          }
+        },
+        "passedProductionAnimationContract": true,
+        "contractFailures": [],
+        "strictDifferences": []
+      },
+      "pbr": {
+        "materials": {
+          "M_Villain_PrecisionRemodel_v21_URP": {
+            "found": true,
+            "slots": {
+              "baseColor": {
+                "textureIndex": 2,
+                "imageIndex": 2,
+                "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 712561,
+                "sha256": "1c708f5d1a75e86c87d092ed26cf23cca32a84fb8012e3d73ef0decb22b43a5a",
+                "width": 2048,
+                "height": 2048,
+                "format": "png"
+              },
+              "normal": {
+                "textureIndex": 0,
+                "imageIndex": 0,
+                "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 735234,
+                "sha256": "0fe361dbcf537515f681419dec7cab3a13173c461a06bc2e2386c7706446c8b4",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "occlusion": {
+                "textureIndex": 1,
+                "imageIndex": 1,
+                "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 716987,
+                "sha256": "7536d1e1407974421ac9db7a4417d8dd8e47e48f4e32e0ff9d5ae45a61043eba",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "metallicRoughness": {
+                "textureIndex": 1,
+                "imageIndex": 1,
+                "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 716987,
+                "sha256": "7536d1e1407974421ac9db7a4417d8dd8e47e48f4e32e0ff9d5ae45a61043eba",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              }
+            }
+          }
+        },
+        "failures": []
+      },
+      "khronosValidator": {
+        "official": {
+          "command": "npx --yes @gltf-transform/cli@4.4.1 validate /private/tmp/chasing-web-production/public/models/characters/villain.glb --format csv --limit 100000",
+          "exitCode": 0,
+          "signal": null,
+          "invocationError": null,
+          "errors": 0,
+          "warnings": 13,
+          "information": 13,
+          "hints": 0,
+          "issues": [
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/0/primitives/0/material"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/1/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/2/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/3/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/4/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/5/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/6/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/7/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/8/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/9/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/10/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/11/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/21"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/22"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/23"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/24"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/25"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/26"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/27"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/28"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/29"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/30"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/31"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/32"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/0"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/1"
+            }
+          ],
+          "stderr": ""
+        },
+        "candidate": {
+          "command": "npx --yes @gltf-transform/cli@4.4.1 validate /tmp/chasing-character-pbr/villain.glb --format csv --limit 100000",
+          "exitCode": 0,
+          "signal": null,
+          "invocationError": null,
+          "errors": 0,
+          "warnings": 13,
+          "information": 13,
+          "hints": 0,
+          "issues": [
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/0/primitives/0/material"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/1/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/2/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/3/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/4/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/5/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/6/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/7/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/8/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/9/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/10/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/11/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/21"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/22"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/23"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/24"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/25"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/26"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/27"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/28"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/29"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/30"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/31"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/32"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/0"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/1"
+            }
+          ],
+          "stderr": ""
+        }
+      },
+      "passedProductionContract": true,
+      "passedStrictRoundTripIdentity": true,
+      "contractFailures": [],
+      "strictDifferences": []
+    },
+    "police": {
+      "role": "police",
+      "official": {
+        "path": "/private/tmp/chasing-web-production/public/models/characters/police.glb",
+        "bytes": 9791372,
+        "sha256": "b088e02b7eb4dadf0a1707a92bf2cf605b0a796b4951f1ac3c25289b4ef50dc3",
+        "glbIssues": []
+      },
+      "candidate": {
+        "path": "/tmp/chasing-character-pbr/police.glb",
+        "bytes": 9791372,
+        "mebibytes": 9.3378,
+        "sha256": "b088e02b7eb4dadf0a1707a92bf2cf605b0a796b4951f1ac3c25289b4ef50dc3",
+        "below12MiB": true,
+        "glbVersion": 2,
+        "chunks": [
+          "0x4e4f534a",
+          "0x004e4942"
+        ],
+        "embeddedOnly": true,
+        "glbStructuralIssues": []
+      },
+      "skin": {
+        "exactSignatureMatch": true,
+        "official": [
+          {
+            "name": "Rig_Humanoid_Shared",
+            "skeleton": null,
+            "joints": [
+              "Hips",
+              "Spine",
+              "Chest",
+              "RightShoulder",
+              "RightUpperArm",
+              "RightLowerArm",
+              "RightHand",
+              "LeftShoulder",
+              "LeftUpperArm",
+              "LeftLowerArm",
+              "LeftHand",
+              "Neck",
+              "Head",
+              "RightUpperLeg",
+              "RightLowerLeg",
+              "RightFoot",
+              "RightToes",
+              "LeftUpperLeg",
+              "LeftLowerLeg",
+              "LeftFoot",
+              "LeftToes"
+            ]
+          }
+        ],
+        "candidate": [
+          {
+            "name": "Rig_Humanoid_Shared",
+            "skeleton": null,
+            "joints": [
+              "Hips",
+              "Spine",
+              "Chest",
+              "RightShoulder",
+              "RightUpperArm",
+              "RightLowerArm",
+              "RightHand",
+              "LeftShoulder",
+              "LeftUpperArm",
+              "LeftLowerArm",
+              "LeftHand",
+              "Neck",
+              "Head",
+              "RightUpperLeg",
+              "RightLowerLeg",
+              "RightFoot",
+              "RightToes",
+              "LeftUpperLeg",
+              "LeftLowerLeg",
+              "LeftFoot",
+              "LeftToes"
+            ]
+          }
+        ]
+      },
+      "geometry": {
+        "exactStructureMatch": true,
+        "exactSurfaceTopologyMatch": true,
+        "official": [
+          {
+            "name": "base.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_SkinUV",
+                "positions": 8660,
+                "indices": 47448,
+                "joints": 8660,
+                "weights": 8660
+              }
+            ]
+          },
+          {
+            "name": "Cube",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.004",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.005",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.006",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.007",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.008",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.009",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.010",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "eyebrow001.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrowsUV",
+                "positions": 124,
+                "indices": 576,
+                "joints": 124,
+                "weights": 124
+              }
+            ]
+          },
+          {
+            "name": "eyelashes01.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_LashesUV",
+                "positions": 66,
+                "indices": 252,
+                "joints": 66,
+                "weights": 66
+              }
+            ]
+          },
+          {
+            "name": "high-poly",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_HighPolyEyeUV",
+                "positions": 1076,
+                "indices": 6120,
+                "joints": 1076,
+                "weights": 1076
+              }
+            ]
+          },
+          {
+            "name": "male_casualsuit03.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 1696,
+                "indices": 8136,
+                "joints": 1696,
+                "weights": 1696
+              },
+              {
+                "mode": 4,
+                "material": "M_Police_v22_TrouserNavy",
+                "positions": 1259,
+                "indices": 6264,
+                "joints": 1259,
+                "weights": 1259
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_CapBadge_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ChestBadge_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_DutyBeltWrap_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 576,
+                "indices": 3456,
+                "joints": 576,
+                "weights": 576
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_RadioCord_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ServiceCapBrim_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 20,
+                "indices": 108,
+                "joints": 20,
+                "weights": 20
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ServiceCapCrown_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_ServiceCap",
+                "positions": 1050,
+                "indices": 4986,
+                "joints": 1050,
+                "weights": 1050
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ServiceCapHeadband_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 512,
+                "indices": 3072,
+                "joints": 512,
+                "weights": 512
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ShirtPlacket_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_SleevePatch_-1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_PatchBlue",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_SleevePatch_+1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_PatchBlue",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_SleevePatchInset_-1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_SleevePatchInset_+1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "shoes02.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_PolishedLeather",
+                "positions": 1738,
+                "indices": 9192,
+                "joints": 1738,
+                "weights": 1738
+              }
+            ]
+          },
+          {
+            "name": "short01.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_HairUV",
+                "positions": 3050,
+                "indices": 11034,
+                "joints": 3050,
+                "weights": 3050
+              }
+            ]
+          },
+          {
+            "name": "Sphere",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Sphere.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Sphere.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.004",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.005",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.006",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.007",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          }
+        ],
+        "candidate": [
+          {
+            "name": "base.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_SkinUV",
+                "positions": 8660,
+                "indices": 47448,
+                "joints": 8660,
+                "weights": 8660
+              }
+            ]
+          },
+          {
+            "name": "Cube",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.004",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.005",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.006",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.007",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.008",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.009",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "Cube.010",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 14,
+                "indices": 36,
+                "joints": 14,
+                "weights": 14
+              }
+            ]
+          },
+          {
+            "name": "eyebrow001.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrowsUV",
+                "positions": 124,
+                "indices": 576,
+                "joints": 124,
+                "weights": 124
+              }
+            ]
+          },
+          {
+            "name": "eyelashes01.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_LashesUV",
+                "positions": 66,
+                "indices": 252,
+                "joints": 66,
+                "weights": 66
+              }
+            ]
+          },
+          {
+            "name": "high-poly",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_HighPolyEyeUV",
+                "positions": 1076,
+                "indices": 6120,
+                "joints": 1076,
+                "weights": 1076
+              }
+            ]
+          },
+          {
+            "name": "male_casualsuit03.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_UniformNavy",
+                "positions": 1696,
+                "indices": 8136,
+                "joints": 1696,
+                "weights": 1696
+              },
+              {
+                "mode": 4,
+                "material": "M_Police_v22_TrouserNavy",
+                "positions": 1259,
+                "indices": 6264,
+                "joints": 1259,
+                "weights": 1259
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_CapBadge_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ChestBadge_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_DutyBeltWrap_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 576,
+                "indices": 3456,
+                "joints": 576,
+                "weights": 576
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_RadioCord_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_DutyLeather",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ServiceCapBrim_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 20,
+                "indices": 108,
+                "joints": 20,
+                "weights": 20
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ServiceCapCrown_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_ServiceCap",
+                "positions": 1050,
+                "indices": 4986,
+                "joints": 1050,
+                "weights": 1050
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ServiceCapHeadband_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 512,
+                "indices": 3072,
+                "joints": 512,
+                "weights": 512
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_ShirtPlacket_Curve",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_CapBand",
+                "positions": 255,
+                "indices": 1344,
+                "joints": 255,
+                "weights": 255
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_SleevePatch_-1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_PatchBlue",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_SleevePatch_+1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_PatchBlue",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_SleevePatchInset_-1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "Police_v22_SleevePatchInset_+1_Mesh",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 12,
+                "indices": 60,
+                "joints": 12,
+                "weights": 12
+              }
+            ]
+          },
+          {
+            "name": "shoes02.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_PolishedLeather",
+                "positions": 1738,
+                "indices": 9192,
+                "joints": 1738,
+                "weights": 1738
+              }
+            ]
+          },
+          {
+            "name": "short01.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_HairUV",
+                "positions": 3050,
+                "indices": 11034,
+                "joints": 3050,
+                "weights": 3050
+              }
+            ]
+          },
+          {
+            "name": "Sphere",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Sphere.001",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_InsigniaGold",
+                "positions": 323,
+                "indices": 1584,
+                "joints": 323,
+                "weights": 323
+              }
+            ]
+          },
+          {
+            "name": "Sphere.002",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.003",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.004",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.005",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.006",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          },
+          {
+            "name": "Sphere.007",
+            "primitives": [
+              {
+                "mode": 4,
+                "material": "M_Police_v22_BrushedSilver",
+                "positions": 433,
+                "indices": 2184,
+                "joints": 433,
+                "weights": 433
+              }
+            ]
+          }
+        ]
+      },
+      "animation": {
+        "officialNames": [
+          "Alert",
+          "Idle",
+          "Interact",
+          "Resolve",
+          "Run"
+        ],
+        "candidateNames": [
+          "Alert",
+          "Idle",
+          "Interact",
+          "Resolve",
+          "Run"
+        ],
+        "expectedNames": [
+          "Alert",
+          "Idle",
+          "Interact",
+          "Resolve",
+          "Run"
+        ],
+        "exactAnimationSetMatch": true,
+        "exactAllFloatPayloadsMatch": true,
+        "clips": {
+          "Alert": {
+            "officialDuration": 1.399999976158142,
+            "candidateDuration": 1.399999976158142,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 0.9779370798189628,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Idle": {
+            "officialDuration": 2.5,
+            "candidateDuration": 2.5,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 0.9409067762705803,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Interact": {
+            "officialDuration": 2,
+            "candidateDuration": 2,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 4.246376562031996,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Resolve": {
+            "officialDuration": 1.2333333492279053,
+            "candidateDuration": 1.2333333492279053,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 9.5447083635555,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          },
+          "Run": {
+            "officialDuration": 0.9333333373069763,
+            "candidateDuration": 0.9333333373069763,
+            "durationExact": true,
+            "officialChannels": 63,
+            "candidateChannels": 63,
+            "rotationTargets": 21,
+            "totalRotationRange": 16.236070398017016,
+            "structureMatch": true,
+            "exactSemanticMatch": true,
+            "maximumInputDelta": 0,
+            "maximumOutputDelta": 0,
+            "differingInputValues": 0,
+            "differingOutputValues": 0,
+            "differingChannels": []
+          }
+        },
+        "passedProductionAnimationContract": true,
+        "contractFailures": [],
+        "strictDifferences": []
+      },
+      "pbr": {
+        "materials": {
+          "M_Police_v22_SkinUV": {
+            "found": true,
+            "slots": {
+              "baseColor": {
+                "textureIndex": 2,
+                "imageIndex": 2,
+                "name": "young_lightskinned_male_diffuse2",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 3595270,
+                "sha256": "03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874",
+                "width": 2048,
+                "height": 2048,
+                "format": "png"
+              },
+              "normal": {
+                "textureIndex": 0,
+                "imageIndex": 0,
+                "name": "Police_v22_Skin_MicroNormal_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 1076882,
+                "sha256": "fbbe80605782b6adba32305bfaca133e5d3f971dcb5ee77e28f0b8999890b1ac",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "occlusion": {
+                "textureIndex": 1,
+                "imageIndex": 1,
+                "name": "Police_v22_Skin_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 697822,
+                "sha256": "474b539c0dc8844621dfa42284cdbb84f5efdc635659a808df152a115d97116b",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "metallicRoughness": {
+                "textureIndex": 1,
+                "imageIndex": 1,
+                "name": "Police_v22_Skin_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 697822,
+                "sha256": "474b539c0dc8844621dfa42284cdbb84f5efdc635659a808df152a115d97116b",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              }
+            }
+          },
+          "M_Police_v22_UniformNavy": {
+            "found": true,
+            "slots": {
+              "baseColor": {
+                "textureIndex": 5,
+                "imageIndex": 5,
+                "name": "Police_v22_Uniform_BaseColor_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 399299,
+                "sha256": "7eab670e32f26c80fcc297f9510920b8801a824db1c4f5e55f1e34dc6eca8337",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "normal": {
+                "textureIndex": 3,
+                "imageIndex": 3,
+                "name": "Police_v22_CasualSuit_Normal_1K",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 1170852,
+                "sha256": "bf47739ee7c7deeeb2d67cddea2950da3ae232e43321856eacb336a19435033a",
+                "width": 1024,
+                "height": 1024,
+                "format": "png"
+              },
+              "occlusion": {
+                "textureIndex": 4,
+                "imageIndex": 4,
+                "name": "Police_v22_Uniform_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 695705,
+                "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "metallicRoughness": {
+                "textureIndex": 4,
+                "imageIndex": 4,
+                "name": "Police_v22_Uniform_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 695705,
+                "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              }
+            }
+          },
+          "M_Police_v22_TrouserNavy": {
+            "found": true,
+            "slots": {
+              "baseColor": {
+                "textureIndex": 8,
+                "imageIndex": 6,
+                "name": "Police_v22_Trouser_BaseColor_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 387483,
+                "sha256": "301e7dc6cc718c338aedb61db056603e5459a1cae0d71e000178c623a0a8cb28",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "normal": {
+                "textureIndex": 6,
+                "imageIndex": 3,
+                "name": "Police_v22_CasualSuit_Normal_1K",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 1170852,
+                "sha256": "bf47739ee7c7deeeb2d67cddea2950da3ae232e43321856eacb336a19435033a",
+                "width": 1024,
+                "height": 1024,
+                "format": "png"
+              },
+              "occlusion": {
+                "textureIndex": 7,
+                "imageIndex": 4,
+                "name": "Police_v22_Uniform_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 695705,
+                "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              },
+              "metallicRoughness": {
+                "textureIndex": 7,
+                "imageIndex": 4,
+                "name": "Police_v22_Uniform_ORM_768",
+                "mimeType": "image/png",
+                "embedded": true,
+                "bytes": 695705,
+                "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b",
+                "width": 768,
+                "height": 768,
+                "format": "png"
+              }
+            }
+          }
+        },
+        "failures": []
+      },
+      "khronosValidator": {
+        "official": {
+          "command": "npx --yes @gltf-transform/cli@4.4.1 validate /private/tmp/chasing-web-production/public/models/characters/police.glb --format csv --limit 100000",
+          "exitCode": 0,
+          "signal": null,
+          "invocationError": null,
+          "errors": 0,
+          "warnings": 45,
+          "information": 27,
+          "hints": 0,
+          "issues": [
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/0/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/1/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/2/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/3/primitives/0/material"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/6/primitives/0/material"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/7/primitives/0/material"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/8/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/9/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/11/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/12/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/13/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/14/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/15/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/16/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/17/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/18/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/22/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/23/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/24/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/25/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/26/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/27/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/28/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/29/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/30/primitives/0/material"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/31/primitives/0/material"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/32/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/37/primitives/0/material"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/37/primitives/1/material"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/21"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/22"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/23"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/24"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/25"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/26"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/27"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/28"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/29"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/30"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/31"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/32"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/33"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/34"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/35"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/36"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/37"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/38"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/39"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/40"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/41"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/42"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/43"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/44"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/45"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/46"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/47"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/48"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/49"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/50"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/51"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/52"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/53"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/54"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/55"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/56"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/57"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/58"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/0"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/1"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/4"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/5"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/6"
+            }
+          ],
+          "stderr": ""
+        },
+        "candidate": {
+          "command": "npx --yes @gltf-transform/cli@4.4.1 validate /tmp/chasing-character-pbr/police.glb --format csv --limit 100000",
+          "exitCode": 0,
+          "signal": null,
+          "invocationError": null,
+          "errors": 0,
+          "warnings": 45,
+          "information": 27,
+          "hints": 0,
+          "issues": [
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/0/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/1/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/2/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/3/primitives/0/material"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/6/primitives/0/material"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/7/primitives/0/material"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/8/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/9/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/11/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/12/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/13/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/14/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/15/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/16/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/17/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/18/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/22/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/23/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/24/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/25/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/26/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/27/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/28/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/29/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/30/primitives/0/material"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/31/primitives/0/material"
+            },
+            {
+              "code": "UNUSED_OBJECT",
+              "message": "This object may be unused.",
+              "severity": 2,
+              "pointer": "/meshes/32/primitives/0/attributes/TEXCOORD_0"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/37/primitives/0/material"
+            },
+            {
+              "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+              "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+              "severity": 1,
+              "pointer": "/meshes/37/primitives/1/material"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/21"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/22"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/23"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/24"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/25"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/26"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/27"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/28"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/29"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/30"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/31"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/32"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/33"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/34"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/35"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/36"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/37"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/38"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/39"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/40"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/41"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/42"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/43"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/44"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/45"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/46"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/47"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/48"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/49"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/50"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/51"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/52"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/53"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/54"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/55"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/56"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/57"
+            },
+            {
+              "code": "NODE_SKINNED_MESH_NON_ROOT",
+              "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+              "severity": 1,
+              "pointer": "/nodes/58"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/0"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/1"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/4"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/5"
+            },
+            {
+              "code": "IMAGE_NPOT_DIMENSIONS",
+              "message": "Image has non-power-of-two dimensions: 768x768.",
+              "severity": 2,
+              "pointer": "/images/6"
+            }
+          ],
+          "stderr": ""
+        }
+      },
+      "passedProductionContract": true,
+      "passedStrictRoundTripIdentity": true,
+      "contractFailures": [],
+      "strictDifferences": []
+    }
+  },
+  "passedProductionContract": true,
+  "passedStrictRoundTripIdentity": true
+}

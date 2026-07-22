@@ -1,0 +1,96 @@
+{
+  "role": "villain",
+  "output": "public/models/characters/villain.glb",
+  "outputBytes": 9421672,
+  "rig": "Rig_Humanoid_Shared",
+  "bones": 21,
+  "meshes": 12,
+  "clips": [
+    {
+      "name": "Idle",
+      "frames": [
+        0.0,
+        75.0
+      ],
+      "durationSeconds": 2.5,
+      "source": "Quaternius UAL Standard/Idle_Loop",
+      "loop": true
+    },
+    {
+      "name": "PatrolWalk",
+      "frames": [
+        0.0,
+        44.0
+      ],
+      "durationSeconds": 1.4815,
+      "source": "Quaternius UAL Standard/Walk_Formal_Loop",
+      "loop": true
+    },
+    {
+      "name": "Run",
+      "frames": [
+        0.0,
+        26.0
+      ],
+      "durationSeconds": 0.8642,
+      "source": "Quaternius UAL Standard/Jog_Fwd_Loop",
+      "loop": true
+    },
+    {
+      "name": "Alert",
+      "frames": [
+        0.0,
+        18.0
+      ],
+      "durationSeconds": 0.6019,
+      "source": "Quaternius UAL Standard/Hit_Head",
+      "loop": false
+    },
+    {
+      "name": "LostSight",
+      "frames": [
+        0.0,
+        53.0
+      ],
+      "durationSeconds": 1.7593,
+      "source": "Quaternius UAL Standard/Idle_Torch_Loop",
+      "loop": true
+    },
+    {
+      "name": "Search",
+      "frames": [
+        0.0,
+        43.0
+      ],
+      "durationSeconds": 1.4394,
+      "source": "Quaternius UAL Standard/Idle_Torch_Loop",
+      "loop": true
+    },
+    {
+      "name": "CheckHide",
+      "frames": [
+        0.0,
+        68.0
+      ],
+      "durationSeconds": 2.2727,
+      "source": "Quaternius UAL Standard/Interact",
+      "loop": false
+    },
+    {
+      "name": "Catch",
+      "frames": [
+        0.0,
+        36.0
+      ],
+      "durationSeconds": 1.2037,
+      "source": "Quaternius UAL Standard/Punch_Enter",
+      "loop": false
+    }
+  ],
+  "qualityGates": {
+    "hasRuntimeProceduralPose": false,
+    "fullBodySampleRateFps": 30,
+    "requiredBoneMapComplete": true,
+    "sourceLicense": "CC0-1.0"
+  }
+}
