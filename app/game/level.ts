@@ -19,10 +19,11 @@ export const DEFAULT_GAME_CONFIG: Readonly<GameConfig> = Object.freeze({
   fixedStepSeconds: 1 / 60,
   maxFrameDeltaSeconds: 0.25,
   aiTickSeconds: 0.1,
-  // Grid cells are 2 m in presentation space. These values therefore map to
-  // 4.4 m/s and 3.7 m/s, matching the authored Run clips at 1.0x playback.
-  playerSpeed: 2.2,
-  chaserSpeed: 1.85,
+  // Campaign pace pass: locomotion is intentionally 20% faster than the
+  // original vertical slice. Grid cells are 2 m in presentation space, so
+  // these map to 5.28 m/s and 4.44 m/s and drive 1.2x clip playback.
+  playerSpeed: 2.64,
+  chaserSpeed: 2.22,
   spawnDelaySeconds: 1.5,
   suspiciousSeconds: 0.2,
   lostSightGraceSeconds: 0.35,
@@ -35,16 +36,16 @@ export const DEFAULT_GAME_CONFIG: Readonly<GameConfig> = Object.freeze({
   catchRange: 0.58,
   exitRange: 0.62,
   hideInteractRange: 0.8,
-  hideAlignSpeed: 1.1,
-  // One 90° pivot lasts exactly 0.6 s; the simulation applies the same
+  hideAlignSpeed: 1.32,
+  // One 90° pivot now lasts exactly 0.5 s; the simulation applies the same
   // smootherstep yaw curve as the authored heel/toe Turn clips.
-  hideAlignTurnSpeed: (Math.PI / 2) / 0.6,
-  hideEnterSeconds: 2.27,
-  hideEnterExposureSeconds: 1.78,
-  hideExitSeconds: 1.94,
-  hideExitExposureSeconds: 0.38,
-  peekEnterSeconds: 0.18,
-  peekExitSeconds: 0.18,
+  hideAlignTurnSpeed: (Math.PI / 2) / 0.5,
+  hideEnterSeconds: 2.27 / 1.2,
+  hideEnterExposureSeconds: 1.78 / 1.2,
+  hideExitSeconds: 1.94 / 1.2,
+  hideExitExposureSeconds: 0.38 / 1.2,
+  peekEnterSeconds: 0.18 / 1.2,
+  peekExitSeconds: 0.18 / 1.2,
 });
 
 export function createDefaultLevel(): LevelDefinition {

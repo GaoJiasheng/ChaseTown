@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -12,8 +12,12 @@ import {
   type ClipAliases,
 } from "./game/animation/actor-runtime.ts";
 import { AdaptiveScoreController, prewarmAdaptiveScoreAssets } from "./game/audio/adaptive-score.ts";
-import type { ChaserMode, GamePhase, GameState, PlayerMode, Point } from "./game/contracts.ts";
-import { createDefaultLevel, DEFAULT_GAME_CONFIG } from "./game/level.ts";
+import {
+  CAMPAIGN_LEVELS,
+  getCampaignGameplayConfig,
+  type CampaignTheme,
+} from "./game/campaign.ts";
+import type { ChaserMode, GameConfig, GamePhase, GameState, LevelDefinition, PlayerMode, Point } from "./game/contracts.ts";
 import {
   FIXED_CAMERA_GROUND_DIRECTION,
   screenMoveToWorld,
@@ -37,15 +41,16 @@ type CoreAssetName = keyof typeof CORE_ASSETS;
 type DetailAssetName = keyof typeof DETAIL_ASSETS;
 
 const CELL = 2;
-const LEVEL = createDefaultLevel();
-const FRONT_GATE_POINT: Point = { x: 1, y: 1 };
-const OBJECTIVE_PATHS = new GridPathPlanner(LEVEL);
-const HIDE_ENTER_SECONDS = DEFAULT_GAME_CONFIG.hideEnterSeconds;
-const HIDE_EXIT_SECONDS = DEFAULT_GAME_CONFIG.hideExitSeconds;
-const HIDE_CHECK_SECONDS = DEFAULT_GAME_CONFIG.checkHideSeconds;
+// ImageBitmap entries cannot safely outlive a disposed WebGL scene across
+// campaign switches. Keep Three's global object cache disabled; the browser's
+// HTTP cache still prevents retransfers and the scene pass below shares GPU
+// texture references without retaining closed bitmap objects.
+THREE.Cache.enabled = false;
+THREE.Cache.clear();
 const PLAYER_OBSERVATION_RANGE = 9;
 const CAPTURE_STAGING_SECONDS = 0.26;
 const MAX_CAMERA_DISTANCE = 44;
+const LOCKER_PLAYBACK_RATE = 1.2;
 
 const ACTOR_SPECS = {
   kid: {
@@ -128,6 +133,56 @@ const DETAIL_ASSETS = {
   station: "/models/environment/station.glb",
 } as const;
 
+const THEME_KIT_ASSETS: Readonly<Record<CampaignTheme, string>> = {
+  campus: "/models/environment/themes/campus-kit.glb",
+  hospital: "/models/environment/themes/hospital-kit.glb",
+  "fire-station": "/models/environment/themes/fire-station-kit.glb",
+  factory: "/models/environment/themes/factory-kit.glb",
+};
+
+type ThemePropSpec = { node: string; height: number };
+
+const THEME_PROP_SPECS: Readonly<Record<CampaignTheme, readonly ThemePropSpec[]>> = {
+  campus: [
+    { node: "CampusTrophyCase", height: 1.9 },
+    { node: "CampusVendingMachine", height: 1.95 },
+    { node: "CampusWaterFountain", height: 1.18 },
+    { node: "CampusBikeRack", height: 0.95 },
+    { node: "CampusWayfinding", height: 2.25 },
+  ],
+  hospital: [
+    { node: "HospitalBed", height: 1.15 },
+    { node: "HospitalCrashCart", height: 1.65 },
+    { node: "HospitalIVStation", height: 2.05 },
+    { node: "HospitalWheelchair", height: 1.45 },
+    { node: "HospitalPrivacyScreen", height: 1.9 },
+    { node: "HospitalWayfinding", height: 2.25 },
+  ],
+  "fire-station": [
+    { node: "FireEngine", height: 2.3 },
+    { node: "FireGearRack", height: 2.15 },
+    { node: "FireHoseReel", height: 1.8 },
+    { node: "FireHydrant", height: 1.3 },
+    { node: "FireStationWayfinding", height: 2.35 },
+    { node: "FireSafetyCones", height: 0.82 },
+  ],
+  factory: [
+    { node: "FactoryPipeAssembly", height: 2.25 },
+    { node: "FactoryStorageTank", height: 2.55 },
+    { node: "FactoryControlConsole", height: 1.55 },
+    { node: "FactoryConveyor", height: 1.55 },
+    { node: "FactorySafetyBarrier", height: 1.45 },
+    { node: "FactoryCrateStack", height: 1.65 },
+  ],
+};
+
+const THEME_WALL_NODES: Readonly<Record<CampaignTheme, string>> = {
+  campus: "CampusArchitectureWall",
+  hospital: "HospitalArchitectureWall",
+  "fire-station": "FireArchitectureWall",
+  factory: "FactoryArchitectureWall",
+};
+
 const LOCKER_CLIPS = [
   "Locker_Door_Open_Enter",
   "Locker_Door_Close_Enter",
@@ -137,14 +192,44 @@ const LOCKER_CLIPS = [
   "Locker_Door_Check_Close",
 ] as const;
 
-const TOTAL_ASSETS = Object.keys(ACTOR_SPECS).length + Object.keys(CORE_ASSETS).length + Object.keys(DETAIL_ASSETS).length;
+const TOTAL_ASSETS = Object.keys(ACTOR_SPECS).length + Object.keys(CORE_ASSETS).length + Object.keys(DETAIL_ASSETS).length + 1;
 
-function world(point: Point) {
+function world(point: Point, level: LevelDefinition) {
   return new THREE.Vector3(
-    (point.x - (LEVEL.width - 1) / 2) * CELL,
+    (point.x - (level.width - 1) / 2) * CELL,
     0,
-    (point.y - (LEVEL.height - 1) / 2) * CELL,
+    (point.y - (level.height - 1) / 2) * CELL,
   );
+}
+
+function createSightHazeTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("无法创建视线遮挡特效纹理");
+  context.clearRect(0, 0, 128, 128);
+  // Layered soft puffs keep the obstruction readable without looking like a
+  // flat gameplay marker. The texture is shared by every authored haze cell.
+  for (let index = 0; index < 9; index += 1) {
+    const angle = index * 2.39996;
+    const radius = index === 0 ? 0 : 9 + (index % 3) * 5;
+    const x = 64 + Math.cos(angle) * radius;
+    const y = 64 + Math.sin(angle) * radius * 0.72;
+    const size = 35 - (index % 4) * 3;
+    const gradient = context.createRadialGradient(x, y, 2, x, y, size);
+    gradient.addColorStop(0, "rgba(255,255,255,0.34)");
+    gradient.addColorStop(0.45, "rgba(255,255,255,0.16)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 128, 128);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.name = "Authored_Sight_Haze_Mask";
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  return texture;
 }
 
 function createFixedCameraDirection() {
@@ -158,10 +243,29 @@ function createFixedCameraDirection() {
   ).normalize();
 }
 
-function objectiveDistanceMeters(point: Point) {
-  const route = OBJECTIVE_PATHS.path(point, LEVEL.exit);
+function objectiveDistanceMeters(point: Point, level: LevelDefinition, paths: GridPathPlanner) {
+  const route = paths.path(point, level.exit);
   if (!route.length) return 0;
   return Math.round(Math.max(0, route.length - 1) * CELL);
+}
+
+function policeGuardPoint(level: LevelDefinition, paths: GridPathPlanner): Point {
+  const route = paths.path(level.playerStart, level.exit);
+  const inside = route[Math.max(0, route.length - 2)] ?? level.playerStart;
+  return {
+    x: THREE.MathUtils.lerp(level.exit.x, inside.x, 0.68),
+    y: THREE.MathUtils.lerp(level.exit.y, inside.y, 0.68),
+  };
+}
+
+function nearestExteriorDirection(point: Point, level: LevelDefinition): Point {
+  const choices = [
+    { distance: point.x, direction: { x: -1, y: 0 } },
+    { distance: level.width - 1 - point.x, direction: { x: 1, y: 0 } },
+    { distance: point.y, direction: { x: 0, y: -1 } },
+    { distance: level.height - 1 - point.y, direction: { x: 0, y: 1 } },
+  ];
+  return choices.sort((a, b) => a.distance - b.distance)[0].direction;
 }
 
 function tuneMeshes(root: THREE.Object3D, options: { culling?: boolean; castShadow?: boolean } = {}) {
@@ -179,7 +283,7 @@ function tuneMeshes(root: THREE.Object3D, options: { culling?: boolean; castShad
   });
 }
 
-function flattenStatic(root: THREE.Object3D) {
+function flattenStatic(root: THREE.Object3D, castShadow = false) {
   root.updateMatrixWorld(true);
   const flat = new THREE.Group();
   const buckets = new Map<string, { material: THREE.Material; geometries: THREE.BufferGeometry[] }>();
@@ -187,6 +291,7 @@ function flattenStatic(root: THREE.Object3D) {
     if (!(object instanceof THREE.Mesh) || object instanceof THREE.SkinnedMesh) return;
     if (Array.isArray(object.material) || Object.keys(object.geometry.morphAttributes).length > 0) {
       const mesh = new THREE.Mesh(object.geometry.clone().applyMatrix4(object.matrixWorld), object.material);
+      mesh.castShadow = castShadow;
       mesh.receiveShadow = true;
       flat.add(mesh);
       return;
@@ -210,6 +315,7 @@ function flattenStatic(root: THREE.Object3D) {
     const geometry = geometries.length === 1 ? geometries[0] : mergeGeometries(geometries, false);
     if (!geometry) continue;
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = castShadow;
     mesh.receiveShadow = true;
     flat.add(mesh);
   }
@@ -248,9 +354,9 @@ function fitActor(source: THREE.Object3D, height: number) {
   return actor;
 }
 
-function fitProp(source: THREE.Object3D, height: number) {
+function fitProp(source: THREE.Object3D, height: number, castShadow = false) {
   const model = source.clone(true);
-  tuneMeshes(model, { castShadow: false });
+  tuneMeshes(model, { castShadow });
   const visual = new THREE.Group();
   visual.add(model);
   const initial = new THREE.Box3().setFromObject(visual);
@@ -259,7 +365,7 @@ function fitProp(source: THREE.Object3D, height: number) {
   const fitted = new THREE.Box3().setFromObject(visual);
   const center = fitted.getCenter(new THREE.Vector3());
   visual.position.set(-center.x, -fitted.min.y, -center.z);
-  return flattenStatic(visual);
+  return flattenStatic(visual, castShadow);
 }
 
 function fitInteractiveProp(source: THREE.Object3D, height: number) {
@@ -294,6 +400,39 @@ function fitModule(source: THREE.Object3D, size: THREE.Vector3) {
   return root;
 }
 
+function applyThemeSurface(
+  root: THREE.Object3D,
+  tint: THREE.ColorRepresentation,
+  options: { blend?: number; emissive?: THREE.ColorRepresentation; emissiveIntensity?: number; roughnessShift?: number } = {},
+) {
+  const replacements = new Map<string, THREE.Material>();
+  const tintColor = new THREE.Color(tint);
+  const cloneMaterial = (source: THREE.Material) => {
+    const existing = replacements.get(source.uuid);
+    if (existing) return existing;
+    const material = source.clone();
+    if (material instanceof THREE.MeshStandardMaterial) {
+      material.color.lerp(tintColor, options.blend ?? 0.58);
+      material.roughness = THREE.MathUtils.clamp(material.roughness + (options.roughnessShift ?? 0), 0.16, 0.96);
+      material.envMapIntensity = 1.2;
+      if (material.normalMap) material.normalScale.multiplyScalar(1.18);
+      if (options.emissive) {
+        material.emissive.lerp(new THREE.Color(options.emissive), 0.24);
+        material.emissiveIntensity = Math.max(material.emissiveIntensity, options.emissiveIntensity ?? 0.08);
+      }
+      material.needsUpdate = true;
+    }
+    replacements.set(source.uuid, material);
+    return material;
+  };
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.material = Array.isArray(object.material)
+      ? object.material.map(cloneMaterial)
+      : cloneMaterial(object.material);
+  });
+}
+
 type ModulePlacement = { position: THREE.Vector3; rotation: number };
 
 function addInstancedModules(
@@ -305,7 +444,10 @@ function addInstancedModules(
 ) {
   const created: THREE.InstancedMesh[] = [];
   if (!placements.length) return created;
-  const template = fitModule(source, size);
+  // Authored modules often contain many material-labelled child meshes. Merge
+  // children that share a material before instancing so richer architecture
+  // does not multiply draw calls for every bevel, trim and bolt.
+  const template = flattenStatic(fitModule(source, size), castShadow);
   template.updateMatrixWorld(true);
   const placementMatrix = new THREE.Matrix4();
   const rotation = new THREE.Quaternion();
@@ -361,6 +503,7 @@ type LockerView = {
   peekClosing: boolean;
   holdFinal: boolean;
   delayRemaining: number;
+  playbackRate: number;
   owner: "idle" | "player" | "chaser";
 };
 
@@ -380,6 +523,13 @@ type GameCommands = {
   adjustZoom: (factor: number) => void;
   resetZoom: () => void;
 };
+
+type CampaignProgress = {
+  unlockedThrough: number;
+  bestSeconds: Record<string, number>;
+};
+
+const CAMPAIGN_PROGRESS_KEY = "chasing.campaign-progress.v1";
 
 const NOOP_COMMANDS: GameCommands = {
   begin() {},
@@ -415,9 +565,11 @@ function playLockerSequence(
   view: LockerView,
   names: readonly string[],
   owner: LockerView["owner"] = "player",
+  playbackRate = LOCKER_PLAYBACK_RATE,
 ) {
   view.queue = [...names];
   view.owner = owner;
+  view.playbackRate = playbackRate;
   view.peeking = false;
   view.holdFinal = false;
   view.delayRemaining = 0;
@@ -427,7 +579,7 @@ function playLockerSequence(
   if (view.peekClosing) return;
   view.peekClosing = false;
   const first = view.queue.shift();
-  if (first) startLockerAction(view, first);
+  if (first) startLockerAction(view, first, view.playbackRate);
 }
 
 function closeCheckedLocker(view: LockerView) {
@@ -445,7 +597,7 @@ function closeCheckedLocker(view: LockerView) {
     view.queue = ["Locker_Door_Check_Close"];
     return;
   }
-  playLockerSequence(view, ["Locker_Door_Check_Close"], "chaser");
+  playLockerSequence(view, ["Locker_Door_Check_Close"], "chaser", 1);
 }
 
 function holdLockerAction(view: LockerView, name: string, delaySeconds = 0) {
@@ -459,6 +611,7 @@ function holdLockerAction(view: LockerView, name: string, delaySeconds = 0) {
   })) return false;
   view.queue = delaySeconds > 0 ? [name] : [];
   view.owner = "chaser";
+  view.playbackRate = 1;
   view.peeking = false;
   view.peekClosing = false;
   view.holdFinal = true;
@@ -467,7 +620,7 @@ function holdLockerAction(view: LockerView, name: string, delaySeconds = 0) {
     view.mixer.stopAllAction();
     view.action = null;
     view.actionName = null;
-  } else startLockerAction(view, name);
+  } else startLockerAction(view, name, 1);
   return true;
 }
 
@@ -482,6 +635,7 @@ function setLockerPeek(view: LockerView, active: boolean) {
     return;
   }
   view.owner = "player";
+  view.playbackRate = LOCKER_PLAYBACK_RATE;
   view.peeking = active;
   view.queue = [];
   if (active) {
@@ -489,17 +643,17 @@ function setLockerPeek(view: LockerView, active: boolean) {
     view.holdFinal = false;
     if (view.actionName === "Locker_Door_Open_Enter" && view.action) {
       view.action.paused = false;
-      view.action.timeScale = 1;
+      view.action.timeScale = LOCKER_PLAYBACK_RATE;
       view.peekClosing = false;
       return;
     }
     view.peekClosing = false;
-    startLockerAction(view, "Locker_Door_Open_Enter");
+    startLockerAction(view, "Locker_Door_Open_Enter", LOCKER_PLAYBACK_RATE);
     return;
   }
   if (view.actionName === "Locker_Door_Open_Enter" && view.action) {
     view.action.paused = false;
-    view.action.timeScale = -1;
+    view.action.timeScale = -LOCKER_PLAYBACK_RATE;
     view.peekClosing = true;
   }
 }
@@ -509,7 +663,7 @@ function updateLocker(view: LockerView, delta: number) {
     view.delayRemaining = Math.max(0, view.delayRemaining - delta);
     if (view.delayRemaining > 0) return;
     const delayed = view.queue.shift();
-    if (delayed) startLockerAction(view, delayed);
+    if (delayed) startLockerAction(view, delayed, view.playbackRate);
   }
   view.mixer.update(delta);
   const action = view.action;
@@ -528,14 +682,14 @@ function updateLocker(view: LockerView, delta: number) {
     view.actionName = null;
     view.peekClosing = false;
     const next = view.queue.shift();
-    if (next) startLockerAction(view, next);
+    if (next) startLockerAction(view, next, view.playbackRate);
     else view.owner = "idle";
     return;
   }
   if (action.isRunning()) return;
   if (view.holdFinal) return;
   const next = view.queue.shift();
-  if (next) startLockerAction(view, next);
+  if (next) startLockerAction(view, next, view.playbackRate);
   else {
     action.stop();
     view.action = null;
@@ -598,6 +752,100 @@ function updateActorVisibility(view: ActorView, visible: boolean, delta: number,
   if (!visible && view.visibilityAlpha === 0) view.root.visible = false;
 }
 
+type TextureDeduplication = {
+  sourceTextures: number;
+  canonicalTextures: number;
+  assignmentsShared: number;
+};
+
+function deduplicateAssetTextures(assets: Iterable<GLTF>): TextureDeduplication {
+  const canonical = new Map<string, THREE.Texture>();
+  const sourceTextures = new Set<THREE.Texture>();
+  let assignmentsShared = 0;
+
+  for (const asset of assets) {
+    asset.scene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        const record = material as unknown as Record<string, unknown>;
+        for (const [slot, value] of Object.entries(record)) {
+          if (!(value instanceof THREE.Texture)) continue;
+          sourceTextures.add(value);
+          const image = value.image as { width?: number; height?: number; src?: string; currentSrc?: string } | undefined;
+          const sourceName = value.name || image?.currentSrc || image?.src;
+          // ImageBitmap deliberately omits a URL. GLTFLoader still assigns
+          // the source filename to Texture.name; skip unnamed procedural maps
+          // rather than risk merging unrelated art.
+          if (!sourceName) continue;
+          const key = [
+            slot,
+            sourceName,
+            image?.width ?? 0,
+            image?.height ?? 0,
+            value.colorSpace,
+            value.channel,
+            value.mapping,
+            value.wrapS,
+            value.wrapT,
+            value.flipY,
+            value.repeat.x,
+            value.repeat.y,
+            value.offset.x,
+            value.offset.y,
+            value.center.x,
+            value.center.y,
+            value.rotation,
+          ].join("|");
+          const shared = canonical.get(key);
+          if (!shared) {
+            canonical.set(key, value);
+            continue;
+          }
+          if (shared === value) continue;
+          record[slot] = shared;
+          assignmentsShared += 1;
+        }
+      }
+    });
+  }
+
+  return {
+    sourceTextures: sourceTextures.size,
+    canonicalTextures: canonical.size,
+    assignmentsShared,
+  };
+}
+
+function countSceneTextures(root: THREE.Object3D) {
+  const textures = new Set<THREE.Texture>();
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      for (const value of Object.values(material)) {
+        if (value instanceof THREE.Texture) textures.add(value);
+      }
+    }
+  });
+  return textures.size;
+}
+
+function findInvalidSceneTextures(root: THREE.Object3D) {
+  const invalid = new Map<string, { texture: string; slot: string; material: string }>();
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      for (const [slot, value] of Object.entries(material)) {
+        if (!(value instanceof THREE.Texture) || value.image) continue;
+        invalid.set(value.uuid, { texture: value.name || value.uuid, slot, material: material.name || material.type });
+      }
+    }
+  });
+  return [...invalid.values()];
+}
+
 function disposeObjectResources(roots: Iterable<THREE.Object3D>) {
   const geometries = new Set<THREE.BufferGeometry>();
   const materials = new Set<THREE.Material>();
@@ -605,7 +853,7 @@ function disposeObjectResources(roots: Iterable<THREE.Object3D>) {
   const skeletons = new Set<THREE.Skeleton>();
   for (const root of roots) {
     root.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return;
+      if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line)) return;
       if (!geometries.has(object.geometry)) {
         object.geometry.dispose();
         geometries.add(object.geometry);
@@ -656,14 +904,18 @@ function chaserStatus(mode: ChaserMode) {
   }
 }
 
-function playerPresentationPoint(state: GameState) {
+function playerPresentationPoint(
+  state: GameState,
+  level: LevelDefinition,
+  config: Pick<GameConfig, "hideEnterSeconds" | "hideExitSeconds">,
+) {
   const spot = state.player.hideSpotId
-    ? LEVEL.hideSpots.find((candidate) => candidate.id === state.player.hideSpotId)
+    ? level.hideSpots.find((candidate) => candidate.id === state.player.hideSpotId)
     : undefined;
   if (!spot) return state.player.position;
   if (state.player.mode === "aligning-hide") return state.player.position;
   if (state.player.mode === "entering-hide") {
-    const progress = 1 - state.player.transitionRemainingSeconds / HIDE_ENTER_SECONDS;
+    const progress = 1 - state.player.transitionRemainingSeconds / config.hideEnterSeconds;
     const travel = THREE.MathUtils.smoothstep(progress, 0.2, 0.72);
     return {
       x: THREE.MathUtils.lerp(spot.approach.x, spot.concealed.x, travel),
@@ -671,7 +923,7 @@ function playerPresentationPoint(state: GameState) {
     };
   }
   if (state.player.mode === "exiting-hide") {
-    const progress = 1 - state.player.transitionRemainingSeconds / HIDE_EXIT_SECONDS;
+    const progress = 1 - state.player.transitionRemainingSeconds / config.hideExitSeconds;
     const travel = THREE.MathUtils.smoothstep(progress, 0.2, 0.75);
     return {
       x: THREE.MathUtils.lerp(spot.concealed.x, spot.approach.x, travel),
@@ -682,12 +934,12 @@ function playerPresentationPoint(state: GameState) {
   return state.player.position;
 }
 
-function canPlayerObserveChaser(state: GameState) {
+function canPlayerObserveChaser(state: GameState, level: LevelDefinition, config: GameConfig) {
   if (state.phase === "won") return false;
   if (state.phase === "lost" || state.phase === "ready") return true;
-  if (!isPlayerVisuallyExposed(state.player, DEFAULT_GAME_CONFIG)) return false;
+  if (!isPlayerVisuallyExposed(state.player, config)) return false;
   return distanceBetween(state.player.position, state.chaser.position) <= PLAYER_OBSERVATION_RANGE
-    && hasLineOfSight(LEVEL, state.player.position, state.chaser.position);
+    && hasLineOfSight(level, state.player.position, state.chaser.position);
 }
 
 export function ChasingGame() {
@@ -696,13 +948,25 @@ export function ChasingGame() {
   const touchKeys = useRef(new Set<string>());
   const interactPressed = useRef(false);
   const commands = useRef<GameCommands>(NOOP_COMMANDS);
+  const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
+  const campaignLevel = CAMPAIGN_LEVELS[selectedLevelIndex];
+  const objectivePaths = useMemo(() => new GridPathPlanner(campaignLevel), [campaignLevel]);
+  const gameplayConfig = useMemo(() => getCampaignGameplayConfig(campaignLevel), [campaignLevel]);
+  const [campaignProgress, setCampaignProgress] = useState<CampaignProgress>({
+    unlockedThrough: 1,
+    bestSeconds: {},
+  });
+  const campaignProgressRef = useRef(campaignProgress);
+  const chooseLevelRef = useRef<(index: number) => void>(() => {});
   const [phase, setPhase] = useState<GamePhase>("ready");
   const [playerMode, setPlayerMode] = useState<PlayerMode>("free");
   const [chaserMode, setChaserMode] = useState<ChaserMode>("spawn-delay");
   const [chaserConfirming, setChaserConfirming] = useState(false);
   const [chaserObservable, setChaserObservable] = useState(true);
   const [elapsed, setElapsed] = useState(0);
-  const [objectiveDistance, setObjectiveDistance] = useState(objectiveDistanceMeters(LEVEL.playerStart));
+  const [objectiveDistance, setObjectiveDistance] = useState(
+    objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths),
+  );
   const [interaction, setInteraction] = useState<HideInteraction | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -710,9 +974,56 @@ export function ChasingGame() {
   const [resultVisible, setResultVisible] = useState(true);
   const [musicMuted, setMusicMuted] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    try {
+      const stored = JSON.parse(localStorage.getItem(CAMPAIGN_PROGRESS_KEY) ?? "null") as Partial<CampaignProgress> | null;
+      if (!stored) return;
+      const unlockedThrough = THREE.MathUtils.clamp(
+        Number.isInteger(stored.unlockedThrough) ? stored.unlockedThrough! : 1,
+        1,
+        CAMPAIGN_LEVELS.length,
+      );
+      const bestSeconds = Object.fromEntries(
+        Object.entries(stored.bestSeconds ?? {}).filter(([id, value]) => (
+          CAMPAIGN_LEVELS.some((level) => level.id === id)
+          && Number.isFinite(value)
+          && value > 0
+        )),
+      ) as Record<string, number>;
+      queueMicrotask(() => {
+        if (active) setCampaignProgress({ unlockedThrough, bestSeconds });
+      });
+    } catch {
+      // A corrupt or unavailable store must never block the first chapter.
+    }
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    campaignProgressRef.current = campaignProgress;
+  }, [campaignProgress]);
+
   const begin = useCallback(() => commands.current.begin(), []);
   const restart = useCallback(() => commands.current.restart(), []);
   const interact = useCallback(() => commands.current.interact(), []);
+  const chooseLevel = useCallback((index: number) => {
+    if (index < 0 || index >= CAMPAIGN_LEVELS.length) return;
+    const qaBypass = typeof location !== "undefined" && new URLSearchParams(location.search).has("qa");
+    if (!qaBypass && index + 1 > campaignProgress.unlockedThrough) return;
+    // Re-selecting the active chapter must be a no-op. Setting loading here
+    // without changing selectedLevelIndex would leave the overlay stuck,
+    // because the scene effect correctly has nothing to rebuild.
+    if (index === selectedLevelIndex) return;
+    setLoading(true);
+    setLoadError("");
+    setLoadProgress({ done: 0, total: TOTAL_ASSETS, message: "正在切换主题关卡与高精度环境…" });
+    setSelectedLevelIndex(index);
+  }, [campaignProgress.unlockedThrough, selectedLevelIndex]);
+
+  useEffect(() => {
+    chooseLevelRef.current = chooseLevel;
+  }, [chooseLevel]);
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
@@ -728,7 +1039,10 @@ export function ChasingGame() {
       else if (key === "0") commands.current.resetZoom();
       else if (key === "-" || key === "_") commands.current.adjustZoom(1.12);
       else if (key === "+" || key === "=") commands.current.adjustZoom(1 / 1.12);
-      else if ((key === "enter" || key === " ") && phase !== "playing") commands.current.begin();
+      else if ((key === "enter" || key === " ") && phase !== "playing") {
+        if (phase === "won" && selectedLevelIndex < CAMPAIGN_LEVELS.length - 1) chooseLevel(selectedLevelIndex + 1);
+        else commands.current.begin();
+      }
       else if (key === "e" || (key === " " && phase === "playing")) commands.current.interact();
     };
     const keyUp = (event: KeyboardEvent) => keyboardKeys.current.delete(event.key.toLowerCase());
@@ -750,11 +1064,24 @@ export function ChasingGame() {
       removeEventListener("blur", clearInput);
       document.removeEventListener("visibilitychange", clearHiddenInput);
     };
-  }, [phase]);
+  }, [chooseLevel, phase, selectedLevelIndex]);
 
   useEffect(() => {
     const host = mount.current;
     if (!host) return;
+
+    setLoading(true);
+    setLoadError("");
+    setLoadProgress({
+      done: 0,
+      total: TOTAL_ASSETS,
+      message: `正在载入第 ${campaignLevel.campaign.levelNumber} 关 · ${campaignLevel.campaign.themeLabel}高精度场景…`,
+    });
+    setPhase("ready");
+    setPlayerMode("free");
+    setChaserMode("spawn-delay");
+    setElapsed(0);
+    setObjectiveDistance(objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
 
     const scorePrewarmAbort = new AbortController();
     void prewarmAdaptiveScoreAssets(undefined, scorePrewarmAbort.signal);
@@ -763,15 +1090,18 @@ export function ChasingGame() {
     let last = performance.now();
     let lastHudUpdate = 0;
     let ready = false;
+    let textureDeduplication: TextureDeduplication = {
+      sourceTextures: 0,
+      canonicalTextures: 0,
+      assignmentsShared: 0,
+    };
     let cameraDistance = 16.25;
     let resultTimer: ReturnType<typeof setTimeout> | null = null;
     let lastCheckSpot: string | null = null;
     let lastScoreThreat = Number.NaN;
     let captureStageRemaining = 0;
     let capturePerformanceStarted = false;
-    let simulation = new GameSimulation({
-      config: { hideEnterSeconds: HIDE_ENTER_SECONDS, hideExitSeconds: HIDE_EXIT_SECONDS, checkHideSeconds: HIDE_CHECK_SECONDS },
-    });
+    let simulation = new GameSimulation({ level: campaignLevel, config: gameplayConfig });
     let latestState = simulation.getState();
     const resetFrameClock = () => {
       if (document.visibilityState === "visible") last = performance.now();
@@ -779,6 +1109,8 @@ export function ChasingGame() {
     const cameraZoom = { value: 1 };
     const actors: Partial<Record<ActorName, ActorView>> = {};
     const lockers = new Map<string, LockerView>();
+    const sightObscurers: THREE.Points[] = [];
+    let renderedMovementBlockers = 0;
     const score = new AdaptiveScoreController();
     try {
       const storedMuted = localStorage.getItem("chasing.music-muted.v1") === "true";
@@ -792,11 +1124,14 @@ export function ChasingGame() {
     }
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x101a24);
-    scene.fog = new THREE.FogExp2(0x101a24, 0.0175);
+    scene.background = new THREE.Color(campaignLevel.campaign.palette.sky);
+    scene.fog = new THREE.FogExp2(
+      campaignLevel.campaign.palette.fog,
+      campaignLevel.campaign.theme === "fire-station" ? 0.022 : campaignLevel.campaign.theme === "factory" ? 0.02 : 0.0165,
+    );
     const camera = new THREE.PerspectiveCamera(56, 1, 0.08, 150);
     const cameraDirection = createFixedCameraDirection();
-    const cameraFocus = world(LEVEL.playerStart).add(new THREE.Vector3(0, 0.92, 0));
+    const cameraFocus = world(campaignLevel.playerStart, campaignLevel).add(new THREE.Vector3(0, 0.92, 0));
     camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
 
     let renderer: THREE.WebGLRenderer;
@@ -815,7 +1150,7 @@ export function ChasingGame() {
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = campaignLevel.campaign.theme === "hospital" ? 1.06 : campaignLevel.campaign.theme === "factory" ? 0.98 : 1.02;
     host.appendChild(renderer.domElement);
     document.addEventListener("visibilitychange", resetFrameClock);
     addEventListener("pageshow", resetFrameClock);
@@ -844,8 +1179,15 @@ export function ChasingGame() {
     roomEnvironment.dispose();
     pmrem.dispose();
 
-    scene.add(new THREE.HemisphereLight(0x8dbbe0, 0x253023, 1.35));
-    const moon = new THREE.DirectionalLight(0xb9d7ff, 2.35);
+    scene.add(new THREE.HemisphereLight(
+      new THREE.Color(campaignLevel.campaign.palette.sky).offsetHSL(0, 0, 0.25),
+      new THREE.Color(campaignLevel.campaign.palette.floor).multiplyScalar(0.34),
+      campaignLevel.campaign.theme === "hospital" ? 0.92 : 0.76,
+    ));
+    const moon = new THREE.DirectionalLight(
+      campaignLevel.campaign.theme === "factory" ? 0x91dced : 0xb9d7ff,
+      campaignLevel.campaign.theme === "hospital" ? 2.8 : 2.58,
+    );
     moon.position.set(14, 28, 18);
     moon.castShadow = true;
     moon.shadow.mapSize.set(2048, 2048);
@@ -855,7 +1197,7 @@ export function ChasingGame() {
     moon.shadow.camera.bottom = -32;
     moon.shadow.bias = -0.00025;
     scene.add(moon);
-    const warmBounce = new THREE.DirectionalLight(0xffc98a, 1.1);
+    const warmBounce = new THREE.DirectionalLight(campaignLevel.campaign.palette.emissive, 0.62);
     warmBounce.position.set(-18, 12, -14);
     scene.add(warmBounce);
 
@@ -1051,6 +1393,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
     const updatePhasePresentation = (next: GamePhase) => {
       setPhase(next);
+      if (next === "won") {
+        setCampaignProgress((current) => {
+          const previousBest = current.bestSeconds[campaignLevel.id];
+          const completedSeconds = Math.max(1, Math.floor(latestState.elapsedSeconds));
+          const updated: CampaignProgress = {
+            unlockedThrough: Math.max(
+              current.unlockedThrough,
+              Math.min(CAMPAIGN_LEVELS.length, campaignLevel.campaign.levelNumber + 1),
+            ),
+            bestSeconds: {
+              ...current.bestSeconds,
+              [campaignLevel.id]: previousBest ? Math.min(previousBest, completedSeconds) : completedSeconds,
+            },
+          };
+          try {
+            localStorage.setItem(CAMPAIGN_PROGRESS_KEY, JSON.stringify(updated));
+          } catch {
+            // Progress still works for this session if persistence is denied.
+          }
+          return updated;
+        });
+      }
       if (next === "won" || next === "lost") {
         touchKeys.current.clear();
         interactPressed.current = false;
@@ -1081,15 +1445,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       setPlayerMode(state.player.mode);
       setChaserMode(state.chaser.mode);
       setChaserConfirming(state.chaser.visualConfirmationSeconds !== null);
-      setChaserObservable(canPlayerObserveChaser(state));
+      setChaserObservable(canPlayerObserveChaser(state, campaignLevel, simulation.config));
       setElapsed(Math.floor(state.elapsedSeconds));
-      setObjectiveDistance(objectiveDistanceMeters(state.player.position));
+      setObjectiveDistance(objectiveDistanceMeters(state.player.position, campaignLevel, objectivePaths));
       setInteraction(simulation.getHideInteraction());
       updateLockerVisionStyle(state);
 
       const resetActor = (view: ActorView | undefined, point: Point, heading: Point) => {
         if (!view) return;
-        view.root.position.copy(world(point));
+        view.root.position.copy(world(point, campaignLevel));
         view.root.rotation.set(0, Math.atan2(heading.x, heading.y), 0);
         view.lastPoint = { ...point };
         view.lastTick = state.tick;
@@ -1101,9 +1465,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       };
       resetActor(actors.kid, state.player.position, state.player.heading);
       resetActor(actors.villain, state.chaser.position, state.chaser.heading);
-      resetActor(actors.police, { x: 23, y: 22.15 }, { x: 0, y: -1 });
+      resetActor(actors.police, policeGuardPoint(campaignLevel, objectivePaths), nearestExteriorDirection(campaignLevel.exit, campaignLevel));
 
-      cameraFocus.copy(world(state.player.position)).add(new THREE.Vector3(0, 0.92, 0));
+      cameraFocus.copy(world(state.player.position, campaignLevel)).add(new THREE.Vector3(0, 0.92, 0));
       cameraDirection.copy(createFixedCameraDirection());
       cameraDistance = 16.25;
       camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
@@ -1124,6 +1488,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         locker.peekClosing = false;
         locker.holdFinal = false;
         locker.delayRemaining = 0;
+        locker.playbackRate = LOCKER_PLAYBACK_RATE;
         locker.owner = "idle";
         locker.root.getObjectByName("DoorPivot")?.quaternion.identity();
       }
@@ -1177,6 +1542,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const actorAssets = {} as Record<ActorName, GLTF>;
       const coreAssets = {} as Record<CoreAssetName, GLTF>;
       const detailAssets = {} as Record<DetailAssetName, GLTF>;
+      let themeKitAsset: GLTF | undefined;
       const loads = [
         ...actorEntries.map(async ([name, spec]) => {
           actorAssets[name] = await loader.loadAsync(spec.url);
@@ -1188,14 +1554,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }),
         ...detailEntries.map(async ([name, url]) => {
           detailAssets[name] = await loader.loadAsync(url);
-          mark(name === "locker" ? "英雄储物柜与门动画" : "校园美术细节");
+          mark(name === "locker" ? "英雄储物柜与门动画" : "共享场景细节");
         }),
+        (async () => {
+          themeKitAsset = await loader.loadAsync(THEME_KIT_ASSETS[campaignLevel.campaign.theme]);
+          mark(`${campaignLevel.campaign.themeLabel}高精度主题模型`);
+        })(),
       ];
       const settled = await Promise.allSettled(loads);
       const loadedAssets = [
         ...Object.values(actorAssets),
         ...Object.values(coreAssets),
         ...Object.values(detailAssets),
+        ...(themeKitAsset ? [themeKitAsset] : []),
       ];
       const rejection = settled.find((result): result is PromiseRejectedResult => result.status === "rejected");
       if (disposed || rejection) {
@@ -1204,8 +1575,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         return;
       }
 
-      buildCampus(coreAssets, campus);
-      buildDetails(detailAssets, campus, scene, lockers);
+      if (!themeKitAsset) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型未载入`);
+      textureDeduplication = deduplicateAssetTextures(loadedAssets);
+      buildCampus(coreAssets, themeKitAsset, campus);
+      buildDetails(detailAssets, themeKitAsset, campus, scene, lockers);
       placeActors(actorAssets, actors, scene);
       ready = true;
       setLoading(false);
@@ -1214,56 +1587,51 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (new URLSearchParams(location.search).get("autostart") === "1") beginGame();
     };
 
-    const buildCampus = (assets: Record<CoreAssetName, GLTF>, parent: THREE.Group) => {
+    const buildCampus = (assets: Record<CoreAssetName, GLTF>, themeKit: GLTF, parent: THREE.Group) => {
+      const { palette, theme } = campaignLevel.campaign;
+      applyThemeSurface(assets.wall.scene, palette.wall, { blend: 0.34, emissive: palette.emissive, emissiveIntensity: 0.035 });
+      applyThemeSurface(assets.wallCorner.scene, palette.wall, { blend: 0.34, emissive: palette.emissive, emissiveIntensity: 0.035 });
+      applyThemeSurface(assets.wallEnd.scene, palette.trim, { blend: 0.46, emissive: palette.emissive, emissiveIntensity: 0.045 });
+      applyThemeSurface(assets.floor.scene, palette.floor, { blend: 0.54, roughnessShift: theme === "hospital" ? -0.12 : 0.02 });
+      applyThemeSurface(assets.classroomFloor.scene, palette.floor, { blend: 0.42, roughnessShift: theme === "hospital" ? -0.1 : 0 });
+      applyThemeSurface(assets.playgroundFloor.scene, palette.trim, { blend: 0.44, roughnessShift: 0.04 });
+      applyThemeSurface(assets.grassFloor.scene, theme === "campus" ? palette.floor : palette.trim, { blend: 0.45, roughnessShift: 0.08 });
       const floorBatches: Record<"floor" | "grassFloor" | "classroomFloor" | "playgroundFloor", ModulePlacement[]> = {
         floor: [], grassFloor: [], classroomFloor: [], playgroundFloor: [],
       };
       const wallBatches: Record<"wall" | "wallCorner" | "wallEnd", ModulePlacement[]> = {
         wall: [], wallCorner: [], wallEnd: [],
       };
-      const campusGroundChunks = new Map<string, ModulePlacement[]>();
-      const groundChunkSize = 15;
-      const addCampusGround = (x: number, y: number) => {
-        const key = `${Math.floor(x / groundChunkSize)},${Math.floor(y / groundChunkSize)}`;
-        const placements = campusGroundChunks.get(key) ?? [];
-        placements.push({
-          position: world({ x, y }).add(new THREE.Vector3(0, -0.1, 0)),
-          rotation: 0,
-        });
-        campusGroundChunks.set(key, placements);
-      };
-      const groundMarginCells = 10;
-      for (let y = -groundMarginCells; y < LEVEL.height + groundMarginCells; y += 1) {
-        for (let x = -groundMarginCells; x < LEVEL.width + groundMarginCells; x += 1) {
-          if (x >= 0 && x < LEVEL.width && y >= 0 && y < LEVEL.height) continue;
-          addCampusGround(x, y);
-        }
-      }
+      const groundMarginCells = 7;
       const directions = [
         { dx: 0, dy: -1, ox: 0, oz: -CELL / 2, rotation: 0 },
         { dx: 0, dy: 1, ox: 0, oz: CELL / 2, rotation: 0 },
         { dx: -1, dy: 0, ox: -CELL / 2, oz: 0, rotation: Math.PI / 2 },
         { dx: 1, dy: 0, ox: CELL / 2, oz: 0, rotation: Math.PI / 2 },
       ] as const;
-      for (let y = 0; y < LEVEL.height; y += 1) {
-        for (let x = 0; x < LEVEL.width; x += 1) {
-          const position = world({ x, y });
-          if (!LEVEL.walkable[y][x]) {
-            // The maze is embedded in an authored campus lawn rather than
-            // floating over a black void. Walls still make this ground
-            // inaccessible, so collision and route readability stay exact.
-            addCampusGround(x, y);
+      for (let y = 0; y < campaignLevel.height; y += 1) {
+        for (let x = 0; x < campaignLevel.width; x += 1) {
+          const position = world({ x, y }, campaignLevel);
+          if (!campaignLevel.walkable[y][x]) {
             continue;
           }
-          const floorName = x <= 4 && y >= 10 && y <= 14
-            ? "grassFloor"
-            : x >= 8 && x <= 10 && y >= 17
-              ? "classroomFloor"
-              : x >= 16 && x <= 20 && y <= 4
-                ? "playgroundFloor"
-                : "floor";
+          // Material changes happen in authored-looking room bands, not on
+          // individual cells; this keeps corridors continuous and avoids a
+          // procedural checkerboard in the elevated gameplay camera.
+          const pattern = (
+            Math.floor(x / 6)
+            + Math.floor(y / 6) * 3
+            + campaignLevel.campaign.levelNumber
+          ) % 9;
+          const floorName = theme === "campus"
+            ? pattern <= 1 ? "classroomFloor" : pattern === 2 ? "playgroundFloor" : "floor"
+            : theme === "hospital"
+              ? "floor"
+              : theme === "fire-station"
+                ? pattern <= 3 ? "playgroundFloor" : "floor"
+                : pattern <= 4 ? "playgroundFloor" : pattern === 5 ? "classroomFloor" : "floor";
           floorBatches[floorName].push({ position, rotation: 0 });
-          const blocked = directions.filter(({ dx, dy }) => !LEVEL.walkable[y + dy]?.[x + dx]);
+          const blocked = directions.filter(({ dx, dy }) => !campaignLevel.walkable[y + dy]?.[x + dx]);
           for (const edge of blocked) {
             const name = blocked.length === 1 ? "wallEnd" : "wall";
             wallBatches[name].push({
@@ -1284,26 +1652,68 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           }
         }
       }
+      const wallHeight = theme === "hospital" ? 2.2 : theme === "factory" ? 2.16 : 2.1;
+      const architectureWall = themeKit.scene.getObjectByName(THEME_WALL_NODES[theme]);
+      if (!architectureWall) throw new Error(`${campaignLevel.campaign.themeLabel}建筑墙体模型缺失`);
       const wallMeshes = [
-        ...addInstancedModules(assets.wall.scene, new THREE.Vector3(CELL + 0.08, 1.58, 0.18), wallBatches.wall, parent, true),
-        ...addInstancedModules(assets.wallEnd.scene, new THREE.Vector3(CELL + 0.08, 1.58, 0.2), wallBatches.wallEnd, parent, true),
-        ...addInstancedModules(assets.wallCorner.scene, new THREE.Vector3(0.3, 1.58, 0.3), wallBatches.wallCorner, parent, true),
+        ...addInstancedModules(architectureWall, new THREE.Vector3(CELL + 0.08, wallHeight, 0.23), wallBatches.wall, parent, true),
+        ...addInstancedModules(architectureWall, new THREE.Vector3(CELL + 0.08, wallHeight, 0.23), wallBatches.wallEnd, parent, true),
+        ...addInstancedModules(assets.wallCorner.scene, new THREE.Vector3(0.32, wallHeight, 0.32), wallBatches.wallCorner, parent, true),
       ];
       registerCameraOccluder("campus-walls", wallMeshes);
       addInstancedModules(assets.floor.scene, new THREE.Vector3(CELL, 0.12, CELL), floorBatches.floor, parent, false);
       addInstancedModules(assets.grassFloor.scene, new THREE.Vector3(CELL, 0.12, CELL), floorBatches.grassFloor, parent, false);
       addInstancedModules(assets.classroomFloor.scene, new THREE.Vector3(CELL, 0.12, CELL), floorBatches.classroomFloor, parent, false);
       addInstancedModules(assets.playgroundFloor.scene, new THREE.Vector3(CELL, 0.12, CELL), floorBatches.playgroundFloor, parent, false);
-      for (const placements of campusGroundChunks.values()) {
-        addInstancedModules(assets.grassFloor.scene, new THREE.Vector3(CELL, 0.1, CELL), placements, parent, false);
+      const groundAsset = theme === "campus" ? assets.grassFloor : theme === "hospital" ? assets.floor : assets.playgroundFloor;
+      let groundMaterial: THREE.MeshStandardMaterial | undefined;
+      groundAsset.scene.traverse((object) => {
+        if (groundMaterial || !(object instanceof THREE.Mesh)) return;
+        const source = Array.isArray(object.material) ? object.material[0] : object.material;
+        if (source instanceof THREE.MeshStandardMaterial) groundMaterial = source.clone();
+      });
+      if (!groundMaterial) throw new Error(`${campaignLevel.campaign.themeLabel}地表材质缺失`);
+      for (const key of ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap"] as const) {
+        const texture = groundMaterial[key];
+        if (!texture) continue;
+        const repeated = texture.clone();
+        repeated.wrapS = THREE.RepeatWrapping;
+        repeated.wrapT = THREE.RepeatWrapping;
+        repeated.repeat.set(campaignLevel.width + groundMarginCells * 2, campaignLevel.height + groundMarginCells * 2);
+        repeated.needsUpdate = true;
+        groundMaterial[key] = repeated;
       }
+      groundMaterial.roughness = theme === "hospital" ? 0.34 : theme === "campus" ? 0.78 : 0.62;
+      const groundGeometry = new THREE.PlaneGeometry(
+        (campaignLevel.width + groundMarginCells * 2) * CELL,
+        (campaignLevel.height + groundMarginCells * 2) * CELL,
+      );
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.name = `${theme}-continuous-ground`;
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.13;
+      ground.receiveShadow = true;
+      parent.add(ground);
 
       const gate = fitModule(assets.frontGate.scene, new THREE.Vector3(1.9, 2.55, 0.42));
-      gate.position.add(world(FRONT_GATE_POINT)).add(new THREE.Vector3(0, 0, -CELL * 0.5));
+      applyThemeSurface(gate, palette.accent, { blend: 0.48, emissive: palette.emissive, emissiveIntensity: 0.09 });
+      const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
+      gate.rotation.y = Math.abs(entranceDirection.x) > 0 ? Math.PI / 2 : 0;
+      gate.position.add(world(campaignLevel.playerStart, campaignLevel)).add(new THREE.Vector3(
+        entranceDirection.x * CELL * 0.5,
+        0,
+        entranceDirection.y * CELL * 0.5,
+      ));
       parent.add(gate);
       registerCameraOccluder("front-gate", [gate]);
       const exitDoor = fitModule(assets.exit.scene, new THREE.Vector3(1.9, 2.55, 0.42));
-      exitDoor.position.add(world(LEVEL.exit)).add(new THREE.Vector3(0, 0, CELL * 0.5));
+      const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
+      exitDoor.rotation.y = Math.abs(exitDirection.x) > 0 ? Math.PI / 2 : 0;
+      exitDoor.position.add(world(campaignLevel.exit, campaignLevel)).add(new THREE.Vector3(
+        exitDirection.x * CELL * 0.5,
+        0,
+        exitDirection.y * CELL * 0.5,
+      ));
       exitDoor.traverse((object) => {
         if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)) return;
         object.material = object.material.clone();
@@ -1313,13 +1723,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       parent.add(exitDoor);
       registerCameraOccluder("exit-door", [exitDoor]);
       const exitLight = new THREE.SpotLight(0x83ffc0, 28, 11, Math.PI / 5, 0.52, 1.6);
-      exitLight.position.copy(world(LEVEL.exit)).add(new THREE.Vector3(0, 5.2, 0));
-      exitLight.target.position.copy(world(LEVEL.exit));
+      exitLight.color.set(palette.emissive);
+      exitLight.position.copy(world(campaignLevel.exit, campaignLevel)).add(new THREE.Vector3(0, 5.2, 0));
+      exitLight.target.position.copy(world(campaignLevel.exit, campaignLevel));
       parent.add(exitLight, exitLight.target);
     };
 
     const buildDetails = (
       assets: Record<DetailAssetName, GLTF>,
+      themeKit: GLTF,
       parent: THREE.Group,
       targetScene: THREE.Scene,
       lockerViews: Map<string, LockerView>,
@@ -1341,29 +1753,48 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const template = propTemplates.get(key) ?? fitProp(assets[name].scene, height);
         propTemplates.set(key, template);
         const object = template.clone(true);
-        object.position.add(world(point)).add(offset);
+        object.position.add(world(point, campaignLevel)).add(offset);
         object.rotation.y = rotation;
         parent.add(object);
         if (cameraOccludingProps.has(name)) {
           registerCameraOccluder(`${name}-${point.x}-${point.y}`, [object]);
         }
+        return object;
+      };
+      const addThemeProp = (spec: ThemePropSpec, point: Point, rotation = 0) => {
+        const source = themeKit.scene.getObjectByName(spec.node);
+        if (!source) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型缺少节点 ${spec.node}`);
+        const key = `theme:${spec.node}:${spec.height}`;
+        const template = propTemplates.get(key) ?? fitProp(source, spec.height, true);
+        propTemplates.set(key, template);
+        const object = template.clone(true);
+        object.name = `theme-prop-${spec.node}`;
+        object.position.add(world(point, campaignLevel));
+        object.rotation.y = rotation;
+        parent.add(object);
+        registerCameraOccluder(`${spec.node}-${point.x}-${point.y}`, [object]);
       };
 
       const lockerSource = assets.locker;
       const clipMap = new Map(lockerSource.animations.map((clip) => [clip.name, clip]));
       const missingLockerClips = LOCKER_CLIPS.filter((name) => !clipMap.has(name));
       if (missingLockerClips.length) throw new Error(`Hero locker animation contract failed: ${missingLockerClips.join(", ")}`);
-      for (const spot of LEVEL.hideSpots) {
+      for (const spot of campaignLevel.hideSpots) {
         const root = fitInteractiveProp(lockerSource.scene, 2.12);
+        applyThemeSurface(root, campaignLevel.campaign.palette.accent, {
+          blend: 0.22,
+          emissive: campaignLevel.campaign.palette.emissive,
+          emissiveIntensity: 0.055,
+        });
         root.name = `hero-locker-${spot.id}`;
         root.rotation.y = Math.atan2(spot.facing.x, spot.facing.y);
-        root.position.copy(world(spot.concealed));
+        root.position.copy(world(spot.concealed, campaignLevel));
         root.updateMatrixWorld(true);
         const anchor = root.getObjectByName("HideAnchor");
         const pivot = root.getObjectByName("DoorPivot");
         if (!anchor || !pivot) throw new Error("Hero locker is missing HideAnchor or DoorPivot; refusing an art fallback");
         const anchorWorld = anchor.getWorldPosition(new THREE.Vector3());
-        root.position.add(world(spot.concealed).sub(anchorWorld));
+        root.position.add(world(spot.concealed, campaignLevel).sub(anchorWorld));
         parent.add(root);
         const view: LockerView = {
           id: spot.id,
@@ -1377,45 +1808,236 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           peekClosing: false,
           holdFinal: false,
           delayRemaining: 0,
+          playbackRate: LOCKER_PLAYBACK_RATE,
           owner: "idle",
         };
         lockerViews.set(spot.id, view);
       }
 
-      addProp("bench", { x: 18, y: 16 }, 1.05, Math.PI / 2);
-      addProp("tree", { x: 3, y: 14 }, 3.8);
-      addProp("shrub", { x: 3, y: 12 }, 0.95);
-      for (const [point, height, rotation] of [
-        [{ x: 4, y: 4 }, 3.6, 0.3],
-        [{ x: 12, y: 4 }, 4.15, -0.45],
-        [{ x: 18, y: 7 }, 3.85, 0.72],
-        [{ x: 3, y: 19 }, 4.35, -0.2],
-        [{ x: 15, y: 21 }, 3.7, 0.5],
-        [{ x: 22, y: 7 }, 4.05, -0.72],
-      ] as const) addProp("tree", point, height, rotation);
-      for (const [point, height, rotation] of [
-        [{ x: 6, y: 13 }, 0.72, 0.2],
-        [{ x: 12, y: 11 }, 0.9, -0.4],
-        [{ x: 19, y: 5 }, 0.82, 0.6],
-        [{ x: 20, y: 15 }, 0.76, -0.7],
-        [{ x: 15, y: 22 }, 0.88, 0.1],
-      ] as const) addProp("shrub", point, height, rotation);
-      addProp("car", { x: 22, y: 23 }, 1.55, Math.PI / 2, new THREE.Vector3(CELL * 0.76, 0, CELL * 0.72));
-      addProp("station", LEVEL.exit, 3.25, Math.PI, new THREE.Vector3(0, 0, CELL * 1.7));
-      addProp("basketball", { x: 20, y: 3 }, 2.65, -Math.PI / 2);
-      addProp("classroomDoor", { x: 9, y: 17 }, 2.2, Math.PI / 2, new THREE.Vector3(-CELL * 0.44, 0, 0));
-      addProp("deskChair", { x: 9, y: 18 }, 1.2);
-      addProp("blackboard", { x: 9, y: 20 }, 1.5, Math.PI, new THREE.Vector3(0, 0, CELL * 0.43));
-      addProp("podium", { x: 9, y: 19 }, 1.1, Math.PI);
-      addProp("bulletin", { x: 11, y: 11 }, 1.25, -Math.PI / 2, new THREE.Vector3(CELL * 0.43, 0, 0));
-      addProp("extinguisher", { x: 11, y: 10 }, 0.8, -Math.PI / 2, new THREE.Vector3(CELL * 0.38, 0, 0));
-      addProp("trash", { x: 11, y: 12 }, 0.75, -Math.PI / 2, new THREE.Vector3(CELL * 0.33, 0, 0));
-      addProp("books", { x: 11, y: 13 }, 0.18, 0, new THREE.Vector3(CELL * 0.3, 0, 0));
-      addProp("backpack", { x: 13, y: 16 }, 0.5, 0, new THREE.Vector3(0, 0, CELL * 0.34));
-      for (const point of [{ x: 7, y: 4 }, { x: 15, y: 5 }, { x: 21, y: 12 }, { x: 17, y: 17 }]) {
+      // The original school layout deliberately reserves seven path cells for
+      // solid hero props. Keep presentation and collision authored from the
+      // same ordered contract so the player never hits an invisible blocker.
+      const movementPropContract: readonly [DetailAssetName, number, number][] = [
+        ["bench", 1.05, 0],
+        ["tree", 3.9, 0.35],
+        ["shrub", 0.9, -0.2],
+        ["car", 1.55, Math.PI / 2],
+        ["basketball", 2.65, 0],
+        ["deskChair", 1.2, 0.58],
+        ["podium", 1.1, -0.25],
+      ];
+      for (const [index, point] of (campaignLevel.movementBlockers ?? []).entries()) {
+        const spec = movementPropContract[index];
+        if (!spec) throw new Error(`${campaignLevel.id} 缺少第 ${index + 1} 个实体障碍美术契约`);
+        const object = addProp(spec[0], point, spec[1], spec[2]);
+        object.name = `movement-blocker-${index + 1}-${spec[0]}`;
+        renderedMovementBlockers += 1;
+      }
+
+      // Vision-only cells represent permeable dust/steam/smoke rather than a
+      // physical wall. A player can cross them, but both the level logic and
+      // the rendered VFX now communicate why the pursuer loses sight.
+      const hazePoints = campaignLevel.visionOnlyBlockers ?? [];
+      if (hazePoints.length) {
+        const hazeTexture = createSightHazeTexture();
+        const hazeMaterial = new THREE.PointsMaterial({
+          map: hazeTexture,
+          color: new THREE.Color(campaignLevel.campaign.palette.fog).lerp(
+            new THREE.Color(campaignLevel.campaign.palette.emissive),
+            campaignLevel.campaign.theme === "fire-station" ? 0.18 : 0.34,
+          ),
+          transparent: true,
+          opacity: campaignLevel.campaign.theme === "factory" ? 0.42 : 0.34,
+          depthWrite: false,
+          alphaTest: 0.012,
+          size: campaignLevel.campaign.theme === "fire-station" ? 1.46 : 1.28,
+          sizeAttenuation: true,
+        });
+        hazePoints.forEach((point, blockerIndex) => {
+          const positions: number[] = [];
+          for (let particle = 0; particle < 34; particle += 1) {
+            const seed = blockerIndex * 43 + particle + campaignLevel.campaign.levelNumber * 97;
+            const angle = seed * 2.39996;
+            const radius = 0.14 + ((seed * 37) % 19) / 19 * 0.78;
+            positions.push(
+              Math.cos(angle) * radius,
+              0.28 + ((seed * 17) % 31) / 31 * 1.92,
+              Math.sin(angle) * radius,
+            );
+          }
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+          geometry.computeBoundingSphere();
+          const cloud = new THREE.Points(geometry, hazeMaterial);
+          cloud.name = `vision-obscurer-${blockerIndex + 1}`;
+          cloud.position.copy(world(point, campaignLevel));
+          cloud.userData.baseY = cloud.position.y;
+          cloud.userData.phase = blockerIndex * 1.73;
+          cloud.renderOrder = 2;
+          parent.add(cloud);
+          sightObscurers.push(cloud);
+        });
+      }
+
+      const occupiedAnchors = [
+        campaignLevel.playerStart,
+        campaignLevel.chaserStart,
+        campaignLevel.exit,
+        ...campaignLevel.hideSpots.flatMap((spot) => [spot.approach, spot.concealed]),
+      ];
+      const decorCandidates: Point[] = [];
+      for (let y = 1; y < campaignLevel.height - 1; y += 1) {
+        for (let x = 1; x < campaignLevel.width - 1; x += 1) {
+          if (campaignLevel.walkable[y][x]) continue;
+          const adjacentPath = [
+            campaignLevel.walkable[y - 1]?.[x],
+            campaignLevel.walkable[y + 1]?.[x],
+            campaignLevel.walkable[y]?.[x - 1],
+            campaignLevel.walkable[y]?.[x + 1],
+          ].filter(Boolean).length;
+          if (!adjacentPath) continue;
+          const candidate = { x, y };
+          if (occupiedAnchors.some((anchor) => distanceBetween(anchor, candidate) < 1.35)) continue;
+          decorCandidates.push(candidate);
+        }
+      }
+      decorCandidates.sort((a, b) => {
+        const hash = (point: Point) => (point.x * 37 + point.y * 61 + campaignLevel.campaign.levelNumber * 17) % 101;
+        return hash(a) - hash(b);
+      });
+      const decorPoints: Point[] = [];
+      for (const candidate of decorCandidates) {
+        if (decorPoints.every((existing) => distanceBetween(existing, candidate) >= 3.2)) decorPoints.push(candidate);
+        if (decorPoints.length >= 14) break;
+      }
+
+      const exteriorPoint = (anchor: Point, distance: number, side: number): Point => {
+        const direction = nearestExteriorDirection(anchor, campaignLevel);
+        const perpendicular = { x: -direction.y, y: direction.x };
+        return {
+          x: anchor.x + direction.x * distance + perpendicular.x * side,
+          y: anchor.y + direction.y * distance + perpendicular.y * side,
+        };
+      };
+      const pushIntoScenery = (candidate: Point): Point => {
+        let x = 0;
+        let y = 0;
+        for (const direction of [{ x: -1, y: 0 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: 0, y: 1 }]) {
+          if (campaignLevel.walkable[Math.round(candidate.y + direction.y)]?.[Math.round(candidate.x + direction.x)]) {
+            x -= direction.x;
+            y -= direction.y;
+          }
+        }
+        const length = Math.hypot(x, y) || 1;
+        return { x: candidate.x + x / length * 0.72, y: candidate.y + y / length * 0.72 };
+      };
+      const themeSpecs = THEME_PROP_SPECS[campaignLevel.campaign.theme];
+      themeSpecs.forEach((spec, index) => {
+        const point = index === 0
+          ? exteriorPoint(campaignLevel.playerStart, 2.35, 2.15)
+          : index === 1
+            ? exteriorPoint(campaignLevel.exit, 2.5, -1.8)
+            : decorPoints[index - 2]
+              ? pushIntoScenery(decorPoints[index - 2])
+              : exteriorPoint(campaignLevel.playerStart, 3 + index, index - 2);
+        addThemeProp(spec, point, (campaignLevel.campaign.levelNumber * 0.47 + index * 1.23) % (Math.PI * 2));
+      });
+
+      // Build a compact authored arrival vignette instead of leaving the
+      // exterior camera side as an empty texture plane. Reusing two secondary
+      // hero props keeps each theme unmistakable without bloating downloads.
+      themeSpecs.slice(2, 4).forEach((spec, index) => {
+        const point = exteriorPoint(
+          campaignLevel.playerStart,
+          3.15 + index * 0.9,
+          -2.25 + index * 3.6,
+        );
+        addThemeProp(spec, point, (campaignLevel.campaign.levelNumber * 0.31 + index * 1.71 + Math.PI) % (Math.PI * 2));
+      });
+
+      const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
+      const entranceSide = { x: -entranceDirection.y, y: entranceDirection.x };
+      const yardCenter = world({
+        x: campaignLevel.playerStart.x + entranceDirection.x * 3.35,
+        y: campaignLevel.playerStart.y + entranceDirection.y * 3.35,
+      }, campaignLevel);
+      const markingMaterial = new THREE.MeshStandardMaterial({
+        color: campaignLevel.campaign.palette.accent,
+        emissive: campaignLevel.campaign.palette.emissive,
+        emissiveIntensity: 0.08,
+        roughness: 0.58,
+        metalness: 0.04,
+        transparent: true,
+        opacity: 0.62,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+      });
+      const stripeGeometry = new THREE.BoxGeometry(0.11, 0.022, CELL * 1.32);
+      const stripeCount = 7;
+      const yardStripes = new THREE.InstancedMesh(stripeGeometry, markingMaterial, stripeCount);
+      const stripeRotation = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        Math.atan2(entranceDirection.x, entranceDirection.y),
+      );
+      for (let index = 0; index < stripeCount; index += 1) {
+        const side = (index - (stripeCount - 1) / 2) * 0.72;
+        const position = yardCenter.clone().add(new THREE.Vector3(
+          entranceSide.x * side * CELL,
+          0.076,
+          entranceSide.y * side * CELL,
+        ));
+        yardStripes.setMatrixAt(index, new THREE.Matrix4().compose(position, stripeRotation, new THREE.Vector3(1, 1, 1)));
+      }
+      yardStripes.instanceMatrix.needsUpdate = true;
+      yardStripes.name = `${campaignLevel.campaign.theme}-arrival-bay-markings`;
+      yardStripes.receiveShadow = true;
+      parent.add(yardStripes);
+
+      const emblemMaterial = markingMaterial.clone();
+      emblemMaterial.opacity = 0.18;
+      const yardEmblem = new THREE.Mesh(
+        new THREE.CircleGeometry(0.9, 40),
+        emblemMaterial,
+      );
+      yardEmblem.name = `${campaignLevel.campaign.theme}-arrival-bay-emblem`;
+      yardEmblem.rotation.x = -Math.PI / 2;
+      yardEmblem.position.copy(yardCenter).add(new THREE.Vector3(0, 0.09, 0));
+      parent.add(yardEmblem);
+
+      const sharedSet: readonly [DetailAssetName, number][] = campaignLevel.campaign.theme === "campus"
+        ? [
+            ["classroomDoor", 2.2], ["blackboard", 1.5],
+            ["bulletin", 1.25], ["extinguisher", 0.8], ["trash", 0.75], ["books", 0.18], ["backpack", 0.5],
+          ]
+        : campaignLevel.campaign.theme === "hospital"
+          ? [["bench", 1.0], ["bulletin", 1.2], ["extinguisher", 0.82], ["trash", 0.72], ["books", 0.16]]
+          : campaignLevel.campaign.theme === "fire-station"
+            ? [["bench", 1.0], ["extinguisher", 0.86], ["trash", 0.72], ["bulletin", 1.15]]
+            : [["bench", 1.0], ["extinguisher", 0.86], ["trash", 0.76], ["backpack", 0.5]];
+      sharedSet.forEach(([name, height], index) => {
+        const rawPoint = decorPoints[themeSpecs.length - 2 + index] ?? exteriorPoint(campaignLevel.playerStart, 4 + index, -2);
+        const point = decorPoints.includes(rawPoint) ? pushIntoScenery(rawPoint) : rawPoint;
+        addProp(name, point, height, (index * 1.37 + campaignLevel.campaign.levelNumber) % (Math.PI * 2));
+      });
+
+      const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
+      const exitSide = { x: -exitDirection.y, y: exitDirection.x };
+      addProp("station", {
+        x: campaignLevel.exit.x + exitDirection.x * 3.9 + exitSide.x * 2.2,
+        y: campaignLevel.exit.y + exitDirection.y * 3.9 + exitSide.y * 2.2,
+      }, 3.25, Math.atan2(-exitDirection.x, -exitDirection.y));
+      addProp("car", {
+        x: campaignLevel.exit.x + exitDirection.x * 2.4 - exitSide.x * 2.3,
+        y: campaignLevel.exit.y + exitDirection.y * 2.4 - exitSide.y * 2.3,
+      }, 1.55, Math.atan2(exitSide.x, exitSide.y));
+
+      const lightPoints = [campaignLevel.playerStart, ...campaignLevel.patrol.filter((_, index) => index % 2 === 0), campaignLevel.exit]
+        .slice(0, 6);
+      for (const point of lightPoints) {
         addProp("ceilingLight", point, 0.16, 0, new THREE.Vector3(0, 2.35, 0));
-        const lamp = new THREE.PointLight(0xffcf93, 5.2, 8.5, 2);
-        lamp.position.copy(world(point)).add(new THREE.Vector3(0, 2.2, 0));
+        const lamp = new THREE.PointLight(campaignLevel.campaign.palette.emissive, 5.2, 8.5, 2);
+        lamp.position.copy(world(point, campaignLevel)).add(new THREE.Vector3(0, 2.2, 0));
         targetScene.add(lamp);
       }
     };
@@ -1431,13 +2053,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         root.name = `actor-${name}`;
         const animator = new ActorAnimator(root, assets[name].animations, spec.aliases as ClipAliases);
         animator.require(spec.required);
-        const initialPoint = name === "kid" ? LEVEL.playerStart : name === "villain" ? LEVEL.chaserStart : { x: 23, y: 22.15 };
+        const initialPoint = name === "kid"
+          ? campaignLevel.playerStart
+          : name === "villain"
+            ? campaignLevel.chaserStart
+            : policeGuardPoint(campaignLevel, objectivePaths);
         const initialHeading = name === "kid"
           ? { x: 0, y: 1 }
           : name === "villain"
-            ? LEVEL.chaserStartHeading
-            : { x: 0, y: -1 };
-        root.position.copy(world(initialPoint));
+            ? campaignLevel.chaserStartHeading
+            : nearestExteriorDirection(campaignLevel.exit, campaignLevel);
+        root.position.copy(world(initialPoint, campaignLevel));
         root.rotation.y = Math.atan2(initialHeading.x, initialHeading.y);
         targetScene.add(root);
         const durationByState: Partial<Record<AnimationState, number>> = {};
@@ -1504,7 +2130,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const locker = spotId ? lockers.get(spotId) : undefined;
         if (event.to === "entering-hide" && locker) {
           playLockerSequence(locker, ["Locker_Door_Open_Enter", "Locker_Door_Close_Enter"]);
-          requestAnimation(actors.kid!, "enterHide", { fade: 0.1, duration: HIDE_ENTER_SECONDS });
+          requestAnimation(actors.kid!, "enterHide", { fade: 0.1, duration: simulation.config.hideEnterSeconds });
         } else if (event.to === "aligning-hide") {
           requestAnimation(actors.kid!, "walk", { fade: 0.12 });
         } else if (event.to === "entering-peek" && locker) {
@@ -1519,13 +2145,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         } else if (event.to === "exiting-hide" && locker) {
           setLockerPeek(locker, false);
           playLockerSequence(locker, ["Locker_Door_Open_Exit", "Locker_Door_Close_Exit"]);
-          requestAnimation(actors.kid!, "exitHide", { fade: 0.1, duration: HIDE_EXIT_SECONDS });
+          requestAnimation(actors.kid!, "exitHide", { fade: 0.1, duration: simulation.config.hideExitSeconds });
         }
       }
     };
 
     const snapActorTransform = (view: ActorView, point: Point, heading: Point) => {
-      view.root.position.copy(world(point));
+      view.root.position.copy(world(point, campaignLevel));
       view.root.rotation.set(0, Math.atan2(heading.x, heading.y), 0);
     };
 
@@ -1538,7 +2164,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       turnSpeed = 9.5,
       snapHeading = false,
     ) => {
-      const target = world(point);
+      const target = world(point, campaignLevel);
       view.root.position.lerp(target, 1 - Math.exp(-positionResponse * delta));
       if (Math.hypot(heading.x, heading.y) > 1e-4) {
         const desired = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(heading.x, heading.y));
@@ -1552,7 +2178,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const villain = actors.villain;
       const police = actors.police;
       if (!kid || !villain || !police) return;
-      const kidPoint = playerPresentationPoint(state);
+      const kidPoint = playerPresentationPoint(state, campaignLevel, simulation.config);
       const kidSpeed = sampleActorSpeed(kid, state.player.position, state.tick, simulation.config.fixedStepSeconds);
       const villainSpeed = sampleActorSpeed(villain, state.chaser.position, state.tick, simulation.config.fixedStepSeconds);
       const captureStaging = state.phase === "lost" && !capturePerformanceStarted;
@@ -1587,13 +2213,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             kid.lastTurnCycle = state.player.hideTurnCycle;
           } else {
             kid.lastTurnCycle = -1;
-            const locomotion: AnimationState = kidSpeed > 2.35 ? "run" : kidSpeed > 0.12 ? "walk" : "idle";
+            const locomotion: AnimationState = state.player.mode === "aligning-hide"
+              ? kidSpeed > 0.12 ? "walk" : "idle"
+              : kidSpeed > 2.35 ? "run" : kidSpeed > 0.12 ? "walk" : "idle";
             requestAnimation(kid, locomotion, { fade: 0.17 });
             kid.animator.setLocomotionRate(kidSpeed, locomotion === "run" ? 4.4 : 2.0);
           }
         }
         const checkId = state.chaser.memory.witnessedHideSpotId;
-        const checkSpot = checkId ? LEVEL.hideSpots.find((spot) => spot.id === checkId) : undefined;
+        const checkSpot = checkId ? campaignLevel.hideSpots.find((spot) => spot.id === checkId) : undefined;
         const atCheckSpot = Boolean(checkSpot && distanceBetween(checkSpot.approach, state.chaser.position) < 0.18);
         let villainAnimation: AnimationState;
         switch (state.chaser.mode) {
@@ -1608,7 +2236,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }
         requestAnimation(villain, villainAnimation, {
           fade: 0.17,
-          duration: villainAnimation === "checkLocker" ? HIDE_CHECK_SECONDS : undefined,
+          duration: villainAnimation === "checkLocker" ? simulation.config.checkHideSeconds : undefined,
         });
         villain.animator.setLocomotionRate(villainSpeed, villainAnimation === "run" ? 3.7 : 1.65);
         const checkingLocker = checkId ? lockers.get(checkId) : undefined;
@@ -1621,7 +2249,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           const locker = lockers.get(checkId);
           if (locker) {
             const openDuration = locker.clips.get("Locker_Door_Check_Open")?.duration ?? 0;
-            const remainingCheck = Math.max(0, HIDE_CHECK_SECONDS - state.chaser.modeElapsedSeconds);
+            const remainingCheck = Math.max(0, simulation.config.checkHideSeconds - state.chaser.modeElapsedSeconds);
             if (holdLockerAction(locker, "Locker_Door_Check_Open", Math.max(0, remainingCheck - openDuration))) {
               lastCheckSpot = checkId;
             }
@@ -1667,6 +2295,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const delta = boundedFrameDeltaSeconds(last, now, simulation.config.maxFrameDeltaSeconds);
       last = now;
       if (ready) {
+        for (const [index, cloud] of sightObscurers.entries()) {
+          cloud.rotation.y += delta * (0.12 + index * 0.013);
+          cloud.position.y = Number(cloud.userData.baseY ?? 0)
+            + Math.sin(now * 0.00042 + Number(cloud.userData.phase ?? 0)) * 0.055;
+        }
         const held = (key: string) => keyboardKeys.current.has(key) || touchKeys.current.has(key);
         let dx = 0;
         let dy = 0;
@@ -1686,7 +2319,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         updateLockerVisionStyle(latestState);
         const playerActuallyVisible = latestState.phase !== "playing"
           || isPlayerVisuallyExposed(latestState.player, simulation.config);
-        const chaserKnowledgeObservable = canPlayerObserveChaser(latestState);
+        const chaserKnowledgeObservable = canPlayerObserveChaser(latestState, campaignLevel, simulation.config);
         const chaserWorldRendered = shouldRenderChaserModel(latestState.phase, playerActuallyVisible);
         syncAnimations(latestState, delta);
         if (actors.kid) {
@@ -1711,8 +2344,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           lastScoreThreat = scoreThreat;
         }
 
-        const playerAnchor = world(playerPresentationPoint(latestState)).add(new THREE.Vector3(0, 0.92, 0));
-        const chaserAnchor = world(latestState.chaser.position).add(new THREE.Vector3(0, 1.05, 0));
+        const playerAnchor = world(
+          playerPresentationPoint(latestState, campaignLevel, simulation.config),
+          campaignLevel,
+        ).add(new THREE.Vector3(0, 0.92, 0));
+        const chaserAnchor = world(latestState.chaser.position, campaignLevel).add(new THREE.Vector3(0, 1.05, 0));
         const policeAnchor = actors.police?.root.position.clone().add(new THREE.Vector3(0, 1.05, 0)) ?? playerAnchor;
         const framingThreat = shouldFrameChaser(
           latestState.phase,
@@ -1774,7 +2410,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setChaserConfirming(latestState.chaser.visualConfirmationSeconds !== null);
           setChaserObservable(chaserKnowledgeObservable);
           setElapsed(Math.floor(latestState.elapsedSeconds));
-          setObjectiveDistance(objectiveDistanceMeters(latestState.player.position));
+          setObjectiveDistance(objectiveDistanceMeters(latestState.player.position, campaignLevel, objectivePaths));
           setInteraction(simulation.getHideInteraction());
           lastHudUpdate = now;
         }
@@ -1822,12 +2458,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         start: () => void;
         interact: () => void;
         setScenario: (positions: { player: Point; chaser: Point }) => void;
+        selectLevel: (level: number | string) => void;
+        setUnlockedThrough: (levelNumber: number) => void;
       };
     };
     if (new URLSearchParams(location.search).has("qa")) {
       qaWindow.__CHASING_QA__ = {
         getState: () => ({
           ready,
+          campaign: {
+            id: campaignLevel.id,
+            index: campaignLevel.campaign.levelNumber - 1,
+            number: campaignLevel.campaign.levelNumber,
+            name: campaignLevel.campaign.name,
+            theme: campaignLevel.campaign.theme,
+            config: simulation.config,
+            progress: campaignProgressRef.current,
+            themeAsset: THEME_KIT_ASSETS[campaignLevel.campaign.theme],
+          },
           game: latestState,
           interaction: simulation.getHideInteraction(),
           animations: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, view?.animator.snapshot()])),
@@ -1843,13 +2491,27 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               : undefined,
             viewport: projectActorToViewport(view),
           }])),
-          knowledge: { chaserObservable: canPlayerObserveChaser(latestState) },
+          knowledge: { chaserObservable: canPlayerObserveChaser(latestState, campaignLevel, simulation.config) },
+          sceneIntegrity: {
+            expectedMovementBlockers: campaignLevel.movementBlockers?.length ?? 0,
+            renderedMovementBlockers,
+            expectedVisionObscurers: campaignLevel.visionOnlyBlockers?.length ?? 0,
+            renderedVisionObscurers: sightObscurers.length,
+          },
           lockers: Object.fromEntries([...lockers].map(([id, view]) => [id, {
             action: view.actionName,
             peeking: view.peeking,
             peekClosing: view.peekClosing,
             holdFinal: view.holdFinal,
             delayRemaining: view.delayRemaining,
+            normalizedTime: view.action
+              ? view.action.time / Math.max(0.001, view.action.getClip().duration)
+              : 0,
+            timeScale: view.action?.timeScale ?? 0,
+            doorQuaternion: (() => {
+              const door = view.root.getObjectByName("DoorPivot");
+              return door ? { x: door.quaternion.x, y: door.quaternion.y, z: door.quaternion.z, w: door.quaternion.w } : null;
+            })(),
             owner: view.owner,
           }])),
           audio: score.getSnapshot(),
@@ -1868,16 +2530,37 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               maxStrength: Math.max(0, ...cameraOccluders.map((occluder) => occluder.strength.value)),
             },
           },
-          render: { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles },
+          render: {
+            calls: renderer.info.render.calls,
+            triangles: renderer.info.render.triangles,
+            memory: renderer.info.memory,
+            programs: renderer.info.programs?.length ?? 0,
+            sceneTextures: countSceneTextures(scene),
+            invalidSceneTextures: findInvalidSceneTextures(scene),
+            textureDeduplication,
+          },
         }),
         start: beginGame,
         interact: () => { interactPressed.current = true; },
+        selectLevel: (requested) => {
+          const index = typeof requested === "number"
+            ? requested
+            : CAMPAIGN_LEVELS.findIndex((level) => level.id === requested);
+          chooseLevelRef.current(index);
+        },
+        setUnlockedThrough: (levelNumber) => {
+          setCampaignProgress((current) => ({
+            ...current,
+            unlockedThrough: THREE.MathUtils.clamp(Math.floor(levelNumber), 1, CAMPAIGN_LEVELS.length),
+          }));
+        },
         setScenario: ({ player, chaser }) => {
           simulation = new GameSimulation({
+            level: campaignLevel,
             autoStart: true,
             initialPlayerPosition: player,
             initialChaserPosition: chaser,
-            config: { spawnDelaySeconds: 0, hideEnterSeconds: HIDE_ENTER_SECONDS, hideExitSeconds: HIDE_EXIT_SECONDS, checkHideSeconds: HIDE_CHECK_SECONDS },
+            config: { ...gameplayConfig, spawnDelaySeconds: 0 },
           });
           latestState = simulation.getState();
           resetPresentation(latestState);
@@ -1918,7 +2601,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       renderer.dispose();
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);
     };
-  }, []);
+  }, [campaignLevel, gameplayConfig, objectivePaths]);
 
   const touch = (key: string, active: boolean) => {
     if (active) touchKeys.current.add(key);
@@ -1945,15 +2628,20 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         : playerMode === "exiting-hide"
           ? "正在离开…"
           : null;
+  const hasNextLevel = selectedLevelIndex < CAMPAIGN_LEVELS.length - 1;
+  const primaryAction = phase === "won" && hasNextLevel
+    ? () => chooseLevel(selectedLevelIndex + 1)
+    : begin;
 
   return (
     <main className="game-shell">
       <header className="hud">
         <div className="title-lockup">
-          <span className="eyebrow">CHASING · 3D 追逐模式 · CINEMATIC WEB</span>
-          <h1>逃出校园</h1>
+          <span className="eyebrow">CHASING · 3D 追逐模式 · 第 {campaignLevel.campaign.levelNumber.toString().padStart(2, "0")} 关 · {campaignLevel.campaign.themeLabel}</span>
+          <h1>{campaignLevel.campaign.name}</h1>
         </div>
         <div className="stats">
+          <span className="chapter">关卡 <b>{campaignLevel.campaign.levelNumber}/10</b></span>
           <span>用时 <b>{elapsed}s</b></span>
           <span className="objective">出口 <b>{objectiveDistance}m</b></span>
           <span className={`status danger-${Math.round(danger * 10)}`}><i />{displayedChaserStatus}</span>
@@ -1962,7 +2650,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         </div>
       </header>
 
-      <section className={`playfield threat-${chaserMode} mode-${playerMode}`} style={{ "--threat": danger } as React.CSSProperties}>
+      <section
+        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserMode} mode-${playerMode}`}
+        style={{
+          "--threat": danger,
+          "--theme-accent": campaignLevel.campaign.palette.accent,
+          "--theme-glow": campaignLevel.campaign.palette.emissive,
+        } as React.CSSProperties}
+      >
         <div className="three-mount" ref={mount} />
         <div className="cinematic-vignette" aria-hidden="true" />
 
@@ -1972,7 +2667,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             <div>
               <strong>{loadError || loadProgress.message}</strong>
               {!loadError && <div className="load-bar"><i style={{ width: `${loadPercent}%` }} /></div>}
-              {!loadError && <small>正式高模、动作、灯光与互动资产 · {loadPercent}%</small>}
+              {!loadError && <small>{campaignLevel.campaign.themeLabel}主题高模、角色动作、动态灯光与互动资产 · {loadPercent}%</small>}
               {loadError && <button type="button" onClick={() => location.reload()}>刷新重试</button>}
             </div>
           </div>
@@ -2002,10 +2697,41 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         {showResult && !loading && (
           <div className={`overlay ${phase}`}>
             <div className="overlay-card">
-              <span className={`result ${phase}`}>{phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : "3D 潜逃演练"}</span>
-              <h2>{phase === "won" ? "你抵达了有警察守护的出口" : phase === "lost" ? "利用遮挡和储物柜甩开追捕者" : "断开视线，藏好，再寻找逃生窗口"}</h2>
-              <p>{phase === "ready" ? "追捕者只会追踪亲眼见到的位置。靠近蓝色储物柜按 E 躲藏；没被目击进柜时，他会失去视野并盲目搜索。" : "每次失败都可以换路线、切断视线或提前选择藏身处。"}</p>
-              <button className="primary" type="button" onClick={begin}>{phase === "ready" ? "开始逃跑" : "再来一次"}<kbd>Enter</kbd></button>
+              <span className={`result ${phase}`}>{phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : `${campaignLevel.campaign.themeLabel}篇 · ${campaignLevel.campaign.difficultyLabel}`}</span>
+              <h2>{phase === "won" ? `你完成了「${campaignLevel.campaign.name}」` : phase === "lost" ? "切断视线，利用主题藏柜重新布局" : campaignLevel.campaign.subtitle}</h2>
+              <p>{phase === "ready" ? campaignLevel.campaign.briefing : "追捕者只会依据真实目击与最后位置追踪。绕过遮挡、藏好，等他进入盲目搜索后再继续逃跑。"}</p>
+
+              {phase === "ready" && (
+                <div className="level-grid" aria-label="选择关卡">
+                  {CAMPAIGN_LEVELS.map((level, index) => {
+                    const locked = index + 1 > campaignProgress.unlockedThrough;
+                    const active = index === selectedLevelIndex;
+                    const best = campaignProgress.bestSeconds[level.id];
+                    return (
+                      <button
+                        className={`level-card${active ? " active" : ""}${locked ? " locked" : ""}`}
+                        type="button"
+                        key={level.id}
+                        disabled={locked || loading}
+                        onClick={() => chooseLevel(index)}
+                        aria-current={active ? "step" : undefined}
+                      >
+                        <span>{level.campaign.levelNumber.toString().padStart(2, "0")}</span>
+                        <strong>{locked ? "未解锁" : level.campaign.name}</strong>
+                        <small>{locked ? "完成上一关" : best ? `最佳 ${best}s` : level.campaign.themeLabel}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="overlay-actions">
+                <button className="primary" type="button" onClick={primaryAction}>
+                  {phase === "ready" ? `开始第 ${campaignLevel.campaign.levelNumber} 关` : phase === "won" && hasNextLevel ? "进入下一关" : "再来一次"}
+                  <kbd>Enter</kbd>
+                </button>
+                {phase === "won" && <button className="secondary" type="button" onClick={begin}>重玩本关</button>}
+              </div>
             </div>
           </div>
         )}
@@ -2035,7 +2761,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       <footer>
         <span><i className="kid" />玩家</span>
         <span><i className="villain" />追捕者</span>
-        <span><i className="safe" />可藏储物柜</span>
+        <span><i className="safe" />可藏主题柜</span>
         <small>WASD / 方向键移动 · E 躲藏或离开 · Q 按住观察 · 滚轮动态调视野 · M 音乐 · R 重开</small>
       </footer>
     </main>

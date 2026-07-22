@@ -53,7 +53,7 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
     .filter((filename) => filename.endsWith(".glb"))
     .map((filename) => `/${path.relative(path.join(ROOT, "public"), filename).split(path.sep).join("/")}`);
 
-  assert.equal(shipped.length, 29, "the complete 29-model Web set must be retained");
+  assert.equal(shipped.length, 33, "the shared 29-model set plus four campaign theme kits must be retained");
   assert.deepEqual([...shipped].sort(), [...referenced].sort(), "runtime code and shipped GLBs must stay in sync");
   const referencedImages = new Set();
 
@@ -106,6 +106,32 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
     [...referencedImages].sort(),
     "public/models must not contain unreferenced texture exports",
   );
+});
+
+test("campaign theme kits expose detailed named hero props and PBR materials", async () => {
+  const contracts = new Map([
+    ["campus-kit.glb", ["CampusTrophyCase", "CampusVendingMachine", "CampusWaterFountain", "CampusBikeRack", "CampusWayfinding", "CampusArchitectureWall"]],
+    ["hospital-kit.glb", ["HospitalBed", "HospitalCrashCart", "HospitalIVStation", "HospitalWheelchair", "HospitalPrivacyScreen", "HospitalWayfinding", "HospitalArchitectureWall"]],
+    ["fire-station-kit.glb", ["FireEngine", "FireGearRack", "FireHoseReel", "FireHydrant", "FireStationWayfinding", "FireSafetyCones", "FireArchitectureWall"]],
+    ["factory-kit.glb", ["FactoryPipeAssembly", "FactoryStorageTank", "FactoryControlConsole", "FactoryConveyor", "FactorySafetyBarrier", "FactoryCrateStack", "FactoryArchitectureWall"]],
+  ]);
+
+  for (const [basename, requiredNodes] of contracts) {
+    const filename = path.join(MODELS_ROOT, "environment", "themes", basename);
+    const buffer = await readFile(filename);
+    const gltf = readGlbJson(buffer, basename);
+    const nodeNames = new Set((gltf.nodes ?? []).map((node) => node.name));
+    for (const name of requiredNodes) assert.ok(nodeNames.has(name), `${basename} is missing ${name}`);
+    const triangles = (gltf.meshes ?? []).reduce((total, mesh) => total + mesh.primitives.reduce((meshTotal, primitive) => {
+      return meshTotal + ((gltf.accessors?.[primitive.indices]?.count ?? 0) / 3);
+    }, 0), 0);
+    assert.ok(triangles >= 30_000, `${basename} must retain its detailed beveled production geometry`);
+    assert.ok((gltf.materials?.length ?? 0) >= 10, `${basename} needs a real semantic PBR material set`);
+    assert.ok((gltf.images?.length ?? 0) >= 8, `${basename} must embed real PBR color/normal surface maps`);
+    assert.ok(gltf.images.every((image) => image.mimeType === "image/webp"), `${basename} PBR maps must use compact WebP payloads`);
+    assert.ok(gltf.extensionsRequired?.includes("EXT_texture_webp"), `${basename} must declare its WebP texture contract`);
+    assert.ok(buffer.length < 2.5 * 1024 * 1024, `${basename} exceeds the compact web theme-kit budget`);
+  }
 });
 
 test("runtime PNG files are real deployable images, not LFS pointers", async () => {

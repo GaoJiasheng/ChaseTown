@@ -45,6 +45,8 @@ type PlayOptions = {
 export type ActorAnimationSnapshot = {
   state: AnimationState | null;
   clip: string | null;
+  clipDuration: number;
+  timeScale: number;
   normalizedTime: number;
   playing: boolean;
 };
@@ -194,6 +196,8 @@ export class ActorAnimator {
     return {
       state: this.currentState,
       clip: this.currentClip?.name ?? null,
+      clipDuration: this.currentClip?.duration ?? 0,
+      timeScale: this.currentAction?.timeScale ?? 0,
       normalizedTime: THREE.MathUtils.clamp((this.currentAction?.time ?? 0) / duration, 0, 1),
       playing: Boolean(this.currentAction?.isRunning()),
     };

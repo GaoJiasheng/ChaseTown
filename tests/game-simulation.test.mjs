@@ -738,17 +738,17 @@ test("180-degree locker alignment exposes two eased 90-degree animation cycles",
   });
   simulation.advance(1 / 60, { interactPressed: true });
 
-  const quarter = runFor(simulation, 0.3, 1 / 60);
+  const quarter = runFor(simulation, 0.25, 1 / 60);
   assert.equal(quarter.player.hideTurnDirection, 1);
   assert.equal(quarter.player.hideTurnCycle, 0);
-  assert.ok(Math.abs(quarter.player.hideTurnSegmentDurationSeconds - 0.6) < 1e-9);
+  assert.ok(Math.abs(quarter.player.hideTurnSegmentDurationSeconds - 0.5) < 1e-9);
   assert.ok(Math.abs(Math.atan2(quarter.player.heading.x, quarter.player.heading.y) - Math.PI / 4) < 1e-6);
 
-  const seam = runFor(simulation, 0.3, 1 / 60);
+  const seam = runFor(simulation, 0.25, 1 / 60);
   assert.equal(seam.player.hideTurnCycle, 1, "the second authored pivot restarts at the exact 90-degree seam");
   assert.ok(Math.abs(Math.atan2(seam.player.heading.x, seam.player.heading.y) - Math.PI / 2) < 1e-6);
 
-  const threeQuarter = runFor(simulation, 0.3, 1 / 60);
+  const threeQuarter = runFor(simulation, 0.25, 1 / 60);
   assert.equal(threeQuarter.player.hideTurnCycle, 1);
   assert.ok(Math.abs(Math.atan2(threeQuarter.player.heading.x, threeQuarter.player.heading.y) - Math.PI * 0.75) < 1e-6);
 });

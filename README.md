@@ -1,18 +1,21 @@
 # Chasing
 
-《追逐 / Chasing》是一款运行在浏览器里的 3D 学校迷宫逃脱游戏。玩家控制小孩穿过学校迷宫、甩开追捕者并抵达警察局。项目使用 React、Three.js 与 WebGL，不需要安装桌面游戏引擎。
+《追逐 / Chasing》是一款运行在浏览器里的 3D 主题迷宫逃脱游戏。玩家控制小孩穿过校园、医院、消防站与工厂，甩开追捕者并抵达安全出口。项目使用 React、Three.js 与 WebGL，不需要安装桌面游戏引擎。
 
 ## 当前目标
 
-- 第一关在桌面与手机浏览器中完整可玩。
+- 10 关顺序战役在桌面与手机浏览器中完整可玩，覆盖校园 3 关、医院 2 关、消防站 2 关与工厂 3 关。
+- 每个主题拥有独立的建筑墙体、PBR 彩色/法线表面、地标道具、灯光、雾效、环境配色与关卡路线；主题包使用紧凑 WebP 内嵌贴图。
 - 小孩、坏人和警察都使用正式 3D 角色，而不是几何占位体。
 - 小孩、追捕者与警察使用统一骨架的正式动作集，移动、追逐、躲藏、搜索与胜负演出均由 `AnimationMixer` 驱动。
 - 玩家可以借助遮挡断开视线、进入带真实柜门动画的储物柜、从门缝观察并择机继续逃跑。
 - 追捕者只依据视锥、遮挡和已观察证据行动；丢失玩家后前往最后已知位置搜索，不读取隐藏玩家坐标。
+- 所有逻辑碰撞点都有同坐标实体模型；可穿越的视线遮挡点显示为主题烟尘/蒸汽，不存在隐形碰撞或隐形断视线。
 - 追捕者的 3D 模型始终存在于游戏世界；HUD 是否掌握其状态与模型渲染分离，只允许墙体、深度和柜门视野自然遮挡。
 - 探索与威胁音乐使用两条同拍 stem 随 AI 状态连续混音。
 - 相机锁定世界方位，只平滑跟随位置；追逐拉远按 FOV、屏幕宽高比、双方距离和角色安全边距计算，玩家转身不会旋转操作坐标，手动缩放也不会把追捕者挤出安全画幅。断视线后重新相遇会先经过短暂确认并提前构图，再恢复追逐。
-- 所有运行时模型使用经过浏览器验证和体积优化的 GLB。
+- 玩家、追捕者、进出柜和窥视动作统一按原版节奏提速 20%，后续关卡再用克制的追捕者倍率形成难度曲线。
+- 所有运行时模型使用经过浏览器验证和体积优化的 GLB；场景内重复 PBR 纹理会归一为共享 GPU 引用。
 
 ## 本地运行
 
@@ -33,7 +36,7 @@ npm run build
 npm test
 ```
 
-`npm test` 会先完成生产构建，再验证页面渲染、29 个运行 GLB、外部纹理、角色骨骼与动作、储物柜动画、公平感知、固定步长模拟、自适应音乐和源美术保留清单。
+`npm test` 会先完成生产构建，再验证页面渲染、33 个运行 GLB、10 关路线与难度、PBR 主题包、角色骨骼与动作、储物柜动画、公平感知、固定步长模拟、自适应音乐和源美术保留清单。
 
 ## 操作
 
@@ -48,7 +51,8 @@ npm test
 
 ```text
 app/                         React 页面、Three.js 场景和游戏逻辑
-public/models/               浏览器运行时使用的 GLB、贴图和关卡数据
+public/models/               浏览器运行时使用的 GLB、PBR 贴图与四套主题包
+scripts/                     可重复生成四套主题 GLB 的 Blender 脚本
 art-source/                  当前角色 Blender 母版、环境 FBX、动画与概念图
 tools/art_pipeline/          模型转换、压缩、贴图和质量门禁脚本
 tests/                       构建与页面回归测试
@@ -90,6 +94,7 @@ package.json                 开发、构建、测试与依赖入口
 - [`docs/07_Web版统一优化方案与路线图.md`](docs/07_Web版统一优化方案与路线图.md)
 - [`docs/08_躲藏机制与顶级动画执行规格.md`](docs/08_躲藏机制与顶级动画执行规格.md)
 - [`docs/09_Web版实施与验证报告.md`](docs/09_Web版实施与验证报告.md)
+- [`docs/10_十关主题战役实施与验证.md`](docs/10_十关主题战役实施与验证.md)
 - [`docs/web-rendering/evidence/README.md`](docs/web-rendering/evidence/README.md)
 - [`docs/art_production/character_web_pbr_postprocess.md`](docs/art_production/character_web_pbr_postprocess.md)
 - [`docs/licenses/QUATERNIUS_UNIVERSAL_ANIMATION_LIBRARY_CC0.md`](docs/licenses/QUATERNIUS_UNIVERSAL_ANIMATION_LIBRARY_CC0.md)

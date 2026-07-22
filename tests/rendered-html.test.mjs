@@ -14,8 +14,8 @@ test("renders the Chasing game shell", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /<title>Chasing · 逃出校园<\/title>/i);
-  assert.match(html, /逃出校园/);
+  assert.match(html, /<title>Chasing · 3D 主题逃生战役<\/title>/i);
+  assert.match(html, /10 关电影化 3D 潜逃战役/);
   assert.match(html, /3D 追逐模式/);
   assert.match(html, /正在载入项目美术资产/);
   assert.match(html, /WASD/);
