@@ -1,0 +1,200 @@
+{
+  "url": "https://chasing-school-escape.gavingao.chatgpt.site/?qa&release-v13",
+  "title": "Chasing · 逃出校园",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "scrollWidth": 1440,
+    "scrollHeight": 900
+  },
+  "game": {
+    "phase": "playing",
+    "elapsedSeconds": 0.7500000000000007,
+    "tick": 45,
+    "player": {
+      "position": {
+        "x": 10,
+        "y": 3
+      },
+      "heading": {
+        "x": 0,
+        "y": 1
+      },
+      "mode": "free",
+      "hideSpotId": null,
+      "transitionRemainingSeconds": 0,
+      "hideTurnDirection": 0,
+      "hideTurnCycle": -1,
+      "hideTurnSegmentDurationSeconds": 0
+    },
+    "chaser": {
+      "position": {
+        "x": 15.067291666666653,
+        "y": 3
+      },
+      "heading": {
+        "x": -1,
+        "y": 0
+      },
+      "mode": "chase",
+      "modeElapsedSeconds": 0.4,
+      "visualConfirmationSeconds": null,
+      "patrolIndex": 0,
+      "searchSeed": 1,
+      "searchIndex": 0,
+      "searchWaypointElapsedSeconds": 0,
+      "memory": {
+        "lastKnownPosition": {
+          "x": 10,
+          "y": 3
+        },
+        "lastSeenAtSeconds": 0.7000000000000005,
+        "witnessedHideSpotId": null
+      }
+    },
+    "hideSpots": {
+      "locker-north": {
+        "id": "locker-north",
+        "occupiedByPlayer": false
+      },
+      "locker-south": {
+        "id": "locker-south",
+        "occupiedByPlayer": false
+      }
+    },
+    "aiAccumulatorSeconds": 0.049999999999999906,
+    "events": []
+  },
+  "visibility": {
+    "kid": {
+      "rootVisible": true,
+      "alpha": 1,
+      "viewport": {
+        "x": 0.62047437653639,
+        "y": 0.5015644914839208,
+        "depth": 0.993970746284835,
+        "centerInFrustum": true
+      }
+    },
+    "villain": {
+      "rootVisible": true,
+      "alpha": 1,
+      "worldRendered": true,
+      "viewport": {
+        "x": 0.38185236268986295,
+        "y": 0.5015644914839208,
+        "depth": 0.993970746284835,
+        "centerInFrustum": true
+      }
+    },
+    "police": {
+      "rootVisible": true,
+      "alpha": 1,
+      "viewport": {
+        "x": 0.2579212679373789,
+        "y": -0.1573804469424973,
+        "depth": 0.997483926529492,
+        "centerInFrustum": false
+      }
+    }
+  },
+  "camera": {
+    "fov": 56,
+    "aspect": 1.806701030927835,
+    "distance": 22.50532939604545,
+    "zoom": 1,
+    "position": {
+      "x": 1.2214778337242882,
+      "y": 19.358694936647375,
+      "z": -30.996033752301656
+    },
+    "focus": {
+      "x": 1.2214778337242882,
+      "y": 0.9849920454622749,
+      "z": -18
+    },
+    "direction": {
+      "x": 0,
+      "y": 0.8164156395068652,
+      "z": -0.5774647206268071
+    },
+    "azimuthDegrees": 180,
+    "occlusion": {
+      "groups": 23,
+      "obscured": [],
+      "maxStrength": 0
+    }
+  },
+  "audio": {
+    "status": "playing",
+    "unlocked": true,
+    "muted": false,
+    "threat": 1,
+    "targetGains": {
+      "explore": 0.4,
+      "threat": 0.94
+    },
+    "contextState": "running",
+    "driftSeconds": -0.0000010000000000287557,
+    "explore": {
+      "url": "/audio/slow-drift-explore.m4a",
+      "currentTimeSeconds": 0.853333,
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "threatTrack": {
+      "url": "/audio/slow-drift-threat.m4a",
+      "currentTimeSeconds": 0.853332,
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "lastError": null
+  },
+  "render": {
+    "calls": 520,
+    "triangles": 1999402
+  },
+  "probes": [
+    {
+      "url": "/favicon.ico",
+      "status": 200,
+      "contentType": "image/vnd.microsoft.icon",
+      "bytes": 17014
+    },
+    {
+      "url": "/audio/adaptive-score-manifest.json",
+      "status": 200,
+      "contentType": "application/json",
+      "bytes": 3505
+    },
+    {
+      "url": "/THIRD_PARTY_NOTICES.txt",
+      "status": 200,
+      "contentType": "text/plain",
+      "bytes": 7465
+    },
+    {
+      "url": "/models/characters/kid.glb",
+      "status": 200,
+      "contentType": "application/octet-stream",
+      "bytes": 9997836
+    },
+    {
+      "url": "/models/characters/villain.glb",
+      "status": 200,
+      "contentType": "application/octet-stream",
+      "bytes": 10748024
+    }
+  ],
+  "network": {
+    "responseCount": 247,
+    "modelResponses": 219,
+    "audioResponses": 5,
+    "httpErrors": []
+  },
+  "diagnostics": []
+}

@@ -1,15 +1,15 @@
 # Web 版实施与验证报告
 
 > 文档日期：2026-07-22
-> 当前状态：`REVIEW` — 本地全量回归、真实浏览器冒烟、Sites v12 发布与线上复核均已通过，等待用户体验验收
+> 当前状态：`REVIEW` — 本地全量回归、真实浏览器冒烟、Sites v13 发布与线上复核均已通过，等待用户体验验收
 > 工作分支：`codex/top-tier-web-vertical-slice`
 
 ## 1. 发布标识
 
 | 项目 | 值 |
 |---|---|
-| 部署运行 Commit | `4c783b43d3468f0c71b1a2feb54b6d973150c481` |
-| 托管项目 / 版本 | `appgprj_6a562ff04ac081918664612f375c3fda` / Sites `v12` |
+| 部署运行 Commit | `a23abcf5e0331155e5c01a288962c48bba587241` |
+| 托管项目 / 版本 | `appgprj_6a562ff04ac081918664612f375c3fda` / Sites `v13` |
 | 线上地址 | `https://chasing-school-escape.gavingao.chatgpt.site` |
 | 访问策略 | `Private / custom`；仅 Gavin Gao，0 个共享群组 |
 | 最终验证日期与执行人 | `2026-07-22` / Codex QA |
@@ -118,8 +118,8 @@
 | 本地 favicon 请求旧线上私有地址并触发 ORB | icon metadata 被 `metadataBase` 解析为绝对生产 URL | 改为显式同源 `/favicon.svg`；最终网络日志为 200 `image/svg+xml`、0 loading failure | [最终 smoke 摘要](web-rendering/evidence/runtime-smoke-summary.json) |
 | WebGL context 丢失后缺少恢复反馈 | canvas 未监听 context lost / restored | 丢失时停止推进、清输入与 ready 标记并显示恢复卡；恢复后自动 reload | [WebGL 故障注入摘要](web-rendering/evidence/webgl-context-summary.json) |
 | 模型并行加载中卸载可能留下未挂载资源 | `GLTFLoader` promise 完成后只检查 disposed，没有主动释放 | 29 项加载改为 `allSettled`；失败或卸载后统一 dispose 已完成的几何、材质、纹理与骨架 | TypeScript / ESLint / 构建回归 |
-| 线上首次开始后 Threat 音乐轨可能晚约 20 秒就绪 | 音频元素遵守首次手势才创建，私有 CDN 冷请求使第二条 stem 尚未缓存 | 3D 加载期间并行 fetch 并完整物化双轨缓存，仍在用户手势内创建 AudioContext / Audio 元素；失败保持可重试退路 | [Sites v12 smoke](web-rendering/evidence/deployed-v12-smoke.json)：两轨 readyState 4、漂移约 3 μs |
-| 站点截图机器人额外请求 `/favicon.ico` 产生 404 | 页面显式提供 SVG 图标，但传统 crawler 仍探测 ICO 默认路径 | 增加真实 64 × 64 ICO 与文件签名回归；线上返回 200 `image/vnd.microsoft.icon` | [Sites v12 smoke](web-rendering/evidence/deployed-v12-smoke.json) |
+| 线上首次开始后 Threat 音乐轨可能晚约 20 秒就绪 | 音频元素遵守首次手势才创建，私有 CDN 冷请求使第二条 stem 尚未缓存 | 3D 加载期间并行 fetch 并完整物化双轨缓存，仍在用户手势内创建 AudioContext / Audio 元素；失败保持可重试退路 | [Sites v13 smoke](web-rendering/evidence/deployed-v13-smoke.json)：两轨 readyState 4、漂移约 1 μs |
+| 站点截图机器人额外请求 `/favicon.ico` 产生 404 | 页面显式提供 SVG 图标，但传统 crawler 仍探测 ICO 默认路径 | 增加真实 64 × 64 ICO 与文件签名回归；线上返回 200 `image/vnd.microsoft.icon` | [Sites v13 smoke](web-rendering/evidence/deployed-v13-smoke.json) |
 | 上下左右操作会按反，转向后更难判断 | 移动输入直接使用世界坐标，而镜头又持续根据玩家 heading 旋转；不同阻尼还造成残余 bearing 漂移 | 锁定单一世界方位；键盘与触控先按屏幕坐标统一，再由同一固定基向量转换；删除 heading look-ahead 和相机朝向插值 | `tests/input.test.mjs` 的 Three.js 投影用例 + [真实浏览器四向摘要](web-rendering/evidence/camera-visibility-summary.json) |
 | 追逐和断视线时坏人凭空消失 | HUD 情报门禁 `canPlayerObserveChaser` 被错误复用于模型透明度、根节点显隐和追逐镜头 | 情报状态只驱动 HUD；玩家暴露时世界模型独立保持 `rootVisible=true / alpha=1`，追逐采用固定方位双人构图；完全藏好时仍按窥视 marker 关闭世界信息 | [追逐截图](web-rendering/evidence/fixed-camera-chase.jpg)、[断视线截图](web-rendering/evidence/chaser-last-known-visible.jpg) 与 [逐帧 / Locker 边界摘要](web-rendering/evidence/camera-visibility-summary.json) |
 | 手机竖屏合法追逐间距可能把坏人挤出画面 | 固定 `chaseFocus` 与线性 aspect 补偿没有考虑水平 FOV、模型边距和手动放大 | 追逐焦点采用双方中点，按当前 smoothed focus 逐帧反算最低安全距离；拉远快速响应，手动倍率受安全下限约束 | [390 × 844 六格追逐截图](web-rendering/evidence/mobile-chase-safe-frame.jpg) 与 [缩放前后坐标摘要](web-rendering/evidence/camera-visibility-summary.json) |
@@ -143,7 +143,7 @@
 | 自适应音乐 | 用户交互后 AudioContext 为 running；两 stem 同步；危险混音与静音正常；无解码错误 | PASS；两轨 38.02 秒、readyState 4、media error null，常态漂移为微秒级，长路线重开约 5.3 ms |
 | 手机竖屏 390 × 844 | HUD、摇杆、交互、窥视、静音与重开均不遮住关键画面；横向相隔六格、最大手动放大和搜索后重获追逐均保持双人安全画幅 | PASS；scroll 与 viewport 同尺寸，触控热区至少 44 px；[布局截图](web-rendering/evidence/mobile-portrait.jpg)、[六格追逐](web-rendering/evidence/mobile-chase-safe-frame.jpg)、[重获追逐](web-rendering/evidence/mobile-reacquired-chase-safe-frame.jpg) |
 | 手机横屏 844 × 390 | 画面和触控区不重叠；可开始、移动、交互和重开 | PASS；设备仿真布局与真实 touch 事件路径通过 |
-| 线上私有地址 | TLS 与鉴权正常；首页、29 个 GLB、双轨 M4A、manifest、notices 和图标可达；真实 Chrome 可解码、可交互且无 4xx / 5xx | PASS；Sites v12、[运行截图](web-rendering/evidence/deployed-v12-final.jpg)、[结构化 smoke](web-rendering/evidence/deployed-v12-smoke.json) |
+| 线上私有地址 | TLS 与鉴权正常；首页、29 个 GLB、双轨 M4A、manifest、notices 和图标可达；真实 Chrome 可解码、可交互且无 4xx / 5xx | PASS；Sites v13、[运行截图](web-rendering/evidence/deployed-v13-final.jpg)、[结构化 smoke](web-rendering/evidence/deployed-v13-smoke.json) |
 
 本地 smoke 使用 Chrome 150、WebGL 2、ANGLE Metal（Apple M5 Max）。5 秒 active rAF：桌面 120 FPS（median 8.3 ms / p95 9.7 ms / max 10.4 ms），竖屏 120 FPS，横屏 120.2 FPS；三组均无帧超过 20 ms。典型桌面约 457 draw calls / 1.628M triangles，遮挡峰值约 526 / 2.010M，离开遮挡后恢复基线。最终控制台 warning / error、exception、HTTP ≥ 400 与 `Network.loadingFailed` 均为 0。证据目录见 [`docs/web-rendering/evidence/`](web-rendering/evidence/README.md)。
 
@@ -197,9 +197,9 @@
 | 发布项 | 最终值 |
 |---|---|
 | 远端分支 | `codex/top-tier-web-vertical-slice` |
-| 部署运行 Commit SHA | `4c783b43d3468f0c71b1a2feb54b6d973150c481` |
-| Sites version ID | `appgprj_6a562ff04ac081918664612f375c3fda~appgver_3e97cd54a02881919d22b2e7f4f51c10`（v12） |
-| Deployment ID | `appgdep_6a60b2840f448191bfcf929caa7befe7` |
-| 线上 smoke 时间 | `2026-07-22 20:10`（Asia/Singapore） |
-| 最终截图 | `docs/web-rendering/evidence/deployed-v12-final.jpg` |
+| 部署运行 Commit SHA | `a23abcf5e0331155e5c01a288962c48bba587241` |
+| Sites version ID | `appgprj_6a562ff04ac081918664612f375c3fda~appgver_d8084602f2a48191b77a0e40e51d5efd`（v13） |
+| Deployment ID | `appgdep_6a60c8db8c2481919189964709f3a710` |
+| 线上 smoke 时间 | `2026-07-22 21:47`（Asia/Singapore） |
+| 最终截图 | `docs/web-rendering/evidence/deployed-v13-final.jpg` |
 | 最终结论 | `PASS`；线上技术验收关闭，等待用户主观体验 REVIEW |
