@@ -18,7 +18,7 @@ import {
   getCampaignGameplayConfig,
   type CampaignTheme,
 } from "./game/campaign.ts";
-import type { ChaserMode, GameConfig, GamePhase, GameState, LevelDefinition, PlayerMode, Point } from "./game/contracts.ts";
+import type { ChaserMode, GameConfig, GamePhase, GameState, HideSpotDefinition, LevelDefinition, PlayerMode, Point } from "./game/contracts.ts";
 import {
   FIXED_CAMERA_GROUND_DIRECTION,
   screenMoveToWorld,
@@ -53,6 +53,7 @@ const PLAYER_OBSERVATION_RANGE = 9;
 const CAPTURE_STAGING_SECONDS = 0.26;
 const MAX_CAMERA_DISTANCE = 44;
 const LOCKER_PLAYBACK_RATE = 1.2;
+const HIDE_PROP_FORWARD_OFFSET_CELLS = 0.18;
 
 const ACTOR_SPECS = {
   kid: {
@@ -478,6 +479,58 @@ function createSightHazeTexture() {
   return texture;
 }
 
+function createHideBeaconTexture(accent: THREE.ColorRepresentation) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 384;
+  canvas.height = 192;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("无法创建藏身点引导纹理");
+
+  const color = new THREE.Color(accent);
+  const red = Math.round(color.r * 255);
+  const green = Math.round(color.g * 255);
+  const blue = Math.round(color.b * 255);
+  const glow = `rgb(${red} ${green} ${blue})`;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.shadowColor = glow;
+  context.shadowBlur = 28;
+  context.fillStyle = "rgba(4, 15, 18, 0.9)";
+  context.strokeStyle = `rgba(${red}, ${green}, ${blue}, 0.92)`;
+  context.lineWidth = 5;
+  context.beginPath();
+  context.roundRect(18, 22, 348, 142, 34);
+  context.fill();
+  context.stroke();
+  context.shadowBlur = 0;
+  context.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.18)`;
+  context.strokeStyle = glow;
+  context.lineWidth = 6;
+  context.beginPath();
+  context.roundRect(42, 47, 70, 94, 10);
+  context.fill();
+  context.stroke();
+  context.beginPath();
+  context.arc(94, 95, 5, 0, Math.PI * 2);
+  context.fillStyle = glow;
+  context.fill();
+  context.font = '800 40px Inter, "PingFang SC", sans-serif';
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.fillStyle = "#f4fff9";
+  context.fillText("藏身处", 137, 83);
+  context.font = '700 20px Inter, "PingFang SC", sans-serif';
+  context.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.95)`;
+  context.fillText("靠近后按 E", 139, 123);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.name = "Authored_Hide_Beacon";
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  return texture;
+}
+
 function createFixedCameraDirection() {
   // A restrained shoulder offset preserves depth without rotating the control
   // axes. This vector is immutable for the entire run; only focus and distance
@@ -493,6 +546,22 @@ function objectiveDistanceMeters(point: Point, level: LevelDefinition, paths: Gr
   const route = paths.path(point, level.exit);
   if (!route.length) return 0;
   return Math.round(Math.max(0, route.length - 1) * CELL);
+}
+
+function nearestHideDistanceMeters(point: Point, level: LevelDefinition, paths: GridPathPlanner) {
+  let nearest = Number.POSITIVE_INFINITY;
+  for (const spot of level.hideSpots) {
+    const route = paths.path(point, spot.approach);
+    if (route.length) nearest = Math.min(nearest, Math.max(0, route.length - 1) * CELL);
+  }
+  return Number.isFinite(nearest) ? Math.round(nearest) : 0;
+}
+
+function visualHidePoint(spot: HideSpotDefinition): Point {
+  return {
+    x: spot.concealed.x + spot.facing.x * HIDE_PROP_FORWARD_OFFSET_CELLS,
+    y: spot.concealed.y + spot.facing.y * HIDE_PROP_FORWARD_OFFSET_CELLS,
+  };
 }
 
 function policeGuardPoint(level: LevelDefinition, paths: GridPathPlanner): Point {
@@ -891,6 +960,9 @@ type ActorView = {
 type LockerView = {
   id: string;
   root: THREE.Group;
+  approach: Point;
+  beacon: THREE.Sprite;
+  beaconLight: THREE.PointLight;
   mixer: THREE.AnimationMixer;
   clips: ReadonlyMap<string, THREE.AnimationClip>;
   queue: string[];
@@ -1256,7 +1328,7 @@ function deduplicateAssetTextures(assets: Iterable<LoadedAsset>): TextureDedupli
 function countSceneTextures(root: THREE.Object3D) {
   const textures = new Set<THREE.Texture>();
   root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line)) return;
+    if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line || object instanceof THREE.Sprite)) return;
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       for (const value of Object.values(material)) {
@@ -1270,7 +1342,7 @@ function countSceneTextures(root: THREE.Object3D) {
 function findInvalidSceneTextures(root: THREE.Object3D) {
   const invalid = new Map<string, { texture: string; slot: string; material: string }>();
   root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line)) return;
+    if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line || object instanceof THREE.Sprite)) return;
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       for (const [slot, value] of Object.entries(material)) {
@@ -1289,16 +1361,18 @@ function disposeObjectResources(roots: Iterable<THREE.Object3D>) {
   const skeletons = new Set<THREE.Skeleton>();
   for (const root of roots) {
     root.traverse((object) => {
-      if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line)) return;
-      if (object instanceof THREE.BatchedMesh) {
-        // BatchedMesh owns GPU data textures in addition to its combined
-        // geometry. Mesh/geometry disposal alone leaves those allocations
-        // alive across repeated campaign switches.
-        object.dispose();
-        geometries.add(object.geometry);
-      } else if (!geometries.has(object.geometry)) {
-        object.geometry.dispose();
-        geometries.add(object.geometry);
+      if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line || object instanceof THREE.Sprite)) return;
+      if (!(object instanceof THREE.Sprite)) {
+        if (object instanceof THREE.BatchedMesh) {
+          // BatchedMesh owns GPU data textures in addition to its combined
+          // geometry. Mesh/geometry disposal alone leaves those allocations
+          // alive across repeated campaign switches.
+          object.dispose();
+          geometries.add(object.geometry);
+        } else if (!geometries.has(object.geometry)) {
+          object.geometry.dispose();
+          geometries.add(object.geometry);
+        }
       }
       if (object instanceof THREE.SkinnedMesh && !skeletons.has(object.skeleton)) {
         object.skeleton.dispose();
@@ -1355,24 +1429,29 @@ function playerPresentationPoint(
     ? level.hideSpots.find((candidate) => candidate.id === state.player.hideSpotId)
     : undefined;
   if (!spot) return state.player.position;
+  // Simulation keeps its concealed point as the AI/perception contract. The
+  // premium locker and the rendered actor sit slightly nearer the threshold,
+  // so the closed door remains visible in the corridor instead of sinking
+  // into the surrounding wall module after the art-polish pass.
+  const visualConcealed = visualHidePoint(spot);
   if (state.player.mode === "aligning-hide") return state.player.position;
   if (state.player.mode === "entering-hide") {
     const progress = 1 - state.player.transitionRemainingSeconds / config.hideEnterSeconds;
     const travel = THREE.MathUtils.smoothstep(progress, 0.2, 0.72);
     return {
-      x: THREE.MathUtils.lerp(spot.approach.x, spot.concealed.x, travel),
-      y: THREE.MathUtils.lerp(spot.approach.y, spot.concealed.y, travel),
+      x: THREE.MathUtils.lerp(spot.approach.x, visualConcealed.x, travel),
+      y: THREE.MathUtils.lerp(spot.approach.y, visualConcealed.y, travel),
     };
   }
   if (state.player.mode === "exiting-hide") {
     const progress = 1 - state.player.transitionRemainingSeconds / config.hideExitSeconds;
     const travel = THREE.MathUtils.smoothstep(progress, 0.2, 0.75);
     return {
-      x: THREE.MathUtils.lerp(spot.concealed.x, spot.approach.x, travel),
-      y: THREE.MathUtils.lerp(spot.concealed.y, spot.approach.y, travel),
+      x: THREE.MathUtils.lerp(visualConcealed.x, spot.approach.x, travel),
+      y: THREE.MathUtils.lerp(visualConcealed.y, spot.approach.y, travel),
     };
   }
-  if (["hidden", "entering-peek", "peeking", "exiting-peek"].includes(state.player.mode)) return spot.concealed;
+  if (["hidden", "entering-peek", "peeking", "exiting-peek"].includes(state.player.mode)) return visualConcealed;
   return state.player.position;
 }
 
@@ -1409,6 +1488,15 @@ export function ChasingGame() {
   const [objectiveDistance, setObjectiveDistance] = useState(
     objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths),
   );
+  const [hideDistance, setHideDistance] = useState(
+    nearestHideDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths),
+  );
+  const [hideGuideProjection, setHideGuideProjection] = useState<{
+    xPercent: number;
+    yPercent: number;
+    angleDegrees: number;
+    offscreen: boolean;
+  } | null>(null);
   const [interaction, setInteraction] = useState<HideInteraction | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -1524,6 +1612,8 @@ export function ChasingGame() {
     setChaserMode("spawn-delay");
     setElapsed(0);
     setObjectiveDistance(objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
+    setHideDistance(nearestHideDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
+    setHideGuideProjection(null);
 
     const scorePrewarmAbort = new AbortController();
     void prewarmAdaptiveScoreAssets(undefined, scorePrewarmAbort.signal);
@@ -1540,6 +1630,7 @@ export function ChasingGame() {
     let cameraDistance = 16.25;
     let resultTimer: ReturnType<typeof setTimeout> | null = null;
     let lastCheckSpot: string | null = null;
+    let guidedLockerId: string | null = null;
     let lastScoreThreat = Number.NaN;
     let captureStageRemaining = 0;
     let capturePerformanceStarted = false;
@@ -1891,6 +1982,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       touchKeys.current.clear();
       interactPressed.current = false;
       lastCheckSpot = null;
+      guidedLockerId = null;
       lastScoreThreat = Number.NaN;
       captureStageRemaining = 0;
       capturePerformanceStarted = false;
@@ -1904,6 +1996,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       setChaserObservable(canPlayerObserveChaser(state, campaignLevel, simulation.config));
       setElapsed(Math.floor(state.elapsedSeconds));
       setObjectiveDistance(objectiveDistanceMeters(state.player.position, campaignLevel, objectivePaths));
+      setHideDistance(nearestHideDistanceMeters(state.player.position, campaignLevel, objectivePaths));
       setInteraction(simulation.getHideInteraction());
       updateLockerVisionStyle(state);
 
@@ -1946,6 +2039,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         locker.delayRemaining = 0;
         locker.playbackRate = LOCKER_PLAYBACK_RATE;
         locker.owner = "idle";
+        locker.beacon.visible = false;
+        locker.beaconLight.intensity = 0;
         locker.root.getObjectByName("DoorPivot")?.quaternion.identity();
       }
     };
@@ -2537,7 +2632,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         artLayout.hideDressingNodes,
       );
       const hideDressingPlacements: ModulePlacement[] = [];
+      const hideBeaconTexture = createHideBeaconTexture("#5ae0a0");
       for (const spot of campaignLevel.hideSpots) {
+        const visualPoint = visualHidePoint(spot);
         const root = fitInteractiveProp(lockerSource.scene, 2.12);
         applyThemeSurface(root, campaignLevel.campaign.palette.accent, {
           blend: 0.08,
@@ -2546,18 +2643,46 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         });
         root.name = `hero-locker-${spot.id}`;
         root.rotation.y = Math.atan2(spot.facing.x, spot.facing.y);
-        root.position.copy(world(spot.concealed, campaignLevel));
+        root.position.copy(world(visualPoint, campaignLevel));
         root.updateMatrixWorld(true);
         const anchor = root.getObjectByName("HideAnchor");
         const pivot = root.getObjectByName("DoorPivot");
         if (!anchor || !pivot) throw new Error("Hero locker is missing HideAnchor or DoorPivot; refusing an art fallback");
         const anchorWorld = anchor.getWorldPosition(new THREE.Vector3());
-        root.position.add(world(spot.concealed, campaignLevel).sub(anchorWorld));
+        root.position.add(world(visualPoint, campaignLevel).sub(anchorWorld));
+        const beaconMaterial = new THREE.SpriteMaterial({
+          map: hideBeaconTexture,
+          transparent: true,
+          opacity: 0.72,
+          depthTest: false,
+          depthWrite: false,
+          toneMapped: false,
+        });
+        const beacon = new THREE.Sprite(beaconMaterial);
+        beacon.name = `hide-beacon-${spot.id}`;
+        beacon.center.set(0.5, 0);
+        beacon.position.set(0, 2.43, 0);
+        beacon.scale.set(1.58, 0.79, 1);
+        beacon.renderOrder = 18;
+        beacon.visible = false;
+        root.add(beacon);
+        const beaconLight = new THREE.PointLight(
+          new THREE.Color("#5ae0a0"),
+          0,
+          5.2,
+          2.25,
+        );
+        beaconLight.name = `hide-beacon-light-${spot.id}`;
+        beaconLight.position.set(0, 1.85, -0.32);
+        root.add(beaconLight);
         parent.add(root);
         placedAssetIds.add("detail:locker");
         const view: LockerView = {
           id: spot.id,
           root,
+          approach: spot.approach,
+          beacon,
+          beaconLight,
           mixer: new THREE.AnimationMixer(root),
           clips: clipMap,
           queue: [],
@@ -2573,16 +2698,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         lockerViews.set(spot.id, view);
         if (hideDressingSource) {
           hideDressingPlacements.push({
-            position: world(spot.concealed, campaignLevel),
+            position: world(visualPoint, campaignLevel),
             rotation: Math.atan2(spot.facing.x, spot.facing.y),
           });
         }
       }
       if (hideDressingSource && hideDressingPlacements.length) {
-        const hideDressingMeshes = addInstancedModuleBatches([
+        addInstancedModuleBatches([
           { source: hideDressingSource, placements: hideDressingPlacements, preserveAuthoredScale: true },
         ], new THREE.Vector3(1.5, 2.3, 0.8), parent, true, `${campaignLevel.campaign.theme}-hide-dressing`, supportsMultiDraw);
-        registerCameraOccluder(`${campaignLevel.campaign.theme}-hide-dressings`, hideDressingMeshes);
+        // The surround is a landmark, not a wall. Keeping it opaque and crisp
+        // prevents the camera-occlusion shader from turning the cabinet into a
+        // translucent blur exactly when the player reaches it.
         placedAssetIds.add(`theme-node:${hideDressingSource.name}`);
       }
 
@@ -3131,7 +3258,71 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       kid.animator.update(delta);
       villain.animator.update(delta);
       police.animator.update(delta);
-      for (const locker of lockers.values()) updateLocker(locker, delta);
+      let nearestLockerId: string | null = null;
+      let nearestLockerDistance = Number.POSITIVE_INFINITY;
+      for (const locker of lockers.values()) {
+        const distance = distanceBetween(state.player.position, locker.approach);
+        if (distance < nearestLockerDistance) {
+          nearestLockerDistance = distance;
+          nearestLockerId = locker.id;
+        }
+      }
+      const hideMarkerAllowed = state.phase === "playing"
+        && ["free", "aligning-hide"].includes(state.player.mode);
+      const urgentHideMarker = ["suspicious", "chase", "lost-sight", "go-to-last-known", "search"].includes(state.chaser.mode);
+      const markerPulse = 0.5 + Math.sin(state.elapsedSeconds * 4.6) * 0.5;
+      for (const locker of lockers.values()) {
+        updateLocker(locker, delta);
+        const distance = distanceBetween(state.player.position, locker.approach);
+        const isNearest = locker.id === (guidedLockerId ?? nearestLockerId);
+        const isInteractable = distance <= simulation.config.hideInteractRange;
+        locker.beacon.visible = hideMarkerAllowed && (isNearest || isInteractable);
+        const beaconMaterial = locker.beacon.material as THREE.SpriteMaterial;
+        beaconMaterial.opacity = isInteractable
+          ? 0.94
+          : urgentHideMarker ? 0.76 + markerPulse * 0.16 : 0.5 + markerPulse * 0.1;
+        const markerScale = isInteractable ? 1.12 + markerPulse * 0.06 : 1;
+        locker.beacon.scale.set(1.58 * markerScale, 0.79 * markerScale, 1);
+        locker.beaconLight.intensity = locker.beacon.visible
+          ? isInteractable ? 2.3 + markerPulse * 0.7 : urgentHideMarker ? 1.35 + markerPulse * 0.4 : 0.72
+          : 0;
+      }
+    };
+
+    const updateHideGuideProjection = (state: GameState) => {
+      if (state.phase !== "playing" || state.player.mode !== "free" || lockers.size === 0) {
+        setHideGuideProjection(null);
+        return;
+      }
+      let nearest: LockerView | null = null;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      for (const locker of lockers.values()) {
+        const route = objectivePaths.path(state.player.position, locker.approach);
+        const routeDistance = route.length ? route.length - 1 : Number.POSITIVE_INFINITY;
+        if (routeDistance < nearestDistance) {
+          nearest = locker;
+          nearestDistance = routeDistance;
+        }
+      }
+      if (!nearest) {
+        guidedLockerId = null;
+        setHideGuideProjection(null);
+        return;
+      }
+      guidedLockerId = nearest.id;
+      const projected = nearest.beacon.getWorldPosition(new THREE.Vector3()).project(camera);
+      const viewportX = (projected.x + 1) / 2;
+      const viewportY = (1 - projected.y) / 2;
+      const inFrustum = Math.abs(projected.x) <= 0.92
+        && Math.abs(projected.y) <= 0.86
+        && projected.z >= -1
+        && projected.z <= 1;
+      setHideGuideProjection({
+        xPercent: THREE.MathUtils.clamp(viewportX * 100, 7, 93),
+        yPercent: THREE.MathUtils.clamp(viewportY * 100, 11, 86),
+        angleDegrees: THREE.MathUtils.radToDeg(Math.atan2(viewportY - 0.5, viewportX - 0.5)),
+        offscreen: !inFrustum,
+      });
     };
 
     const animate = (now: number) => {
@@ -3253,7 +3444,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setChaserObservable(chaserKnowledgeObservable);
           setElapsed(Math.floor(latestState.elapsedSeconds));
           setObjectiveDistance(objectiveDistanceMeters(latestState.player.position, campaignLevel, objectivePaths));
+          setHideDistance(nearestHideDistanceMeters(latestState.player.position, campaignLevel, objectivePaths));
           setInteraction(simulation.getHideInteraction());
+          updateHideGuideProjection(latestState);
           lastHudUpdate = now;
         }
       }
@@ -3319,6 +3512,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             config: simulation.config,
             progress: campaignProgressRef.current,
             themeAsset: THEME_KIT_ASSETS[campaignLevel.campaign.theme],
+            playerStart: campaignLevel.playerStart,
+            exit: campaignLevel.exit,
+            chaserStart: campaignLevel.chaserStart,
+            hideSpots: campaignLevel.hideSpots,
           },
           game: latestState,
           interaction: simulation.getHideInteraction(),
@@ -3348,6 +3545,22 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             unusedLoadedAssetIds: [...loadedAssetIds].filter((id) => !placedAssetIds.has(id)).sort(),
           },
           lockers: Object.fromEntries([...lockers].map(([id, view]) => [id, {
+            approach: view.approach,
+            rootPosition: { x: view.root.position.x, y: view.root.position.y, z: view.root.position.z },
+            beaconVisible: view.beacon.visible,
+            beaconOpacity: (view.beacon.material as THREE.SpriteMaterial).opacity,
+            beaconViewport: (() => {
+              const projected = view.beacon.getWorldPosition(new THREE.Vector3()).project(camera);
+              return {
+                x: (projected.x + 1) / 2,
+                y: (1 - projected.y) / 2,
+                depth: projected.z,
+                centerInFrustum: Math.abs(projected.x) <= 1
+                  && Math.abs(projected.y) <= 1
+                  && projected.z >= -1
+                  && projected.z <= 1,
+              };
+            })(),
             action: view.actionName,
             peeking: view.peeking,
             peekClosing: view.peekClosing,
@@ -3560,6 +3773,27 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           </div>
         )}
 
+        {!loading && phase === "playing" && playerMode === "free" && !interaction && (
+          <div className={`hide-guide${danger >= 0.45 ? " urgent" : ""}`} aria-label={`最近藏身柜距离 ${hideDistance} 米`}>
+            <span aria-hidden="true" />
+            <div><small>最近藏身柜</small><strong>{hideDistance}m · 跟随绿色方向标</strong></div>
+          </div>
+        )}
+
+        {!loading && phase === "playing" && playerMode === "free" && !interaction && hideGuideProjection?.offscreen && (
+          <div
+            className="hide-edge-marker"
+            aria-hidden="true"
+            style={{
+              left: `${hideGuideProjection.xPercent}%`,
+              top: `${hideGuideProjection.yPercent}%`,
+              "--hide-direction": `${hideGuideProjection.angleDegrees}deg`,
+            } as React.CSSProperties}
+          >
+            <i /><b>{hideDistance}m</b>
+          </div>
+        )}
+
         {interactionText && phase === "playing" && (
           <div className="interaction-prompt">
             <kbd>E</kbd><strong>{interactionText}</strong>
@@ -3573,6 +3807,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <span className={`result ${phase}`}>{phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : `${campaignLevel.campaign.themeLabel}篇 · ${campaignLevel.campaign.difficultyLabel}`}</span>
               <h2>{phase === "won" ? `你完成了「${campaignLevel.campaign.name}」` : phase === "lost" ? "切断视线，利用主题藏柜重新布局" : campaignLevel.campaign.subtitle}</h2>
               <p>{phase === "ready" ? campaignLevel.campaign.briefing : "追捕者只会依据真实目击与最后位置追踪。绕过遮挡、藏好，等他进入盲目搜索后再继续逃跑。"}</p>
+
+              {phase === "ready" && (
+                <div className="hide-loop" aria-label="躲柜玩法流程">
+                  <span><b>1</b>绕墙切断视线</span>
+                  <span><b>2</b>跟随绿色藏柜标记</span>
+                  <span><b>3</b>按 E 藏好，等搜索结束</span>
+                </div>
+              )}
 
               {phase === "ready" && (
                 <div className="level-grid" aria-label="选择关卡">
@@ -3624,7 +3866,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <button type="button" aria-label="向右" onPointerDown={() => touch("d", true)} onPointerUp={() => touch("d", false)} onPointerLeave={() => touch("d", false)} onPointerCancel={() => touch("d", false)}>→</button>
             </div>
             <div className="action-controls">
-              <button type="button" onClick={interact}>躲藏 / 离开</button>
+              <button type="button" className={interaction ? "available" : ""} disabled={!interaction} onClick={interact}>
+                {interaction?.kind === "enter" ? "躲进藏柜" : interaction?.kind === "exit" ? "离开藏柜" : `藏柜 ${hideDistance}m`}
+              </button>
               <button type="button" onPointerDown={() => touch("q", true)} onPointerUp={() => touch("q", false)} onPointerLeave={() => touch("q", false)} onPointerCancel={() => touch("q", false)}>按住观察</button>
             </div>
           </>

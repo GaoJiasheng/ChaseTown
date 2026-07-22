@@ -106,6 +106,11 @@ test("every campaign layout has a meaningful, connected maze and reachable gamep
       const concealOffset = distanceBetween(hideSpot.approach, hideSpot.concealed);
       assert.ok(concealOffset >= 0.25 && concealOffset <= 0.5, `${hideSpot.id} conceal anchor is not aligned to its approach`);
       assert.ok(Math.abs(Math.hypot(hideSpot.facing.x, hideSpot.facing.y) - 1) < 1e-9, `${hideSpot.id} facing must be normalized`);
+      const backingCell = {
+        x: Math.round(hideSpot.approach.x - hideSpot.facing.x),
+        y: Math.round(hideSpot.approach.y - hideSpot.facing.y),
+      };
+      assert.equal(isWalkable(level, backingCell), false, `${hideSpot.id} must be wall-backed rather than floating in a corridor`);
     }
     for (const blocker of level.visionOnlyBlockers ?? []) {
       assert.equal(isWalkable(level, blocker), true, `${level.id} sight blocker must preserve movement`);
@@ -118,5 +123,56 @@ test("every campaign layout has a meaningful, connected maze and reachable gamep
       }
     }
     assert.ok(junctionCount >= 4, `${level.id} needs branching route choices rather than a single corridor`);
+  }
+});
+
+test("all ten polished layouts meet the authored maze-complexity contract", () => {
+  const minimumCycleRanks = [6, 9, 8, 7, 8, 12, 9, 10, 8, 10];
+  const minimumJunctions = [15, 13, 15, 15, 17, 22, 16, 19, 14, 20];
+  const minimumEscapePathNodes = [46, 44, 44, 43, 45, 41, 29, 41, 55, 45];
+
+  for (const [index, level] of CAMPAIGN_LEVELS.entries()) {
+    const nodes = [];
+    let edgeDegreeSum = 0;
+    let junctions = 0;
+    let isolated = 0;
+    for (let y = 0; y < level.height; y += 1) {
+      for (let x = 0; x < level.width; x += 1) {
+        const cell = { x, y };
+        if (!isWalkable(level, cell)) continue;
+        nodes.push(cell);
+        const degree = neighbors(level, cell).length;
+        edgeDegreeSum += degree;
+        if (degree >= 3) junctions += 1;
+        if (degree === 0) isolated += 1;
+      }
+    }
+
+    const visited = new Set();
+    let components = 0;
+    for (const origin of nodes) {
+      const key = `${origin.x},${origin.y}`;
+      if (visited.has(key)) continue;
+      components += 1;
+      visited.add(key);
+      const queue = [origin];
+      while (queue.length) {
+        for (const neighbor of neighbors(level, queue.shift())) {
+          const neighborKey = `${neighbor.x},${neighbor.y}`;
+          if (visited.has(neighborKey)) continue;
+          visited.add(neighborKey);
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    const edges = edgeDegreeSum / 2;
+    const cycleRank = edges - nodes.length + components;
+    const escapePathNodes = findPath(level, level.playerStart, level.exit).length;
+    assert.equal(components, 1, `${level.id} must remain one connected maze`);
+    assert.equal(isolated, 0, `${level.id} cannot ship isolated decorative floor cells`);
+    assert.ok(cycleRank >= minimumCycleRanks[index], `${level.id} needs more meaningful route loops`);
+    assert.ok(junctions >= minimumJunctions[index], `${level.id} needs more route decisions`);
+    assert.ok(escapePathNodes >= minimumEscapePathNodes[index], `${level.id} escape route became too short`);
   }
 });

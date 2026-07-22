@@ -136,6 +136,8 @@ const level2 = authoredLevel({
     [point(7, 18), point(18, 18), point(18, 10)],
     [point(5, 5), point(2, 5)],
     [point(15, 14), point(20, 14)],
+    [point(20, 14), point(20, 10), point(18, 10)],
+    [point(11, 7), point(15, 7)],
   ],
   playerStart: point(1, 22),
   exit: point(23, 1),
@@ -147,7 +149,7 @@ const level2 = authoredLevel({
     { id: "library-map-case", approach: point(14, 14), concealed: point(14, 13.65), facing: point(0, 1) },
     { id: "library-return-locker", approach: point(7, 20), concealed: point(6.65, 20), facing: point(1, 0) },
   ],
-  visionOnlyBlockers: [point(5, 16), point(15, 9)],
+  visionOnlyBlockers: [point(5, 16), point(15, 9), point(20, 12)],
 });
 
 const level3 = authoredLevel({
@@ -161,6 +163,9 @@ const level3 = authoredLevel({
     [point(6, 12), point(4, 12)],
     [point(14, 9), point(18, 9)],
     [point(13, 19), point(17, 19)],
+    [point(8, 3), point(19, 3)],
+    [point(6, 12), point(8, 12)],
+    [point(13, 17), point(16, 17), point(16, 15), point(21, 15)],
   ],
   playerStart: point(2, 1),
   exit: point(23, 23),
@@ -172,7 +177,7 @@ const level3 = authoredLevel({
     { id: "science-specimen-store", approach: point(18, 9), concealed: point(18.35, 9), facing: point(-1, 0) },
     { id: "science-cleaning-locker", approach: point(17, 19), concealed: point(17.35, 19), facing: point(-1, 0) },
   ],
-  visionOnlyBlockers: [point(8, 8), point(13, 20), point(20, 12)],
+  visionOnlyBlockers: [point(8, 8), point(13, 20), point(20, 12), point(13, 3), point(16, 16)],
 });
 
 const level4 = authoredLevel({
@@ -185,18 +190,21 @@ const level4 = authoredLevel({
     [point(12, 5), point(12, 2)],
     [point(5, 18), point(2, 18)],
     [point(18, 15), point(21, 15)],
+    [point(8, 5), point(8, 10), point(11, 10)],
+    [point(14, 10), point(14, 15)],
+    [point(18, 18), point(23, 18)],
   ],
   playerStart: point(1, 12),
   exit: point(23, 12),
   chaserStart: point(19, 8),
   chaserStartHeading: point(0, 1),
-  patrol: [point(17, 10), point(12, 5), point(19, 10), point(18, 15), point(11, 20), point(5, 12)],
+  patrol: [point(17, 10), point(12, 5), point(8, 8), point(19, 10), point(14, 12), point(18, 15), point(23, 18), point(11, 20), point(5, 12)],
   hideSpots: [
     { id: "hospital-linen-north", approach: point(5, 8), concealed: point(4.65, 8), facing: point(1, 0) },
     { id: "hospital-pharmacy-store", approach: point(2, 18), concealed: point(1.65, 18), facing: point(1, 0) },
     { id: "hospital-supply-east", approach: point(21, 15), concealed: point(21.35, 15), facing: point(-1, 0) },
   ],
-  visionOnlyBlockers: [point(8, 5), point(16, 10), point(18, 18)],
+  visionOnlyBlockers: [point(8, 5), point(16, 10), point(18, 18), point(14, 12)],
 });
 
 const level5 = authoredLevel({
@@ -210,18 +218,22 @@ const level5 = authoredLevel({
     [point(9, 5), point(12, 5), point(12, 9)],
     [point(3, 16), point(1, 16)],
     [point(16, 8), point(19, 8)],
+    [point(4, 7), point(4, 3), point(7, 3)],
+    [point(12, 8), point(16, 8)],
+    [point(18, 16), point(22, 16)],
+    [point(3, 16), point(10, 16), point(10, 13)],
   ],
   playerStart: point(1, 1),
   exit: point(23, 23),
   chaserStart: point(11, 13),
   chaserStartHeading: point(-1, 0),
-  patrol: [point(7, 13), point(16, 11), point(16, 5), point(7, 7), point(13, 13), point(19, 19), point(22, 11)],
+  patrol: [point(7, 13), point(4, 5), point(16, 5), point(14, 8), point(22, 11), point(20, 16), point(18, 13), point(10, 16), point(19, 19)],
   hideSpots: [
     { id: "isolation-decon-cabinet", approach: point(12, 9), concealed: point(12, 9.35), facing: point(0, -1) },
     { id: "isolation-morgue-locker", approach: point(1, 16), concealed: point(0.65, 16), facing: point(1, 0) },
     { id: "isolation-oxygen-store", approach: point(19, 8), concealed: point(19.35, 8), facing: point(-1, 0) },
   ],
-  visionOnlyBlockers: [point(8, 1), point(13, 3), point(18, 13), point(21, 11)],
+  visionOnlyBlockers: [point(8, 1), point(13, 3), point(18, 13), point(21, 11), point(4, 5), point(14, 8), point(20, 16), point(7, 16)],
 });
 
 const level6 = authoredLevel({
@@ -234,18 +246,21 @@ const level6 = authoredLevel({
     [point(10, 6), point(10, 3)],
     [point(19, 20), point(22, 20)],
     [point(21, 8), point(23, 8)],
+    [point(10, 12), point(14, 12)],
+    [point(12, 20), point(19, 20)],
+    [point(21, 8), point(18, 8), point(18, 11)],
   ],
   playerStart: point(12, 23),
   exit: point(12, 1),
   chaserStart: point(21, 7),
   chaserStartHeading: point(0, 1),
-  patrol: [point(21, 11), point(5, 9), point(5, 18), point(19, 18), point(21, 11), point(12, 5)],
+  patrol: [point(21, 11), point(18, 8), point(14, 12), point(5, 9), point(5, 18), point(12, 20), point(19, 18), point(12, 5)],
   hideSpots: [
     { id: "fire-turnout-locker", approach: point(10, 3), concealed: point(9.65, 3), facing: point(1, 0) },
     { id: "fire-hose-cabinet", approach: point(22, 20), concealed: point(22.35, 20), facing: point(-1, 0) },
     { id: "fire-breathing-gear", approach: point(23, 8), concealed: point(23.35, 8), facing: point(-1, 0) },
   ],
-  visionOnlyBlockers: [point(8, 9), point(16, 18), point(21, 7)],
+  visionOnlyBlockers: [point(8, 9), point(16, 18), point(21, 7), point(12, 12), point(15, 20), point(18, 9)],
 });
 
 const level7 = authoredLevel({
@@ -257,18 +272,22 @@ const level7 = authoredLevel({
     [point(18, 12), point(22, 12)],
     [point(10, 14), point(7, 14)],
     [point(14, 10), point(14, 7)],
+    [point(2, 18), point(6, 18)],
+    [point(6, 10), point(10, 10)],
+    [point(14, 14), point(18, 14)],
+    [point(18, 10), point(22, 10)],
   ],
   playerStart: point(2, 22),
   exit: point(14, 14),
   chaserStart: point(10, 11),
   chaserStartHeading: point(0, 1),
-  patrol: [point(9, 14), point(22, 12), point(18, 18), point(10, 18), point(6, 6), point(18, 6), point(14, 10)],
+  patrol: [point(9, 14), point(8, 10), point(6, 18), point(18, 18), point(18, 14), point(20, 10), point(18, 6), point(14, 10)],
   hideSpots: [
-    { id: "training-rescue-cage", approach: point(7, 14), concealed: point(6.65, 14), facing: point(1, 0) },
-    { id: "training-mask-locker", approach: point(14, 7), concealed: point(14, 6.65), facing: point(0, 1) },
+    { id: "training-rescue-cage", approach: point(7, 14), concealed: point(7, 14.35), facing: point(0, -1) },
+    { id: "training-mask-locker", approach: point(14, 7), concealed: point(13.65, 7), facing: point(1, 0) },
     { id: "training-landing-cabinet", approach: point(10, 2), concealed: point(10, 1.65), facing: point(0, 1) },
   ],
-  visionOnlyBlockers: [point(2, 9), point(15, 6), point(18, 15), point(13, 10)],
+  visionOnlyBlockers: [point(2, 9), point(15, 6), point(18, 15), point(13, 10), point(4, 18), point(8, 10), point(16, 14), point(20, 10)],
 });
 
 const level8 = authoredLevel({
@@ -281,18 +300,22 @@ const level8 = authoredLevel({
     [point(7, 18), point(3, 18)],
     [point(19, 7), point(22, 7)],
     [point(14, 21), point(17, 21)],
+    [point(1, 9), point(6, 9)],
+    [point(14, 12), point(18, 12)],
+    [point(7, 18), point(14, 18)],
+    [point(22, 7), point(23, 7), point(23, 11)],
   ],
   playerStart: point(1, 3),
   exit: point(23, 21),
   chaserStart: point(18, 9),
   chaserStartHeading: point(-1, 0),
-  patrol: [point(14, 9), point(12, 9), point(6, 9), point(7, 15), point(14, 15), point(19, 11), point(18, 9)],
+  patrol: [point(14, 9), point(6, 9), point(3, 9), point(7, 15), point(10, 18), point(14, 15), point(16, 12), point(19, 11), point(23, 7), point(18, 9)],
   hideSpots: [
     { id: "assembly-tool-crate", approach: point(3, 18), concealed: point(2.65, 18), facing: point(1, 0) },
-    { id: "assembly-control-cabinet", approach: point(22, 7), concealed: point(22.35, 7), facing: point(-1, 0) },
+    { id: "assembly-control-cabinet", approach: point(22, 7), concealed: point(22, 6.65), facing: point(0, 1) },
     { id: "assembly-parts-locker", approach: point(17, 21), concealed: point(17.35, 21), facing: point(-1, 0) },
   ],
-  visionOnlyBlockers: [point(5, 15), point(15, 9), point(20, 15)],
+  visionOnlyBlockers: [point(5, 15), point(15, 9), point(20, 15), point(3, 9), point(16, 12), point(10, 18), point(23, 9)],
 });
 
 const level9 = authoredLevel({
@@ -306,18 +329,23 @@ const level9 = authoredLevel({
     [point(4, 9), point(1, 9)],
     [point(16, 15), point(19, 15)],
     [point(4, 20), point(1, 20)],
+    [point(10, 4), point(17, 4)],
+    [point(16, 12), point(16, 10), point(22, 10)],
+    [point(4, 9), point(10, 9), point(10, 12)],
+    [point(4, 20), point(10, 20), point(10, 17)],
+    [point(19, 15), point(22, 15)],
   ],
   playerStart: point(23, 2),
   exit: point(12, 23),
   chaserStart: point(19, 7),
   chaserStartHeading: point(-1, 0),
-  patrol: [point(17, 5), point(10, 12), point(16, 12), point(22, 13), point(16, 19), point(10, 17), point(4, 12)],
+  patrol: [point(17, 5), point(13, 4), point(19, 10), point(16, 12), point(22, 15), point(16, 19), point(7, 20), point(10, 17), point(7, 9), point(4, 12)],
   hideSpots: [
     { id: "turbine-breaker-cabinet", approach: point(1, 9), concealed: point(0.65, 9), facing: point(1, 0) },
-    { id: "turbine-service-locker", approach: point(19, 15), concealed: point(19.35, 15), facing: point(-1, 0) },
+    { id: "turbine-service-locker", approach: point(19, 15), concealed: point(19, 14.65), facing: point(0, 1) },
     { id: "turbine-oil-store", approach: point(1, 20), concealed: point(0.65, 20), facing: point(1, 0) },
   ],
-  visionOnlyBlockers: [point(13, 2), point(13, 12), point(13, 17), point(19, 19)],
+  visionOnlyBlockers: [point(13, 2), point(13, 12), point(13, 17), point(19, 19), point(13, 4), point(19, 10), point(7, 9), point(7, 20), point(21, 15)],
 });
 
 const level10 = authoredLevel({
@@ -332,19 +360,24 @@ const level10 = authoredLevel({
     [point(12, 19), point(15, 19)],
     [point(21, 12), point(23, 12)],
     [point(17, 6), point(14, 6)],
+    [point(1, 21), point(6, 21)],
+    [point(6, 15), point(12, 15), point(12, 16)],
+    [point(5, 7), point(11, 7)],
+    [point(17, 6), point(23, 6)],
+    [point(15, 19), point(18, 19)],
   ],
   playerStart: point(1, 23),
   exit: point(23, 1),
   chaserStart: point(9, 13),
   chaserStartHeading: point(-1, 0),
-  patrol: [point(6, 14), point(5, 10), point(11, 4), point(17, 9), point(21, 16), point(12, 16), point(6, 18), point(11, 9)],
+  patrol: [point(6, 14), point(9, 15), point(4, 21), point(6, 18), point(12, 16), point(18, 19), point(21, 16), point(20, 6), point(17, 9), point(8, 7), point(11, 4)],
   hideSpots: [
     { id: "foundry-slag-shield", approach: point(2, 7), concealed: point(1.65, 7), facing: point(1, 0) },
-    { id: "foundry-maintenance-locker", approach: point(15, 19), concealed: point(15.35, 19), facing: point(-1, 0) },
+    { id: "foundry-maintenance-locker", approach: point(15, 19), concealed: point(15, 18.65), facing: point(0, 1) },
     { id: "foundry-coolant-cabinet", approach: point(23, 12), concealed: point(23.35, 12), facing: point(-1, 0) },
     { id: "foundry-control-bay", approach: point(14, 6), concealed: point(13.65, 6), facing: point(1, 0) },
   ],
-  visionOnlyBlockers: [point(1, 14), point(9, 13), point(18, 9), point(21, 14), point(23, 8)],
+  visionOnlyBlockers: [point(1, 14), point(9, 13), point(18, 9), point(21, 14), point(23, 8), point(4, 21), point(9, 15), point(8, 7), point(20, 6), point(17, 19)],
 });
 
 const rawLevels: readonly [LevelDefinition, Omit<CampaignMetadata, "levelNumber">][] = [

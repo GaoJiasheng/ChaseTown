@@ -35,7 +35,9 @@ export const DEFAULT_GAME_CONFIG: Readonly<GameConfig> = Object.freeze({
   proximitySenseRange: 0.85,
   catchRange: 0.58,
   exitRange: 0.62,
-  hideInteractRange: 0.8,
+  // Slightly generous reach keeps the premium locker easy to operate from a
+  // mobile stick or an oblique corridor approach without allowing remote use.
+  hideInteractRange: 1.05,
   hideAlignSpeed: 1.32,
   // One 90° pivot now lasts exactly 0.5 s; the simulation applies the same
   // smootherstep yaw curve as the authored heel/toe Turn clips.
@@ -62,6 +64,13 @@ export function createDefaultLevel(): LevelDefinition {
   // A short blind alcove makes the north locker a real post-chase refuge:
   // the player must round the corner before committing to the long entry.
   carve(walkable, [{ x: 7, y: 5 }, { x: 9, y: 5 }]);
+  // Four readable secondary branches turn the opening chapter into a real
+  // maze: each adds a decision or loop without shortening the certified
+  // north-locker escape route into a trivial straight line.
+  carve(walkable, [{ x: 9, y: 20 }, { x: 13, y: 20 }]);
+  carve(walkable, [{ x: 11, y: 9 }, { x: 13, y: 9 }]);
+  carve(walkable, [{ x: 15, y: 5 }, { x: 17, y: 5 }]);
+  carve(walkable, [{ x: 17, y: 14 }, { x: 19, y: 14 }]);
 
   return createLevel({
     id: "school-maze-v1",
@@ -89,14 +98,15 @@ export function createDefaultLevel(): LevelDefinition {
     // module but are excluded from movement/pathing and block perception, so
     // neither player nor chaser can ghost through the visible meshes.
     movementBlockers: [
-      { x: 18, y: 16 }, // bench
+      { x: 22, y: 16 }, // bench
       { x: 3, y: 14 }, // tree
-      { x: 3, y: 12 }, // shrub
+      { x: 19, y: 14 }, // shrub
       { x: 22, y: 23 }, // police car
       { x: 20, y: 3 }, // basketball hoop
-      { x: 9, y: 18 }, // desk/chair set
-      { x: 9, y: 19 }, // teacher podium
+      { x: 13, y: 9 }, // desk/chair set
+      { x: 17, y: 5 }, // teacher podium
     ],
+    visionOnlyBlockers: [{ x: 18, y: 16 }],
   });
 }
 

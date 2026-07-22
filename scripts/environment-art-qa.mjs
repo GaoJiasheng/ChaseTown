@@ -286,7 +286,10 @@ function assertRuntimeIntegrity(state, level, { fallback = false } = {}) {
   assert.ok(state.render.calls <= 520, `${level.id} draw calls exceeded 520: ${state.render.calls}`);
   assert.ok(state.render.triangles <= 3_000_000, `${level.id} exceeded 3M rendered triangles: ${state.render.triangles}`);
   assert.ok(state.render.memory.geometries <= 300, `${level.id} geometry count exceeded 300`);
-  assert.ok(state.render.memory.textures <= 220, `${level.id} texture count exceeded 220`);
+  // One shared 384x192 CanvasTexture drives the diegetic hide marker across
+  // every locker; retain a small explicit allowance without relaxing the
+  // live-scene texture budget below.
+  assert.ok(state.render.memory.textures <= 224, `${level.id} texture count exceeded 224`);
   assert.ok(state.render.programs <= 48, `${level.id} shader program count exceeded 48`);
   assert.ok(state.render.sceneTextures <= 80, `${level.id} live scene texture count exceeded 80`);
   if (fallback) assert.equal(state.render.batching, "instanced-mesh", `${level.id} did not enter the no-multi-draw fallback`);
