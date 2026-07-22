@@ -14,13 +14,20 @@ import {
 import { AdaptiveScoreController, prewarmAdaptiveScoreAssets } from "./game/audio/adaptive-score.ts";
 import type { ChaserMode, GamePhase, GameState, PlayerMode, Point } from "./game/contracts.ts";
 import { createDefaultLevel, DEFAULT_GAME_CONFIG } from "./game/level.ts";
-import { shouldIgnoreFocusedControlKey } from "./game/input.ts";
+import {
+  FIXED_CAMERA_GROUND_DIRECTION,
+  screenMoveToWorld,
+  shouldIgnoreFocusedControlKey,
+} from "./game/input.ts";
 import { distanceBetween, GridPathPlanner, hasLineOfSight } from "./game/navigation.ts";
 import { isPlayerVisuallyExposed } from "./game/perception.ts";
 import {
   boundedFrameDeltaSeconds,
   canChaserTakeLockerDoor,
   lockerVisionMix,
+  requiredCameraDistanceForFraming,
+  shouldFrameChaser,
+  shouldRenderChaserModel,
   smoothOcclusionStrength,
 } from "./game/presentation.ts";
 import { GameSimulation, type HideInteraction } from "./game/simulation.ts";
@@ -38,6 +45,7 @@ const HIDE_EXIT_SECONDS = DEFAULT_GAME_CONFIG.hideExitSeconds;
 const HIDE_CHECK_SECONDS = DEFAULT_GAME_CONFIG.checkHideSeconds;
 const PLAYER_OBSERVATION_RANGE = 9;
 const CAPTURE_STAGING_SECONDS = 0.26;
+const MAX_CAMERA_DISTANCE = 44;
 
 const ACTOR_SPECS = {
   kid: {
@@ -139,17 +147,14 @@ function world(point: Point) {
   );
 }
 
-function cameraDirectionForHeading(heading: Point) {
-  const length = Math.hypot(heading.x, heading.y) || 1;
-  const x = heading.x / length;
-  const y = heading.y / length;
-  // Sit behind the direction of travel with a small isometric shoulder bias.
-  // The camera therefore looks into the campus at edge spawns instead of out
-  // over the void, while turns remain legible rather than axis-flat.
+function createFixedCameraDirection() {
+  // A restrained shoulder offset preserves depth without rotating the control
+  // axes. This vector is immutable for the entire run; only focus and distance
+  // are allowed to move.
   return new THREE.Vector3(
-    -x * 0.58 - y * 0.22,
+    FIXED_CAMERA_GROUND_DIRECTION.x,
     0.82,
-    -y * 0.58 + x * 0.22,
+    FIXED_CAMERA_GROUND_DIRECTION.y,
   ).normalize();
 }
 
@@ -694,6 +699,7 @@ export function ChasingGame() {
   const [phase, setPhase] = useState<GamePhase>("ready");
   const [playerMode, setPlayerMode] = useState<PlayerMode>("free");
   const [chaserMode, setChaserMode] = useState<ChaserMode>("spawn-delay");
+  const [chaserConfirming, setChaserConfirming] = useState(false);
   const [chaserObservable, setChaserObservable] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const [objectiveDistance, setObjectiveDistance] = useState(objectiveDistanceMeters(LEVEL.playerStart));
@@ -789,7 +795,7 @@ export function ChasingGame() {
     scene.background = new THREE.Color(0x101a24);
     scene.fog = new THREE.FogExp2(0x101a24, 0.0175);
     const camera = new THREE.PerspectiveCamera(56, 1, 0.08, 150);
-    const cameraDirection = cameraDirectionForHeading({ x: 0, y: 1 });
+    const cameraDirection = createFixedCameraDirection();
     const cameraFocus = world(LEVEL.playerStart).add(new THREE.Vector3(0, 0.92, 0));
     camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
 
@@ -1074,6 +1080,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       setPhase(state.phase);
       setPlayerMode(state.player.mode);
       setChaserMode(state.chaser.mode);
+      setChaserConfirming(state.chaser.visualConfirmationSeconds !== null);
       setChaserObservable(canPlayerObserveChaser(state));
       setElapsed(Math.floor(state.elapsedSeconds));
       setObjectiveDistance(objectiveDistanceMeters(state.player.position));
@@ -1097,7 +1104,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       resetActor(actors.police, { x: 23, y: 22.15 }, { x: 0, y: -1 });
 
       cameraFocus.copy(world(state.player.position)).add(new THREE.Vector3(0, 0.92, 0));
-      cameraDirection.copy(cameraDirectionForHeading(state.player.heading));
+      cameraDirection.copy(createFixedCameraDirection());
       cameraDistance = 16.25;
       camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
       camera.lookAt(cameraFocus);
@@ -1668,8 +1675,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         if (held("w") || held("arrowup")) dy -= 1;
         if (held("s") || held("arrowdown")) dy += 1;
         const length = Math.hypot(dx, dy) || 1;
+        const move = screenMoveToWorld({ x: dx / length, y: dy / length });
         latestState = simulation.advance(delta, {
-          move: { x: dx / length, y: dy / length },
+          move,
           interactPressed: interactPressed.current,
           peekHeld: held("q"),
         });
@@ -1678,7 +1686,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         updateLockerVisionStyle(latestState);
         const playerActuallyVisible = latestState.phase !== "playing"
           || isPlayerVisuallyExposed(latestState.player, simulation.config);
-        const chaserActuallyVisible = canPlayerObserveChaser(latestState);
+        const chaserKnowledgeObservable = canPlayerObserveChaser(latestState);
+        const chaserWorldRendered = shouldRenderChaserModel(latestState.phase, playerActuallyVisible);
         syncAnimations(latestState, delta);
         if (actors.kid) {
           updateActorVisibility(
@@ -1688,7 +1697,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             latestState.phase !== "playing",
           );
         }
-        if (actors.villain) updateActorVisibility(actors.villain, chaserActuallyVisible, delta);
+        if (actors.villain) {
+          updateActorVisibility(
+            actors.villain,
+            chaserWorldRendered,
+            delta,
+            true,
+          );
+        }
         const scoreThreat = latestState.phase === "playing" ? threatForMode(latestState.chaser.mode) : 0;
         if (scoreThreat !== lastScoreThreat) {
           score.setThreat(scoreThreat);
@@ -1696,33 +1712,58 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }
 
         const playerAnchor = world(playerPresentationPoint(latestState)).add(new THREE.Vector3(0, 0.92, 0));
-        const lookAheadStrength = latestState.phase === "playing" && ["free", "aligning-hide"].includes(latestState.player.mode)
-          ? 0.78 * CELL
-          : 0;
-        const gameplayAnchor = playerAnchor.clone().add(new THREE.Vector3(
-          latestState.player.heading.x * lookAheadStrength,
-          0,
-          latestState.player.heading.y * lookAheadStrength,
-        ));
         const chaserAnchor = world(latestState.chaser.position).add(new THREE.Vector3(0, 1.05, 0));
         const policeAnchor = actors.police?.root.position.clone().add(new THREE.Vector3(0, 1.05, 0)) ?? playerAnchor;
-        const chaseFocus = latestState.phase === "playing" && latestState.chaser.mode === "chase" && chaserActuallyVisible ? 0.2 : 0;
+        const framingThreat = shouldFrameChaser(
+          latestState.phase,
+          latestState.chaser.mode,
+          chaserKnowledgeObservable,
+        );
+        const chaseFocus = framingThreat ? 0.5 : 0;
         const targetFocus = latestState.phase === "won"
           ? playerAnchor.clone().lerp(policeAnchor, 0.34)
           : latestState.phase === "lost"
             ? playerAnchor.clone().lerp(chaserAnchor, 0.3)
-            : gameplayAnchor.clone().lerp(chaserAnchor, chaseFocus);
-        if (latestState.phase === "playing" && latestState.player.mode === "free") {
-          const desiredDirection = cameraDirectionForHeading(latestState.player.heading);
-          cameraDirection.lerp(desiredDirection, 1 - Math.exp(-1.45 * delta)).normalize();
-        }
-        cameraFocus.lerp(targetFocus, 1 - Math.exp(-6.5 * delta));
+            : playerAnchor.clone().lerp(chaserAnchor, chaseFocus);
+        cameraFocus.lerp(targetFocus, 1 - Math.exp(-(framingThreat ? 12 : 6.5) * delta));
         const baseDistance = THREE.MathUtils.clamp(16.25 + Math.max(0, 1.15 - camera.aspect) * 6, 16.25, 24);
-        const dynamicDistance = baseDistance + threatForMode(latestState.chaser.mode) * (chaserActuallyVisible ? 3.2 : 0.9);
-        const targetDistance = THREE.MathUtils.clamp(dynamicDistance * cameraZoom.value, 13.5, 38);
-        cameraDistance = THREE.MathUtils.lerp(cameraDistance, targetDistance, 1 - Math.exp(-3.2 * delta));
-        const desiredCamera = cameraFocus.clone().addScaledVector(cameraDirection, cameraDistance);
-        camera.position.lerp(desiredCamera, 1 - Math.exp(-6 * delta));
+        const chaseSeparation = framingThreat
+          ? distanceBetween(latestState.player.position, latestState.chaser.position) * CELL
+          : 0;
+        const chaseFramingDistance = framingThreat
+          ? THREE.MathUtils.clamp(chaseSeparation * 0.42, 3.4, 8.5)
+          : 0;
+        const dynamicDistance = baseDistance
+          + threatForMode(latestState.chaser.mode) * 1.8
+          + chaseFramingDistance;
+        const framingRequest = () => ({
+          focus: cameraFocus,
+          points: [playerAnchor, chaserAnchor],
+          cameraDirection,
+          verticalFovDegrees: camera.fov,
+          aspect: camera.aspect,
+        });
+        const requiredFramingDistance = framingThreat
+          ? requiredCameraDistanceForFraming(framingRequest())
+          : 0;
+        const targetDistance = THREE.MathUtils.clamp(
+          Math.max(dynamicDistance * cameraZoom.value, requiredFramingDistance),
+          13.5,
+          MAX_CAMERA_DISTANCE,
+        );
+        const cameraDistanceResponse = targetDistance > cameraDistance ? 8 : 3.2;
+        const dampedCameraDistance = THREE.MathUtils.lerp(
+          cameraDistance,
+          targetDistance,
+          1 - Math.exp(-cameraDistanceResponse * delta),
+        );
+        const maximumDistanceStep = (targetDistance > cameraDistance ? 60 : 28) * delta;
+        cameraDistance += THREE.MathUtils.clamp(
+          dampedCameraDistance - cameraDistance,
+          -maximumDistanceStep,
+          maximumDistanceStep,
+        );
+        camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
         camera.lookAt(cameraFocus);
         updateCameraOcclusion(playerAnchor, delta);
 
@@ -1730,7 +1771,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setPhase(latestState.phase);
           setPlayerMode(latestState.player.mode);
           setChaserMode(latestState.chaser.mode);
-          setChaserObservable(chaserActuallyVisible);
+          setChaserConfirming(latestState.chaser.visualConfirmationSeconds !== null);
+          setChaserObservable(chaserKnowledgeObservable);
           setElapsed(Math.floor(latestState.elapsedSeconds));
           setObjectiveDistance(objectiveDistanceMeters(latestState.player.position));
           setInteraction(simulation.getHideInteraction());
@@ -1759,6 +1801,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     };
     host.addEventListener("wheel", wheel, { passive: false });
 
+    const projectActorToViewport = (view: ActorView | undefined) => {
+      if (!view) return null;
+      camera.updateMatrixWorld();
+      const projected = view.root.position.clone().add(new THREE.Vector3(0, 0.92, 0)).project(camera);
+      return {
+        x: (projected.x + 1) / 2,
+        y: (1 - projected.y) / 2,
+        depth: projected.z,
+        centerInFrustum: Math.abs(projected.x) <= 1
+          && Math.abs(projected.y) <= 1
+          && projected.z >= -1
+          && projected.z <= 1,
+      };
+    };
+
     const qaWindow = window as typeof window & {
       __CHASING_QA__?: {
         getState: () => unknown;
@@ -1777,7 +1834,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           visibility: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, {
             rootVisible: view?.root.visible ?? false,
             alpha: view?.visibilityAlpha ?? 0,
+            worldRendered: name === "villain"
+              ? shouldRenderChaserModel(
+                latestState.phase,
+                latestState.phase !== "playing"
+                  || isPlayerVisuallyExposed(latestState.player, simulation.config),
+              )
+              : undefined,
+            viewport: projectActorToViewport(view),
           }])),
+          knowledge: { chaserObservable: canPlayerObserveChaser(latestState) },
           lockers: Object.fromEntries([...lockers].map(([id, view]) => [id, {
             action: view.actionName,
             peeking: view.peeking,
@@ -1789,8 +1855,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           audio: score.getSnapshot(),
           camera: {
             fov: camera.fov,
+            aspect: camera.aspect,
             distance: cameraDistance,
             zoom: cameraZoom.value,
+            position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+            focus: { x: cameraFocus.x, y: cameraFocus.y, z: cameraFocus.z },
+            direction: { x: cameraDirection.x, y: cameraDirection.y, z: cameraDirection.z },
+            azimuthDegrees: THREE.MathUtils.radToDeg(Math.atan2(cameraDirection.x, cameraDirection.z)),
             occlusion: {
               groups: cameraOccluders.length,
               obscured: cameraOccluders.filter((occluder) => occluder.obscured).map((occluder) => occluder.name),
@@ -1855,7 +1926,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
   };
   const loadPercent = Math.round((loadProgress.done / loadProgress.total) * 100);
   const danger = threatForMode(chaserMode);
-  const visibleChaserStatus = chaserObservable ? chaserStatus(chaserMode) : "视野受限";
+  const displayedChaserStatus = chaserObservable
+    ? chaserConfirming ? "重新确认目标" : chaserStatus(chaserMode)
+    : "位置未确认";
   const showResult = phase === "ready" || ((phase === "won" || phase === "lost") && resultVisible);
   const interactionText = interaction?.kind === "enter"
     ? "躲进储物柜"
@@ -1883,7 +1956,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         <div className="stats">
           <span>用时 <b>{elapsed}s</b></span>
           <span className="objective">出口 <b>{objectiveDistance}m</b></span>
-          <span className={`status danger-${Math.round(danger * 10)}`}><i />{visibleChaserStatus}</span>
+          <span className={`status danger-${Math.round(danger * 10)}`}><i />{displayedChaserStatus}</span>
           <button type="button" aria-label={musicMuted ? "打开音乐" : "静音"} onClick={() => commands.current.toggleMute()}>{musicMuted ? "音乐关" : "音乐开"}</button>
           <button type="button" disabled={loading} onClick={restart}>重新开始</button>
         </div>
@@ -1908,14 +1981,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         {!loading && phase === "playing" && chaserObservable && (
           <div className={`awareness awareness-${chaserMode}`} role="status">
             <span />
-            <div><small>可见追捕者</small><strong>{visibleChaserStatus}</strong></div>
+            <div><small>追捕者情报</small><strong>{displayedChaserStatus}</strong></div>
           </div>
         )}
 
         {!loading && phase === "playing" && !chaserObservable && (
           <div className="awareness awareness-unknown" role="status">
             <span />
-            <div><small>环境判断</small><strong>视野受限 · 留意音乐变化</strong></div>
+            <div><small>追捕者情报</small><strong>位置未确认 · 留意音乐变化</strong></div>
           </div>
         )}
 

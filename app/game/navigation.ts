@@ -169,9 +169,10 @@ export function moveWithCollision(
   if (isWalkable(level, candidateX)) next.x = candidateX.x;
   const candidateY = { x: next.x, y: next.y + direction.y * speed * deltaSeconds };
   if (isWalkable(level, candidateY)) next.y = candidateY.y;
+  const accepted = { x: next.x - position.x, y: next.y - position.y };
   return {
     position: next,
-    heading: Math.hypot(intent.x, intent.y) > 1e-9 ? direction : { x: 0, y: 0 },
+    heading: normalizeVector(accepted, { x: 0, y: 0 }),
   };
 }
 

@@ -6,6 +6,9 @@ import {
   boundedFrameDeltaSeconds,
   canChaserTakeLockerDoor,
   lockerVisionMix,
+  requiredCameraDistanceForFraming,
+  shouldFrameChaser,
+  shouldRenderChaserModel,
   smoothOcclusionStrength,
 } from "../app/game/presentation.ts";
 
@@ -93,4 +96,46 @@ test("a chaser check can never cancel an active player door performance", () => 
   ]) {
     assert.equal(canChaserTakeLockerDoor(busy), false);
   }
+});
+
+test("chaser world rendering never inherits the HUD knowledge gate", () => {
+  assert.equal(shouldRenderChaserModel("ready", false), true);
+  assert.equal(shouldRenderChaserModel("playing", true), true);
+  assert.equal(shouldRenderChaserModel("playing", false), false, "a closed locker cannot leak world positions");
+  assert.equal(shouldRenderChaserModel("lost", false), true);
+  assert.equal(shouldRenderChaserModel("won", true), false);
+});
+
+test("every observable spawned chaser pre-frames first sight and reacquisition", () => {
+  for (const mode of ["patrol", "suspicious", "chase", "lost-sight", "go-to-last-known", "search", "check-hide"]) {
+    assert.equal(shouldFrameChaser("playing", mode, true), true, `${mode} should frame both actors`);
+  }
+  assert.equal(shouldFrameChaser("playing", "spawn-delay", true), false);
+  assert.equal(shouldFrameChaser("playing", "search", false), false, "walls must not leak pursuer position");
+  assert.equal(shouldFrameChaser("won", "chase", true), false);
+});
+
+test("portrait chase framing derives a safe distance from FOV and actor separation", () => {
+  const focus = { x: 0, y: 0.92, z: 0 };
+  const points = [
+    { x: -7, y: 0.92, z: 0 },
+    { x: 7, y: 1.05, z: 0 },
+  ];
+  const cameraDirection = { x: 0, y: 0.8164156395068652, z: -0.5774647206268071 };
+  const portrait = requiredCameraDistanceForFraming({
+    focus,
+    points,
+    cameraDirection,
+    verticalFovDegrees: 56,
+    aspect: 0.5,
+  });
+  const desktop = requiredCameraDistanceForFraming({
+    focus,
+    points,
+    cameraDirection,
+    verticalFovDegrees: 56,
+    aspect: 16 / 9,
+  });
+  assert.ok(portrait > 35 && portrait < 38, `unexpected portrait distance ${portrait}`);
+  assert.ok(desktop < 14, `desktop framing should not over-zoom: ${desktop}`);
 });

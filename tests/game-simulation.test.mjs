@@ -126,6 +126,20 @@ test("pushing into a wall does not rotate the actor or camera toward empty space
   assert.deepEqual(after.heading, before.heading);
 });
 
+test("sliding along a wall faces the accepted displacement instead of the rejected axis", () => {
+  const level = testLevel([".#", ".."]);
+  const movement = moveWithCollision(
+    level,
+    { x: 0.49, y: 0 },
+    { x: 1, y: 1 },
+    1,
+    0.1,
+  );
+  assert.equal(movement.position.x, 0.49);
+  assert.ok(movement.position.y > 0);
+  assert.deepEqual(movement.heading, { x: 0, y: 1 });
+});
+
 test("solid authored props block movement, pathing, and sight without removing their floor", () => {
   const level = testLevel(["....."], {
     playerStart: { x: 0, y: 0 },
@@ -309,6 +323,175 @@ test("a brief suspicious glimpse retains evidence and enters last-known search",
   }).state;
   assert.equal(chaser.mode, "lost-sight");
   assert.deepEqual(chaser.memory.lastKnownPosition, { x: 2, y: 0 });
+});
+
+test("reacquiring the player from search confirms before resuming chase", () => {
+  const level = testLevel(["....."], {
+    playerStart: { x: 2, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    exit: { x: 4, y: 0 },
+  });
+  const cfg = config({ spawnDelaySeconds: 0, suspiciousSeconds: 0.2 });
+  let chaser = {
+    ...createInitialChaser(level, cfg),
+    mode: "search",
+    memory: {
+      lastKnownPosition: { x: 1, y: 0 },
+      lastSeenAtSeconds: 0,
+      witnessedHideSpotId: null,
+    },
+  };
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "player-visible", position: { x: 2, y: 0 }, observedAtSeconds: 1 },
+    reachedTarget: false,
+    nowSeconds: 1,
+    deltaSeconds: 0.1,
+  }).state;
+  assert.equal(chaser.mode, "search");
+  assert.equal(chaser.visualConfirmationSeconds, 0);
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "player-visible", position: { x: 2.1, y: 0 }, observedAtSeconds: 1.1 },
+    reachedTarget: false,
+    nowSeconds: 1.1,
+    deltaSeconds: 0.1,
+  }).state;
+  assert.equal(chaser.mode, "search");
+  assert.equal(chaser.visualConfirmationSeconds, 0.1);
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "player-visible", position: { x: 2.2, y: 0 }, observedAtSeconds: 1.2 },
+    reachedTarget: false,
+    nowSeconds: 1.2,
+    deltaSeconds: 0.1,
+  }).state;
+  assert.equal(chaser.mode, "chase");
+  assert.equal(chaser.visualConfirmationSeconds, null);
+});
+
+test("alternating short peeks cannot stun movement or erase fresh evidence", () => {
+  const level = testLevel(["......."], {
+    playerStart: { x: 6, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    exit: { x: 6, y: 0 },
+  });
+  const cfg = config({ spawnDelaySeconds: 0, suspiciousSeconds: 0.2 });
+  const planner = new GridPathPlanner(level);
+  let chaser = {
+    ...createInitialChaser(level, cfg),
+    mode: "go-to-last-known",
+    memory: {
+      lastKnownPosition: { x: 6, y: 0 },
+      lastSeenAtSeconds: 0,
+      witnessedHideSpotId: null,
+    },
+  };
+  for (let tick = 1; tick <= 10; tick += 1) {
+    const visible = tick % 2 === 1;
+    chaser = stepChaserBrain(chaser, level, cfg, {
+      evidence: visible
+        ? { kind: "player-visible", position: { x: 6, y: 0 }, observedAtSeconds: tick * 0.1 }
+        : { kind: "none", observedAtSeconds: tick * 0.1 },
+      reachedTarget: false,
+      nowSeconds: tick * 0.1,
+      deltaSeconds: 0.1,
+    }).state;
+    const target = getChaserTarget(chaser, level);
+    assert.ok(target, "pursuit target disappeared during a short peek");
+    const movement = moveAlongGridPath(
+      planner,
+      chaser.position,
+      target,
+      chaserSpeedForMode(chaser.mode, cfg.chaserSpeed),
+      0.1,
+    );
+    chaser = { ...chaser, position: movement.position, heading: movement.heading };
+  }
+  assert.equal(chaser.mode, "go-to-last-known");
+  assert.ok(chaser.position.x > 1.5, `short peeks stalled pursuit at x=${chaser.position.x}`);
+  assert.ok(chaser.modeElapsedSeconds >= 0.99, "short peeks reset the underlying pursuit timer");
+
+  let searching = {
+    ...createInitialChaser(level, cfg),
+    mode: "search",
+    memory: {
+      lastKnownPosition: { x: 3, y: 0 },
+      lastSeenAtSeconds: 0,
+      witnessedHideSpotId: null,
+    },
+  };
+  const shortSearchConfig = { ...cfg, searchSeconds: 0.6 };
+  for (let tick = 1; tick <= 8; tick += 1) {
+    const visible = tick % 2 === 1;
+    searching = stepChaserBrain(searching, level, shortSearchConfig, {
+      evidence: visible
+        ? { kind: "player-visible", position: { x: 6, y: 0 }, observedAtSeconds: tick * 0.1 }
+        : { kind: "none", observedAtSeconds: tick * 0.1 },
+      reachedTarget: false,
+      nowSeconds: tick * 0.1,
+      deltaSeconds: 0.1,
+    }).state;
+  }
+  assert.equal(searching.mode, "go-to-last-known", "fresh evidence fell back to stale search/patrol behavior");
+  assert.deepEqual(searching.memory.lastKnownPosition, { x: 6, y: 0 });
+  assert.ok(searching.memory.lastSeenAtSeconds >= 0.7, "fresh visual evidence was erased by search timeout");
+});
+
+test("a brief peek cannot cancel a witnessed locker inspection", () => {
+  const locker = {
+    id: "locker-north",
+    approach: { x: 3, y: 0 },
+    concealed: { x: 3.3, y: 0 },
+    facing: { x: -1, y: 0 },
+  };
+  const level = testLevel(["....."], {
+    playerStart: locker.approach,
+    chaserStart: { x: 0, y: 0 },
+    exit: { x: 4, y: 0 },
+    hideSpots: [locker],
+  });
+  const cfg = config({ spawnDelaySeconds: 0, suspiciousSeconds: 0.2, checkHideSeconds: 0.3 });
+  let chaser = {
+    ...createInitialChaser(level, cfg),
+    mode: "check-hide",
+    memory: {
+      lastKnownPosition: { ...locker.approach },
+      lastSeenAtSeconds: 0,
+      witnessedHideSpotId: locker.id,
+    },
+  };
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "player-visible", position: { ...locker.concealed }, observedAtSeconds: 1 },
+    reachedTarget: false,
+    nowSeconds: 1,
+    deltaSeconds: 0.1,
+  }).state;
+  assert.equal(chaser.mode, "check-hide");
+  assert.equal(chaser.visualConfirmationSeconds, 0);
+  assert.equal(chaser.memory.witnessedHideSpotId, locker.id);
+  assert.deepEqual(getChaserTarget(chaser, level), locker.approach);
+
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "none", observedAtSeconds: 1.1 },
+    reachedTarget: false,
+    nowSeconds: 1.1,
+    deltaSeconds: 0.1,
+  }).state;
+  assert.equal(chaser.mode, "check-hide");
+  assert.equal(chaser.visualConfirmationSeconds, null);
+  assert.equal(chaser.memory.witnessedHideSpotId, locker.id);
+  assert.deepEqual(getChaserTarget(chaser, level), locker.approach);
+
+  const completed = stepChaserBrain(
+    { ...chaser, position: { ...locker.approach } },
+    level,
+    cfg,
+    {
+      evidence: { kind: "none", observedAtSeconds: 1.4 },
+      reachedTarget: true,
+      nowSeconds: 1.4,
+      deltaSeconds: 0.3,
+    },
+  );
+  assert.equal(completed.completedHideCheckId, locker.id);
 });
 
 test("search order is evidence-seeded, deterministic, and advances only after an authored dwell", () => {

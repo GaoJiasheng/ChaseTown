@@ -114,6 +114,12 @@ export interface ChaserState {
   heading: Point;
   mode: ChaserMode;
   modeElapsedSeconds: number;
+  /**
+   * Consecutive visible time while an existing pursuit/search mode confirms a
+   * reacquisition. `null` means no confirmation is active. The underlying
+   * mode keeps moving and aging, so short peeks cannot stun or reset the AI.
+   */
+  visualConfirmationSeconds: number | null;
   patrolIndex: number;
   /** Deterministic per-encounter shuffle; derived only from observed evidence. */
   searchSeed: number;

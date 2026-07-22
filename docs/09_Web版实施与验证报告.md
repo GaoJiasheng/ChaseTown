@@ -38,9 +38,10 @@
 | 正式角色动作 | Kid 12 个、Villain 8 个、Police 5 个动作均由 GLB `AnimationClip` 与 `AnimationMixer` 驱动 | `tests/animation-assets.test.mjs`、`tests/actor-runtime.test.mjs` |
 | 原地转身 | Kid 的 90° TurnLeft / TurnRight 为 0.6 秒脚锁动作；180° 明确拆成两段，并由运行时 heading 与 clip 同步 | [动作与脚锁报告](art_production/reports/kid-turn-production-animation.json) |
 | Locker 演出 | Hero Locker 使用正式 GLB 与六段真实柜门动画，不用程序几何替代 | `tests/animation-assets.test.mjs`、`tests/no-placeholder-art.test.mjs` |
-| 相机与遮挡 | 采用玩家背后动态镜头、手动缩放与追逐拉远；墙体或大物件只在遮挡角色的局部走廊内淡出并自动恢复 | 运行态 smoke 场景，见第 7 节证据 |
+| 相机与遮挡 | 采用固定世界方位镜头，角色转身只改变角色朝向、不改变操作轴；追逐最低距离由 FOV、aspect、双方分离量和角色边距反算，手动缩放不能越过安全画幅；墙体或大物件只在遮挡角色的局部走廊内淡出并自动恢复 | `tests/input.test.mjs`、`tests/presentation.test.mjs` + 运行态 smoke 场景 |
 | 自适应音乐 | 38.02 秒 Explore / Threat stem 同步启动，按威胁 attack / release 平滑混音，并支持静音 | `tests/adaptive-score.test.mjs` |
-| 桌面与触控输入 | 键盘、Pointer Events 与屏幕控制共享移动意图，支持躲藏、按住窥视、静音、缩放和重开 | `tests/input.test.mjs`、响应式 smoke 场景 |
+| 桌面与触控输入 | 键盘、Pointer Events 与屏幕控制共享屏幕坐标意图，再通过固定相机基向量转换到世界坐标；支持躲藏、按住窥视、静音、缩放和重开 | `tests/input.test.mjs`、响应式 smoke 场景 |
+| 追捕者世界可见性 | AI / HUD 的情报可观察性与 3D 模型渲染彻底分离；追捕者在逃跑、断视线、搜索和失败阶段保持正式模型，只有真实墙体、深度、画幅和柜门视野可自然遮挡 | `tests/presentation.test.mjs` + 真实追逐 / 断视线 smoke |
 | 胜负演出 | 被抓与逃脱成功均切换正式动作并延迟出现结果层，避免立即切断角色表演 | `tests/actor-runtime.test.mjs`、运行态 smoke 场景 |
 
 ## 4. 正式资产证据
@@ -93,7 +94,7 @@
 | TypeScript | `npm run typecheck` | PASS，0 error |
 | ESLint | `npm run lint` | PASS，0 error |
 | 生产构建 | `npm run build` | PASS；仅保留单个 client chunk 大于 500 kB 的非阻断体积 warning |
-| 全量自动测试 | `npm test` | PASS，60 / 60，失败 0 |
+| 全量自动测试 | `npm test` | PASS，70 / 70，失败 0 |
 | 生产依赖安全审计 | `npm audit --omit=dev` | PASS，0 vulnerability |
 | Git 补丁完整性 | `git diff --check` | PASS |
 | Git / LFS 对象完整性 | `git fsck --full`、`git lfs fsck` | PASS |
@@ -119,6 +120,11 @@
 | 模型并行加载中卸载可能留下未挂载资源 | `GLTFLoader` promise 完成后只检查 disposed，没有主动释放 | 29 项加载改为 `allSettled`；失败或卸载后统一 dispose 已完成的几何、材质、纹理与骨架 | TypeScript / ESLint / 构建回归 |
 | 线上首次开始后 Threat 音乐轨可能晚约 20 秒就绪 | 音频元素遵守首次手势才创建，私有 CDN 冷请求使第二条 stem 尚未缓存 | 3D 加载期间并行 fetch 并完整物化双轨缓存，仍在用户手势内创建 AudioContext / Audio 元素；失败保持可重试退路 | [Sites v12 smoke](web-rendering/evidence/deployed-v12-smoke.json)：两轨 readyState 4、漂移约 3 μs |
 | 站点截图机器人额外请求 `/favicon.ico` 产生 404 | 页面显式提供 SVG 图标，但传统 crawler 仍探测 ICO 默认路径 | 增加真实 64 × 64 ICO 与文件签名回归；线上返回 200 `image/vnd.microsoft.icon` | [Sites v12 smoke](web-rendering/evidence/deployed-v12-smoke.json) |
+| 上下左右操作会按反，转向后更难判断 | 移动输入直接使用世界坐标，而镜头又持续根据玩家 heading 旋转；不同阻尼还造成残余 bearing 漂移 | 锁定单一世界方位；键盘与触控先按屏幕坐标统一，再由同一固定基向量转换；删除 heading look-ahead 和相机朝向插值 | `tests/input.test.mjs` 的 Three.js 投影用例 + [真实浏览器四向摘要](web-rendering/evidence/camera-visibility-summary.json) |
+| 追逐和断视线时坏人凭空消失 | HUD 情报门禁 `canPlayerObserveChaser` 被错误复用于模型透明度、根节点显隐和追逐镜头 | 情报状态只驱动 HUD；玩家暴露时世界模型独立保持 `rootVisible=true / alpha=1`，追逐采用固定方位双人构图；完全藏好时仍按窥视 marker 关闭世界信息 | [追逐截图](web-rendering/evidence/fixed-camera-chase.jpg)、[断视线截图](web-rendering/evidence/chaser-last-known-visible.jpg) 与 [逐帧 / Locker 边界摘要](web-rendering/evidence/camera-visibility-summary.json) |
+| 手机竖屏合法追逐间距可能把坏人挤出画面 | 固定 `chaseFocus` 与线性 aspect 补偿没有考虑水平 FOV、模型边距和手动放大 | 追逐焦点采用双方中点，按当前 smoothed focus 逐帧反算最低安全距离；拉远快速响应，手动倍率受安全下限约束 | [390 × 844 六格追逐截图](web-rendering/evidence/mobile-chase-safe-frame.jpg) 与 [缩放前后坐标摘要](web-rendering/evidence/camera-visibility-summary.json) |
+| 搜索后重新发现玩家会直接切入追逐，首帧坏人可能仍在竖屏画外 | `lost-sight / go-to-last-known / search / check-hide` 重获目标时没有视觉确认和预构图窗口 | 增加连续 0.2 秒并行确认；原追查移动与计时继续，杜绝短窥视 stun-lock；确认中断时保留新目击点并继续前往，旧搜索超时不得清空证据；可观察时提前双人构图 | [390 × 844 重获追逐截图](web-rendering/evidence/mobile-reacquired-chase-safe-frame.jpg) 与 [逐帧模式 / 画幅摘要](web-rendering/evidence/camera-visibility-summary.json) |
+| 搜柜途中短窥视可能取消必查柜体 | 通用可见证据更新会清空 `witnessedHideSpotId`，确认中断又会离开 `check-hide` | 搜柜期间保留强证据与原目标；短窥视关闭后继续走向 / 检查同一柜，只有连续确认成功转 Chase 才清除柜体目标 | `tests/game-simulation.test.mjs` 的 witnessed locker brief-peek 回归 |
 
 若最终 smoke 再发现问题，必须继续追加本表，并执行“修复 → 自动回归 → 实际运行 → 截图复核”的完整循环，不能只修改后口头关闭。
 
@@ -127,15 +133,15 @@
 | 场景 | 验收点 | 最终证据 |
 |---|---|---|
 | 首屏与开始 | 页面无报错；29 个模型和两条音乐资源可达；开始后 Kid 清晰可见 | PASS；[首屏](web-rendering/evidence/desktop-ready.jpg)、[移动后](web-rendering/evidence/desktop-gameplay.jpg) |
-| 移动与碰撞 | WASD / 方向键响应；墙体与大型实体碰撞可靠；移动动作与朝向一致 | PASS；实际键盘移动 + 自动碰撞/朝向用例 |
+| 移动与碰撞 | WASD / 方向键与四个触控按钮始终对应屏幕上下左右；墙体与大型实体碰撞可靠；滑墙朝向取实际位移；连续转向不改变镜头方位 | PASS；键盘/触控八组真实输入方向点积均为 1.0000，实际 bearing 误差 < 1e-9；[移动端截图](web-rendering/evidence/fixed-camera-mobile-controls.jpg) |
 | 相机遮挡与恢复 | 障碍只局部淡出；人物不丢失；离开后材质恢复且不残留透明 | PASS；[遮挡视角](web-rendering/evidence/camera-occlusion.jpg)，峰值 strength 约 1，离开后回到约 0 |
 | Locker 进入 | 对齐转身、开门、进入、关门顺序完整；角色不穿柜；隐藏后不可见 | PASS；0.6 秒转身，hidden `rootVisible=false / alpha=0`，[截图](web-rendering/evidence/locker-hidden.jpg) |
 | 窥视与退出 | 按住才窥视；释放后关门；门关闭前后视觉暴露与 AI 证据一致；可正常退出继续移动 | PASS；zero-open alpha / mask 均为 0，full peek alpha / mask 均为 1，[截图](web-rendering/evidence/locker-peek.jpg) |
-| 丢失与搜索 | 追逐者失去 LOS 后先去最后已知点，再盲目搜索；不会追踪隐藏坐标 | PASS；真实路线出现 `chase → lost-sight → go-to-last-known → search` |
+| 丢失、搜索与重获 | 追逐者失去 LOS 后先去最后已知点，再盲目搜索；不会追踪隐藏坐标；情报变未知时世界模型不再被程序删除；重新发现玩家先并行确认再追逐 | PASS；真实路线覆盖 `chase → lost-sight → go-to-last-known → 0.2s confirmation → chase`；重获 Chase 首帧 Villain / Kid 均在竖屏 0.1–0.9 安全区，[截图](web-rendering/evidence/mobile-reacquired-chase-safe-frame.jpg) |
 | 被抓 | Catch / Caught 演出可读，结果层延迟正确，重开恢复完整初始状态 | PASS；0.26 秒 staging 后双角色正式动作，[截图](web-rendering/evidence/capture-performance.jpg) |
 | 逃脱 | 抵达警察局触发 Police / Kid 正式动作与胜利层，重开正常 | PASS；Kid Celebrate + Police Resolve，[截图](web-rendering/evidence/escape-performance.jpg) |
 | 自适应音乐 | 用户交互后 AudioContext 为 running；两 stem 同步；危险混音与静音正常；无解码错误 | PASS；两轨 38.02 秒、readyState 4、media error null，常态漂移为微秒级，长路线重开约 5.3 ms |
-| 手机竖屏 390 × 844 | HUD、摇杆、交互、窥视、静音与重开均不遮住关键画面 | PASS；scroll 与 viewport 同尺寸，触控热区至少 44 px，[截图](web-rendering/evidence/mobile-portrait.jpg) |
+| 手机竖屏 390 × 844 | HUD、摇杆、交互、窥视、静音与重开均不遮住关键画面；横向相隔六格、最大手动放大和搜索后重获追逐均保持双人安全画幅 | PASS；scroll 与 viewport 同尺寸，触控热区至少 44 px；[布局截图](web-rendering/evidence/mobile-portrait.jpg)、[六格追逐](web-rendering/evidence/mobile-chase-safe-frame.jpg)、[重获追逐](web-rendering/evidence/mobile-reacquired-chase-safe-frame.jpg) |
 | 手机横屏 844 × 390 | 画面和触控区不重叠；可开始、移动、交互和重开 | PASS；设备仿真布局与真实 touch 事件路径通过 |
 | 线上私有地址 | TLS 与鉴权正常；首页、29 个 GLB、双轨 M4A、manifest、notices 和图标可达；真实 Chrome 可解码、可交互且无 4xx / 5xx | PASS；Sites v12、[运行截图](web-rendering/evidence/deployed-v12-final.jpg)、[结构化 smoke](web-rendering/evidence/deployed-v12-smoke.json) |
 

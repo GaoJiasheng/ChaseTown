@@ -1,0 +1,2760 @@
+{
+  "baselineBearing": {
+    "x": 0,
+    "y": 0.816415639506865,
+    "z": -0.577464720626807
+  },
+  "keyboard": {
+    "W": {
+      "delta": {
+        "x": 0,
+        "y": -0.5133333333333328
+      },
+      "dot": 1,
+      "bearing": {
+        "x": 0,
+        "y": 0.816415639506865,
+        "z": -0.577464720626807
+      }
+    },
+    "S": {
+      "delta": {
+        "x": 0,
+        "y": 0.5133333333333328
+      },
+      "dot": 1,
+      "bearing": {
+        "x": 0,
+        "y": 0.816415639506865,
+        "z": -0.577464720626807
+      }
+    },
+    "A": {
+      "delta": {
+        "x": -0.513333333333339,
+        "y": 0
+      },
+      "dot": 1,
+      "bearing": {
+        "x": 0,
+        "y": 0.816415639506865,
+        "z": -0.577464720626807
+      }
+    },
+    "D": {
+      "delta": {
+        "x": 0.4766666666666719,
+        "y": 0
+      },
+      "dot": 1,
+      "bearing": {
+        "x": 0,
+        "y": 0.816415639506865,
+        "z": -0.577464720626807
+      }
+    }
+  },
+  "touch": {
+    "W": {
+      "delta": {
+        "x": 0,
+        "y": -0.47666666666666613
+      },
+      "dot": 1,
+      "bearing": {
+        "x": 0,
+        "y": 0.816415639506865,
+        "z": -0.577464720626807
+      }
+    },
+    "S": {
+      "delta": {
+        "x": 0,
+        "y": 0.47666666666666613
+      },
+      "dot": 1,
+      "bearing": {
+        "x": 0,
+        "y": 0.8164156395068651,
+        "z": -0.577464720626807
+      }
+    },
+    "A": {
+      "delta": {
+        "x": -0.513333333333339,
+        "y": 0
+      },
+      "dot": 1,
+      "bearing": {
+        "x": 0,
+        "y": 0.8164156395068651,
+        "z": -0.577464720626807
+      }
+    },
+    "D": {
+      "delta": {
+        "x": 0.4766666666666719,
+        "y": 0
+      },
+      "dot": 1,
+      "bearing": {
+        "x": 0,
+        "y": 0.816415639506865,
+        "z": -0.577464720626807
+      }
+    }
+  },
+  "portraitChase": {
+    "transition": [
+      {
+        "elapsedSeconds": 0.08333333333333333,
+        "mode": "patrol",
+        "distance": 21.271999999999988,
+        "kid": {
+          "x": 0.8338691261089832,
+          "y": 0.5010499006813421,
+          "depth": 0.9935534765663169,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": -0.22096952737082598,
+          "y": 0.5010499006813421,
+          "depth": 0.9935534765663169,
+          "centerInFrustum": false
+        }
+      },
+      {
+        "elapsedSeconds": 0.08333333333333333,
+        "mode": "patrol",
+        "distance": 21.805999999999994,
+        "kid": {
+          "x": 0.84448488846702,
+          "y": 0.5010840930390336,
+          "depth": 0.9937378559533988,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": -0.18354576563566438,
+          "y": 0.5010840930390336,
+          "depth": 0.9937378559533988,
+          "centerInFrustum": false
+        }
+      },
+      {
+        "elapsedSeconds": 0.09999999999999999,
+        "mode": "suspicious",
+        "distance": 22.80199999999999,
+        "kid": {
+          "x": 0.8582367764162312,
+          "y": 0.5011285429415508,
+          "depth": 0.9940584752251752,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": -0.12351058599193465,
+          "y": 0.5011285429415508,
+          "depth": 0.9940584752251752,
+          "centerInFrustum": false
+        },
+        "distanceRate": 59.75999999999972
+      },
+      {
+        "elapsedSeconds": 0.11666666666666665,
+        "mode": "suspicious",
+        "distance": 23.3,
+        "kid": {
+          "x": 0.8627025539775288,
+          "y": 0.5011430652239545,
+          "depth": 0.9942084262137502,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": -0.09752859428775962,
+          "y": 0.5011430652239545,
+          "depth": 0.9942084262137502,
+          "centerInFrustum": false
+        },
+        "distanceRate": 29.880000000000713
+      },
+      {
+        "elapsedSeconds": 0.13333333333333333,
+        "mode": "suspicious",
+        "distance": 24.290000000000003,
+        "kid": {
+          "x": 0.8678678738118375,
+          "y": 0.5011600656020148,
+          "depth": 0.9944881426903933,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": -0.052420003226214984,
+          "y": 0.5011600656020148,
+          "depth": 0.9944881426903933,
+          "centerInFrustum": false
+        },
+        "distanceRate": 59.400000000000084
+      },
+      {
+        "elapsedSeconds": 0.13333333333333333,
+        "mode": "suspicious",
+        "distance": 24.805999999999997,
+        "kid": {
+          "x": 0.8689646803321924,
+          "y": 0.5011638236793289,
+          "depth": 0.9946250336269827,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": -0.03185681790717554,
+          "y": 0.5011638236793289,
+          "depth": 0.9946250336269827,
+          "centerInFrustum": false
+        }
+      },
+      {
+        "elapsedSeconds": 0.15,
+        "mode": "suspicious",
+        "distance": 25.801999999999992,
+        "kid": {
+          "x": 0.8686997980022719,
+          "y": 0.5011634549042548,
+          "depth": 0.9948737098794456,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.00312265371770043,
+          "y": 0.5011634549042548,
+          "depth": 0.9948737098794456,
+          "centerInFrustum": true
+        },
+        "distanceRate": 59.75999999999972
+      },
+      {
+        "elapsedSeconds": 0.16666666666666666,
+        "mode": "suspicious",
+        "distance": 26.305999999999997,
+        "kid": {
+          "x": 0.8676014472808367,
+          "y": 0.50116018058687,
+          "depth": 0.9949923424738206,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.018790223652812965,
+          "y": 0.50116018058687,
+          "depth": 0.9949923424738206,
+          "centerInFrustum": true
+        },
+        "distanceRate": 30.2400000000003
+      },
+      {
+        "elapsedSeconds": 0.18333333333333332,
+        "mode": "suspicious",
+        "distance": 27.27529899458794,
+        "kid": {
+          "x": 0.8641788185725239,
+          "y": 0.5011496830166299,
+          "depth": 0.9952081370462507,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.04579943970699918,
+          "y": 0.5011496830166299,
+          "depth": 0.9952081370462507,
+          "centerInFrustum": true
+        },
+        "distanceRate": 58.15793967527648
+      },
+      {
+        "elapsedSeconds": 0.18333333333333332,
+        "mode": "suspicious",
+        "distance": 27.739763756711987,
+        "kid": {
+          "x": 0.862478787021338,
+          "y": 0.5011444513787983,
+          "depth": 0.9953061943261966,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.05791402945841928,
+          "y": 0.5011444513787983,
+          "depth": 0.9953061943261966,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.19999999999999998,
+        "mode": "suspicious",
+        "distance": 28.485324543633276,
+        "kid": {
+          "x": 0.859935987421126,
+          "y": 0.501136633976772,
+          "depth": 0.9954569149245076,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.07659366760205782,
+          "y": 0.501136633976772,
+          "depth": 0.9954569149245076,
+          "centerInFrustum": true
+        },
+        "distanceRate": 44.73364721527731
+      },
+      {
+        "elapsedSeconds": 0.21666666666666665,
+        "mode": "suspicious",
+        "distance": 28.80206630368183,
+        "kid": {
+          "x": 0.8589314577800263,
+          "y": 0.5011335497959664,
+          "depth": 0.995518586910284,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.08426843712190907,
+          "y": 0.5011335497959664,
+          "depth": 0.995518586910284,
+          "centerInFrustum": true
+        },
+        "distanceRate": 19.00450560291326
+      },
+      {
+        "elapsedSeconds": 0.2333333333333333,
+        "mode": "suspicious",
+        "distance": 29.344267738812068,
+        "kid": {
+          "x": 0.8573263062461407,
+          "y": 0.5011286290709073,
+          "depth": 0.9956210703365062,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.09707936220759528,
+          "y": 0.5011286290709073,
+          "depth": 0.9956210703365062,
+          "centerInFrustum": true
+        },
+        "distanceRate": 32.53208610781429
+      },
+      {
+        "elapsedSeconds": 0.2333333333333333,
+        "mode": "suspicious",
+        "distance": 29.570184275871053,
+        "kid": {
+          "x": 0.856703108156916,
+          "y": 0.5011267220559653,
+          "depth": 0.9956626635799333,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.10230425847181901,
+          "y": 0.5011267220559653,
+          "depth": 0.9956626635799333,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.24999999999999997,
+        "mode": "suspicious",
+        "distance": 29.96315019427429,
+        "kid": {
+          "x": 0.8556959337745147,
+          "y": 0.5011236470089793,
+          "depth": 0.9957335197012015,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.11125550945681456,
+          "y": 0.5011236470089793,
+          "depth": 0.9957335197012015,
+          "centerInFrustum": true
+        },
+        "distanceRate": 23.57795510419429
+      },
+      {
+        "elapsedSeconds": 0.26666666666666666,
+        "mode": "suspicious",
+        "distance": 30.127342982696238,
+        "kid": {
+          "x": 0.8553069407260475,
+          "y": 0.5011224625953139,
+          "depth": 0.9957625787743235,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.11494892662933615,
+          "y": 0.5011224625953139,
+          "depth": 0.9957625787743235,
+          "centerInFrustum": true
+        },
+        "distanceRate": 9.851567305316763
+      },
+      {
+        "elapsedSeconds": 0.2833333333333333,
+        "mode": "suspicious",
+        "distance": 30.407351022568417,
+        "kid": {
+          "x": 0.854697081746451,
+          "y": 0.5011206119483408,
+          "depth": 0.9958114124006319,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1211970587534103,
+          "y": 0.5011206119483408,
+          "depth": 0.9958114124006319,
+          "centerInFrustum": true
+        },
+        "distanceRate": 16.80048239233074
+      },
+      {
+        "elapsedSeconds": 0.2833333333333333,
+        "mode": "suspicious",
+        "distance": 30.524845166701844,
+        "kid": {
+          "x": 0.8544646979952055,
+          "y": 0.5011199098609419,
+          "depth": 0.9958316372206589,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.12380395603612981,
+          "y": 0.5011199098609419,
+          "depth": 0.9958316372206589,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.3,
+        "mode": "chase",
+        "distance": 30.690916598217974,
+        "kid": {
+          "x": 0.8541479968158927,
+          "y": 0.5011200419633501,
+          "depth": 0.9958599685724611,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1284434508260911,
+          "y": 0.5011200419633501,
+          "depth": 0.9958599685724611,
+          "centerInFrustum": true
+        },
+        "distanceRate": 9.964285890967803
+      },
+      {
+        "elapsedSeconds": 0.31666666666666665,
+        "mode": "chase",
+        "distance": 30.74418859622422,
+        "kid": {
+          "x": 0.8540485645709519,
+          "y": 0.5011207889395295,
+          "depth": 0.9958689973134426,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1305346805253516,
+          "y": 0.5011207889395295,
+          "depth": 0.9958689973134426,
+          "centerInFrustum": true
+        },
+        "distanceRate": 3.196319880374717
+      },
+      {
+        "elapsedSeconds": 0.3333333333333333,
+        "mode": "chase",
+        "distance": 30.816110472231788,
+        "kid": {
+          "x": 0.8539199317558679,
+          "y": 0.5011227633415439,
+          "depth": 0.995881144929204,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.13410428733976676,
+          "y": 0.5011227633415439,
+          "depth": 0.995881144929204,
+          "centerInFrustum": true
+        },
+        "distanceRate": 4.315312560454104
+      },
+      {
+        "elapsedSeconds": 0.3333333333333333,
+        "mode": "chase",
+        "distance": 30.8380930317179,
+        "kid": {
+          "x": 0.8538812300639198,
+          "y": 0.5011239221712074,
+          "depth": 0.9958848508153163,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1356135799242515,
+          "y": 0.5011239221712074,
+          "depth": 0.9958848508153163,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.35,
+        "mode": "chase",
+        "distance": 30.84247923860353,
+        "kid": {
+          "x": 0.8538592345604126,
+          "y": 0.501127156907837,
+          "depth": 0.9958856130611973,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.13833831312194572,
+          "y": 0.501127156907837,
+          "depth": 0.9958856130611973,
+          "centerInFrustum": true
+        },
+        "distanceRate": 0.26317241313783774
+      },
+      {
+        "elapsedSeconds": 0.36666666666666664,
+        "mode": "chase",
+        "distance": 30.839623808285992,
+        "kid": {
+          "x": 0.8537258172221537,
+          "y": 0.5011287113945314,
+          "depth": 0.995885145428147,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1397073160354506,
+          "y": 0.5011287113945314,
+          "depth": 0.995885145428147,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.1713258190522993
+      },
+      {
+        "elapsedSeconds": 0.3833333333333333,
+        "mode": "chase",
+        "distance": 30.832936006133416,
+        "kid": {
+          "x": 0.8533396646961366,
+          "y": 0.5011314574944236,
+          "depth": 0.9958840428454625,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.142197546571511,
+          "y": 0.5011314574944236,
+          "depth": 0.9958840428454625,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.40126812915460175
+      },
+      {
+        "elapsedSeconds": 0.3833333333333333,
+        "mode": "chase",
+        "distance": 30.82879914064998,
+        "kid": {
+          "x": 0.853098927613348,
+          "y": 0.5011326974501121,
+          "depth": 0.9958833570017376,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.14333048701942103,
+          "y": 0.5011326974501121,
+          "depth": 0.9958833570017376,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.39999999999999997,
+        "mode": "chase",
+        "distance": 30.818466176063374,
+        "kid": {
+          "x": 0.8523866382949106,
+          "y": 0.5011349307280536,
+          "depth": 0.9958816363668205,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.14567764414496942,
+          "y": 0.5011349307280536,
+          "depth": 0.9958816363668205,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.6199778751963693
+      },
+      {
+        "elapsedSeconds": 0.41666666666666663,
+        "mode": "chase",
+        "distance": 30.81188394310713,
+        "kid": {
+          "x": 0.8519139318162973,
+          "y": 0.501135988618213,
+          "depth": 0.9958805368491853,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1469315622267105,
+          "y": 0.501135988618213,
+          "depth": 0.9958805368491853,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.39493397737466307
+      },
+      {
+        "elapsedSeconds": 0.4333333333333333,
+        "mode": "chase",
+        "distance": 30.79643445374388,
+        "kid": {
+          "x": 0.8509898023608544,
+          "y": 0.501137930437845,
+          "depth": 0.9958779500402439,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.14911138915024413,
+          "y": 0.501137930437845,
+          "depth": 0.9958779500402439,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.9269693617949317
+      },
+      {
+        "elapsedSeconds": 0.4333333333333333,
+        "mode": "chase",
+        "distance": 30.78731160897194,
+        "kid": {
+          "x": 0.8505354379254462,
+          "y": 0.5011388576817104,
+          "depth": 0.9958764196085006,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.15006929970756322,
+          "y": 0.5011388576817104,
+          "depth": 0.9958764196085006,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.44999999999999996,
+        "mode": "chase",
+        "distance": 30.7657472473809,
+        "kid": {
+          "x": 0.8494699972825321,
+          "y": 0.501140679412215,
+          "depth": 0.995872795507266,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.15210397453240093,
+          "y": 0.501140679412215,
+          "depth": 0.995872795507266,
+          "centerInFrustum": true
+        },
+        "distanceRate": -1.2938616954623685
+      },
+      {
+        "elapsedSeconds": 0.4666666666666666,
+        "mode": "chase",
+        "distance": 30.753390961455498,
+        "kid": {
+          "x": 0.8488712656230673,
+          "y": 0.5011415749644119,
+          "depth": 0.9958707154619191,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.15317011196806402,
+          "y": 0.5011415749644119,
+          "depth": 0.9958707154619191,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.7413771555241767
+      },
+      {
+        "elapsedSeconds": 0.4833333333333333,
+        "mode": "chase",
+        "distance": 30.725489190430103,
+        "kid": {
+          "x": 0.8477311759795129,
+          "y": 0.5011433659473685,
+          "depth": 0.9958660105387294,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.15504872569977068,
+          "y": 0.5011433659473685,
+          "depth": 0.9958660105387294,
+          "centerInFrustum": true
+        },
+        "distanceRate": -1.6741062615236761
+      },
+      {
+        "elapsedSeconds": 0.4833333333333333,
+        "mode": "chase",
+        "distance": 30.709723685112525,
+        "kid": {
+          "x": 0.8471906350576144,
+          "y": 0.5011442809843227,
+          "depth": 0.9958633475478723,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.15586644618065,
+          "y": 0.5011442809843227,
+          "depth": 0.9958633475478723,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.49999999999999994,
+        "mode": "chase",
+        "distance": 30.67490761819159,
+        "kid": {
+          "x": 0.8460087576926152,
+          "y": 0.50114614161302,
+          "depth": 0.9958574557255436,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.15761066752101688,
+          "y": 0.50114614161302,
+          "depth": 0.9958574557255436,
+          "centerInFrustum": true
+        },
+        "distanceRate": -2.088964015256139
+      },
+      {
+        "elapsedSeconds": 0.5166666666666666,
+        "mode": "chase",
+        "distance": 30.6558845966822,
+        "kid": {
+          "x": 0.8453704121165407,
+          "y": 0.5011470927627842,
+          "depth": 0.9958542303468887,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.15853960453708466,
+          "y": 0.5011470927627842,
+          "depth": 0.9958542303468887,
+          "centerInFrustum": true
+        },
+        "distanceRate": -1.1413812905634304
+      },
+      {
+        "elapsedSeconds": 0.5333333333333333,
+        "mode": "chase",
+        "distance": 30.614334424640603,
+        "kid": {
+          "x": 0.8441762562864221,
+          "y": 0.5011490656456636,
+          "depth": 0.9958471706983797,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1601629596447271,
+          "y": 0.5011490656456636,
+          "depth": 0.9958471706983797,
+          "centerInFrustum": true
+        },
+        "distanceRate": -2.493010322495756
+      },
+      {
+        "elapsedSeconds": 0.5333333333333333,
+        "mode": "chase",
+        "distance": 30.59208216921601,
+        "kid": {
+          "x": 0.8436307670599408,
+          "y": 0.5011500790388967,
+          "depth": 0.9958433816683259,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1608468235235226,
+          "y": 0.5011500790388967,
+          "depth": 0.9958433816683259,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.55,
+        "mode": "chase",
+        "distance": 30.54392856770043,
+        "kid": {
+          "x": 0.8424455622652275,
+          "y": 0.5011521999489604,
+          "depth": 0.9958351627868002,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1623578915288878,
+          "y": 0.5011521999489604,
+          "depth": 0.9958351627868002,
+          "centerInFrustum": true
+        },
+        "distanceRate": -2.889216090934772
+      },
+      {
+        "elapsedSeconds": 0.5666666666666668,
+        "mode": "chase",
+        "distance": 30.5183512248519,
+        "kid": {
+          "x": 0.8418139680297272,
+          "y": 0.501153296873484,
+          "depth": 0.995830786452153,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.16317803306087464,
+          "y": 0.501153296873484,
+          "depth": 0.995830786452153,
+          "centerInFrustum": true
+        },
+        "distanceRate": -1.5346405709117004
+      },
+      {
+        "elapsedSeconds": 0.5833333333333335,
+        "mode": "chase",
+        "distance": 30.463812242677346,
+        "kid": {
+          "x": 0.8406475998091246,
+          "y": 0.501155588950456,
+          "depth": 0.9958214298109317,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1645944860559942,
+          "y": 0.501155588950456,
+          "depth": 0.9958214298109317,
+          "centerInFrustum": true
+        },
+        "distanceRate": -3.272338930473343
+      },
+      {
+        "elapsedSeconds": 0.5833333333333335,
+        "mode": "chase",
+        "distance": 30.435220111971326,
+        "kid": {
+          "x": 0.8401218217138098,
+          "y": 0.5011567714263593,
+          "depth": 0.9958165110302525,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.16518113586062622,
+          "y": 0.5011567714263593,
+          "depth": 0.9958165110302525,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.6000000000000002,
+        "mode": "chase",
+        "distance": 30.405159995532806,
+        "kid": {
+          "x": 0.8395000600839495,
+          "y": 0.5011580035850316,
+          "depth": 0.9958113296451675,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1659506620859736,
+          "y": 0.5011580035850316,
+          "depth": 0.9958113296451675,
+          "centerInFrustum": true
+        },
+        "distanceRate": -1.8036069863111892
+      },
+      {
+        "elapsedSeconds": 0.6166666666666669,
+        "mode": "chase",
+        "distance": 30.342930231933437,
+        "kid": {
+          "x": 0.8383801473932704,
+          "y": 0.5011605288174052,
+          "depth": 0.9958005704329512,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.16724430420529834,
+          "y": 0.5011605288174052,
+          "depth": 0.9958005704329512,
+          "centerInFrustum": true
+        },
+        "distanceRate": -3.7337858159621247
+      },
+      {
+        "elapsedSeconds": 0.6166666666666669,
+        "mode": "chase",
+        "distance": 30.31043141100862,
+        "kid": {
+          "x": 0.83787477044088,
+          "y": 0.5011618374574752,
+          "depth": 0.9957949339096903,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.1677791577087026,
+          "y": 0.5011618374574752,
+          "depth": 0.9957949339096903,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 0.6333333333333336,
+        "mode": "chase",
+        "distance": 30.24213646126785,
+        "kid": {
+          "x": 0.836780677296996,
+          "y": 0.5011645721686321,
+          "depth": 0.995783049385461,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.16900952381109818,
+          "y": 0.5011645721686321,
+          "depth": 0.995783049385461,
+          "centerInFrustum": true
+        },
+        "distanceRate": -4.097696984446047
+      },
+      {
+        "elapsedSeconds": 0.6500000000000004,
+        "mode": "chase",
+        "distance": 30.206355996990297,
+        "kid": {
+          "x": 0.8361920192345362,
+          "y": 0.5011659992222796,
+          "depth": 0.9957768014560315,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.16970627658976262,
+          "y": 0.5011659992222796,
+          "depth": 0.9957768014560315,
+          "centerInFrustum": true
+        },
+        "distanceRate": -2.1468278566532395
+      }
+    ],
+    "onset": {
+      "game": {
+        "phase": "playing",
+        "elapsedSeconds": 0.3,
+        "tick": 18,
+        "player": {
+          "position": {
+            "x": 10,
+            "y": 3
+          },
+          "heading": {
+            "x": 0,
+            "y": 1
+          },
+          "mode": "free",
+          "hideSpotId": null,
+          "transitionRemainingSeconds": 0,
+          "hideTurnDirection": 0,
+          "hideTurnCycle": -1,
+          "hideTurnSegmentDurationSeconds": 0
+        },
+        "chaser": {
+          "position": {
+            "x": 15.899791666666664,
+            "y": 3
+          },
+          "heading": {
+            "x": -1,
+            "y": 0
+          },
+          "mode": "chase",
+          "modeElapsedSeconds": 0,
+          "visualConfirmationSeconds": null,
+          "patrolIndex": 0,
+          "searchSeed": 1,
+          "searchIndex": 0,
+          "searchWaypointElapsedSeconds": 0,
+          "memory": {
+            "lastKnownPosition": {
+              "x": 10,
+              "y": 3
+            },
+            "lastSeenAtSeconds": 0.3,
+            "witnessedHideSpotId": null
+          }
+        },
+        "hideSpots": {
+          "locker-north": {
+            "id": "locker-north",
+            "occupiedByPlayer": false
+          },
+          "locker-south": {
+            "id": "locker-south",
+            "occupiedByPlayer": false
+          }
+        },
+        "aiAccumulatorSeconds": -4.163336342344337e-17,
+        "events": []
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 0.4993288590604027,
+        "distance": 30.690916598217974,
+        "zoom": 1,
+        "position": {
+          "x": 1.7811949449442381,
+          "y": 26.039953898861675,
+          "z": -35.722921579170574
+        },
+        "focus": {
+          "x": 1.7811949449442381,
+          "y": 0.9834095972756816,
+          "z": -18
+        },
+        "direction": {
+          "x": 0,
+          "y": 0.8164156395068652,
+          "z": -0.5774647206268071
+        },
+        "azimuthDegrees": 180,
+        "occlusion": {
+          "groups": 23,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      },
+      "visibility": {
+        "kid": {
+          "rootVisible": true,
+          "alpha": 1,
+          "viewport": {
+            "x": 0.8541479968158927,
+            "y": 0.5011200419633501,
+            "depth": 0.9958599685724611,
+            "centerInFrustum": true
+          }
+        },
+        "villain": {
+          "rootVisible": true,
+          "alpha": 1,
+          "worldRendered": true,
+          "viewport": {
+            "x": 0.1284434508260911,
+            "y": 0.5011200419633501,
+            "depth": 0.9958599685724611,
+            "centerInFrustum": true
+          }
+        },
+        "police": {
+          "rootVisible": true,
+          "alpha": 1,
+          "viewport": {
+            "x": -0.2203452839624762,
+            "y": -0.055613918276354424,
+            "depth": 0.9980387334230532,
+            "centerInFrustum": false
+          }
+        }
+      }
+    },
+    "beforeManualZoom": {
+      "game": {
+        "phase": "playing",
+        "elapsedSeconds": 1.100000000000001,
+        "tick": 66,
+        "player": {
+          "position": {
+            "x": 10,
+            "y": 3
+          },
+          "heading": {
+            "x": 0,
+            "y": 1
+          },
+          "mode": "free",
+          "hideSpotId": null,
+          "transitionRemainingSeconds": 0,
+          "hideTurnDirection": 0,
+          "hideTurnCycle": -1,
+          "hideTurnSegmentDurationSeconds": 0
+        },
+        "chaser": {
+          "position": {
+            "x": 14.419791666666645,
+            "y": 3
+          },
+          "heading": {
+            "x": -1,
+            "y": 0
+          },
+          "mode": "chase",
+          "modeElapsedSeconds": 0.7999999999999999,
+          "visualConfirmationSeconds": null,
+          "patrolIndex": 0,
+          "searchSeed": 1,
+          "searchIndex": 0,
+          "searchWaypointElapsedSeconds": 0,
+          "memory": {
+            "lastKnownPosition": {
+              "x": 10,
+              "y": 3
+            },
+            "lastSeenAtSeconds": 1.100000000000001,
+            "witnessedHideSpotId": null
+          }
+        },
+        "hideSpots": {
+          "locker-north": {
+            "id": "locker-north",
+            "occupiedByPlayer": false
+          },
+          "locker-south": {
+            "id": "locker-south",
+            "occupiedByPlayer": false
+          }
+        },
+        "aiAccumulatorSeconds": -1.5265566588595902e-16,
+        "events": []
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 0.4993288590604027,
+        "distance": 27.472814704445753,
+        "zoom": 1,
+        "position": {
+          "x": 0.5735549786213068,
+          "y": 23.414235467129455,
+          "z": -33.864581268134806
+        },
+        "focus": {
+          "x": 0.5735549786213068,
+          "y": 0.984999881145765,
+          "z": -18
+        },
+        "direction": {
+          "x": 0,
+          "y": 0.8164156395068652,
+          "z": -0.5774647206268071
+        },
+        "azimuthDegrees": 180,
+        "occlusion": {
+          "groups": 23,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      },
+      "visibility": {
+        "kid": {
+          "rootVisible": true,
+          "alpha": 1,
+          "viewport": {
+            "x": 0.8129115828117237,
+            "y": 0.5012823082066901,
+            "depth": 0.9952514229069517,
+            "centerInFrustum": true
+          }
+        },
+        "villain": {
+          "rootVisible": true,
+          "alpha": 1,
+          "worldRendered": true,
+          "viewport": {
+            "x": 0.19413436040665216,
+            "y": 0.5012823082066901,
+            "depth": 0.9952514229069517,
+            "centerInFrustum": true
+          }
+        },
+        "police": {
+          "rootVisible": true,
+          "alpha": 1,
+          "viewport": {
+            "x": -0.3128361239859465,
+            "y": -0.09159976051260033,
+            "depth": 0.9978424894307122,
+            "centerInFrustum": false
+          }
+        }
+      }
+    },
+    "afterManualZoom": {
+      "game": {
+        "phase": "playing",
+        "elapsedSeconds": 1.4,
+        "tick": 84,
+        "player": {
+          "position": {
+            "x": 10,
+            "y": 3
+          },
+          "heading": {
+            "x": 0,
+            "y": 1
+          },
+          "mode": "free",
+          "hideSpotId": null,
+          "transitionRemainingSeconds": 0,
+          "hideTurnDirection": 0,
+          "hideTurnCycle": -1,
+          "hideTurnSegmentDurationSeconds": 0
+        },
+        "chaser": {
+          "position": {
+            "x": 13.864791666666639,
+            "y": 3
+          },
+          "heading": {
+            "x": -1,
+            "y": 0
+          },
+          "mode": "chase",
+          "modeElapsedSeconds": 1.0999999999999999,
+          "visualConfirmationSeconds": null,
+          "patrolIndex": 0,
+          "searchSeed": 1,
+          "searchIndex": 0,
+          "searchWaypointElapsedSeconds": 0,
+          "memory": {
+            "lastKnownPosition": {
+              "x": 10,
+              "y": 3
+            },
+            "lastSeenAtSeconds": 1.4,
+            "witnessedHideSpotId": null
+          }
+        },
+        "hideSpots": {
+          "locker-north": {
+            "id": "locker-north",
+            "occupiedByPlayer": false
+          },
+          "locker-south": {
+            "id": "locker-south",
+            "occupiedByPlayer": false
+          }
+        },
+        "aiAccumulatorSeconds": -1.942890293094024e-16,
+        "events": []
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 0.4993288590604027,
+        "distance": 25.002214758556995,
+        "zoom": 0.72,
+        "position": {
+          "x": 0.003953320900120863,
+          "y": 21.39719914825562,
+          "z": -32.43789696060155
+        },
+        "focus": {
+          "x": 0.003953320900120863,
+          "y": 0.9849999970603286,
+          "z": -18
+        },
+        "direction": {
+          "x": 0,
+          "y": 0.8164156395068652,
+          "z": -0.5774647206268071
+        },
+        "azimuthDegrees": 180,
+        "occlusion": {
+          "groups": 23,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      },
+      "visibility": {
+        "kid": {
+          "rootVisible": true,
+          "alpha": 1,
+          "viewport": {
+            "x": 0.8009530074764737,
+            "y": 0.5014087539373003,
+            "depth": 0.994677949148209,
+            "centerInFrustum": true
+          }
+        },
+        "villain": {
+          "rootVisible": true,
+          "alpha": 1,
+          "worldRendered": true,
+          "viewport": {
+            "x": 0.20673489343603701,
+            "y": 0.5014087539373003,
+            "depth": 0.994677949148209,
+            "centerInFrustum": true
+          }
+        },
+        "police": {
+          "rootVisible": true,
+          "alpha": 1,
+          "viewport": {
+            "x": -0.37814787243986847,
+            "y": -0.12258425602741485,
+            "depth": 0.9976735962833182,
+            "centerInFrustum": false
+          }
+        }
+      }
+    }
+  },
+  "portraitReacquisition": {
+    "transition": [
+      {
+        "elapsedSeconds": 1.3000000000000003,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.592178684884587,
+        "kid": {
+          "x": 0.5014138116838084,
+          "y": 0.5032739774586187,
+          "depth": 0.9936351014788983,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.18818833400187912,
+          "y": 0.40164878858930386,
+          "depth": 0.99420181717399,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.3166666666666669,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.571668133522127,
+        "kid": {
+          "x": 0.5012690562514178,
+          "y": 0.5027162965325708,
+          "depth": 0.9936311306459681,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.19172625254744013,
+          "y": 0.40138948204937575,
+          "depth": 0.994196721010493,
+          "centerInFrustum": true
+        },
+        "distanceRate": -1.2306330817475741
+      },
+      {
+        "elapsedSeconds": 1.3333333333333335,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.561758438670033,
+        "kid": {
+          "x": 0.5012016662319294,
+          "y": 0.5021502922414284,
+          "depth": 0.993630865877376,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.19396997568675917,
+          "y": 0.4014438739859435,
+          "depth": 0.9941932522413521,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.5945816911256706
+      },
+      {
+        "elapsedSeconds": 1.35,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.54294122616876,
+        "kid": {
+          "x": 0.5010788137943399,
+          "y": 0.5010560512354771,
+          "depth": 0.9936304718980524,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.19804422490521673,
+          "y": 0.4016576431187334,
+          "depth": 0.9941860397270166,
+          "centerInFrustum": true
+        },
+        "distanceRate": -1.1290327500763238
+      },
+      {
+        "elapsedSeconds": 1.35,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.53390088736153,
+        "kid": {
+          "x": 0.5010221875583791,
+          "y": 0.5005402555490663,
+          "depth": 0.993630227247426,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.19990695216782656,
+          "y": 0.4018120849101811,
+          "depth": 0.9941822810788928,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.3666666666666667,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.516422948409737,
+        "kid": {
+          "x": 0.5009169672390322,
+          "y": 0.4993541663941494,
+          "depth": 0.9936308112488599,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.203937759743839,
+          "y": 0.40232719298668507,
+          "depth": 0.9941737941923381,
+          "centerInFrustum": true
+        },
+        "distanceRate": -1.0486763371075407
+      },
+      {
+        "elapsedSeconds": 1.3666666666666667,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.508077663879906,
+        "kid": {
+          "x": 0.5008688663317,
+          "y": 0.4989274801667742,
+          "depth": 0.9936303089048681,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.20550266456372768,
+          "y": 0.40256213831573207,
+          "depth": 0.9941697988805093,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.4,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.49194349273236,
+        "kid": {
+          "x": 0.5007793443242758,
+          "y": 0.4976817657885538,
+          "depth": 0.9936316945625923,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.20964116908509906,
+          "y": 0.40334605433188286,
+          "depth": 0.9941602191153791,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.48402513442635525
+      },
+      {
+        "elapsedSeconds": 1.4,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.484239824167627,
+        "kid": {
+          "x": 0.5007383813595742,
+          "y": 0.49714877862577445,
+          "depth": 0.9936320106983368,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.21151951808685326,
+          "y": 0.4037625113244228,
+          "depth": 0.994155403851798,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.4166666666666665,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.469346107045926,
+        "kid": {
+          "x": 0.500662317311638,
+          "y": 0.4960078808929009,
+          "depth": 0.993633242425062,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2155795796157013,
+          "y": 0.40476685441910326,
+          "depth": 0.9941449677196187,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.8936230273020872
+      },
+      {
+        "elapsedSeconds": 1.4333333333333331,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.462150191671384,
+        "kid": {
+          "x": 0.5006270480957248,
+          "y": 0.4954018620067286,
+          "depth": 0.9936341457373757,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.21776566962205351,
+          "y": 0.405352347612417,
+          "depth": 0.9941393580536569,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.4317549224725086
+      },
+      {
+        "elapsedSeconds": 1.4499999999999997,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.448486090933176,
+        "kid": {
+          "x": 0.5005628401895333,
+          "y": 0.4943881823930218,
+          "depth": 0.9936350934905012,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.22175115712070698,
+          "y": 0.4065388526476488,
+          "depth": 0.9941282764231673,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.81984604429245
+      },
+      {
+        "elapsedSeconds": 1.4499999999999997,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.441921457613486,
+        "kid": {
+          "x": 0.5005332755483457,
+          "y": 0.49397248515721365,
+          "depth": 0.9936351489773794,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.22358004967521705,
+          "y": 0.4071440396213455,
+          "depth": 0.9941227501719679,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.4666666666666663,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.42922986907361,
+        "kid": {
+          "x": 0.5004783774688648,
+          "y": 0.4930713594837362,
+          "depth": 0.9936358041773697,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.22756794752836312,
+          "y": 0.4085019144655704,
+          "depth": 0.9941110012262245,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.7614953123925998
+      },
+      {
+        "elapsedSeconds": 1.4666666666666663,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.4233861899063,
+        "kid": {
+          "x": 0.5004541760043515,
+          "y": 0.4928221750223531,
+          "depth": 0.9936351747602856,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2290635720072564,
+          "y": 0.4091025262730969,
+          "depth": 0.9941057252910193,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.483333333333333,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.41152244356692,
+        "kid": {
+          "x": 0.5004069523392297,
+          "y": 0.4921699002428766,
+          "depth": 0.9936347193225735,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.23265414603742246,
+          "y": 0.4105118226158716,
+          "depth": 0.9940939373401685,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.7118247803627779
+      },
+      {
+        "elapsedSeconds": 1.4999999999999996,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.4057936283859,
+        "kid": {
+          "x": 0.5003850694097143,
+          "y": 0.491786125653182,
+          "depth": 0.9936348863512343,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2346616437502092,
+          "y": 0.41128805604405194,
+          "depth": 0.9940877021808431,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.34372891086114643
+      },
+      {
+        "elapsedSeconds": 1.5166666666666662,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.395045066048805,
+        "kid": {
+          "x": 0.5003456507093976,
+          "y": 0.49099658749030156,
+          "depth": 0.9936355912632474,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.23884275486121648,
+          "y": 0.41292259795750785,
+          "depth": 0.9940749921310552,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.6449137402257344
+      },
+      {
+        "elapsedSeconds": 1.5166666666666662,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.38988114258185,
+        "kid": {
+          "x": 0.5003275273501506,
+          "y": 0.4908000187977143,
+          "depth": 0.9936349015095884,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.24047896731752527,
+          "y": 0.41367727918850966,
+          "depth": 0.9940690536513083,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.5499999999999994,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.37983939610924,
+        "kid": {
+          "x": 0.5002936187468305,
+          "y": 0.4900614828777446,
+          "depth": 0.9936355660583546,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2447935312057543,
+          "y": 0.4154490753881107,
+          "depth": 0.9940557841269848,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.3012523941782785
+      },
+      {
+        "elapsedSeconds": 1.5499999999999994,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.375130683271347,
+        "kid": {
+          "x": 0.5002783847739732,
+          "y": 0.4897996843191985,
+          "depth": 0.9936354018948839,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2467134660139595,
+          "y": 0.4163059609878239,
+          "depth": 0.9940494108027249,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.566666666666666,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.37043354447809,
+        "kid": {
+          "x": 0.500263576390537,
+          "y": 0.4894290020571913,
+          "depth": 0.9936358552426149,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.24899182714062051,
+          "y": 0.41726177116327534,
+          "depth": 0.9940424811319021,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.28182832759547793
+      },
+      {
+        "elapsedSeconds": 1.5833333333333326,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.36146198555157,
+        "kid": {
+          "x": 0.5002364633069049,
+          "y": 0.4888744853987435,
+          "depth": 0.9936358566377884,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2531710134711589,
+          "y": 0.4191423654956311,
+          "depth": 0.9940289270940651,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.5382935355910964
+      },
+      {
+        "elapsedSeconds": 1.5833333333333326,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.357178287563816,
+        "kid": {
+          "x": 0.500224057688552,
+          "y": 0.4886896087791251,
+          "depth": 0.9936354069403536,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2550680040331761,
+          "y": 0.42006397880397706,
+          "depth": 0.9940223179299497,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.5999999999999992,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.34894478087928,
+        "kid": {
+          "x": 0.5002011496427662,
+          "y": 0.4882409895691374,
+          "depth": 0.9936350682971882,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2591724082764583,
+          "y": 0.4220069199139902,
+          "depth": 0.9940086398359446,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.4940104010722042
+      },
+      {
+        "elapsedSeconds": 1.5999999999999992,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.34498916364879,
+        "kid": {
+          "x": 0.5001906143768712,
+          "y": 0.4881985911335749,
+          "depth": 0.9936339288921415,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.26078039534026654,
+          "y": 0.422904542708459,
+          "depth": 0.994002266859465,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.6333333333333324,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.337297085014114,
+        "kid": {
+          "x": 0.5001708982486508,
+          "y": 0.4877442971182063,
+          "depth": 0.993633810520633,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2650762215401321,
+          "y": 0.4249507510789554,
+          "depth": 0.9939881704218209,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.23076235904028491
+      },
+      {
+        "elapsedSeconds": 1.6333333333333324,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.33364675838004,
+        "kid": {
+          "x": 0.5001619335126367,
+          "y": 0.48760765027487035,
+          "depth": 0.9936333088002861,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.26701662384686053,
+          "y": 0.4259444573143517,
+          "depth": 0.9939813494247285,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.649999999999999,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.32658948017124,
+        "kid": {
+          "x": 0.5001452848998141,
+          "y": 0.4872516595580903,
+          "depth": 0.9936328567605686,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.27122403905436826,
+          "y": 0.42803557934131875,
+          "depth": 0.9939671960334612,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.42343669252808674
+      },
+      {
+        "elapsedSeconds": 1.6666666666666656,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.323219803985676,
+        "kid": {
+          "x": 0.5001376532378361,
+          "y": 0.48703174872816024,
+          "depth": 0.9936329228327881,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2734703164559875,
+          "y": 0.42912004780871804,
+          "depth": 0.9939599491753964,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.20218057113382387
+      },
+      {
+        "elapsedSeconds": 1.6666666666666656,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.316781093513093,
+        "kid": {
+          "x": 0.5001236854671259,
+          "y": 0.48696830044229544,
+          "depth": 0.9936310340237828,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2770028023907661,
+          "y": 0.4311146675071477,
+          "depth": 0.9939465338321334,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.6833333333333322,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.313631499512123,
+        "kid": {
+          "x": 0.5001171206515349,
+          "y": 0.48685634991991256,
+          "depth": 0.9936305668259727,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2790276156990904,
+          "y": 0.4321794444268331,
+          "depth": 0.9939394653399679,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.18897564005818945
+      },
+      {
+        "elapsedSeconds": 1.6999999999999988,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.307580696148573,
+        "kid": {
+          "x": 0.5001050104642282,
+          "y": 0.4865552878553911,
+          "depth": 0.9936301548874877,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2833634824378317,
+          "y": 0.43439407949856645,
+          "depth": 0.9939249246499922,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.3630482018130023
+      },
+      {
+        "elapsedSeconds": 1.6999999999999988,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.30474339134754,
+        "kid": {
+          "x": 0.5000995755779728,
+          "y": 0.48658644208063156,
+          "depth": 0.9936289877026753,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.28502459198906466,
+          "y": 0.43539291726495005,
+          "depth": 0.9939183275136343,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.7166666666666655,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.2991901629364,
+        "kid": {
+          "x": 0.5000893500682114,
+          "y": 0.4864998676041211,
+          "depth": 0.9936275365703544,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.288836708971793,
+          "y": 0.4375209773177851,
+          "depth": 0.9939044317466357,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.3331937046682765
+      },
+      {
+        "elapsedSeconds": 1.733333333333332,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.29653863341236,
+        "kid": {
+          "x": 0.5000846605951083,
+          "y": 0.4863862852244612,
+          "depth": 0.9936272519262225,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2909367141134015,
+          "y": 0.43862451519555,
+          "depth": 0.9938972999252657,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.15909177144244835
+      },
+      {
+        "elapsedSeconds": 1.7499999999999987,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.29141235749082,
+        "kid": {
+          "x": 0.500075963465812,
+          "y": 0.4862696626557455,
+          "depth": 0.993626119122913,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2948986904697506,
+          "y": 0.4408059179143363,
+          "depth": 0.9938832358716034,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.3075765552924292
+      },
+      {
+        "elapsedSeconds": 1.7499999999999987,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.288964687244253,
+        "kid": {
+          "x": 0.5000719821699765,
+          "y": 0.48627085448604884,
+          "depth": 0.9936252563689735,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.2967274947705572,
+          "y": 0.44186911408503415,
+          "depth": 0.9938763959202581,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.7666666666666653,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": false,
+        "distance": 21.28423253814499,
+        "kid": {
+          "x": 0.5000645859197579,
+          "y": 0.48614658932125787,
+          "depth": 0.9936243039021407,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.30078695759032475,
+          "y": 0.4440966477361406,
+          "depth": 0.9938621944113586,
+          "centerInFrustum": true
+        },
+        "distanceRate": -0.28392894595569473
+      },
+      {
+        "elapsedSeconds": 1.7833333333333319,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": null,
+        "observable": true,
+        "distance": 21.499602057983534,
+        "kid": {
+          "x": 0.50899374856257,
+          "y": 0.4889178285986016,
+          "depth": 0.9936859618880638,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.3132586359506968,
+          "y": 0.4483953051670026,
+          "depth": 0.9939128342749769,
+          "centerInFrustum": true
+        },
+        "distanceRate": 12.922171190312614
+      },
+      {
+        "elapsedSeconds": 1.7999999999999985,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0,
+        "observable": true,
+        "distance": 21.884921536718643,
+        "kid": {
+          "x": 0.5234204179190787,
+          "y": 0.49327342774153105,
+          "depth": 0.9937962360529822,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.3346769701074405,
+          "y": 0.45583179583733946,
+          "depth": 0.99400204787512,
+          "centerInFrustum": true
+        },
+        "distanceRate": 23.11916872410664
+      },
+      {
+        "elapsedSeconds": 1.816666666666665,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0,
+        "observable": true,
+        "distance": 22.063279794862122,
+        "kid": {
+          "x": 0.529392835963713,
+          "y": 0.49500443087648704,
+          "depth": 0.9938473904860773,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.34423662903189906,
+          "y": 0.45917684748905585,
+          "depth": 0.9940426889667897,
+          "centerInFrustum": true
+        },
+        "distanceRate": 10.701495488608794
+      },
+      {
+        "elapsedSeconds": 1.8333333333333317,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0,
+        "observable": true,
+        "distance": 22.380275335539185,
+        "kid": {
+          "x": 0.5390368834953227,
+          "y": 0.49780490348945794,
+          "depth": 0.9939375596329258,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.3603654198376699,
+          "y": 0.46489489811244333,
+          "depth": 0.9941143399532013,
+          "centerInFrustum": true
+        },
+        "distanceRate": 19.019732440623823
+      },
+      {
+        "elapsedSeconds": 1.8333333333333317,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0,
+        "observable": true,
+        "distance": 22.521090599339352,
+        "kid": {
+          "x": 0.542934482169217,
+          "y": 0.49895887380890463,
+          "depth": 0.9939771909858697,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.36712840195868424,
+          "y": 0.4673320028895339,
+          "depth": 0.994145987682711,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.8499999999999983,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0,
+        "observable": true,
+        "distance": 22.779377970063496,
+        "kid": {
+          "x": 0.5491979847123953,
+          "y": 0.5006734202726324,
+          "depth": 0.9940505873044502,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.37931810914028763,
+          "y": 0.4717644325121472,
+          "depth": 0.9942030842634446,
+          "centerInFrustum": true
+        },
+        "distanceRate": 15.497242243448694
+      },
+      {
+        "elapsedSeconds": 1.866666666666665,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0,
+        "observable": true,
+        "distance": 22.897575268610872,
+        "kid": {
+          "x": 0.551649726643463,
+          "y": 0.5012622373515437,
+          "depth": 0.9940845868938709,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.384835536756638,
+          "y": 0.4737894029731211,
+          "depth": 0.994228742004953,
+          "centerInFrustum": true
+        },
+        "distanceRate": 7.091837912842561
+      },
+      {
+        "elapsedSeconds": 1.866666666666665,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0,
+        "observable": true,
+        "distance": 23.109043082154383,
+        "kid": {
+          "x": 0.5557531599748456,
+          "y": 0.5024148529456413,
+          "depth": 0.9941439321941185,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.3938918229823748,
+          "y": 0.47721317890160064,
+          "depth": 0.9942749327501559,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.8833333333333315,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0,
+        "observable": true,
+        "distance": 23.20581484540586,
+        "kid": {
+          "x": 0.5572868516514907,
+          "y": 0.5027536868273884,
+          "depth": 0.9941716618181395,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.39808240482525353,
+          "y": 0.47880479792847325,
+          "depth": 0.9942956201413767,
+          "centerInFrustum": true
+        },
+        "distanceRate": 5.806305795088725
+      },
+      {
+        "elapsedSeconds": 1.8999999999999981,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0.1,
+        "observable": true,
+        "distance": 23.378950047640096,
+        "kid": {
+          "x": 0.5594429764268337,
+          "y": 0.5030621702338229,
+          "depth": 0.9942221598998693,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.4056438785479626,
+          "y": 0.4817105744790473,
+          "depth": 0.9943318400300105,
+          "centerInFrustum": true
+        },
+        "distanceRate": 10.388112134054134
+      },
+      {
+        "elapsedSeconds": 1.9166666666666647,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0.1,
+        "observable": true,
+        "distance": 23.458180066243663,
+        "kid": {
+          "x": 0.5601457936861624,
+          "y": 0.503052604206322,
+          "depth": 0.9942457612151243,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.40916813373569205,
+          "y": 0.48307955957991855,
+          "depth": 0.9943480069041751,
+          "centerInFrustum": true
+        },
+        "distanceRate": 4.753801116214066
+      },
+      {
+        "elapsedSeconds": 1.9333333333333313,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0.1,
+        "observable": true,
+        "distance": 23.600729337979658,
+        "kid": {
+          "x": 0.5611099947972396,
+          "y": 0.5029777177071747,
+          "depth": 0.9942880688769082,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.41528399654644277,
+          "y": 0.4855242155472548,
+          "depth": 0.9943768674091831,
+          "centerInFrustum": true
+        },
+        "distanceRate": 8.552956304159695
+      },
+      {
+        "elapsedSeconds": 1.9333333333333313,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0.1,
+        "observable": true,
+        "distance": 23.664799233550887,
+        "kid": {
+          "x": 0.5614125417892197,
+          "y": 0.5029243833070518,
+          "depth": 0.9943069968268473,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.4179265215849555,
+          "y": 0.48661605862617585,
+          "depth": 0.9943897406640719,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.949999999999998,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0.1,
+        "observable": true,
+        "distance": 23.776266232034427,
+        "kid": {
+          "x": 0.5615122401520602,
+          "y": 0.502579414463647,
+          "depth": 0.9943409248808209,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.42275177849340523,
+          "y": 0.4886217744246362,
+          "depth": 0.994411404840757,
+          "centerInFrustum": true
+        },
+        "distanceRate": 6.688019909012392
+      },
+      {
+        "elapsedSeconds": 1.9666666666666646,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0.1,
+        "observable": true,
+        "distance": 23.83457570528249,
+        "kid": {
+          "x": 0.561323143717866,
+          "y": 0.5022564091756331,
+          "depth": 0.9943592476021023,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.4254151225133261,
+          "y": 0.48973664153459917,
+          "depth": 0.9944223100170461,
+          "centerInFrustum": true
+        },
+        "distanceRate": 3.49856839488376
+      },
+      {
+        "elapsedSeconds": 1.9666666666666646,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0.1,
+        "observable": true,
+        "distance": 23.8836224886753,
+        "kid": {
+          "x": 0.561168719398234,
+          "y": 0.502054404006314,
+          "depth": 0.994374230787282,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.427470530073387,
+          "y": 0.4906400766341665,
+          "depth": 0.9944316053508623,
+          "centerInFrustum": true
+        }
+      },
+      {
+        "elapsedSeconds": 1.9833333333333312,
+        "mode": "go-to-last-known",
+        "confirmationSeconds": 0.1,
+        "observable": true,
+        "distance": 23.9724656697419,
+        "kid": {
+          "x": 0.5606853523620828,
+          "y": 0.5016236788521318,
+          "depth": 0.9944015174783268,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.431159636560862,
+          "y": 0.4923045264675817,
+          "depth": 0.994448184684285,
+          "centerInFrustum": true
+        },
+        "distanceRate": 5.330590863996055
+      },
+      {
+        "elapsedSeconds": 1.9999999999999978,
+        "mode": "chase",
+        "confirmationSeconds": null,
+        "observable": true,
+        "distance": 24.06122201334571,
+        "kid": {
+          "x": 0.5600182632642591,
+          "y": 0.5011920685723804,
+          "depth": 0.9944283549796601,
+          "centerInFrustum": true
+        },
+        "villain": {
+          "x": 0.4333655844500747,
+          "y": 0.49319312562973244,
+          "depth": 0.9944682626837451,
+          "centerInFrustum": true
+        },
+        "distanceRate": 5.325380616228533
+      }
+    ],
+    "onset": {
+      "game": {
+        "phase": "playing",
+        "elapsedSeconds": 1.9999999999999978,
+        "tick": 120,
+        "player": {
+          "position": {
+            "x": 15,
+            "y": 10
+          },
+          "heading": {
+            "x": 0,
+            "y": 1
+          },
+          "mode": "free",
+          "hideSpotId": null,
+          "transitionRemainingSeconds": 0,
+          "hideTurnDirection": 0,
+          "hideTurnCycle": -1,
+          "hideTurnSegmentDurationSeconds": 0
+        },
+        "chaser": {
+          "position": {
+            "x": 15.716791666666747,
+            "y": 10
+          },
+          "heading": {
+            "x": -1,
+            "y": 0
+          },
+          "mode": "chase",
+          "modeElapsedSeconds": 0,
+          "visualConfirmationSeconds": null,
+          "patrolIndex": 0,
+          "searchSeed": 1,
+          "searchIndex": 0,
+          "searchWaypointElapsedSeconds": 0,
+          "memory": {
+            "lastKnownPosition": {
+              "x": 15,
+              "y": 10
+            },
+            "lastSeenAtSeconds": 1.9999999999999978,
+            "witnessedHideSpotId": null
+          }
+        },
+        "hideSpots": {
+          "locker-north": {
+            "id": "locker-north",
+            "occupiedByPlayer": false
+          },
+          "locker-south": {
+            "id": "locker-south",
+            "occupiedByPlayer": false
+          }
+        },
+        "aiAccumulatorSeconds": -2.7755575615628914e-16,
+        "events": [
+          {
+            "type": "chaser-mode-changed",
+            "from": "go-to-last-known",
+            "to": "chase"
+          }
+        ]
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 0.4993288590604027,
+        "distance": 24.06122201334571,
+        "zoom": 1,
+        "position": {
+          "x": 6.7684776531016,
+          "y": 20.62413345663317,
+          "z": -18.152157957989637
+        },
+        "focus": {
+          "x": 6.7684776531016,
+          "y": 0.9801754992908694,
+          "z": -4.257651110113375
+        },
+        "direction": {
+          "x": 0,
+          "y": 0.8164156395068652,
+          "z": -0.5774647206268071
+        },
+        "azimuthDegrees": 180,
+        "occlusion": {
+          "groups": 23,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      },
+      "visibility": {
+        "kid": {
+          "rootVisible": true,
+          "alpha": 1,
+          "viewport": {
+            "x": 0.5600182632642591,
+            "y": 0.5011920685723804,
+            "depth": 0.9944283549796601,
+            "centerInFrustum": true
+          }
+        },
+        "villain": {
+          "rootVisible": true,
+          "alpha": 1,
+          "worldRendered": true,
+          "viewport": {
+            "x": 0.4333655844500747,
+            "y": 0.49319312562973244,
+            "depth": 0.9944682626837451,
+            "centerInFrustum": true
+          }
+        },
+        "police": {
+          "rootVisible": true,
+          "alpha": 1,
+          "viewport": {
+            "x": -0.24911690088420824,
+            "y": 0.008483929758662745,
+            "depth": 0.9968865361099769,
+            "centerInFrustum": false
+          }
+        }
+      }
+    }
+  },
+  "modes": [
+    "chase",
+    "lost-sight",
+    "go-to-last-known"
+  ],
+  "firstByMode": {
+    "chase": {
+      "elapsedSeconds": 0.3,
+      "mode": "chase",
+      "observable": true,
+      "villain": {
+        "rootVisible": true,
+        "alpha": 1,
+        "worldRendered": true,
+        "viewport": {
+          "x": 0.42143660762891644,
+          "y": 0.50172458283648,
+          "depth": 0.9930260829782723,
+          "centerInFrustum": true
+        }
+      },
+      "kid": {
+        "rootVisible": true,
+        "alpha": 1,
+        "viewport": {
+          "x": 0.5744861817117635,
+          "y": 0.50172458283648,
+          "depth": 0.9930260829782723,
+          "centerInFrustum": true
+        }
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 1.806701030927835,
+        "distance": 19.856643299411346,
+        "zoom": 1,
+        "position": {
+          "x": 8.849047653128892,
+          "y": 17.19450022576166,
+          "z": -15.466510975480734
+        },
+        "focus": {
+          "x": 8.849047653128892,
+          "y": 0.9832260880130381,
+          "z": -4
+        },
+        "direction": {
+          "x": 0,
+          "y": 0.8164156395068652,
+          "z": -0.5774647206268071
+        },
+        "azimuthDegrees": 180,
+        "occlusion": {
+          "groups": 23,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      }
+    },
+    "lost-sight": {
+      "elapsedSeconds": 0.8000000000000008,
+      "mode": "lost-sight",
+      "observable": false,
+      "villain": {
+        "rootVisible": true,
+        "alpha": 1,
+        "worldRendered": true,
+        "viewport": {
+          "x": 0.43984723121691555,
+          "y": 0.4833500473030156,
+          "depth": 0.9935477126614741,
+          "centerInFrustum": true
+        }
+      },
+      "kid": {
+        "rootVisible": true,
+        "alpha": 1,
+        "viewport": {
+          "x": 0.5417922809898492,
+          "y": 0.5168297463749578,
+          "depth": 0.9933559501740744,
+          "centerInFrustum": true
+        }
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 1.806701030927835,
+        "distance": 20.961733712141292,
+        "zoom": 1,
+        "position": {
+          "x": 7.666907890947267,
+          "y": 18.083243974731882,
+          "z": -16.601563508360226
+        },
+        "focus": {
+          "x": 7.666907890947267,
+          "y": 0.9697567409614346,
+          "z": -4.496901806425032
+        },
+        "direction": {
+          "x": 0,
+          "y": 0.8164156395068652,
+          "z": -0.5774647206268071
+        },
+        "azimuthDegrees": 180,
+        "occlusion": {
+          "groups": 23,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      }
+    },
+    "go-to-last-known": {
+      "elapsedSeconds": 1.2000000000000006,
+      "mode": "go-to-last-known",
+      "observable": false,
+      "villain": {
+        "rootVisible": true,
+        "alpha": 1,
+        "worldRendered": true,
+        "viewport": {
+          "x": 0.3983816621342179,
+          "y": 0.4154716606710944,
+          "depth": 0.9929835188275614,
+          "centerInFrustum": true
+        }
+      },
+      "kid": {
+        "rootVisible": true,
+        "alpha": 1,
+        "viewport": {
+          "x": 0.503911383962117,
+          "y": 0.5183007984693342,
+          "depth": 0.9923158284175131,
+          "centerInFrustum": true
+        }
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 1.806701030927835,
+        "distance": 18.539307306517276,
+        "zoom": 1,
+        "position": {
+          "x": 6.137465864326767,
+          "y": 16.059883748814027,
+          "z": -16.889097121504474
+        },
+        "focus": {
+          "x": 6.137465864326767,
+          "y": 0.9241033181494268,
+          "z": -6.18330120713195
+        },
+        "direction": {
+          "x": 0,
+          "y": 0.8164156395068652,
+          "z": -0.5774647206268071
+        },
+        "azimuthDegrees": 180,
+        "occlusion": {
+          "groups": 23,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      }
+    }
+  },
+  "hiddenKnowledgeRendered": 9,
+  "lockerInformationBoundary": {
+    "hidden": {
+      "rootVisible": false,
+      "alpha": 0,
+      "worldRendered": false,
+      "viewport": {
+        "x": -1.7847080820882049,
+        "y": -5.664011159601596,
+        "depth": 1.0368910029377427,
+        "centerInFrustum": false
+      }
+    },
+    "peeking": {
+      "rootVisible": true,
+      "alpha": 1,
+      "worldRendered": true,
+      "viewport": {
+        "x": -1.7352666252514641,
+        "y": -5.651761212484454,
+        "depth": 1.0368002311231013,
+        "centerInFrustum": false
+      }
+    },
+    "rehidden": {
+      "rootVisible": false,
+      "alpha": 0,
+      "worldRendered": false,
+      "viewport": {
+        "x": -1.6913551398425293,
+        "y": -5.640871266262956,
+        "depth": 1.0367195368825126,
+        "centerInFrustum": false
+      }
+    }
+  },
+  "sampleCount": 23,
+  "diagnostics": []
+}

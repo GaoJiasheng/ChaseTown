@@ -32,6 +32,7 @@ export function createInitialChaser(
     heading: normalizeVector(heading),
     mode: config.spawnDelaySeconds > 0 ? "spawn-delay" : "patrol",
     modeElapsedSeconds: 0,
+    visualConfirmationSeconds: null,
     patrolIndex: 0,
     searchSeed: 1,
     searchIndex: 0,
@@ -45,7 +46,7 @@ export function createInitialChaser(
 }
 
 function enterMode(state: ChaserState, mode: ChaserMode): ChaserState {
-  return { ...state, mode, modeElapsedSeconds: 0 };
+  return { ...state, mode, modeElapsedSeconds: 0, visualConfirmationSeconds: null };
 }
 
 function evidenceSearchSeed(state: ChaserState): number {
@@ -73,7 +74,11 @@ function rememberVisibleTarget(state: ChaserState, evidence: Exclude<PerceptionE
     memory: {
       lastKnownPosition: { ...evidence.position },
       lastSeenAtSeconds: evidence.observedAtSeconds,
-      witnessedHideSpotId: evidence.kind === "hide-entry-visible" ? evidence.hideSpotId : null,
+      witnessedHideSpotId: evidence.kind === "hide-entry-visible"
+        ? evidence.hideSpotId
+        : state.mode === "check-hide"
+          ? state.memory.witnessedHideSpotId
+          : null,
     },
   };
 }
@@ -105,14 +110,49 @@ export function stepChaserBrain(
 
   if (input.evidence.kind === "player-visible") {
     next = rememberVisibleTarget(next, input.evidence);
-    if (state.mode === "patrol") {
-      next = enterMode(next, "suspicious");
-    } else if (state.mode === "suspicious") {
+    if (state.mode === "suspicious") {
       if (elapsed + 1e-9 >= config.suspiciousSeconds) next = enterMode(next, "chase");
+    } else if (state.mode === "patrol") {
+      next = enterMode(next, "suspicious");
+    } else if (state.mode === "chase") {
+      next = { ...next, visualConfirmationSeconds: null };
     } else {
-      next = enterMode(next, "chase");
+      // Reacquisition confirmation belongs alongside the existing pursuit
+      // mode instead of replacing it. Search/last-known/check timers and
+      // movement continue, preventing short peeks from stun-locking the AI,
+      // while presentation still gets a full lead-in before chase resumes.
+      const confirmationSeconds = state.visualConfirmationSeconds === null
+        ? 0
+        : state.visualConfirmationSeconds + input.deltaSeconds;
+      next = { ...next, visualConfirmationSeconds: confirmationSeconds };
+      if (confirmationSeconds + 1e-9 >= config.suspiciousSeconds) {
+        next = enterMode({
+          ...next,
+          memory: { ...next.memory, witnessedHideSpotId: null },
+        }, "chase");
+      }
     }
     return { state: next, completedHideCheckId: null };
+  }
+
+  if (state.visualConfirmationSeconds !== null) {
+    // A brief reacquisition is still newer evidence than the search that was
+    // already in progress. If confirmation breaks, pursue that latest point
+    // instead of letting an old search timeout erase it or inserting another
+    // stationary lost-sight beat.
+    if (state.mode === "check-hide") {
+      // A brief peek cannot cancel a locker inspection backed by the stronger
+      // witnessed-entry evidence. Clear only the provisional confirmation and
+      // continue the existing walk/door timer below.
+      next = { ...next, visualConfirmationSeconds: null };
+    } else {
+      next = state.mode === "go-to-last-known"
+        ? { ...next, visualConfirmationSeconds: null }
+        : enterMode(next, "go-to-last-known");
+      return { state: next, completedHideCheckId: null };
+    }
+  } else {
+    next = { ...next, visualConfirmationSeconds: null };
   }
 
   switch (state.mode) {
