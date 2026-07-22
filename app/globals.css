@@ -152,8 +152,8 @@ h1 { margin: 2px 0 0; font-size: clamp(24px, 2.5vw, 36px); font-weight: 790; let
 .awareness small, .awareness strong { display: block; }
 .awareness small { color: #778994; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
 .awareness strong { margin-top: 1px; font-size: 12px; }
-.awareness-suspicious, .awareness-lost-sight, .awareness-go-to-last-known, .awareness-search { border-color: rgba(232, 189, 104, .28); }
-.awareness-suspicious > span, .awareness-lost-sight > span, .awareness-go-to-last-known > span, .awareness-search > span { background: var(--gold); box-shadow: 0 0 13px var(--gold); }
+.awareness-suspicious, .awareness-lost-sight, .awareness-go-to-last-known, .awareness-scan-last-known, .awareness-search { border-color: rgba(232, 189, 104, .28); }
+.awareness-suspicious > span, .awareness-lost-sight > span, .awareness-go-to-last-known > span, .awareness-scan-last-known > span, .awareness-search > span { background: var(--gold); box-shadow: 0 0 13px var(--gold); }
 .awareness-chase, .awareness-check-hide { border-color: rgba(255, 93, 104, .4); background: rgba(36, 8, 13, .76); }
 .awareness-chase > span, .awareness-check-hide > span { background: var(--danger); box-shadow: 0 0 15px var(--danger); animation: danger-pulse .75s infinite alternate; }
 

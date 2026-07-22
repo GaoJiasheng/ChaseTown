@@ -93,8 +93,9 @@ UI 使用 `simulation.getHideInteraction()`：
 | `patrol` | Walk | 基础音乐；无精确敌人指示 |
 | `suspicious` | Alert/Turn | 短促警觉提示、轻微升压 |
 | `chase` | ChaseRun | 紧张音乐和危险反馈进入主层 |
-| `lost-sight` | LoseSight/Brake | 危险反馈平滑衰减，镜头不继续追踪墙后敌人 |
+| `lost-sight` | Run，保持追击动量 | 冻结最后目击点，镜头不继续追踪墙后敌人 |
 | `go-to-last-known` | SearchWalk/Run | 以玩家为中心，不泄露 AI 路径目标 |
+| `scan-last-known` | SearchLook，根朝向左→右→回中 | 抵达冻结目击点后原地巡视，视锥与模型朝向一致 |
 | `search` | SearchLook + SearchWalk | 搜索层音乐；只给方向性环境反馈 |
 | `check-hide` | ApproachLocker + CheckLocker | 近距离搜柜反馈，动作/门/音效严格按 marker 同步 |
 

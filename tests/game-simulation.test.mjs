@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createInitialChaser, getChaserTarget, stepChaserBrain } from "../app/game/chaser-fsm.ts";
+import { createInitialChaser, getChaserTarget, hasReachedChaserTarget, stepChaserBrain } from "../app/game/chaser-fsm.ts";
 import { createDefaultLevel, createLevel, DEFAULT_GAME_CONFIG } from "../app/game/level.ts";
 import { distanceBetween, findPath, GridPathPlanner, hasLineOfSight, isWalkable, moveAlongGridPath, moveWithCollision } from "../app/game/navigation.ts";
-import { isPlayerVisuallyExposed } from "../app/game/perception.ts";
+import { isPlayerVisuallyExposed, samplePlayerPerception } from "../app/game/perception.ts";
 import { chaserSpeedForMode, GameSimulation } from "../app/game/simulation.ts";
 
 function testLevel(rows, options = {}) {
@@ -256,7 +256,7 @@ test("production route exercises chase, sight break, hiding, search, and escape"
   }
 
   assert.equal(reachedHidden, true);
-  for (const mode of ["chase", "lost-sight", "go-to-last-known", "search", "patrol"]) {
+  for (const mode of ["chase", "lost-sight", "go-to-last-known", "scan-last-known", "search", "patrol"]) {
     assert.equal(seenModes.has(mode), true, `missing ${mode}`);
   }
   assert.equal(simulation.getState().phase, "won");
@@ -298,6 +298,162 @@ test("last-known target freezes after line of sight is lost", () => {
   }
   assert.ok(["lost-sight", "go-to-last-known"].includes(chaser.mode));
   assert.deepEqual(getChaserTarget(chaser, level), frozen);
+});
+
+test("chaser reaches the exact last sighting, scans left and right, then searches", () => {
+  const level = testLevel(["......."], {
+    playerStart: { x: 6, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    chaserStartHeading: { x: 1, y: 0 },
+    exit: { x: 6, y: 0 },
+  });
+  const cfg = config({
+    spawnDelaySeconds: 0,
+    lostSightGraceSeconds: 0.2,
+    lastKnownScanSeconds: 1.5,
+    searchSeconds: 5,
+  });
+  const lastKnownPosition = { x: 4.25, y: 0 };
+  const planner = new GridPathPlanner(level);
+  let chaser = {
+    ...createInitialChaser(level, cfg),
+    mode: "chase",
+    memory: {
+      lastKnownPosition: { ...lastKnownPosition },
+      lastSeenAtSeconds: 0,
+      witnessedHideSpotId: null,
+    },
+  };
+  const modes = new Set([chaser.mode]);
+  const pursuitDistances = [];
+  const scanPositions = [];
+  const scanYawOffsets = [];
+  let scanOrigin = null;
+  let headingAfterScan = null;
+
+  for (let tick = 1; tick <= 120 && chaser.mode !== "search"; tick += 1) {
+    const reachedTarget = hasReachedChaserTarget(chaser, level);
+    chaser = stepChaserBrain(chaser, level, cfg, {
+      evidence: { kind: "none", observedAtSeconds: tick * 0.1 },
+      reachedTarget,
+      nowSeconds: tick * 0.1,
+      deltaSeconds: 0.1,
+    }).state;
+    modes.add(chaser.mode);
+
+    if (["lost-sight", "go-to-last-known"].includes(chaser.mode)) {
+      pursuitDistances.push(distanceBetween(chaser.position, lastKnownPosition));
+    }
+    if (chaser.mode === "scan-last-known") {
+      scanOrigin ??= { ...chaser.scanOriginHeading };
+      scanPositions.push({ ...chaser.position });
+      const originYaw = Math.atan2(scanOrigin.x, scanOrigin.y);
+      const headingYaw = Math.atan2(chaser.heading.x, chaser.heading.y);
+      scanYawOffsets.push(Math.atan2(Math.sin(headingYaw - originYaw), Math.cos(headingYaw - originYaw)));
+    }
+    if (chaser.mode === "search") headingAfterScan = { ...chaser.heading };
+
+    const target = getChaserTarget(chaser, level);
+    const speed = chaserSpeedForMode(chaser.mode, cfg.chaserSpeed);
+    if (target && speed > 0) {
+      const before = chaser.position;
+      const movement = moveAlongGridPath(planner, before, target, speed, 0.1);
+      const moved = distanceBetween(before, movement.position) > 1e-9;
+      chaser = {
+        ...chaser,
+        position: movement.position,
+        heading: moved ? movement.heading : chaser.heading,
+      };
+    }
+  }
+
+  for (let index = 1; index < pursuitDistances.length; index += 1) {
+    assert.ok(
+      pursuitDistances[index] <= pursuitDistances[index - 1] + 1e-9,
+      "distance to frozen evidence increased before arrival",
+    );
+  }
+  assert.equal(modes.has("lost-sight"), true);
+  assert.equal(modes.has("go-to-last-known"), true);
+  assert.equal(modes.has("scan-last-known"), true);
+  assert.equal(chaser.mode, "search");
+  assert.ok(scanPositions.length >= 14, "arrival scan was shorter than its authored duration");
+  for (const position of scanPositions) {
+    assert.ok(distanceBetween(position, lastKnownPosition) <= 1e-9, "scan began before the exact sighting point");
+  }
+  assert.ok(Math.min(...scanYawOffsets) < -0.85, "the pursuer never looked left");
+  assert.ok(Math.max(...scanYawOffsets) > 0.85, "the pursuer never looked right");
+  assert.ok(scanOrigin && headingAfterScan);
+  assert.ok(
+    scanOrigin.x * headingAfterScan.x + scanOrigin.y * headingAfterScan.y > 0.999,
+    "the arrival scan did not return to its neutral heading",
+  );
+  assert.deepEqual(chaser.position, lastKnownPosition, "post-scan search displaced the planted actor");
+  assert.deepEqual(getChaserTarget(chaser, level), lastKnownPosition, "search did not begin at the exact evidence anchor");
+  assert.ok(
+    Math.abs(chaser.searchWaypointElapsedSeconds - (cfg.searchWaypointSeconds - cfg.aiTickSeconds)) < 1e-9,
+    "the post-scan planted beat was not authored",
+  );
+});
+
+test("last-known scan rotates the real vision cone and can reacquire the player", () => {
+  const level = testLevel([
+    ".....",
+    ".....",
+    ".....",
+    ".....",
+    ".....",
+  ], {
+    playerStart: { x: 0, y: 4 },
+    chaserStart: { x: 2, y: 2 },
+    chaserStartHeading: { x: 0, y: 1 },
+    exit: { x: 4, y: 4 },
+  });
+  const cfg = config({
+    spawnDelaySeconds: 0,
+    suspiciousSeconds: 0.2,
+    lastKnownScanSeconds: 1.5,
+    visionRange: 10,
+    visionConeDegrees: 35,
+  });
+  let chaser = {
+    ...createInitialChaser(level, cfg),
+    mode: "scan-last-known",
+    modeElapsedSeconds: 0,
+    scanOriginHeading: { x: 0, y: 1 },
+    memory: {
+      lastKnownPosition: { x: 2, y: 2 },
+      lastSeenAtSeconds: 0,
+      witnessedHideSpotId: null,
+    },
+  };
+  const player = {
+    position: { x: 0, y: 4 },
+    mode: "free",
+    hideSpotId: null,
+    transitionRemainingSeconds: 0,
+  };
+  assert.equal(samplePlayerPerception(level, chaser, player, cfg, 0).kind, "none");
+
+  chaser = stepChaserBrain(chaser, level, cfg, {
+    evidence: { kind: "none", observedAtSeconds: 0.3 },
+    reachedTarget: true,
+    nowSeconds: 0.3,
+    deltaSeconds: 0.3,
+  }).state;
+  const evidence = samplePlayerPerception(level, chaser, player, cfg, 0.3);
+  assert.equal(evidence.kind, "player-visible", "the visible model sweep did not rotate AI perception");
+
+  for (const nowSeconds of [0.4, 0.5, 0.6]) {
+    const visible = samplePlayerPerception(level, chaser, player, cfg, nowSeconds);
+    chaser = stepChaserBrain(chaser, level, cfg, {
+      evidence: visible,
+      reachedTarget: true,
+      nowSeconds,
+      deltaSeconds: 0.1,
+    }).state;
+  }
+  assert.equal(chaser.mode, "chase", "a player swept by the real vision cone was not reacquired");
 });
 
 test("a brief suspicious glimpse retains evidence and enters last-known search", () => {
@@ -522,6 +678,7 @@ test("search order is evidence-seeded, deterministic, and advances only after an
   const sequence = (searchSeed) => Array.from({ length: 9 }, (_, searchIndex) =>
     getChaserTarget({ ...makeSearch(searchSeed), searchIndex }, level));
   assert.deepEqual(sequence(7), sequence(7), "the same evidence seed must replay exactly");
+  assert.deepEqual(sequence(7)[0], { x: 3, y: 3 }, "search must begin at the exact evidence anchor");
   assert.notDeepEqual(sequence(7), sequence(19), "different observed encounters should not be a fixed search pattern");
 
   let state = makeSearch(7);
@@ -921,7 +1078,12 @@ test("chaser movement cadence matches authored locomotion and reaction beats", (
   const topSpeed = DEFAULT_GAME_CONFIG.chaserSpeed;
   assert.equal(chaserSpeedForMode("spawn-delay", topSpeed), 0);
   assert.equal(chaserSpeedForMode("suspicious", topSpeed), 0);
-  assert.equal(chaserSpeedForMode("lost-sight", topSpeed), 0, "lost-sight reaction must not foot-slide");
+  assert.equal(
+    chaserSpeedForMode("lost-sight", topSpeed),
+    chaserSpeedForMode("go-to-last-known", topSpeed),
+    "lost sight must preserve momentum toward the frozen evidence",
+  );
+  assert.equal(chaserSpeedForMode("scan-last-known", topSpeed), 0);
   assert.ok(chaserSpeedForMode("patrol", topSpeed) < chaserSpeedForMode("chase", topSpeed));
   assert.ok(chaserSpeedForMode("search", topSpeed) < chaserSpeedForMode("patrol", topSpeed));
   assert.ok(chaserSpeedForMode("check-hide", topSpeed) < chaserSpeedForMode("chase", topSpeed));

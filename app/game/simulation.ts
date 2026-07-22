@@ -12,7 +12,7 @@ import type {
   SimulationEvent,
   SimulationInput,
 } from "./contracts.ts";
-import { getChaserTarget, hasReachedChaserTarget, createInitialChaser, stepChaserBrain } from "./chaser-fsm.ts";
+import { getChaserTarget, hasReachedChaserTarget, createInitialChaser, lastKnownScanHeading, stepChaserBrain } from "./chaser-fsm.ts";
 import { createDefaultLevel, DEFAULT_GAME_CONFIG } from "./level.ts";
 import {
   distanceBetween,
@@ -44,19 +44,21 @@ const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 /**
  * Movement cadence is part of the gameplay/animation contract. Chase keeps
  * the authored top speed, patrol and locker approach use a deliberate walk,
- * and the lost-sight beat stops translation so its authored reaction cannot
- * visibly foot-slide. Search moves slowly between nearby evidence points.
+ * lost-sight preserves momentum toward frozen evidence, while the explicit
+ * arrival scan stops translation for its authored left/right performance.
+ * Search moves slowly between nearby points only after that sweep completes.
  */
 export function chaserSpeedForMode(mode: ChaserMode, topSpeed: number): number {
   switch (mode) {
     case "patrol": return topSpeed * 0.45;
     case "chase": return topSpeed;
+    case "lost-sight":
     case "go-to-last-known": return topSpeed * 0.88;
     case "search": return topSpeed * 0.35;
     case "check-hide": return topSpeed * 0.45;
     case "spawn-delay":
     case "suspicious":
-    case "lost-sight": return 0;
+    case "scan-last-known": return 0;
   }
 }
 
@@ -187,6 +189,7 @@ export class GameSimulation {
         ...this.state.chaser,
         position: copyPoint(this.state.chaser.position),
         heading: copyPoint(this.state.chaser.heading),
+        scanOriginHeading: copyPoint(this.state.chaser.scanOriginHeading),
         memory: {
           ...this.state.chaser.memory,
           lastKnownPosition: this.state.chaser.memory.lastKnownPosition
@@ -215,6 +218,7 @@ export class GameSimulation {
       "hideExitExposureSeconds",
       "peekEnterSeconds",
       "peekExitSeconds",
+      "lastKnownScanSeconds",
     ] as const;
     for (const name of positive) {
       if (!(this.config[name] > 0)) throw new Error(`${name} must be greater than zero`);
@@ -457,6 +461,16 @@ export class GameSimulation {
 
   private updateChaserBrain(delta: number, events: SimulationEvent[]) {
     this.state.aiAccumulatorSeconds += delta;
+    if (this.state.chaser.mode === "scan-last-known") {
+      // Presentation and perception read the same 60 Hz heading. The lower-
+      // frequency brain still owns decisions, while this deterministic pose
+      // sampler prevents the vision cone from jumping ahead of the 3D actor.
+      this.state.chaser.heading = lastKnownScanHeading(
+        this.state.chaser.scanOriginHeading,
+        this.state.chaser.modeElapsedSeconds + this.state.aiAccumulatorSeconds,
+        this.config.lastKnownScanSeconds,
+      );
+    }
     while (this.state.aiAccumulatorSeconds + 1e-12 >= this.config.aiTickSeconds) {
       this.state.aiAccumulatorSeconds -= this.config.aiTickSeconds;
       const evidence = samplePlayerPerception(

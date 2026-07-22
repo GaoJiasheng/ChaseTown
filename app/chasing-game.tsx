@@ -30,6 +30,7 @@ import {
   baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
   canChaserTakeLockerDoor,
+  chaserAnimationForMode,
   lockerVisionMix,
   requiredCameraDistanceForFraming,
   shouldFrameChaser,
@@ -1398,9 +1399,10 @@ function threatForMode(mode: ChaserMode) {
   switch (mode) {
     case "suspicious": return 0.28;
     case "chase": return 1;
-    case "lost-sight": return 0.72;
-    case "go-to-last-known": return 0.58;
-    case "search": return 0.42;
+    case "lost-sight": return 0.9;
+    case "go-to-last-known": return 0.78;
+    case "scan-last-known": return 0.68;
+    case "search": return 0.52;
     case "check-hide": return 0.82;
     case "spawn-delay":
     case "patrol": return 0;
@@ -1413,8 +1415,9 @@ function chaserStatus(mode: ChaserMode) {
     case "patrol": return "巡逻中";
     case "suspicious": return "听见动静";
     case "chase": return "正在追捕";
-    case "lost-sight": return "视线已断";
-    case "go-to-last-known": return "追查最后位置";
+    case "lost-sight": return "视线中断 · 继续追踪";
+    case "go-to-last-known": return "赶往最后目击点";
+    case "scan-last-known": return "抵达目击点 · 左右巡视";
     case "search": return "附近搜索";
     case "check-hide": return "正在检查藏身处";
   }
@@ -3193,20 +3196,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const checkId = state.chaser.memory.witnessedHideSpotId;
         const checkSpot = checkId ? campaignLevel.hideSpots.find((spot) => spot.id === checkId) : undefined;
         const atCheckSpot = Boolean(checkSpot && distanceBetween(checkSpot.approach, state.chaser.position) < 0.18);
-        let villainAnimation: AnimationState;
-        switch (state.chaser.mode) {
-          case "spawn-delay": villainAnimation = "idle"; break;
-          case "patrol": villainAnimation = villainSpeed > 0.1 ? "walk" : "idle"; break;
-          case "suspicious": villainAnimation = "alert"; break;
-          case "chase": villainAnimation = "run"; break;
-          case "lost-sight": villainAnimation = "loseSight"; break;
-          case "go-to-last-known": villainAnimation = villainSpeed > 0.1 ? "run" : "loseSight"; break;
-          case "search": villainAnimation = villainSpeed > 0.1 ? "walk" : "search"; break;
-          case "check-hide": villainAnimation = atCheckSpot ? "checkLocker" : "walk"; break;
-        }
+        const villainAnimation = chaserAnimationForMode(state.chaser.mode, villainSpeed, atCheckSpot);
         requestAnimation(villain, villainAnimation, {
           fade: 0.17,
-          duration: villainAnimation === "checkLocker" ? simulation.config.checkHideSeconds : undefined,
+          duration: villainAnimation === "checkLocker"
+            ? simulation.config.checkHideSeconds
+            : state.chaser.mode === "scan-last-known"
+              ? simulation.config.lastKnownScanSeconds
+              : undefined,
+          loop: state.chaser.mode === "scan-last-known" ? false : undefined,
         });
         villain.animator.setLocomotionRate(villainSpeed, villainAnimation === "run" ? 3.7 : 1.65);
         const checkingLocker = checkId ? lockers.get(checkId) : undefined;
@@ -3269,7 +3267,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
       const hideMarkerAllowed = state.phase === "playing"
         && ["free", "aligning-hide"].includes(state.player.mode);
-      const urgentHideMarker = ["suspicious", "chase", "lost-sight", "go-to-last-known", "search"].includes(state.chaser.mode);
+      const urgentHideMarker = ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known", "search"].includes(state.chaser.mode);
       const markerPulse = 0.5 + Math.sin(state.elapsedSeconds * 4.6) * 0.5;
       for (const locker of lockers.values()) {
         updateLocker(locker, delta);

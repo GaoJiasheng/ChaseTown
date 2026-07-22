@@ -21,6 +21,7 @@ export type ChaserMode =
   | "chase"
   | "lost-sight"
   | "go-to-last-known"
+  | "scan-last-known"
   | "search"
   | "check-hide";
 
@@ -67,6 +68,8 @@ export interface GameConfig {
   spawnDelaySeconds: number;
   suspiciousSeconds: number;
   lostSightGraceSeconds: number;
+  /** Deliberate left/right inspection after reaching the final visual evidence. */
+  lastKnownScanSeconds: number;
   searchSeconds: number;
   searchWaypointSeconds: number;
   checkHideSeconds: number;
@@ -121,6 +124,8 @@ export interface ChaserState {
    */
   visualConfirmationSeconds: number | null;
   patrolIndex: number;
+  /** Arrival heading used as the neutral direction for the last-known sweep. */
+  scanOriginHeading: Point;
   /** Deterministic per-encounter shuffle; derived only from observed evidence. */
   searchSeed: number;
   searchIndex: number;

@@ -27,6 +27,9 @@ export const DEFAULT_GAME_CONFIG: Readonly<GameConfig> = Object.freeze({
   spawnDelaySeconds: 1.5,
   suspiciousSeconds: 0.2,
   lostSightGraceSeconds: 0.35,
+  // Once the pursuer reaches the exact final sighting, one authored Search
+  // performance sweeps left, right, then centre before wider search begins.
+  lastKnownScanSeconds: 1.5,
   searchSeconds: 4.5,
   searchWaypointSeconds: 0.75,
   checkHideSeconds: 2.35,

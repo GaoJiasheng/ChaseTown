@@ -6,12 +6,22 @@ import {
   baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
   canChaserTakeLockerDoor,
+  chaserAnimationForMode,
   lockerVisionMix,
   requiredCameraDistanceForFraming,
   shouldFrameChaser,
   shouldRenderChaserModel,
   smoothOcclusionStrength,
 } from "../app/game/presentation.ts";
+
+test("last-known pursuit and arrival scan use authored locomotion and search performances", () => {
+  assert.equal(chaserAnimationForMode("lost-sight", 1.8, false), "run");
+  assert.equal(chaserAnimationForMode("lost-sight", 0, false), "idle");
+  assert.equal(chaserAnimationForMode("go-to-last-known", 1.8, false), "run");
+  assert.equal(chaserAnimationForMode("go-to-last-known", 0, false), "idle");
+  assert.equal(chaserAnimationForMode("scan-last-known", 0, false), "search");
+  assert.equal(chaserAnimationForMode("search", 0.7, false), "walk");
+});
 
 const mix = (mode, transitionRemainingSeconds) => lockerVisionMix(
   { mode, transitionRemainingSeconds },
@@ -108,7 +118,7 @@ test("chaser world rendering never inherits the HUD knowledge gate", () => {
 });
 
 test("every observable spawned chaser pre-frames first sight and reacquisition", () => {
-  for (const mode of ["patrol", "suspicious", "chase", "lost-sight", "go-to-last-known", "search", "check-hide"]) {
+  for (const mode of ["patrol", "suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known", "search", "check-hide"]) {
     assert.equal(shouldFrameChaser("playing", mode, true), true, `${mode} should frame both actors`);
   }
   assert.equal(shouldFrameChaser("playing", "spawn-delay", true), false);

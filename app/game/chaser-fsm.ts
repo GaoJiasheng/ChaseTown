@@ -21,19 +21,47 @@ export interface ChaserBrainResult {
   completedHideCheckId: string | null;
 }
 
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+const smoothstep = (value: number) => {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
+};
+
+export function lastKnownScanHeading(origin: Point, elapsedSeconds: number, durationSeconds: number): Point {
+  const progress = clamp01(elapsedSeconds / Math.max(durationSeconds, 1e-6));
+  const maximumYaw = 55 * Math.PI / 180;
+  let yawOffset: number;
+  if (progress < 0.2) {
+    yawOffset = -maximumYaw * smoothstep(progress / 0.2);
+  } else if (progress < 0.32) {
+    yawOffset = -maximumYaw;
+  } else if (progress < 0.68) {
+    yawOffset = -maximumYaw + maximumYaw * 2 * smoothstep((progress - 0.32) / 0.36);
+  } else if (progress < 0.8) {
+    yawOffset = maximumYaw;
+  } else {
+    yawOffset = maximumYaw * (1 - smoothstep((progress - 0.8) / 0.2));
+  }
+  const normalizedOrigin = normalizeVector(origin);
+  const yaw = Math.atan2(normalizedOrigin.x, normalizedOrigin.y) + yawOffset;
+  return { x: Math.sin(yaw), y: Math.cos(yaw) };
+}
+
 export function createInitialChaser(
   level: LevelDefinition,
   config: GameConfig,
   position: Point = level.chaserStart,
   heading: Point = level.chaserStartHeading,
 ): ChaserState {
+  const normalizedHeading = normalizeVector(heading);
   return {
     position: { ...position },
-    heading: normalizeVector(heading),
+    heading: normalizedHeading,
     mode: config.spawnDelaySeconds > 0 ? "spawn-delay" : "patrol",
     modeElapsedSeconds: 0,
     visualConfirmationSeconds: null,
     patrolIndex: 0,
+    scanOriginHeading: { ...normalizedHeading },
     searchSeed: 1,
     searchIndex: 0,
     searchWaypointElapsedSeconds: 0,
@@ -59,12 +87,26 @@ function evidenceSearchSeed(state: ChaserState): number {
   return seed || 1;
 }
 
-function enterSearch(state: ChaserState): ChaserState {
+function enterSearch(state: ChaserState, initialWaypointElapsedSeconds = 0): ChaserState {
   return {
     ...enterMode(state, "search"),
     searchSeed: evidenceSearchSeed(state),
     searchIndex: 0,
-    searchWaypointElapsedSeconds: 0,
+    searchWaypointElapsedSeconds: initialWaypointElapsedSeconds,
+  };
+}
+
+function enterLastKnownScan(state: ChaserState): ChaserState {
+  const origin = normalizeVector(state.heading);
+  const sighting = state.memory.lastKnownPosition;
+  return {
+    ...enterMode(state, "scan-last-known"),
+    // Reach checks use a tiny numerical tolerance. Snap that final fraction
+    // so the planted scan happens at the observed continuous world point and
+    // the following search dwell cannot introduce a last-frame foot slide.
+    position: sighting ? { ...sighting } : { ...state.position },
+    heading: { ...origin },
+    scanOriginHeading: { ...origin },
   };
 }
 
@@ -170,10 +212,24 @@ export function stepChaserBrain(
       next = enterMode(next, "lost-sight");
       break;
     case "lost-sight":
-      if (elapsed + 1e-9 >= config.lostSightGraceSeconds) next = enterMode(next, "go-to-last-known");
+      if (next.memory.lastKnownPosition && input.reachedTarget) next = enterLastKnownScan(next);
+      else if (elapsed + 1e-9 >= config.lostSightGraceSeconds) next = enterMode(next, "go-to-last-known");
       break;
     case "go-to-last-known":
-      if (!next.memory.lastKnownPosition || input.reachedTarget) next = enterSearch(next);
+      if (!next.memory.lastKnownPosition) next = enterSearch(next);
+      else if (input.reachedTarget) next = enterLastKnownScan(next);
+      break;
+    case "scan-last-known":
+      next = {
+        ...next,
+        heading: lastKnownScanHeading(state.scanOriginHeading, elapsed, config.lastKnownScanSeconds),
+      };
+      if (elapsed + 1e-9 >= config.lastKnownScanSeconds) {
+        // Search index zero is the exact continuous sighting point. Keep one
+        // AI beat planted there so the centred final scan pose is rendered
+        // before the first wider-search step can change position or heading.
+        next = enterSearch(next, Math.max(0, config.searchWaypointSeconds - config.aiTickSeconds));
+      }
       break;
     case "search":
       if (elapsed + 1e-9 >= config.searchSeconds) {
@@ -215,7 +271,6 @@ export function stepChaserBrain(
 function searchWaypoints(level: LevelDefinition, anchor: Point, seed: number): Point[] {
   const origin = { x: Math.round(anchor.x), y: Math.round(anchor.y) };
   const offsets = [
-    { x: 0, y: 0 },
     { x: 1, y: 0 },
     { x: 0, y: 1 },
     { x: -1, y: 0 },
@@ -231,7 +286,7 @@ function searchWaypoints(level: LevelDefinition, anchor: Point, seed: number): P
   for (const spot of level.hideSpots) {
     if (distanceBetween(spot.approach, origin) <= 3) candidates.push({ ...spot.approach });
   }
-  const seen = new Set<string>();
+  const seen = new Set<string>([pointKey(anchor)]);
   const unique = candidates.filter((candidate) => {
     const key = pointKey(candidate);
     if (seen.has(key)) return false;
@@ -251,7 +306,10 @@ function searchWaypoints(level: LevelDefinition, anchor: Point, seed: number): P
     const swap = Math.floor(random() * (index + 1));
     [unique[index], unique[swap]] = [unique[swap], unique[index]];
   }
-  return unique;
+  // The exact, potentially sub-cell evidence point is never shuffled away.
+  // It supplies the planted post-scan beat; only the surrounding search order
+  // varies with observed encounter evidence.
+  return [{ ...anchor }, ...unique];
 }
 
 /** Derives navigation intent exclusively from chaser-owned memory and level data. */
@@ -262,6 +320,7 @@ export function getChaserTarget(state: ChaserState, level: LevelDefinition): Poi
     case "chase":
     case "lost-sight":
     case "go-to-last-known":
+    case "scan-last-known":
       return state.memory.lastKnownPosition ? { ...state.memory.lastKnownPosition } : null;
     case "search": {
       if (!state.memory.lastKnownPosition) return null;
@@ -283,5 +342,9 @@ export function getChaserTarget(state: ChaserState, level: LevelDefinition): Poi
 
 export function hasReachedChaserTarget(state: ChaserState, level: LevelDefinition): boolean {
   const target = getChaserTarget(state, level);
-  return Boolean(target && distanceBetween(state.position, target) <= 0.12);
+  // The final visual evidence is a continuous world point, not merely a grid
+  // cell. Reach it almost exactly before planting the feet for the authored
+  // scan; wider tolerances remain appropriate for patrol and locker checks.
+  const tolerance = ["lost-sight", "go-to-last-known"].includes(state.mode) ? 0.02 : 0.12;
+  return Boolean(target && distanceBetween(state.position, target) <= tolerance);
 }

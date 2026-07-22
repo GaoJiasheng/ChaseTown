@@ -1,4 +1,5 @@
 import type { ChaserMode, GameConfig, GamePhase, PlayerState } from "./contracts.ts";
+import type { AnimationState } from "./animation/actor-runtime.ts";
 
 export interface LockerDoorClaim {
   owner: "idle" | "player" | "chaser";
@@ -25,6 +26,28 @@ export function canChaserTakeLockerDoor(claim: LockerDoorClaim): boolean {
  */
 export function shouldRenderChaserModel(phase: GamePhase, playerVisuallyExposed: boolean): boolean {
   return phase !== "won" && (phase !== "playing" || playerVisuallyExposed);
+}
+
+/** Keeps the visible performance contract in lockstep with AI locomotion. */
+export function chaserAnimationForMode(
+  mode: ChaserMode,
+  worldSpeed: number,
+  atCheckedLocker: boolean,
+): AnimationState {
+  switch (mode) {
+    case "spawn-delay": return "idle";
+    case "patrol": return worldSpeed > 0.1 ? "walk" : "idle";
+    case "suspicious": return "alert";
+    case "chase": return "run";
+    // Arrival can happen between 10 Hz decision ticks. Use actual world
+    // displacement for those final frames so the actor plants its feet
+    // instead of running in place while the brain enters the scan state.
+    case "lost-sight": return worldSpeed > 0.1 ? "run" : "idle";
+    case "go-to-last-known": return worldSpeed > 0.1 ? "run" : "idle";
+    case "scan-last-known": return "search";
+    case "search": return worldSpeed > 0.1 ? "walk" : "search";
+    case "check-hide": return atCheckedLocker ? "checkLocker" : "walk";
+  }
 }
 
 /**
