@@ -1,21 +1,21 @@
 # Web 版实施与验证报告
 
 > 文档日期：2026-07-22
-> 当前状态：`RELEASE CANDIDATE` — 本地全量回归、真实浏览器冒烟和证据冻结已完成，待提交、推送、Sites 部署与线上复核
+> 当前状态：`REVIEW` — 本地全量回归、真实浏览器冒烟、Sites v12 发布与线上复核均已通过，等待用户体验验收
 > 工作分支：`codex/top-tier-web-vertical-slice`
 
 ## 1. 发布标识
 
 | 项目 | 值 |
 |---|---|
-| 最终 Commit | `【待最终提交后填写】` |
-| 托管项目 / 版本 | `【待最终部署后填写】` |
-| 线上地址 | `【待最终部署后填写】` |
-| 访问策略 | `【待最终部署后填写：Private / Public】` |
-| 最终验证日期与执行人 | `【待最终全量回归后填写】` |
-| 发布结论 | `【待最终全量回归与线上复核后填写：PASS / BLOCKED】` |
+| 部署运行 Commit | `4c783b43d3468f0c71b1a2feb54b6d973150c481` |
+| 托管项目 / 版本 | `appgprj_6a562ff04ac081918664612f375c3fda` / Sites `v12` |
+| 线上地址 | `https://chasing-school-escape.gavingao.chatgpt.site` |
+| 访问策略 | `Private / custom`；仅 Gavin Gao，0 个共享群组 |
+| 最终验证日期与执行人 | `2026-07-22` / Codex QA |
+| 发布结论 | `PASS`；工程与线上门禁通过，主观体验验收状态为 REVIEW |
 
-本报告中的“已实现”表示代码、正式资产和对应专项门禁已经落入仓库；只有最终 Commit、完整测试数、浏览器截图和线上版本都回填后，才允许把状态改成 `RELEASED`。
+本报告中的“已实现”表示代码、正式资产和对应专项门禁已经落入仓库。部署运行 Commit、完整测试数、浏览器截图和线上版本均已回填；状态保留为 `REVIEW`，直到用户完成主观体验验收。
 
 ## 2. 本次交付边界
 
@@ -93,7 +93,7 @@
 | TypeScript | `npm run typecheck` | PASS，0 error |
 | ESLint | `npm run lint` | PASS，0 error |
 | 生产构建 | `npm run build` | PASS；仅保留单个 client chunk 大于 500 kB 的非阻断体积 warning |
-| 全量自动测试 | `npm test` | PASS，58 / 58，失败 0 |
+| 全量自动测试 | `npm test` | PASS，60 / 60，失败 0 |
 | 生产依赖安全审计 | `npm audit --omit=dev` | PASS，0 vulnerability |
 | Git 补丁完整性 | `git diff --check` | PASS |
 | Git / LFS 对象完整性 | `git fsck --full`、`git lfs fsck` | PASS |
@@ -107,7 +107,7 @@
 
 | 发现 | 根因 | 修复 | 回归证据 |
 |---|---|---|---|
-| 相机与墙体交叠时大块黑屏 / 角色被挡 | 镜头几何遮挡缺少局部处理 | 改为相机到角色视线走廊内的材质淡出，并在离开遮挡后恢复 | `【最终 smoke 截图回填】` |
+| 相机与墙体交叠时大块黑屏 / 角色被挡 | 镜头几何遮挡缺少局部处理 | 改为相机到角色视线走廊内的材质淡出，并在离开遮挡后恢复 | [相机遮挡截图](web-rendering/evidence/camera-occlusion.jpg) |
 | 快速点按窥视可能在门仍关闭时泄漏证据 | `exiting-peek` 被无条件判定为视觉暴露 | 暴露条件加入实际过渡开启量，新增零开启量专项用例 | `tests/game-simulation.test.mjs` |
 | Ceiling Light / Station 的 emissiveFactor 超出 glTF 范围 | 颜色因子承担了亮度，违反每通道 0–1 规范 | 因子归一化，亮度移入 `KHR_materials_emissive_strength`；加入资产测试与可复现修复脚本 | `tools/art_pipeline/fix_emissive_strength.mjs` |
 | Kid 原地转身存在脚滑风险 | clip 与运行时根旋转若分别积分会失步 | 固定 0.6 秒 smootherstep heading 合成、冻结转向计划、按 clip 时间同步；120 Hz 审计最大平面漂移 1.798 mm | [Kid 转身报告](art_production/reports/kid-turn-production-animation.json) |
@@ -117,6 +117,8 @@
 | 本地 favicon 请求旧线上私有地址并触发 ORB | icon metadata 被 `metadataBase` 解析为绝对生产 URL | 改为显式同源 `/favicon.svg`；最终网络日志为 200 `image/svg+xml`、0 loading failure | [最终 smoke 摘要](web-rendering/evidence/runtime-smoke-summary.json) |
 | WebGL context 丢失后缺少恢复反馈 | canvas 未监听 context lost / restored | 丢失时停止推进、清输入与 ready 标记并显示恢复卡；恢复后自动 reload | [WebGL 故障注入摘要](web-rendering/evidence/webgl-context-summary.json) |
 | 模型并行加载中卸载可能留下未挂载资源 | `GLTFLoader` promise 完成后只检查 disposed，没有主动释放 | 29 项加载改为 `allSettled`；失败或卸载后统一 dispose 已完成的几何、材质、纹理与骨架 | TypeScript / ESLint / 构建回归 |
+| 线上首次开始后 Threat 音乐轨可能晚约 20 秒就绪 | 音频元素遵守首次手势才创建，私有 CDN 冷请求使第二条 stem 尚未缓存 | 3D 加载期间并行 fetch 并完整物化双轨缓存，仍在用户手势内创建 AudioContext / Audio 元素；失败保持可重试退路 | [Sites v12 smoke](web-rendering/evidence/deployed-v12-smoke.json)：两轨 readyState 4、漂移约 3 μs |
+| 站点截图机器人额外请求 `/favicon.ico` 产生 404 | 页面显式提供 SVG 图标，但传统 crawler 仍探测 ICO 默认路径 | 增加真实 64 × 64 ICO 与文件签名回归；线上返回 200 `image/vnd.microsoft.icon` | [Sites v12 smoke](web-rendering/evidence/deployed-v12-smoke.json) |
 
 若最终 smoke 再发现问题，必须继续追加本表，并执行“修复 → 自动回归 → 实际运行 → 截图复核”的完整循环，不能只修改后口头关闭。
 
@@ -135,7 +137,7 @@
 | 自适应音乐 | 用户交互后 AudioContext 为 running；两 stem 同步；危险混音与静音正常；无解码错误 | PASS；两轨 38.02 秒、readyState 4、media error null，常态漂移为微秒级，长路线重开约 5.3 ms |
 | 手机竖屏 390 × 844 | HUD、摇杆、交互、窥视、静音与重开均不遮住关键画面 | PASS；scroll 与 viewport 同尺寸，触控热区至少 44 px，[截图](web-rendering/evidence/mobile-portrait.jpg) |
 | 手机横屏 844 × 390 | 画面和触控区不重叠；可开始、移动、交互和重开 | PASS；设备仿真布局与真实 touch 事件路径通过 |
-| 线上私有地址 | TLS 正常；鉴权后首页、GLB、M4A、JSON、notices MIME 与 Range 行为正确 | `【待部署后回填】` |
+| 线上私有地址 | TLS 与鉴权正常；首页、29 个 GLB、双轨 M4A、manifest、notices 和图标可达；真实 Chrome 可解码、可交互且无 4xx / 5xx | PASS；Sites v12、[运行截图](web-rendering/evidence/deployed-v12-final.jpg)、[结构化 smoke](web-rendering/evidence/deployed-v12-smoke.json) |
 
 本地 smoke 使用 Chrome 150、WebGL 2、ANGLE Metal（Apple M5 Max）。5 秒 active rAF：桌面 120 FPS（median 8.3 ms / p95 9.7 ms / max 10.4 ms），竖屏 120 FPS，横屏 120.2 FPS；三组均无帧超过 20 ms。典型桌面约 457 draw calls / 1.628M triangles，遮挡峰值约 526 / 2.010M，离开遮挡后恢复基线。最终控制台 warning / error、exception、HTTP ≥ 400 与 `Network.loadingFailed` 均为 0。证据目录见 [`docs/web-rendering/evidence/`](web-rendering/evidence/README.md)。
 
@@ -177,7 +179,7 @@
 
 发布硬门禁是 `npm audit --omit=dev` 无生产漏洞。开发依赖中的构建工具若仍存在上游 advisory，必须在最终报告记录数量、影响范围和是否可被生产访问；不得把仅影响本地工具链的问题误报成线上运行漏洞，也不得因此省略后续升级计划。
 
-## 9. 提交、部署与线上复核占位
+## 9. 提交、部署与线上复核
 
 1. 最终自动回归通过后，记录 `git status`、差异范围和资产哈希。
 2. 提交并推送 `codex/top-tier-web-vertical-slice`，回填 Commit SHA 与远端分支。
@@ -188,10 +190,10 @@
 
 | 发布项 | 最终值 |
 |---|---|
-| 远端分支 | `【待 push 后填写】` |
-| Commit SHA | `【待 commit 后填写】` |
-| Sites version ID | `【待 save version 后填写】` |
-| Deployment ID | `【待 deploy 后填写】` |
-| 线上 smoke 时间 | `【待线上复核后填写】` |
-| 最终截图 | `【待线上复核后填写仓库路径 / URL】` |
-| 最终结论 | `【待所有必选项关闭后填写】` |
+| 远端分支 | `codex/top-tier-web-vertical-slice` |
+| 部署运行 Commit SHA | `4c783b43d3468f0c71b1a2feb54b6d973150c481` |
+| Sites version ID | `appgprj_6a562ff04ac081918664612f375c3fda~appgver_3e97cd54a02881919d22b2e7f4f51c10`（v12） |
+| Deployment ID | `appgdep_6a60b2840f448191bfcf929caa7befe7` |
+| 线上 smoke 时间 | `2026-07-22 20:10`（Asia/Singapore） |
+| 最终截图 | `docs/web-rendering/evidence/deployed-v12-final.jpg` |
+| 最终结论 | `PASS`；线上技术验收关闭，等待用户主观体验 REVIEW |

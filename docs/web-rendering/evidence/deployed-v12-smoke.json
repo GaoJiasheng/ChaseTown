@@ -1,0 +1,69 @@
+{
+  "version": 12,
+  "commit": "4c783b43d3468f0c71b1a2feb54b6d973150c481",
+  "ready": true,
+  "waitedMs": 25000,
+  "favicon": {
+    "status": 200,
+    "type": "image/vnd.microsoft.icon",
+    "bytes": 17014,
+    "signature": [0, 0, 1, 0]
+  },
+  "prewarmEntries": [
+    {
+      "name": "slow-drift-explore.m4a",
+      "initiatorType": "fetch",
+      "durationMs": 1.3,
+      "transferSize": 0,
+      "decodedBodySize": 935976
+    },
+    {
+      "name": "slow-drift-threat.m4a",
+      "initiatorType": "fetch",
+      "durationMs": 1.1,
+      "transferSize": 0,
+      "decodedBodySize": 958523
+    }
+  ],
+  "phase": "playing",
+  "player": {
+    "position": { "x": 1, "y": 2 },
+    "heading": { "x": 0, "y": 1 },
+    "mode": "free",
+    "hideSpotId": null
+  },
+  "audio": {
+    "status": "playing",
+    "unlocked": true,
+    "muted": false,
+    "contextState": "running",
+    "driftSeconds": 0.000003,
+    "explore": {
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "threatTrack": {
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "lastError": null
+  },
+  "camera": {
+    "fov": 56,
+    "distance": 16.25,
+    "zoom": 1,
+    "occlusion": { "groups": 23, "obscured": [], "maxStrength": 0 }
+  },
+  "render": { "calls": 457, "triangles": 1627938 },
+  "diagnostics": {
+    "consoleErrors": [],
+    "exceptions": [],
+    "loadingFailed": [],
+    "httpErrors": [],
+    "logErrors": []
+  }
+}

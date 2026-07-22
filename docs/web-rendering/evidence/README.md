@@ -13,11 +13,13 @@
 - `escape-performance.jpg`：Kid `EscapeCelebrate` 与 Police `Resolve` 出口演出。
 - `mobile-portrait.jpg`：390 × 844 竖屏触控布局。
 - `webgl-context-recovery.jpg`：WebGL context 丢失时的可见恢复卡。
+- `deployed-v12-final.jpg`：Sites v12 私有生产地址在真实 Chrome / WebGL2 中开始运行后的最终截图。
 
 ## 结构化摘要
 
 - `runtime-smoke-summary.json`：最终桌面、Locker、重开、音频、移动布局和诊断摘要。
 - `production-route-summary.json`：默认生产模拟的失败路线、安全躲藏路线、AI 状态序列与重开复位证据。
 - `webgl-context-summary.json`：`WEBGL_lose_context` 故障注入、ready 标记清理、恢复 reload、favicon 与 diagnostics。
+- `deployed-v12-smoke.json`：最终线上版本、运行 Commit、双轨预热与同步、ICO、相机、渲染量和零错误诊断证据。
 
 这些数据证明的是当前机器上的真实 Chrome / WebGL 运行行为。390 × 844 与 844 × 390 为桌面浏览器设备仿真，不替代低端 iOS / Android 物理设备的 GPU、热降频、内存和 Safari 音频策略测试。
