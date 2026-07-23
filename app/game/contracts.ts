@@ -31,6 +31,8 @@ export interface SimulationInput {
   move?: MoveIntent;
   interactPressed?: boolean;
   peekHeld?: boolean;
+  /** Quiet movement modifier while free; the same control peeks in a locker. */
+  sneakHeld?: boolean;
 }
 
 export interface HideSpotDefinition {
@@ -72,7 +74,15 @@ export interface GameConfig {
   lastKnownScanSeconds: number;
   searchSeconds: number;
   searchWaypointSeconds: number;
+  /** Maximum evidence-ranked, unwitnessed lockers inspected during one search. */
+  searchHideCheckBudget: number;
+  /** Navigable distance from the final evidence within which a locker is plausible. */
+  searchHideRadiusCells: number;
   checkHideSeconds: number;
+  /** Maximum navigable distance at which a full-strength sound can be heard. */
+  hearingRange: number;
+  /** Minimum positional uncertainty retained by heard, non-visual evidence. */
+  soundUncertaintyCells: number;
   visionRange: number;
   visionConeDegrees: number;
   proximitySenseRange: number;
@@ -108,6 +118,8 @@ export interface ChaserMemory {
   /** Updated only from explicit perception evidence. */
   lastKnownPosition: Point | null;
   lastSeenAtSeconds: number | null;
+  lastHeardAtSeconds: number | null;
+  lastKnownEvidence: "visual" | "sound" | null;
   /** Set only when the chaser actually witnesses a hide-entry transition. */
   witnessedHideSpotId: string | null;
 }
@@ -130,6 +142,11 @@ export interface ChaserState {
   searchSeed: number;
   searchIndex: number;
   searchWaypointElapsedSeconds: number;
+  /** Public-evidence candidate selected without consulting locker occupancy. */
+  searchHideSpotId: string | null;
+  hideCheckSource: "witnessed" | "search" | null;
+  searchHideChecksCompleted: number;
+  inspectedHideSpotIds: readonly string[];
   memory: ChaserMemory;
 }
 
@@ -162,10 +179,19 @@ export type SimulationEvent =
   | { type: "player-mode-changed"; from: PlayerMode; to: PlayerMode }
   | { type: "chaser-mode-changed"; from: ChaserMode; to: ChaserMode }
   | { type: "hide-check-completed"; hideSpotId: string; occupied: boolean }
+  | { type: "player-captured"; reason: CaptureReason }
   | { type: "phase-changed"; from: GamePhase; to: GamePhase };
+
+export type CaptureReason =
+  | "direct-contact"
+  | "exposed-hide-entry"
+  | "unsafe-hide-exit"
+  | "witnessed-hide-check"
+  | "search-hide-check";
 
 export interface GameState {
   phase: GamePhase;
+  captureReason: CaptureReason | null;
   elapsedSeconds: number;
   tick: number;
   player: PlayerState;

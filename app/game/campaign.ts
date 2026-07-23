@@ -584,6 +584,20 @@ export const CAMPAIGN_LEVEL_COUNT = CAMPAIGN_LEVELS.length;
 
 const levelsById = new Map(CAMPAIGN_LEVELS.map((level) => [level.id, level]));
 
+export interface CampaignHideGuidancePolicy {
+  /**
+   * First-clear teaching may prefer this authored, regression-certified
+   * locker instead of presenting the geometrically nearest locker as safe.
+   */
+  readonly tutorialHideSpotId: string | null;
+}
+
+const TUTORIAL_HIDE_SPOT_IDS = Object.freeze([
+  "locker-north",
+  "library-map-case",
+  "science-chemical-cabinet",
+] as const);
+
 export function getCampaignLevelById(id: string): CampaignLevelDefinition | undefined {
   return levelsById.get(id);
 }
@@ -602,21 +616,50 @@ export function getCampaignLevelsByTheme(theme: CampaignTheme): readonly Campaig
   return CAMPAIGN_LEVELS.filter((level) => level.campaign.theme === theme);
 }
 
+export function getCampaignHideGuidancePolicy(level: CampaignLevelDefinition): CampaignHideGuidancePolicy {
+  const tutorialHideSpotId = TUTORIAL_HIDE_SPOT_IDS[level.campaign.levelNumber - 1] ?? null;
+  if (tutorialHideSpotId && !level.hideSpots.some((spot) => spot.id === tutorialHideSpotId)) {
+    throw new Error(`${level.id} is missing configured tutorial hide spot ${tutorialHideSpotId}`);
+  }
+  return Object.freeze({ tutorialHideSpotId });
+}
+
 /**
  * Applies the requested 20% pace baseline to every chapter, then introduces a
- * restrained pursuit curve. The player stays consistent across the campaign;
- * later chapters tighten vision, spawn lead and search persistence instead of
- * changing the controls underneath the player.
+ * restrained, continuous pursuit curve. The player stays consistent across
+ * the campaign; later chapters tighten confirmation, vision, spawn lead and
+ * evidence-backed search instead of changing the controls underneath them.
  */
 export function getCampaignGameplayConfig(level: CampaignLevelDefinition): Partial<GameConfig> {
   const index = level.campaign.levelNumber - 1;
   const chaserMultipliers = [1, 1, 1.02, 1.02, 1.04, 1.04, 1.06, 1.06, 1.08, 1.1] as const;
   const spawnDelays = [1.5, 1.2, 1.1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4] as const;
   const visionRanges = [7, 7, 7.4, 7.6, 7.8, 8, 8.2, 8.4, 8.6, 9] as const;
+  // L3's glass-wing sightline needs the original two-tick confirmation to
+  // preserve its authored interception. Later values continue tightening.
+  const suspiciousSeconds = [0.3, 0.28, 0.2, 0.2, 0.19, 0.18, 0.17, 0.16, 0.15, 0.14] as const;
+  const searchSeconds = [4.5, 4.7, 4.9, 5.2, 5.5, 5.8, 6.1, 6.5, 6.8, 7.2] as const;
+  const searchWaypointSeconds = [0.8, 0.78, 0.76, 0.74, 0.72, 0.7, 0.68, 0.66, 0.64, 0.62] as const;
+  const searchHideCheckBudgets = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2] as const;
+  const searchHideRadiusCells = [2, 2.2, 2.4, 2.6, 3, 3.4, 3.8, 4.2, 4.8, 5.4] as const;
+  const checkHideSeconds = [2.5, 2.46, 2.42, 2.38, 2.34, 2.3, 2.26, 2.22, 2.16, 2.1] as const;
+  const hearingRanges = [6, 6.2, 6.4, 6.6, 6.8, 7, 7.3, 7.6, 7.9, 8.2] as const;
+  const soundUncertaintyCells = [1.5, 1.45, 1.4, 1.35, 1.3, 1.25, 1.2, 1.1, 1, 0.9] as const;
   return Object.freeze({
+    // Campaign perception runs at 20 Hz so sub-second confirmation values
+    // remain meaningful rather than collapsing into 100 ms quantization.
+    aiTickSeconds: 0.05,
     playerSpeed: DEFAULT_GAME_CONFIG.playerSpeed,
     chaserSpeed: Number((DEFAULT_GAME_CONFIG.chaserSpeed * chaserMultipliers[index]).toFixed(3)),
     spawnDelaySeconds: spawnDelays[index],
+    suspiciousSeconds: suspiciousSeconds[index],
+    searchSeconds: searchSeconds[index],
+    searchWaypointSeconds: searchWaypointSeconds[index],
+    searchHideCheckBudget: searchHideCheckBudgets[index],
+    searchHideRadiusCells: searchHideRadiusCells[index],
+    checkHideSeconds: checkHideSeconds[index],
+    hearingRange: hearingRanges[index],
+    soundUncertaintyCells: soundUncertaintyCells[index],
     visionRange: visionRanges[index],
   });
 }

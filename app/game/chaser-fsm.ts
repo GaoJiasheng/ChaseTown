@@ -6,7 +6,7 @@ import type {
   PerceptionEvidence,
   Point,
 } from "./contracts.ts";
-import { distanceBetween, isWalkable, normalizeVector, pointKey } from "./navigation.ts";
+import { distanceBetween, findPath, isWalkable, normalizeVector, pointKey } from "./navigation.ts";
 
 export interface ChaserBrainInput {
   /** Deliberately contains evidence, not PlayerState or playerPosition. */
@@ -19,6 +19,7 @@ export interface ChaserBrainInput {
 export interface ChaserBrainResult {
   state: ChaserState;
   completedHideCheckId: string | null;
+  completedHideCheckSource: "witnessed" | "search" | null;
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -65,9 +66,15 @@ export function createInitialChaser(
     searchSeed: 1,
     searchIndex: 0,
     searchWaypointElapsedSeconds: 0,
+    searchHideSpotId: null,
+    hideCheckSource: null,
+    searchHideChecksCompleted: 0,
+    inspectedHideSpotIds: Object.freeze([]),
     memory: {
       lastKnownPosition: null,
       lastSeenAtSeconds: null,
+      lastHeardAtSeconds: null,
+      lastKnownEvidence: null,
       witnessedHideSpotId: null,
     },
   };
@@ -79,7 +86,10 @@ function enterMode(state: ChaserState, mode: ChaserMode): ChaserState {
 
 function evidenceSearchSeed(state: ChaserState): number {
   const point = state.memory.lastKnownPosition ?? state.position;
-  const observedTick = Math.round((state.memory.lastSeenAtSeconds ?? 0) * 10);
+  const evidenceAtSeconds = state.memory.lastKnownEvidence === "sound"
+    ? state.memory.lastHeardAtSeconds
+    : state.memory.lastSeenAtSeconds;
+  const observedTick = Math.round((evidenceAtSeconds ?? 0) * 10);
   let seed = (Math.round(point.x * 100) * 73856093)
     ^ (Math.round(point.y * 100) * 19349663)
     ^ (observedTick * 83492791);
@@ -87,13 +97,66 @@ function evidenceSearchSeed(state: ChaserState): number {
   return seed || 1;
 }
 
-function enterSearch(state: ChaserState, initialWaypointElapsedSeconds = 0): ChaserState {
-  return {
+function stableIdHash(value: string, seed: number): number {
+  let hash = seed >>> 0 || 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Public level geometry plus remembered evidence are the complete input.
+ * Runtime locker occupancy is intentionally absent from both the signature
+ * and ChaserState, preserving FAIR-01 by construction.
+ */
+export function evidenceRankedHideCandidates(
+  state: ChaserState,
+  level: LevelDefinition,
+  config: Pick<GameConfig, "searchHideRadiusCells">,
+): readonly string[] {
+  const anchor = state.memory.lastKnownPosition;
+  if (!anchor || config.searchHideRadiusCells <= 0) return Object.freeze([]);
+  const inspected = new Set(state.inspectedHideSpotIds);
+  return Object.freeze(level.hideSpots
+    .map((spot) => ({
+      id: spot.id,
+      routeDistance: findPath(level, anchor, spot.approach).length - 1,
+      tieBreak: stableIdHash(spot.id, state.searchSeed),
+    }))
+    .filter((candidate) => (
+      !inspected.has(candidate.id)
+      && candidate.routeDistance >= 0
+      && candidate.routeDistance <= config.searchHideRadiusCells
+    ))
+    .sort((left, right) => (
+      left.routeDistance - right.routeDistance
+      || left.tieBreak - right.tieBreak
+      || left.id.localeCompare(right.id)
+    ))
+    .map((candidate) => candidate.id));
+}
+
+function enterSearch(
+  state: ChaserState,
+  level: LevelDefinition,
+  config: GameConfig,
+  initialWaypointElapsedSeconds = 0,
+): ChaserState {
+  const seeded = {
     ...enterMode(state, "search"),
     searchSeed: evidenceSearchSeed(state),
     searchIndex: 0,
     searchWaypointElapsedSeconds: initialWaypointElapsedSeconds,
+    searchHideSpotId: null,
+    hideCheckSource: null,
   };
+  const hasBudget = seeded.searchHideChecksCompleted < Math.floor(config.searchHideCheckBudget);
+  const searchHideSpotId = hasBudget
+    ? evidenceRankedHideCandidates(seeded, level, config)[0] ?? null
+    : null;
+  return { ...seeded, searchHideSpotId, hideCheckSource: searchHideSpotId ? "search" : null };
 }
 
 function enterLastKnownScan(state: ChaserState): ChaserState {
@@ -111,16 +174,43 @@ function enterLastKnownScan(state: ChaserState): ChaserState {
 }
 
 function rememberVisibleTarget(state: ChaserState, evidence: Exclude<PerceptionEvidence, { kind: "none" } | { kind: "sound" }>): ChaserState {
+  const preserveActiveHideCheck = state.mode === "check-hide" && evidence.kind === "player-visible";
   return {
     ...state,
+    searchHideSpotId: preserveActiveHideCheck ? state.searchHideSpotId : null,
+    hideCheckSource: preserveActiveHideCheck ? state.hideCheckSource : null,
+    searchHideChecksCompleted: preserveActiveHideCheck ? state.searchHideChecksCompleted : 0,
+    inspectedHideSpotIds: preserveActiveHideCheck ? state.inspectedHideSpotIds : Object.freeze([]),
     memory: {
       lastKnownPosition: { ...evidence.position },
       lastSeenAtSeconds: evidence.observedAtSeconds,
+      lastHeardAtSeconds: null,
+      lastKnownEvidence: "visual",
       witnessedHideSpotId: evidence.kind === "hide-entry-visible"
         ? evidence.hideSpotId
         : state.mode === "check-hide"
           ? state.memory.witnessedHideSpotId
           : null,
+    },
+  };
+}
+
+function rememberSoundTarget(
+  state: ChaserState,
+  evidence: Extract<PerceptionEvidence, { kind: "sound" }>,
+): ChaserState {
+  return {
+    ...state,
+    searchHideSpotId: null,
+    hideCheckSource: null,
+    searchHideChecksCompleted: 0,
+    inspectedHideSpotIds: Object.freeze([]),
+    memory: {
+      ...state.memory,
+      lastKnownPosition: { ...evidence.position },
+      lastHeardAtSeconds: evidence.observedAtSeconds,
+      lastKnownEvidence: "sound",
+      witnessedHideSpotId: null,
     },
   };
 }
@@ -141,13 +231,17 @@ export function stepChaserBrain(
 
   if (state.mode === "spawn-delay") {
     if (elapsed + 1e-9 >= config.spawnDelaySeconds) next = enterMode(next, "patrol");
-    return { state: next, completedHideCheckId: null };
+    return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
   }
 
   if (input.evidence.kind === "hide-entry-visible") {
     next = rememberVisibleTarget(next, input.evidence);
-    next = enterMode(next, "check-hide");
-    return { state: next, completedHideCheckId: null };
+    next = {
+      ...enterMode(next, "check-hide"),
+      searchHideSpotId: input.evidence.hideSpotId,
+      hideCheckSource: "witnessed",
+    };
+    return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
   }
 
   if (input.evidence.kind === "player-visible") {
@@ -170,11 +264,32 @@ export function stepChaserBrain(
       if (confirmationSeconds + 1e-9 >= config.suspiciousSeconds) {
         next = enterMode({
           ...next,
+          searchHideSpotId: null,
+          hideCheckSource: null,
           memory: { ...next.memory, witnessedHideSpotId: null },
         }, "chase");
       }
     }
-    return { state: next, completedHideCheckId: null };
+    return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
+  }
+
+  if (input.evidence.kind === "sound" && state.mode !== "check-hide") {
+    const visualEvidenceAge = state.memory.lastSeenAtSeconds === null
+      ? Number.POSITIVE_INFINITY
+      : input.nowSeconds - state.memory.lastSeenAtSeconds;
+    const committedToFreshVisualSearch = state.memory.lastKnownEvidence === "visual"
+      && visualEvidenceAge <= (
+        config.lostSightGraceSeconds
+        + config.lastKnownScanSeconds
+        + config.searchSeconds
+      );
+    // Footsteps can start a new investigation, but a noisier, less precise
+    // sample must never erase the stronger visual point while its authored
+    // pursuit/scan/search chain is still active.
+    if (!committedToFreshVisualSearch) {
+      next = enterMode(rememberSoundTarget(next, input.evidence), "go-to-last-known");
+      return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
+    }
   }
 
   if (state.visualConfirmationSeconds !== null) {
@@ -183,15 +298,15 @@ export function stepChaserBrain(
     // instead of letting an old search timeout erase it or inserting another
     // stationary lost-sight beat.
     if (state.mode === "check-hide") {
-      // A brief peek cannot cancel a locker inspection backed by the stronger
-      // witnessed-entry evidence. Clear only the provisional confirmation and
-      // continue the existing walk/door timer below.
+      // A brief peek cannot cancel an already-authored locker inspection.
+      // Clear only the provisional confirmation and continue its walk/door
+      // timer; a sustained view still promotes to chase above.
       next = { ...next, visualConfirmationSeconds: null };
     } else {
       next = state.mode === "go-to-last-known"
         ? { ...next, visualConfirmationSeconds: null }
         : enterMode(next, "go-to-last-known");
-      return { state: next, completedHideCheckId: null };
+      return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
     }
   } else {
     next = { ...next, visualConfirmationSeconds: null };
@@ -216,7 +331,7 @@ export function stepChaserBrain(
       else if (elapsed + 1e-9 >= config.lostSightGraceSeconds) next = enterMode(next, "go-to-last-known");
       break;
     case "go-to-last-known":
-      if (!next.memory.lastKnownPosition) next = enterSearch(next);
+      if (!next.memory.lastKnownPosition) next = enterSearch(next, level, config);
       else if (input.reachedTarget) next = enterLastKnownScan(next);
       break;
     case "scan-last-known":
@@ -228,7 +343,12 @@ export function stepChaserBrain(
         // Search index zero is the exact continuous sighting point. Keep one
         // AI beat planted there so the centred final scan pose is rendered
         // before the first wider-search step can change position or heading.
-        next = enterSearch(next, Math.max(0, config.searchWaypointSeconds - config.aiTickSeconds));
+        next = enterSearch(
+          next,
+          level,
+          config,
+          Math.max(0, config.searchWaypointSeconds - config.aiTickSeconds),
+        );
       }
       break;
     case "search":
@@ -237,8 +357,24 @@ export function stepChaserBrain(
           ...next,
           searchIndex: 0,
           searchWaypointElapsedSeconds: 0,
-          memory: { lastKnownPosition: null, lastSeenAtSeconds: null, witnessedHideSpotId: null },
+          searchHideSpotId: null,
+          hideCheckSource: null,
+          searchHideChecksCompleted: 0,
+          inspectedHideSpotIds: Object.freeze([]),
+          memory: {
+            lastKnownPosition: null,
+            lastSeenAtSeconds: null,
+            lastHeardAtSeconds: null,
+            lastKnownEvidence: null,
+            witnessedHideSpotId: null,
+          },
         }, "patrol");
+      } else if (state.searchHideSpotId && input.reachedTarget) {
+        next = {
+          ...enterMode(next, "check-hide"),
+          searchHideSpotId: state.searchHideSpotId,
+          hideCheckSource: "search",
+        };
       } else if (input.reachedTarget) {
         const waypointElapsed = state.searchWaypointElapsedSeconds + input.deltaSeconds;
         if (waypointElapsed + 1e-9 >= config.searchWaypointSeconds) {
@@ -255,17 +391,27 @@ export function stepChaserBrain(
         break;
       }
       if (elapsed + 1e-9 >= config.checkHideSeconds) {
-        const completedHideCheckId = next.memory.witnessedHideSpotId;
+        const completedHideCheckId = state.searchHideSpotId ?? state.memory.witnessedHideSpotId;
+        const completedHideCheckSource = state.hideCheckSource
+          ?? (state.memory.witnessedHideSpotId ? "witnessed" : null);
+        const inspectedHideSpotIds = completedHideCheckId
+          ? Object.freeze([...new Set([...state.inspectedHideSpotIds, completedHideCheckId])])
+          : state.inspectedHideSpotIds;
         next = enterSearch({
           ...next,
+          searchHideSpotId: null,
+          hideCheckSource: null,
+          searchHideChecksCompleted: state.searchHideChecksCompleted
+            + Number(completedHideCheckSource === "search"),
+          inspectedHideSpotIds,
           memory: { ...next.memory, witnessedHideSpotId: null },
-        });
-        return { state: next, completedHideCheckId };
+        }, level, config);
+        return { state: next, completedHideCheckId, completedHideCheckSource };
       }
       break;
     }
   }
-  return { state: next, completedHideCheckId: null };
+  return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
 }
 
 function searchWaypoints(level: LevelDefinition, anchor: Point, seed: number): Point[] {
@@ -324,13 +470,17 @@ export function getChaserTarget(state: ChaserState, level: LevelDefinition): Poi
       return state.memory.lastKnownPosition ? { ...state.memory.lastKnownPosition } : null;
     case "search": {
       if (!state.memory.lastKnownPosition) return null;
+      if (state.searchHideSpotId) {
+        const spot = level.hideSpots.find((candidate) => candidate.id === state.searchHideSpotId);
+        if (spot) return { ...spot.approach };
+      }
       const candidates = searchWaypoints(level, state.memory.lastKnownPosition, state.searchSeed);
       if (!candidates.length) return { ...state.memory.lastKnownPosition };
       const index = state.searchIndex % candidates.length;
       return { ...candidates[index] };
     }
     case "check-hide": {
-      const id = state.memory.witnessedHideSpotId;
+      const id = state.searchHideSpotId ?? state.memory.witnessedHideSpotId;
       const spot = id ? level.hideSpots.find((candidate) => candidate.id === id) : null;
       return spot ? { ...spot.approach } : state.memory.lastKnownPosition ? { ...state.memory.lastKnownPosition } : null;
     }

@@ -6,7 +6,7 @@ import type {
   PlayerMode,
   Point,
 } from "./contracts.ts";
-import { distanceBetween, hasLineOfSight, normalizeVector } from "./navigation.ts";
+import { distanceBetween, findPath, hasLineOfSight, normalizeVector } from "./navigation.ts";
 
 /** Full target truth is intentionally accepted only by this module. */
 export interface PerceptionTarget {
@@ -14,6 +14,48 @@ export interface PerceptionTarget {
   mode: PlayerMode;
   hideSpotId: string | null;
   transitionRemainingSeconds: number;
+}
+
+export interface SoundStimulus {
+  readonly position: Point;
+  /** Normalized authored loudness. Values outside [0, 1] are clamped. */
+  readonly strength: number;
+}
+
+/**
+ * Converts a world sound into deliberately imprecise evidence. Navigable
+ * distance models sound travelling around walls, while the reported point
+ * stops short of the true source by at least the configured uncertainty.
+ */
+export function sampleSoundPerception(
+  level: LevelDefinition,
+  observer: Pick<ChaserState, "position">,
+  stimulus: SoundStimulus,
+  config: Pick<GameConfig, "hearingRange" | "soundUncertaintyCells">,
+  observedAtSeconds: number,
+): PerceptionEvidence {
+  const authoredStrength = Math.min(1, Math.max(0, stimulus.strength));
+  if (authoredStrength <= 0) return { kind: "none", observedAtSeconds };
+
+  const route = findPath(level, observer.position, stimulus.position);
+  if (!route.length) return { kind: "none", observedAtSeconds };
+  const distance = route.length - 1;
+  const audibleRange = Math.max(0, config.hearingRange) * authoredStrength;
+  if (distance > audibleRange) return { kind: "none", observedAtSeconds };
+
+  const uncertainty = Math.max(0, config.soundUncertaintyCells);
+  const uncertaintySteps = Math.min(
+    distance,
+    Math.ceil(uncertainty / Math.max(authoredStrength, 0.25)),
+  );
+  const reportedIndex = Math.max(0, route.length - 1 - uncertaintySteps);
+  const attenuatedStrength = authoredStrength * (1 - distance / Math.max(audibleRange + 1, 1));
+  return {
+    kind: "sound",
+    position: { ...route[reportedIndex] },
+    strength: Math.min(1, Math.max(0.01, attenuatedStrength)),
+    observedAtSeconds,
+  };
 }
 
 export function isPlayerVisuallyExposed(

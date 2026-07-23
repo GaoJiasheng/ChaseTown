@@ -13,12 +13,22 @@ import {
   type ClipAliases,
 } from "./game/animation/actor-runtime.ts";
 import { AdaptiveScoreController, prewarmAdaptiveScoreAssets } from "./game/audio/adaptive-score.ts";
+import { ImmersiveSoundscapeController } from "./game/audio/immersive-soundscape.ts";
+import { runtimeAtmosphereForLevel } from "./game/atmosphere.ts";
 import {
   CAMPAIGN_LEVELS,
   getCampaignGameplayConfig,
+  getCampaignHideGuidancePolicy,
   type CampaignTheme,
 } from "./game/campaign.ts";
-import type { ChaserMode, GameConfig, GamePhase, GameState, HideSpotDefinition, LevelDefinition, PlayerMode, Point } from "./game/contracts.ts";
+import type { CaptureReason, ChaserMode, GameConfig, GamePhase, GameState, HideSpotDefinition, LevelDefinition, PlayerMode, Point } from "./game/contracts.ts";
+import { failureFeedback } from "./game/failure-feedback.ts";
+import {
+  recommendHideSpot,
+  type HideGuidanceRisk,
+  type PlayerKnownChaserEvidence,
+} from "./game/hide-guidance.ts";
+import { pairedHidePresentationPoint } from "./game/hide-performance.ts";
 import {
   FIXED_CAMERA_GROUND_DIRECTION,
   screenMoveToWorld,
@@ -26,16 +36,31 @@ import {
 } from "./game/input.ts";
 import { distanceBetween, GridPathPlanner, hasLineOfSight } from "./game/navigation.ts";
 import { isPlayerVisuallyExposed } from "./game/perception.ts";
-import { authoredRoomFloorRegions } from "./game/room-floor.ts";
+import {
+  nextRenderQuality,
+  RENDER_QUALITY_PROFILES,
+  selectInitialRenderQuality,
+  type RenderQualityProfile,
+  type RenderQualityTier,
+} from "./game/quality.ts";
+import {
+  authoredRoomFloorRegions,
+  enclosedRoomFloorRegions,
+  roomFloorBoundaryTrimPlacement,
+  roomFloorSupportForFootprint,
+} from "./game/room-floor.ts";
 import {
   baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
+  cameraFocusForSafeViewport,
+  cameraSafeViewportFromInsets,
   cameraDistanceScaleForPlayerMode,
   cameraFocusForEdgeHide,
   canChaserTakeLockerDoor,
   chaserAnimationForMode,
+  fixedCameraCompositionConstraints,
+  gameplayCameraInsetsForViewport,
   lockerVisionMix,
-  requiredCameraDistanceForFraming,
   shouldFrameChaser,
   shouldRenderChaserModel,
   smoothOcclusionStrength,
@@ -404,7 +429,9 @@ const LOCKER_CLIPS = [
   "Locker_Door_Check_Close",
 ] as const;
 
-const BOOTSTRAP_ASSET_COUNT = Object.keys(ACTOR_SPECS).length + 1;
+// Kid, villain and the active theme are the only core bootstrap payloads.
+// The police resolution actor is streamed after play becomes available.
+const BOOTSTRAP_ASSET_COUNT = 3;
 
 function world(point: Point, level: LevelDefinition) {
   return new THREE.Vector3(
@@ -482,6 +509,41 @@ function createSightHazeTexture() {
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.name = "Authored_Sight_Haze_Mask";
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  return texture;
+}
+
+function createAtmosphereParticleTexture(kind: "dust" | "rain" | "embers" | "steam" | "none") {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("无法创建关卡氛围粒子纹理");
+  context.clearRect(0, 0, 64, 64);
+  if (kind === "rain") {
+    const gradient = context.createLinearGradient(32, 4, 32, 60);
+    gradient.addColorStop(0, "rgba(255,255,255,0)");
+    gradient.addColorStop(0.28, "rgba(255,255,255,.32)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    context.strokeStyle = gradient;
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(37, 5);
+    context.lineTo(26, 59);
+    context.stroke();
+  } else {
+    const radius = kind === "steam" ? 28 : kind === "dust" ? 12 : 9;
+    const gradient = context.createRadialGradient(32, 32, 1, 32, 32, radius);
+    gradient.addColorStop(0, kind === "embers" ? "rgba(255,255,255,.95)" : "rgba(255,255,255,.58)");
+    gradient.addColorStop(0.35, kind === "steam" ? "rgba(255,255,255,.18)" : "rgba(255,255,255,.32)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 64, 64);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.name = `Atmosphere_${kind}`;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.generateMipmaps = true;
@@ -1465,26 +1527,19 @@ function playerPresentationPoint(
   // premium locker and the rendered actor sit slightly nearer the threshold,
   // so the closed door remains visible in the corridor instead of sinking
   // into the surrounding wall module after the art-polish pass.
-  const visualConcealed = visualHidePoint(spot);
+  const lockerAnchor = visualHidePoint(spot);
   if (state.player.mode === "aligning-hide") return state.player.position;
-  if (state.player.mode === "entering-hide") {
-    const progress = 1 - state.player.transitionRemainingSeconds / config.hideEnterSeconds;
-    const travel = THREE.MathUtils.smoothstep(progress, 0.2, 0.72);
-    return {
-      x: THREE.MathUtils.lerp(spot.approach.x, visualConcealed.x, travel),
-      y: THREE.MathUtils.lerp(spot.approach.y, visualConcealed.y, travel),
-    };
-  }
-  if (state.player.mode === "exiting-hide") {
-    const progress = 1 - state.player.transitionRemainingSeconds / config.hideExitSeconds;
-    const travel = THREE.MathUtils.smoothstep(progress, 0.2, 0.75);
-    return {
-      x: THREE.MathUtils.lerp(visualConcealed.x, spot.approach.x, travel),
-      y: THREE.MathUtils.lerp(visualConcealed.y, spot.approach.y, travel),
-    };
-  }
-  if (["hidden", "entering-peek", "peeking", "exiting-peek"].includes(state.player.mode)) return visualConcealed;
-  return state.player.position;
+  return pairedHidePresentationPoint({
+    mode: state.player.mode,
+    playerPosition: state.player.position,
+    approach: spot.approach,
+    lockerAnchor,
+    facing: spot.facing,
+    transitionRemainingSeconds: state.player.transitionRemainingSeconds,
+    transitionDurationSeconds: state.player.mode === "exiting-hide"
+      ? config.hideExitSeconds
+      : config.hideEnterSeconds,
+  });
 }
 
 function canPlayerObserveChaser(state: GameState, level: LevelDefinition, config: GameConfig) {
@@ -1505,6 +1560,8 @@ export function ChasingGame() {
   const campaignLevel = CAMPAIGN_LEVELS[selectedLevelIndex];
   const objectivePaths = useMemo(() => new GridPathPlanner(campaignLevel), [campaignLevel]);
   const gameplayConfig = useMemo(() => getCampaignGameplayConfig(campaignLevel), [campaignLevel]);
+  const hideGuidancePolicy = useMemo(() => getCampaignHideGuidancePolicy(campaignLevel), [campaignLevel]);
+  const atmosphere = useMemo(() => runtimeAtmosphereForLevel(campaignLevel), [campaignLevel]);
   const [campaignProgress, setCampaignProgress] = useState<CampaignProgress>({
     unlockedThrough: 1,
     bestSeconds: {},
@@ -1529,12 +1586,15 @@ export function ChasingGame() {
     angleDegrees: number;
     offscreen: boolean;
   } | null>(null);
+  const [hideGuideRisk, setHideGuideRisk] = useState<HideGuidanceRisk>("medium");
+  const [hideGuideSelection, setHideGuideSelection] = useState<"tutorial" | "nearest">("nearest");
   const [interaction, setInteraction] = useState<HideInteraction | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [loadProgress, setLoadProgress] = useState({ done: 0, total: BOOTSTRAP_ASSET_COUNT, message: "正在载入项目美术资产：角色、校园与互动道具…" });
   const [resultVisible, setResultVisible] = useState(true);
   const [musicMuted, setMusicMuted] = useState(false);
+  const [lastCaptureReason, setLastCaptureReason] = useState<CaptureReason | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -1643,9 +1703,12 @@ export function ChasingGame() {
     setPlayerMode("free");
     setChaserMode("spawn-delay");
     setElapsed(0);
+    setLastCaptureReason(null);
     setObjectiveDistance(objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
     setHideDistance(nearestHideDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
     setHideGuideProjection(null);
+    setHideGuideRisk("medium");
+    setHideGuideSelection("nearest");
 
     const scorePrewarmAbort = new AbortController();
     void prewarmAdaptiveScoreAssets(undefined, scorePrewarmAbort.signal);
@@ -1663,6 +1726,8 @@ export function ChasingGame() {
     let resultTimer: ReturnType<typeof setTimeout> | null = null;
     let lastCheckSpot: string | null = null;
     let guidedLockerId: string | null = null;
+    let guidedLockerRisk: HideGuidanceRisk = "medium";
+    let playerKnownChaser: PlayerKnownChaserEvidence | null = null;
     let lastScoreThreat = Number.NaN;
     let captureStageRemaining = 0;
     let capturePerformanceStarted = false;
@@ -1682,10 +1747,35 @@ export function ChasingGame() {
     const loadedAssetIds = new Set<string>();
     const placedAssetIds = new Set<string>();
     let renderedMovementBlockers = 0;
+    const deviceNavigator = navigator as Navigator & { deviceMemory?: number };
+    const initialBounds = host.getBoundingClientRect();
+    const coarsePointer = matchMedia("(pointer: coarse)").matches;
+    let cameraViewportWidth = Math.max(1, Math.round(initialBounds.width));
+    let cameraViewportHeight = Math.max(1, Math.round(initialBounds.height));
+    let cameraSafeViewport = cameraSafeViewportFromInsets(
+      cameraViewportWidth,
+      cameraViewportHeight,
+      gameplayCameraInsetsForViewport(cameraViewportWidth, cameraViewportHeight, coarsePointer),
+    );
+    let renderQualityTier: RenderQualityTier = selectInitialRenderQuality({
+      viewportWidth: Math.max(1, initialBounds.width),
+      viewportHeight: Math.max(1, initialBounds.height),
+      devicePixelRatio,
+      coarsePointer,
+      deviceMemoryGb: deviceNavigator.deviceMemory,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+    });
+    let renderQualityProfile: RenderQualityProfile = RENDER_QUALITY_PROFILES[renderQualityTier];
+    let qualitySamples: number[] = [];
+    let qualityEvaluationSeconds = 0;
+    let qualityDecisionSeconds = 0;
+    let qualityCandidate: RenderQualityTier = renderQualityTier;
     const score = new AdaptiveScoreController();
+    const soundscape = new ImmersiveSoundscapeController(campaignLevel.campaign.theme);
     try {
       const storedMuted = localStorage.getItem("chasing.music-muted.v1") === "true";
       score.setMuted(storedMuted);
+      soundscape.setMuted(storedMuted);
       queueMicrotask(() => {
         if (!disposed) setMusicMuted(storedMuted);
       });
@@ -1698,7 +1788,7 @@ export function ChasingGame() {
     scene.background = new THREE.Color(campaignLevel.campaign.palette.sky);
     scene.fog = new THREE.FogExp2(
       campaignLevel.campaign.palette.fog,
-      campaignLevel.campaign.theme === "fire-station" ? 0.022 : campaignLevel.campaign.theme === "factory" ? 0.02 : 0.0165,
+      atmosphere.fogDensity,
     );
     const camera = new THREE.PerspectiveCamera(56, 1, 0.08, 150);
     const cameraDirection = createFixedCameraDirection();
@@ -1713,7 +1803,11 @@ export function ChasingGame() {
 
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+      renderer = new THREE.WebGLRenderer({
+        antialias: renderQualityTier !== "mobile",
+        alpha: false,
+        powerPreference: "high-performance",
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       queueMicrotask(() => {
@@ -1727,7 +1821,7 @@ export function ChasingGame() {
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = campaignLevel.campaign.theme === "hospital" ? 1.0 : campaignLevel.campaign.theme === "factory" ? 0.94 : 0.98;
+    renderer.toneMappingExposure = atmosphere.exposure;
     const supportsMultiDraw = renderer.extensions.has("WEBGL_multi_draw")
       && !new URLSearchParams(location.search).has("no-multi-draw");
     host.appendChild(renderer.domElement);
@@ -1755,22 +1849,23 @@ export function ChasingGame() {
     const roomEnvironment = new RoomEnvironment();
     const environmentTarget = pmrem.fromScene(roomEnvironment, 0.04);
     scene.environment = environmentTarget.texture;
-    scene.environmentIntensity = campaignLevel.campaign.theme === "hospital" ? 0.64 : 0.57;
+    scene.environmentIntensity = atmosphere.environmentIntensity;
     roomEnvironment.dispose();
     pmrem.dispose();
 
-    scene.add(new THREE.HemisphereLight(
+    const hemisphere = new THREE.HemisphereLight(
       new THREE.Color(campaignLevel.campaign.palette.sky).offsetHSL(0, 0, 0.25),
       new THREE.Color(campaignLevel.campaign.palette.floor).multiplyScalar(0.34),
-      campaignLevel.campaign.theme === "hospital" ? 0.56 : 0.48,
-    ));
+      atmosphere.hemisphereIntensity,
+    );
+    scene.add(hemisphere);
     const moon = new THREE.DirectionalLight(
       campaignLevel.campaign.theme === "factory" ? 0x91dced : 0xb9d7ff,
-      campaignLevel.campaign.theme === "hospital" ? 2.08 : 1.88,
+      atmosphere.keyIntensity,
     );
     moon.position.set(14, 28, 18);
     moon.castShadow = true;
-    moon.shadow.mapSize.set(2048, 2048);
+    moon.shadow.mapSize.set(renderQualityProfile.shadowMapSize, renderQualityProfile.shadowMapSize);
     moon.shadow.camera.left = -32;
     moon.shadow.camera.right = 32;
     moon.shadow.camera.top = 32;
@@ -1782,9 +1877,78 @@ export function ChasingGame() {
       new THREE.Color(campaignLevel.campaign.palette.accent),
       artLayout.warmLightMix * 0.32,
     );
-    const warmBounce = new THREE.DirectionalLight(warmBounceColor, 0.18 + artLayout.warmLightMix * 0.2);
+    const warmBounce = new THREE.DirectionalLight(
+      warmBounceColor,
+      atmosphere.bounceIntensity * (0.72 + artLayout.warmLightMix * 0.28),
+    );
     warmBounce.position.set(-18, 12, -14);
     scene.add(warmBounce);
+
+    const atmosphereParticleCount = atmosphere.particleKind === "none" ? 0 : atmosphere.particleCount;
+    const atmospherePositions = new Float32Array(atmosphereParticleCount * 3);
+    const atmosphereSeeds = new Float32Array(atmosphereParticleCount);
+    let atmosphereRandomState = (campaignLevel.campaign.levelNumber * 0x9e3779b1) >>> 0;
+    const atmosphereRandom = () => {
+      atmosphereRandomState ^= atmosphereRandomState << 13;
+      atmosphereRandomState ^= atmosphereRandomState >>> 17;
+      atmosphereRandomState ^= atmosphereRandomState << 5;
+      return (atmosphereRandomState >>> 0) / 0x1_0000_0000;
+    };
+    const atmosphereWidth = campaignLevel.width * CELL + 12;
+    const atmosphereDepth = campaignLevel.height * CELL + 12;
+    for (let index = 0; index < atmosphereParticleCount; index += 1) {
+      atmospherePositions[index * 3] = (atmosphereRandom() - 0.5) * atmosphereWidth;
+      atmospherePositions[index * 3 + 1] = 0.35 + atmosphereRandom() * 5.8;
+      atmospherePositions[index * 3 + 2] = (atmosphereRandom() - 0.5) * atmosphereDepth;
+      atmosphereSeeds[index] = atmosphereRandom();
+    }
+    const atmosphereGeometry = new THREE.BufferGeometry();
+    atmosphereGeometry.setAttribute("position", new THREE.BufferAttribute(atmospherePositions, 3));
+    atmosphereGeometry.setDrawRange(
+      0,
+      Math.floor(atmosphereParticleCount * renderQualityProfile.atmosphericParticleScale),
+    );
+    const atmosphereTexture = createAtmosphereParticleTexture(atmosphere.particleKind);
+    const atmosphereMaterial = new THREE.PointsMaterial({
+      map: atmosphereTexture,
+      color: atmosphere.particleColor,
+      transparent: true,
+      opacity: atmosphere.particleKind === "steam" ? 0.14 : atmosphere.particleKind === "rain" ? 0.24 : 0.32,
+      depthWrite: false,
+      alphaTest: 0.008,
+      size: atmosphere.particleKind === "steam" ? 1.15 : atmosphere.particleKind === "rain" ? 0.34 : 0.18,
+      sizeAttenuation: true,
+      blending: atmosphere.particleKind === "embers" ? THREE.AdditiveBlending : THREE.NormalBlending,
+    });
+    const atmosphereField = new THREE.Points(atmosphereGeometry, atmosphereMaterial);
+    atmosphereField.name = `level-atmosphere-${atmosphere.particleKind}`;
+    atmosphereField.frustumCulled = false;
+    atmosphereField.renderOrder = 1;
+    scene.add(atmosphereField);
+
+    const applyRenderQuality = (tier: RenderQualityTier) => {
+      renderQualityTier = tier;
+      renderQualityProfile = RENDER_QUALITY_PROFILES[tier];
+      const bounds = host.getBoundingClientRect();
+      renderer.setPixelRatio(Math.min(devicePixelRatio, renderQualityProfile.maximumPixelRatio));
+      renderer.setSize(
+        Math.max(1, Math.round(bounds.width)),
+        Math.max(1, Math.round(bounds.height)),
+        false,
+      );
+      if (moon.shadow.mapSize.x !== renderQualityProfile.shadowMapSize) {
+        moon.shadow.mapSize.set(renderQualityProfile.shadowMapSize, renderQualityProfile.shadowMapSize);
+        moon.shadow.map?.dispose();
+        moon.shadow.map = null;
+        moon.shadow.needsUpdate = true;
+      }
+      atmosphereGeometry.setDrawRange(
+        0,
+        Math.floor(atmosphereParticleCount * renderQualityProfile.atmosphericParticleScale),
+      );
+      document.documentElement.dataset.chasingQuality = tier;
+    };
+    applyRenderQuality(renderQualityTier);
 
     const contactTexture = createContactShadowTexture();
     const campus = new THREE.Group();
@@ -1794,6 +1958,7 @@ export function ChasingGame() {
     loader.setMeshoptDecoder(MeshoptDecoder);
     const cameraOcclusionOrigin = { value: new THREE.Vector3() };
     const cameraOcclusionTarget = { value: new THREE.Vector3() };
+    const cameraOcclusionTargetB = { value: new THREE.Vector3() };
     const cameraOccluders: CameraOccluder[] = [];
     const occluderByMesh = new Map<THREE.Object3D, CameraOccluder>();
     const occlusionMeshes: THREE.Mesh[] = [];
@@ -1821,6 +1986,7 @@ export function ChasingGame() {
         previousOnBeforeCompile.call(material, shader, rendererContext);
         shader.uniforms.cameraOcclusionOrigin = cameraOcclusionOrigin;
         shader.uniforms.cameraOcclusionTarget = cameraOcclusionTarget;
+        shader.uniforms.cameraOcclusionTargetB = cameraOcclusionTargetB;
         shader.uniforms.cameraOcclusionStrength = strength;
         shader.vertexShader = shader.vertexShader
           .replace(
@@ -1845,6 +2011,7 @@ vCameraOccluderWorldPosition = ( modelMatrix * cameraOccluderWorldPosition ).xyz
             `#include <common>
 uniform vec3 cameraOcclusionOrigin;
 uniform vec3 cameraOcclusionTarget;
+uniform vec3 cameraOcclusionTargetB;
 uniform float cameraOcclusionStrength;
 varying vec3 vCameraOccluderWorldPosition;`,
           )
@@ -1862,7 +2029,22 @@ float cameraOcclusionDistance = distance( vCameraOccluderWorldPosition, cameraOc
 float cameraOcclusionCorridor = 1.0 - smoothstep( 0.58, 1.08, cameraOcclusionDistance );
 float cameraOcclusionEnds = smoothstep( 0.035, 0.12, cameraOcclusionAlong )
   * ( 1.0 - smoothstep( 0.985, 1.0, cameraOcclusionAlong ) );
-float cameraOcclusionFade = cameraOcclusionStrength * cameraOcclusionCorridor * cameraOcclusionEnds;
+vec3 cameraOcclusionSegmentB = cameraOcclusionTargetB - cameraOcclusionOrigin;
+float cameraOcclusionLengthSquaredB = max( dot( cameraOcclusionSegmentB, cameraOcclusionSegmentB ), 0.0001 );
+float cameraOcclusionAlongB = clamp(
+  dot( vCameraOccluderWorldPosition - cameraOcclusionOrigin, cameraOcclusionSegmentB ) / cameraOcclusionLengthSquaredB,
+  0.0,
+  1.0
+);
+vec3 cameraOcclusionClosestB = cameraOcclusionOrigin + cameraOcclusionSegmentB * cameraOcclusionAlongB;
+float cameraOcclusionDistanceB = distance( vCameraOccluderWorldPosition, cameraOcclusionClosestB );
+float cameraOcclusionCorridorB = 1.0 - smoothstep( 0.58, 1.08, cameraOcclusionDistanceB );
+float cameraOcclusionEndsB = smoothstep( 0.035, 0.12, cameraOcclusionAlongB )
+  * ( 1.0 - smoothstep( 0.985, 1.0, cameraOcclusionAlongB ) );
+float cameraOcclusionFade = cameraOcclusionStrength * max(
+  cameraOcclusionCorridor * cameraOcclusionEnds,
+  cameraOcclusionCorridorB * cameraOcclusionEndsB
+);
 ${pass === "opaque-cutout"
     ? "if ( cameraOcclusionFade > 0.002 ) discard;"
     : `if ( cameraOcclusionFade <= 0.002 ) discard;
@@ -1870,7 +2052,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 #include <alphahash_fragment>`,
           );
       };
-      material.customProgramCacheKey = () => `${previousProgramKey}|camera-occlusion-v2-${pass}`;
+      material.customProgramCacheKey = () => `${previousProgramKey}|camera-occlusion-v3-${pass}`;
       material.needsUpdate = true;
       return material;
     };
@@ -1929,9 +2111,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
     };
 
-    const updateCameraOcclusion = (playerAnchor: THREE.Vector3, delta: number) => {
+    const updateCameraOcclusion = (readableAnchors: readonly THREE.Vector3[], delta: number) => {
+      const primaryAnchor = readableAnchors[0];
+      if (!primaryAnchor) return;
       cameraOcclusionOrigin.value.copy(camera.position);
-      cameraOcclusionTarget.value.copy(playerAnchor);
+      cameraOcclusionTarget.value.copy(primaryAnchor);
+      cameraOcclusionTargetB.value.copy(readableAnchors[1] ?? primaryAnchor);
       occlusionRaycastRemaining -= delta;
       if (occlusionRaycastRemaining <= 0) {
         occlusionRaycastRemaining = 0.075;
@@ -1941,21 +2126,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           // wall cap while the same wall still hides the player's legs. Sample
           // the full readable silhouette, including both shoulders.
           occlusionScreenRight.set(cameraDirection.z, 0, -cameraDirection.x).normalize();
-          occlusionSamplePoints[0].copy(playerAnchor);
-          occlusionSamplePoints[1].copy(playerAnchor).y -= 0.72;
-          occlusionSamplePoints[2].copy(playerAnchor).y += 0.54;
-          occlusionSamplePoints[3].copy(playerAnchor).addScaledVector(occlusionScreenRight, 0.3);
-          occlusionSamplePoints[4].copy(playerAnchor).addScaledVector(occlusionScreenRight, -0.3);
-          for (const sample of occlusionSamplePoints) {
-            occlusionRayDirection.subVectors(sample, camera.position);
-            const sampleDistance = occlusionRayDirection.length();
-            if (sampleDistance <= 0.4) continue;
-            occlusionRayDirection.multiplyScalar(1 / sampleDistance);
-            occlusionRaycaster.set(camera.position, occlusionRayDirection);
-            occlusionRaycaster.near = 0.18;
-            occlusionRaycaster.far = Math.max(0.2, sampleDistance - 0.18);
-            for (const hit of occlusionRaycaster.intersectObjects(occlusionMeshes, false)) {
-              occluderByMesh.get(hit.object)!.obscured = true;
+          for (const anchor of readableAnchors.slice(0, 2)) {
+            occlusionSamplePoints[0].copy(anchor);
+            occlusionSamplePoints[1].copy(anchor).y -= 0.72;
+            occlusionSamplePoints[2].copy(anchor).y += 0.54;
+            occlusionSamplePoints[3].copy(anchor).addScaledVector(occlusionScreenRight, 0.3);
+            occlusionSamplePoints[4].copy(anchor).addScaledVector(occlusionScreenRight, -0.3);
+            for (const sample of occlusionSamplePoints) {
+              occlusionRayDirection.subVectors(sample, camera.position);
+              const sampleDistance = occlusionRayDirection.length();
+              if (sampleDistance <= 0.4) continue;
+              occlusionRayDirection.multiplyScalar(1 / sampleDistance);
+              occlusionRaycaster.set(camera.position, occlusionRayDirection);
+              occlusionRaycaster.near = 0.18;
+              occlusionRaycaster.far = Math.max(0.2, sampleDistance - 0.18);
+              for (const hit of occlusionRaycaster.intersectObjects(occlusionMeshes, false)) {
+                occluderByMesh.get(hit.object)!.obscured = true;
+              }
             }
           }
         }
@@ -2023,6 +2210,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       interactPressed.current = false;
       lastCheckSpot = null;
       guidedLockerId = null;
+      guidedLockerRisk = "medium";
+      playerKnownChaser = null;
+      setHideGuideRisk("medium");
+      setHideGuideSelection("nearest");
       lastScoreThreat = Number.NaN;
       captureStageRemaining = 0;
       capturePerformanceStarted = false;
@@ -2035,6 +2226,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       setChaserConfirming(state.chaser.visualConfirmationSeconds !== null);
       setChaserObservable(canPlayerObserveChaser(state, campaignLevel, simulation.config));
       setElapsed(Math.floor(state.elapsedSeconds));
+      setLastCaptureReason(state.captureReason);
       setObjectiveDistance(objectiveDistanceMeters(state.player.position, campaignLevel, objectivePaths));
       setHideDistance(nearestHideDistanceMeters(state.player.position, campaignLevel, objectivePaths));
       setInteraction(simulation.getHideInteraction());
@@ -2092,6 +2284,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       void score.unlock().then((result) => {
         if (!result.ok) console.warn("Adaptive score could not start", result.error);
       });
+      void soundscape.unlock();
     };
 
     commands.current = {
@@ -2100,11 +2293,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       interact() {
         if (!ready) return;
         void score.unlock();
+        void soundscape.unlock();
         interactPressed.current = true;
       },
       toggleMute() {
         setMusicMuted((current) => {
           score.setMuted(!current);
+          soundscape.setMuted(!current);
           try {
             localStorage.setItem("chasing.music-muted.v1", String(!current));
           } catch {
@@ -2121,6 +2316,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       },
     };
 
+    const loadGlbWithRetry = async (url: string) => {
+      let lastError: unknown = null;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          return await loader.loadAsync(url);
+        } catch (error) {
+          lastError = error;
+          if (attempt < 2) {
+            await new Promise<void>((resolve) => setTimeout(resolve, attempt === 0 ? 280 : 760));
+          }
+        }
+      }
+      throw lastError;
+    };
+
     const loadAll = async () => {
       let done = 0;
       const requiredDetailNames = new Set<DetailAssetName>(["locker", "ceilingLight"]);
@@ -2134,12 +2344,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         requiredDetailNames.add(contract[0]);
       }
       const structureEntries = Object.entries(STRUCTURE_ASSETS) as [StructureAssetName, string][];
-      const total = BOOTSTRAP_ASSET_COUNT + structureEntries.length + requiredDetailNames.size;
+      const detailEntries = [...requiredDetailNames].map((name) => [name, DETAIL_ASSETS[name]] as const);
+      const essentialActorEntries = (Object.entries(ACTOR_SPECS) as [ActorName, (typeof ACTOR_SPECS)[ActorName]][])
+        .filter(([name]) => name !== "police");
+      const total = BOOTSTRAP_ASSET_COUNT + structureEntries.length + detailEntries.length;
       const mark = (message: string) => {
         done += 1;
-        if (!disposed) setLoadProgress({ done, total, message: `正在载入项目美术资产：${message} ${done}/${total}` });
+        if (!disposed) setLoadProgress({ done, total, message: `正在载入首局所需素材：${message} ${done}/${total}` });
       };
-      const actorEntries = Object.entries(ACTOR_SPECS) as [ActorName, (typeof ACTOR_SPECS)[ActorName]][];
       const actorAssets: Partial<Record<ActorName, GLTF>> = {};
       const structureAssets: Partial<Record<StructureAssetName, GLTF>> = {};
       const detailAssets: Partial<Record<DetailAssetName, GLTF>> = {};
@@ -2149,47 +2361,32 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         setLoadProgress({
           done,
           total,
-          message: `正在载入第 ${campaignLevel.campaign.levelNumber} 关角色与${campaignLevel.campaign.themeLabel}主题模型…`,
+          message: `正在并行载入主角、追捕者与${campaignLevel.campaign.themeLabel}主题场景…`,
         });
       }
-      const bootstrapLoads = [
-        ...actorEntries.map(async ([name, spec]) => {
-          const asset = await loader.loadAsync(spec.url);
+
+      // Eliminate the former two-stage waterfall: every visible first-play
+      // asset starts together, while the large exit-only police actor no
+      // longer gates control.
+      const initialLoads = [
+        ...essentialActorEntries.map(async ([name, spec]) => {
+          const asset = await loadGlbWithRetry(spec.url);
           actorAssets[name] = asset;
           const id = `actor:${name}`;
           loadedAssets.push({ id, asset });
           loadedAssetIds.add(id);
-          mark(name === "kid" ? "主角动作集" : name === "villain" ? "追捕者动作集" : "出口警察动作集");
+          mark(name === "kid" ? "主角动作集" : "追捕者动作集");
         }),
         (async () => {
-          const asset = await loader.loadAsync(THEME_KIT_ASSETS[campaignLevel.campaign.theme]);
+          const asset = await loadGlbWithRetry(THEME_KIT_ASSETS[campaignLevel.campaign.theme]);
           themeKitAsset = asset;
           const id = `theme:${campaignLevel.campaign.theme}`;
           loadedAssets.push({ id, asset });
           loadedAssetIds.add(id);
           mark(`${campaignLevel.campaign.themeLabel}高精度主题模型`);
         })(),
-      ];
-      const bootstrapSettled = await Promise.allSettled(bootstrapLoads);
-      const bootstrapRejection = bootstrapSettled.find((result): result is PromiseRejectedResult => result.status === "rejected");
-      if (disposed || bootstrapRejection) {
-        disposeObjectResources(loadedAssets.map(({ asset }) => asset.scene));
-        if (bootstrapRejection) throw bootstrapRejection.reason;
-        return;
-      }
-      if (!themeKitAsset) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型未载入`);
-
-      const detailEntries = [...requiredDetailNames].map((name) => [name, DETAIL_ASSETS[name]] as const);
-      if (!disposed) {
-        setLoadProgress({
-          done,
-          total,
-          message: `正在按本关清单载入 ${detailEntries.length} 件可见环境资产…`,
-        });
-      }
-      const sceneAssetLoads = [
         ...structureEntries.map(async ([name, url]) => {
-          const asset = await loader.loadAsync(url);
+          const asset = await loadGlbWithRetry(url);
           structureAssets[name] = asset;
           const id = `structure:${name}`;
           loadedAssets.push({ id, asset });
@@ -2197,7 +2394,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           mark(name === "frontGate" ? "入口建筑模型" : "出口建筑模型");
         }),
         ...detailEntries.map(async ([name, url]) => {
-          const asset = await loader.loadAsync(url);
+          const asset = await loadGlbWithRetry(url);
           detailAssets[name] = asset;
           const id = `detail:${name}`;
           loadedAssets.push({ id, asset });
@@ -2205,24 +2402,50 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           mark(name === "locker" ? "英雄储物柜与门动画" : "关卡叙事物件");
         }),
       ];
-      const sceneAssetSettled = await Promise.allSettled(sceneAssetLoads);
-      const rejection = sceneAssetSettled.find((result): result is PromiseRejectedResult => result.status === "rejected");
+      const settled = await Promise.allSettled(initialLoads);
+      const rejection = settled.find((result): result is PromiseRejectedResult => result.status === "rejected");
       if (disposed || rejection) {
         disposeObjectResources(loadedAssets.map(({ asset }) => asset.scene));
         if (rejection) throw rejection.reason;
         return;
       }
+      if (!themeKitAsset) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型未载入`);
 
       configureAssetTextures(loadedAssets, renderer);
       textureDeduplication = deduplicateAssetTextures(loadedAssets);
       buildCampus(structureAssets, themeKitAsset, campus);
       buildDetails(detailAssets, themeKitAsset, campus, scene, lockers);
-      placeActors(actorAssets as Record<ActorName, GLTF>, actors, scene);
+      placeActors(actorAssets, actors, scene, ["kid", "villain"]);
       ready = true;
       setLoading(false);
       setLoadError("");
       document.documentElement.dataset.chasingReady = "true";
       if (new URLSearchParams(location.search).get("autostart") === "1") beginGame();
+
+      // Stream the resolution actor only after control is available. A load
+      // failure cannot invalidate the playable chase; retries happen at asset
+      // level and a later chapter rebuild gets another clean attempt.
+      void (async () => {
+        try {
+          const policeAsset = await loadGlbWithRetry(ACTOR_SPECS.police.url);
+          if (disposed) {
+            disposeObjectResources([policeAsset.scene]);
+            return;
+          }
+          actorAssets.police = policeAsset;
+          const loadedPolice = { id: "actor:police", asset: policeAsset };
+          loadedAssets.push(loadedPolice);
+          loadedAssetIds.add(loadedPolice.id);
+          configureAssetTextures([loadedPolice], renderer);
+          textureDeduplication = deduplicateAssetTextures(loadedAssets);
+          placeActors(actorAssets, actors, scene, ["police"]);
+          if (latestState.phase === "won" && actors.police) {
+            requestAnimation(actors.police, "protect", { fade: 0.08 });
+          }
+        } catch (error) {
+          console.warn("Exit resolution actor will retry on the next scene load", error);
+        }
+      })();
     };
 
     const buildCampus = (
@@ -3011,22 +3234,34 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         };
         return { cell: point, point, rotation: anchor.rotation };
       };
+      const roomTopology = enclosedRoomFloorRegions(campaignLevel);
+      const roomSafeDecorAnchors = decorAnchors.filter((anchor) => roomFloorSupportForFootprint(
+        campaignLevel,
+        roomTopology,
+        {
+          center: anchor.point,
+          halfWidth: 0.34,
+          halfDepth: 0.34,
+          rotationRadians: anchor.rotation,
+        },
+      ).supported);
       const interiorNarrativeAnchors = artLayout.landmarkNodes.map((_, index) => (
-        decorAnchors[index]
+        roomSafeDecorAnchors[index]
         ?? offsetAnchor(
           exteriorAnchor(campaignLevel.playerStart, 2.8, 0),
           (index - (artLayout.landmarkNodes.length - 1) / 2) * 2.45,
           -1.2,
         )
       ));
-      const roomAnchors = decorAnchors.slice(0, Math.min(decorAnchors.length, 9));
+      const roomAnchors = roomSafeDecorAnchors.slice(0, Math.min(roomSafeDecorAnchors.length, 9));
       const roomFloorPlacements: Record<"secondary" | "service", ModulePlacement[]> = {
         secondary: [],
         service: [],
       };
+      const roomBoundaryTrimPlacements: ModulePlacement[] = [];
       const occupiedRoomFloorCells = new Set<string>();
       const furnishedRooms = authoredRoomFloorRegions(campaignLevel, roomAnchors.map(({ cell }) => cell));
-      for (const [furnishedRoomIndex, { anchorIndex, cells }] of furnishedRooms.entries()) {
+      for (const [furnishedRoomIndex, { anchorIndex, boundaryEdges, cells }] of furnishedRooms.entries()) {
         // Service floors carry strong hazard bands and anchors. Reserve that
         // visual language for compact utility closets; large classrooms,
         // wards and work bays use the calmer secondary finish so repetition
@@ -3039,6 +3274,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           roomFloorPlacements[role].push({
             position: world(cell, campaignLevel).add(new THREE.Vector3(0, -0.025, 0)),
             rotation: (anchorIndex % 4) * Math.PI / 2,
+          });
+        }
+        for (const edge of boundaryEdges) {
+          const trim = roomFloorBoundaryTrimPlacement(edge);
+          roomBoundaryTrimPlacements.push({
+            position: world(trim.position, campaignLevel).add(new THREE.Vector3(0, -0.012, 0)),
+            rotation: trim.rotationRadians,
           });
         }
       }
@@ -3054,6 +3296,20 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           preserveAuthoredScale: true,
         },
       ], new THREE.Vector3(CELL, 0.12, CELL), parent, false, `${theme}-room-floor`, supportsMultiDraw);
+      let roomBoundaryTrimSource: THREE.Object3D | undefined;
+      themeKit.scene.traverse((object) => {
+        if (!roomBoundaryTrimSource && /^FloorSeamX_/u.test(object.name)) roomBoundaryTrimSource = object;
+      });
+      if (roomBoundaryTrimSource && roomBoundaryTrimPlacements.length) {
+        addInstancedModuleBatches([
+          {
+            source: roomBoundaryTrimSource,
+            placements: roomBoundaryTrimPlacements,
+            preserveAuthoredScale: true,
+          },
+        ], new THREE.Vector3(CELL, 0.03, 0.05), parent, false, `${theme}-room-floor-trim`, supportsMultiDraw);
+        placedAssetIds.add(`theme-node:${roomBoundaryTrimSource.name}`);
+      }
       if (occupiedRoomFloorCells.size > 0) placedAssetIds.add("runtime:authored-room-floors");
       for (const [index, node] of artLayout.landmarkNodes.entries()) {
         const anchor = interiorNarrativeAnchors[index];
@@ -3063,11 +3319,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         addAuthoredCluster([node, genericVariant], anchor.point, anchor.rotation, `landmark-${artLayout.key}-${index + 1}`);
       }
       const ambientClusterCount = Math.min(
-        Math.max(0, decorAnchors.length - artLayout.landmarkNodes.length),
+        Math.max(0, roomSafeDecorAnchors.length - artLayout.landmarkNodes.length),
         3 + Math.ceil(campaignLevel.campaign.difficulty / 2),
       );
       for (let index = 0; index < ambientClusterCount; index += 1) {
-        const anchor = decorAnchors[artLayout.landmarkNodes.length + index];
+        const anchor = roomSafeDecorAnchors[artLayout.landmarkNodes.length + index];
         const genericVariant = ["DressingClusterB", "DressingClusterA", "DressingClusterC"][
           (index + campaignLevel.campaign.levelNumber) % 3
         ];
@@ -3270,15 +3526,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     };
 
     const placeActors = (
-      assets: Record<ActorName, GLTF>,
+      assets: Partial<Record<ActorName, GLTF>>,
       actorViews: Partial<Record<ActorName, ActorView>>,
       targetScene: THREE.Scene,
+      names: readonly ActorName[] = Object.keys(ACTOR_SPECS) as ActorName[],
     ) => {
-      for (const name of Object.keys(ACTOR_SPECS) as ActorName[]) {
+      for (const name of names) {
+        const asset = assets[name];
+        if (!asset) throw new Error(`缺少正式角色资产 actor:${name}`);
         const spec = ACTOR_SPECS[name];
-        const root = fitActor(assets[name].scene, spec.height);
+        const root = fitActor(asset.scene, spec.height);
         root.name = `actor-${name}`;
-        const animator = new ActorAnimator(root, assets[name].animations, spec.aliases as ClipAliases);
+        const animator = new ActorAnimator(root, asset.animations, spec.aliases as ClipAliases);
         animator.require(spec.required);
         const initialPoint = name === "kid"
           ? campaignLevel.playerStart
@@ -3295,7 +3554,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         targetScene.add(root);
         placedAssetIds.add(`actor:${name}`);
         const durationByState: Partial<Record<AnimationState, number>> = {};
-        const clipsByName = new Map(assets[name].animations.map((clip) => [clip.name.toLowerCase(), clip]));
+        const clipsByName = new Map(asset.animations.map((clip) => [clip.name.toLowerCase(), clip]));
         for (const [state, alias] of Object.entries(spec.aliases) as [AnimationState, string | readonly string[]][]) {
           const candidates = typeof alias === "string" ? [alias] : alias;
           const clip = candidates.map((candidate) => clipsByName.get(candidate.toLowerCase())).find(Boolean);
@@ -3337,19 +3596,31 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             if (event.occupied) locker.holdFinal = true;
             else closeCheckedLocker(locker);
           }
+          if (!event.occupied) soundscape.trigger("locker-close");
+          continue;
+        }
+        if (event.type === "player-captured") {
+          setLastCaptureReason(event.reason);
+          continue;
+        }
+        if (event.type === "chaser-mode-changed") {
+          if (event.to === "check-hide") soundscape.trigger("locker-check");
           continue;
         }
         if (event.type === "phase-changed") {
           updatePhasePresentation(event.to);
           if (event.to === "lost") {
+            soundscape.trigger("caught");
             captureStageRemaining = CAPTURE_STAGING_SECONDS;
             capturePerformanceStarted = false;
             requestAnimation(actors.kid!, "idle", { fade: 0.08 });
             requestAnimation(actors.villain!, "alert", { fade: 0.08 });
           } else if (event.to === "won") {
+            soundscape.trigger("escaped");
             requestAnimation(actors.kid!, "celebrate", { fade: 0.18 });
-            requestAnimation(actors.police!, "protect", { fade: 0.14 });
+            if (actors.police) requestAnimation(actors.police, "protect", { fade: 0.14 });
           }
+          continue;
         }
         if (event.type !== "player-mode-changed") continue;
         setPlayerMode(event.to);
@@ -3357,6 +3628,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const spotId = state.player.hideSpotId;
         const locker = spotId ? lockers.get(spotId) : undefined;
         if (event.to === "entering-hide" && locker) {
+          soundscape.trigger("locker-open");
           playLockerSequence(locker, ["Locker_Door_Open_Enter", "Locker_Door_Close_Enter"]);
           requestAnimation(actors.kid!, "enterHide", { fade: 0.1, duration: simulation.config.hideEnterSeconds });
         } else if (event.to === "aligning-hide") {
@@ -3369,11 +3641,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         } else if (event.from === "exiting-peek" && event.to === "hidden" && locker) {
           requestAnimation(actors.kid!, "hideIdle", { fade: 0.15 });
         } else if (event.to === "hidden") {
+          soundscape.trigger("locker-close");
           requestAnimation(actors.kid!, "hideIdle", { fade: 0.18 });
         } else if (event.to === "exiting-hide" && locker) {
+          soundscape.trigger("locker-open");
           setLockerPeek(locker, false);
           playLockerSequence(locker, ["Locker_Door_Open_Exit", "Locker_Door_Close_Exit"]);
           requestAnimation(actors.kid!, "exitHide", { fade: 0.1, duration: simulation.config.hideExitSeconds });
+        } else if (event.from === "exiting-hide" && event.to === "free") {
+          soundscape.trigger("locker-close");
         }
       }
     };
@@ -3405,7 +3681,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const kid = actors.kid;
       const villain = actors.villain;
       const police = actors.police;
-      if (!kid || !villain || !police) return;
+      if (!kid || !villain) return;
       const kidPoint = playerPresentationPoint(state, campaignLevel, simulation.config);
       const kidSpeed = sampleActorSpeed(kid, state.player.position, state.tick, simulation.config.fixedStepSeconds);
       const villainSpeed = sampleActorSpeed(villain, state.chaser.position, state.tick, simulation.config.fixedStepSeconds);
@@ -3448,7 +3724,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             kid.animator.setLocomotionRate(kidSpeed, locomotion === "run" ? 4.4 : 2.0);
           }
         }
-        const checkId = state.chaser.memory.witnessedHideSpotId;
+        const checkId = state.chaser.searchHideSpotId ?? state.chaser.memory.witnessedHideSpotId;
         const checkSpot = checkId ? campaignLevel.hideSpots.find((spot) => spot.id === checkId) : undefined;
         const atCheckSpot = Boolean(checkSpot && distanceBetween(checkSpot.approach, state.chaser.position) < 0.18);
         const villainAnimation = chaserAnimationForMode(state.chaser.mode, villainSpeed, atCheckSpot);
@@ -3510,7 +3786,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
       kid.animator.update(delta);
       villain.animator.update(delta);
-      police.animator.update(delta);
+      police?.animator.update(delta);
       let nearestLockerId: string | null = null;
       let nearestLockerDistance = Number.POSITIVE_INFINITY;
       for (const locker of lockers.values()) {
@@ -3524,6 +3800,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         && ["free", "aligning-hide"].includes(state.player.mode);
       const urgentHideMarker = ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known", "search"].includes(state.chaser.mode);
       const markerPulse = 0.5 + Math.sin(state.elapsedSeconds * 4.6) * 0.5;
+      const guidedLightColor = guidedLockerRisk === "low"
+        ? 0x5ae0a0
+        : guidedLockerRisk === "medium"
+          ? 0xe8bd68
+          : 0xff6b72;
       for (const locker of lockers.values()) {
         updateLocker(locker, delta);
         const distance = distanceBetween(state.player.position, locker.approach);
@@ -3536,6 +3817,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           : urgentHideMarker ? 0.76 + markerPulse * 0.16 : 0.5 + markerPulse * 0.1;
         const markerScale = isInteractable ? 1.12 + markerPulse * 0.06 : 1;
         locker.beacon.scale.set(1.58 * markerScale, 0.79 * markerScale, 1);
+        locker.beaconLight.color.setHex(isNearest ? guidedLightColor : 0x5ae0a0);
         locker.beaconLight.intensity = locker.beacon.visible
           ? isInteractable ? 2.3 + markerPulse * 0.7 : urgentHideMarker ? 1.35 + markerPulse * 0.4 : 0.72
           : 0;
@@ -3547,23 +3829,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         setHideGuideProjection(null);
         return;
       }
-      let nearest: LockerView | null = null;
-      let nearestDistance = Number.POSITIVE_INFINITY;
-      for (const locker of lockers.values()) {
-        const route = objectivePaths.path(state.player.position, locker.approach);
-        const routeDistance = route.length ? route.length - 1 : Number.POSITIVE_INFINITY;
-        if (routeDistance < nearestDistance) {
-          nearest = locker;
-          nearestDistance = routeDistance;
-        }
-      }
-      if (!nearest) {
+      const firstClear = !campaignProgressRef.current.bestSeconds[campaignLevel.id];
+      const guidance = recommendHideSpot(campaignLevel, {
+        playerPosition: state.player.position,
+        nowSeconds: state.elapsedSeconds,
+        playerSpeed: simulation.config.playerSpeed,
+        chaserSpeed: simulation.config.chaserSpeed,
+        hideEnterExposureSeconds: simulation.config.hideEnterExposureSeconds,
+        knownChaser: playerKnownChaser,
+        tutorialHideSpotId: firstClear ? hideGuidancePolicy.tutorialHideSpotId : null,
+      });
+      const guidedLocker = guidance ? lockers.get(guidance.recommended.hideSpotId) : undefined;
+      if (!guidance || !guidedLocker) {
         guidedLockerId = null;
         setHideGuideProjection(null);
         return;
       }
-      guidedLockerId = nearest.id;
-      const projected = nearest.beacon.getWorldPosition(new THREE.Vector3()).project(camera);
+      guidedLockerId = guidedLocker.id;
+      guidedLockerRisk = guidance.recommended.risk;
+      setHideGuideRisk(guidance.recommended.risk);
+      setHideGuideSelection(guidance.selection);
+      setHideDistance(Math.round(guidance.recommended.routeDistanceCells * CELL));
+      const projected = guidedLocker.beacon.getWorldPosition(new THREE.Vector3()).project(camera);
       const viewportX = (projected.x + 1) / 2;
       const viewportY = (1 - projected.y) / 2;
       const inFrustum = Math.abs(projected.x) <= 0.92
@@ -3582,6 +3869,64 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const delta = boundedFrameDeltaSeconds(last, now, simulation.config.maxFrameDeltaSeconds);
       last = now;
       if (ready) {
+        qualitySamples.push(delta * 1_000);
+        qualityEvaluationSeconds += delta;
+        if (qualityEvaluationSeconds >= 1 && qualitySamples.length >= 20) {
+          const sortedSamples = [...qualitySamples].sort((left, right) => left - right);
+          const p95 = sortedSamples[Math.min(
+            sortedSamples.length - 1,
+            Math.floor(sortedSamples.length * 0.95),
+          )];
+          const candidate = nextRenderQuality(renderQualityTier, p95, 999);
+          if (candidate !== renderQualityTier) {
+            if (candidate === qualityCandidate) qualityDecisionSeconds += qualityEvaluationSeconds;
+            else {
+              qualityCandidate = candidate;
+              qualityDecisionSeconds = qualityEvaluationSeconds;
+            }
+            const resolved = nextRenderQuality(renderQualityTier, p95, qualityDecisionSeconds);
+            if (resolved !== renderQualityTier) {
+              applyRenderQuality(resolved);
+              qualityCandidate = resolved;
+              qualityDecisionSeconds = 0;
+            }
+          } else {
+            qualityCandidate = renderQualityTier;
+            qualityDecisionSeconds = 0;
+          }
+          qualitySamples = [];
+          qualityEvaluationSeconds = 0;
+        }
+
+        const atmospherePulse = atmosphere.pulseHertz > 0
+          ? Math.sin(now * 0.001 * atmosphere.pulseHertz * Math.PI * 2)
+          : 0;
+        warmBounce.intensity = atmosphere.bounceIntensity
+          * (0.72 + artLayout.warmLightMix * 0.28)
+          * (1 + atmospherePulse * atmosphere.pulseDepth);
+        const atmosphereAttribute = atmosphereGeometry.getAttribute("position") as THREE.BufferAttribute;
+        for (let index = 0; index < atmosphereParticleCount; index += 1) {
+          const base = index * 3;
+          const seed = atmosphereSeeds[index];
+          if (atmosphere.particleKind === "rain") {
+            atmospherePositions[base] += delta * (0.16 + seed * 0.12);
+            atmospherePositions[base + 1] -= delta * atmosphere.particleSpeed * (4.8 + seed * 2.1);
+            if (atmospherePositions[base + 1] < 0.15) atmospherePositions[base + 1] = 6.1;
+          } else if (atmosphere.particleKind === "embers") {
+            atmospherePositions[base] += Math.sin(now * 0.0012 + seed * 31) * delta * 0.2;
+            atmospherePositions[base + 1] += delta * atmosphere.particleSpeed * (0.72 + seed);
+            if (atmospherePositions[base + 1] > 6.2) atmospherePositions[base + 1] = 0.18;
+          } else if (atmosphere.particleKind === "steam") {
+            atmospherePositions[base] += Math.sin(now * 0.00055 + seed * 19) * delta * 0.1;
+            atmospherePositions[base + 1] += delta * atmosphere.particleSpeed * (0.28 + seed * 0.48);
+            if (atmospherePositions[base + 1] > 5.8) atmospherePositions[base + 1] = 0.25;
+          } else if (atmosphere.particleKind === "dust") {
+            atmospherePositions[base] += Math.sin(now * 0.00032 + seed * 23) * delta * 0.035;
+            atmospherePositions[base + 1] += Math.cos(now * 0.00027 + seed * 17) * delta * 0.018;
+          }
+        }
+        atmosphereAttribute.needsUpdate = atmosphereParticleCount > 0;
+
         for (const [index, cloud] of sightObscurers.entries()) {
           cloud.rotation.y += delta * (0.12 + index * 0.013);
           cloud.position.y = Number(cloud.userData.baseY ?? 0)
@@ -3600,6 +3945,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           move,
           interactPressed: interactPressed.current,
           peekHeld: held("q"),
+          sneakHeld: held("q"),
         });
         interactPressed.current = false;
         consumeEvents(latestState);
@@ -3607,8 +3953,22 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const playerActuallyVisible = latestState.phase !== "playing"
           || isPlayerVisuallyExposed(latestState.player, simulation.config);
         const chaserKnowledgeObservable = canPlayerObserveChaser(latestState, campaignLevel, simulation.config);
+        if (latestState.phase === "playing" && chaserKnowledgeObservable) {
+          playerKnownChaser = {
+            position: { ...latestState.chaser.position },
+            observedAtSeconds: latestState.elapsedSeconds,
+          };
+        }
         const chaserWorldRendered = shouldRenderChaserModel(latestState.phase, playerActuallyVisible);
         syncAnimations(latestState, delta);
+        soundscape.update({
+          elapsedSeconds: latestState.elapsedSeconds,
+          playerPosition: latestState.player.position,
+          chaserPosition: latestState.chaser.position,
+          playerSpeed: actors.kid?.sampledSpeed ?? 0,
+          chaserSpeed: actors.villain?.sampledSpeed ?? 0,
+          chaserMode: latestState.chaser.mode,
+        });
         if (actors.kid) {
           updateActorVisibility(
             actors.kid,
@@ -3651,6 +4011,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const baseDistance = baseCameraDistanceForAspect(camera.aspect);
         const dynamicDistance = baseDistance * cameraDistanceScaleForPlayerMode(latestState.player.mode)
           + threatForMode(latestState.chaser.mode) * 0.9;
+        const preferredDistance = THREE.MathUtils.clamp(
+          dynamicDistance * cameraZoom.value,
+          11.6,
+          MAX_CAMERA_DISTANCE,
+        );
         const edgeFocus = framingThreat
           ? baseTargetFocus
           : cameraFocusForEdgeHide({
@@ -3658,35 +4023,50 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               bounds: cameraPlayfieldBounds,
               mode: latestState.player.mode,
               cameraDirection,
-              cameraDistance: THREE.MathUtils.clamp(dynamicDistance * cameraZoom.value, 11.6, MAX_CAMERA_DISTANCE),
+              cameraDistance: preferredDistance,
               verticalFovDegrees: camera.fov,
               aspect: camera.aspect,
             });
-        const targetFocus = edgeFocus instanceof THREE.Vector3
-          ? edgeFocus
-          : new THREE.Vector3(edgeFocus.x, edgeFocus.y, edgeFocus.z);
+        const safeFocus = cameraFocusForSafeViewport({
+          focus: edgeFocus,
+          cameraDirection,
+          cameraDistance: preferredDistance,
+          verticalFovDegrees: camera.fov,
+          aspect: camera.aspect,
+          safeViewport: cameraSafeViewport,
+        });
+        const targetFocus = safeFocus instanceof THREE.Vector3
+          ? safeFocus
+          : new THREE.Vector3(safeFocus.x, safeFocus.y, safeFocus.z);
         cameraFocus.lerp(targetFocus, 1 - Math.exp(-(framingThreat ? 12 : 6.5) * delta));
-        const framingRequest = () => ({
+        const compositionActors = [
+          { center: playerAnchor, height: ACTOR_SPECS.kid.height },
+          ...(latestState.phase === "won" && actors.police
+            ? [{ center: policeAnchor, height: ACTOR_SPECS.police.height }]
+            : framingThreat
+              ? [{ center: chaserAnchor, height: ACTOR_SPECS.villain.height }]
+              : []),
+        ];
+        const composition = fixedCameraCompositionConstraints({
           focus: cameraFocus,
-          points: [playerAnchor, chaserAnchor],
+          actors: compositionActors,
           cameraDirection,
           verticalFovDegrees: camera.fov,
           aspect: camera.aspect,
-          ...(camera.aspect < 0.72 ? {
-            horizontalMargin: 0.38,
-            verticalMargin: 0.92,
-            safeHorizontalNdc: 0.9,
-            safeVerticalNdc: 0.84,
-          } : {}),
+          horizontalMargin: camera.aspect < 0.72 ? 0.38 : 0.9,
+          verticalMargin: camera.aspect < 0.72 ? 0.92 : 1.05,
+          safeViewport: cameraSafeViewport,
+          viewportHeightPixels: cameraViewportHeight,
+          minimumActorScreenHeightPixels: THREE.MathUtils.clamp(
+            cameraViewportHeight * (coarsePointer ? 0.066 : 0.055),
+            coarsePointer ? 34 : 30,
+            coarsePointer ? 48 : 44,
+          ),
+          preferredDistance,
+          minimumDistance: 11.6,
+          maximumDistance: MAX_CAMERA_DISTANCE,
         });
-        const requiredFramingDistance = framingThreat
-          ? requiredCameraDistanceForFraming(framingRequest())
-          : 0;
-        const targetDistance = THREE.MathUtils.clamp(
-          Math.max(dynamicDistance * cameraZoom.value, requiredFramingDistance),
-          11.6,
-          MAX_CAMERA_DISTANCE,
-        );
+        const targetDistance = THREE.MathUtils.clamp(composition.distance, 11.6, MAX_CAMERA_DISTANCE);
         const cameraDistanceResponse = targetDistance > cameraDistance ? 8 : 3.2;
         const dampedCameraDistance = THREE.MathUtils.lerp(
           cameraDistance,
@@ -3701,7 +4081,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         );
         camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
         camera.lookAt(cameraFocus);
-        updateCameraOcclusion(playerAnchor, delta);
+        const readableOcclusionAnchors = [playerAnchor];
+        if (latestState.phase === "won" && actors.police) readableOcclusionAnchors.push(policeAnchor);
+        else if (
+          chaserWorldRendered
+          && (chaserKnowledgeObservable || latestState.phase === "lost")
+        ) readableOcclusionAnchors.push(chaserAnchor);
+        updateCameraOcclusion(readableOcclusionAnchors, delta);
 
         if (now - lastHudUpdate > 120) {
           setPhase(latestState.phase);
@@ -3711,7 +4097,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setChaserObservable(chaserKnowledgeObservable);
           setElapsed(Math.floor(latestState.elapsedSeconds));
           setObjectiveDistance(objectiveDistanceMeters(latestState.player.position, campaignLevel, objectivePaths));
-          setHideDistance(nearestHideDistanceMeters(latestState.player.position, campaignLevel, objectivePaths));
           setInteraction(simulation.getHideInteraction());
           updateHideGuideProjection(latestState);
           lastHudUpdate = now;
@@ -3725,7 +4110,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const bounds = host.getBoundingClientRect();
       const width = Math.max(1, Math.round(bounds.width));
       const height = Math.max(1, Math.round(bounds.height));
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+      cameraViewportWidth = width;
+      cameraViewportHeight = height;
+      cameraSafeViewport = cameraSafeViewportFromInsets(
+        width,
+        height,
+        gameplayCameraInsetsForViewport(width, height, coarsePointer),
+      );
+      renderer.setPixelRatio(Math.min(devicePixelRatio, renderQualityProfile.maximumPixelRatio));
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
@@ -3944,17 +4336,25 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
       delete document.documentElement.dataset.chasingReady;
+      delete document.documentElement.dataset.chasingQuality;
       if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
       for (const actor of Object.values(actors)) actor?.animator.dispose();
       for (const locker of lockers.values()) locker.mixer.stopAllAction();
       void score.dispose();
+      void soundscape.dispose();
       environmentTarget.dispose();
       disposeObjectResources([scene]);
       renderer.renderLists.dispose();
       renderer.dispose();
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);
     };
-  }, [campaignLevel, gameplayConfig, objectivePaths]);
+  }, [
+    atmosphere,
+    campaignLevel,
+    gameplayConfig,
+    hideGuidancePolicy.tutorialHideSpotId,
+    objectivePaths,
+  ]);
 
   const touch = (key: string, active: boolean) => {
     if (active) touchKeys.current.add(key);
@@ -3985,6 +4385,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
   const primaryAction = phase === "won" && hasNextLevel
     ? () => chooseLevel(selectedLevelIndex + 1)
     : begin;
+  const hideRiskLabel = hideGuideRisk === "low" ? "低风险" : hideGuideRisk === "medium" ? "风险未知" : "高风险";
+  const captureFeedback = failureFeedback(lastCaptureReason);
 
   return (
     <main className="game-shell">
@@ -3998,7 +4400,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           <span>用时 <b>{elapsed}s</b></span>
           <span className="objective">出口 <b>{objectiveDistance}m</b></span>
           <span className={`status danger-${Math.round(danger * 10)}`}><i />{displayedChaserStatus}</span>
-          <button type="button" aria-label={musicMuted ? "打开音乐" : "静音"} onClick={() => commands.current.toggleMute()}>{musicMuted ? "音乐关" : "音乐开"}</button>
+          <button type="button" aria-label={musicMuted ? "打开声音" : "静音"} onClick={() => commands.current.toggleMute()}>{musicMuted ? "声音关" : "声音开"}</button>
           <button type="button" disabled={loading} onClick={restart}>重新开始</button>
         </div>
       </header>
@@ -4041,15 +4443,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         )}
 
         {!loading && phase === "playing" && playerMode === "free" && !interaction && (
-          <div className={`hide-guide${danger >= 0.45 ? " urgent" : ""}`} aria-label={`最近藏身柜距离 ${hideDistance} 米`}>
+          <div
+            className={`hide-guide risk-${hideGuideRisk}${danger >= 0.45 ? " urgent" : ""}`}
+            aria-label={`${hideGuideSelection === "tutorial" ? "教学安全藏身柜" : "最近藏身柜"}距离 ${hideDistance} 米，${hideRiskLabel}`}
+          >
             <span aria-hidden="true" />
-            <div><small>最近藏身柜</small><strong>{hideDistance}m · 跟随绿色方向标</strong></div>
+            <div>
+              <small>{hideGuideSelection === "tutorial" ? "教学安全藏身柜" : `最近藏身柜 · ${hideRiskLabel}`}</small>
+              <strong>{hideDistance}m · {hideGuideRisk === "high" ? "先切断视线再接近" : "按可见标记前进"}</strong>
+            </div>
           </div>
         )}
 
         {!loading && phase === "playing" && playerMode === "free" && !interaction && hideGuideProjection?.offscreen && (
           <div
-            className="hide-edge-marker"
+            className={`hide-edge-marker risk-${hideGuideRisk}`}
             aria-hidden="true"
             style={{
               left: `${hideGuideProjection.xPercent}%`,
@@ -4072,13 +4480,22 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           <div className={`overlay ${phase}`}>
             <div className="overlay-card">
               <span className={`result ${phase}`}>{phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : `${campaignLevel.campaign.themeLabel}篇 · ${campaignLevel.campaign.difficultyLabel}`}</span>
-              <h2>{phase === "won" ? `你完成了「${campaignLevel.campaign.name}」` : phase === "lost" ? "切断视线，利用主题藏柜重新布局" : campaignLevel.campaign.subtitle}</h2>
-              <p>{phase === "ready" ? campaignLevel.campaign.briefing : "追捕者只会依据真实目击与最后位置追踪。绕过遮挡、藏好，等他进入盲目搜索后再继续逃跑。"}</p>
+              <h2>{phase === "won" ? `你完成了「${campaignLevel.campaign.name}」` : phase === "lost" ? captureFeedback.title : campaignLevel.campaign.subtitle}</h2>
+              <p>
+                {phase === "ready"
+                  ? campaignLevel.campaign.briefing
+                  : phase === "lost"
+                    ? captureFeedback.explanation
+                    : "追捕者只会依据真实目击、声音与最后位置追踪。你成功利用遮挡和藏身点完成了逃脱。"}
+              </p>
+              {phase === "lost" && (
+                <div className="failure-advice"><small>下一次这样做</small><strong>{captureFeedback.hint}</strong></div>
+              )}
 
               {phase === "ready" && (
                 <div className="hide-loop" aria-label="躲柜玩法流程">
                   <span><b>1</b>绕墙切断视线</span>
-                  <span><b>2</b>跟随绿色藏柜标记</span>
+                  <span><b>2</b>识别藏柜风险标记</span>
                   <span><b>3</b>按 E 藏好，等搜索结束</span>
                 </div>
               )}
@@ -4136,7 +4553,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <button type="button" className={interaction ? "available" : ""} disabled={!interaction} onClick={interact}>
                 {interaction?.kind === "enter" ? "躲进藏柜" : interaction?.kind === "exit" ? "离开藏柜" : `藏柜 ${hideDistance}m`}
               </button>
-              <button type="button" onPointerDown={() => touch("q", true)} onPointerUp={() => touch("q", false)} onPointerLeave={() => touch("q", false)} onPointerCancel={() => touch("q", false)}>按住观察</button>
+              <button
+                type="button"
+                onPointerDown={() => touch("q", true)}
+                onPointerUp={() => touch("q", false)}
+                onPointerLeave={() => touch("q", false)}
+                onPointerCancel={() => touch("q", false)}
+              >
+                {["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? "按住观察" : "按住轻步"}
+              </button>
             </div>
           </>
         )}
@@ -4146,7 +4571,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         <span><i className="kid" />玩家</span>
         <span><i className="villain" />追捕者</span>
         <span><i className="safe" />可藏主题柜</span>
-        <small>WASD / 方向键移动 · E 躲藏或离开 · Q 按住观察 · 滚轮动态调视野 · M 音乐 · R 重开</small>
+        <small>WASD / 方向键移动 · E 躲藏或离开 · Q 轻步 / 柜内观察 · 滚轮动态调视野 · M 声音 · R 重开</small>
       </footer>
     </main>
   );

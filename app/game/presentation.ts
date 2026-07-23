@@ -72,6 +72,21 @@ export interface CameraFramingVector {
   z: number;
 }
 
+export interface CameraViewportInsets {
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+  readonly bottom: number;
+}
+
+export interface CameraSafeViewport {
+  /** NDC bounds after reserving HUD/touch-control space. */
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minY: number;
+  readonly maxY: number;
+}
+
 export interface CameraFramingRequest {
   focus: CameraFramingVector;
   points: readonly CameraFramingVector[];
@@ -83,6 +98,8 @@ export interface CameraFramingRequest {
   verticalMargin?: number;
   safeHorizontalNdc?: number;
   safeVerticalNdc?: number;
+  /** Asymmetric safe area wins over the legacy symmetric NDC extents. */
+  safeViewport?: CameraSafeViewport;
 }
 
 const vectorLength3 = (value: CameraFramingVector) => Math.hypot(value.x, value.y, value.z);
@@ -101,6 +118,108 @@ const cross3 = (left: CameraFramingVector, right: CameraFramingVector): CameraFr
   z: left.x * right.y - left.y * right.x,
 });
 
+const finiteNonNegative = (value: number) => Number.isFinite(value) ? Math.max(0, value) : 0;
+
+/**
+ * Converts measured UI insets into a camera-safe NDC rectangle. Each side is
+ * capped below half the viewport so the immutable camera center remains a
+ * usable fallback even on extremely small or malformed layouts.
+ */
+export function cameraSafeViewportFromInsets(
+  viewportWidth: number,
+  viewportHeight: number,
+  insets: CameraViewportInsets,
+): CameraSafeViewport {
+  const width = Number.isFinite(viewportWidth) && viewportWidth > 0 ? viewportWidth : 1;
+  const height = Number.isFinite(viewportHeight) && viewportHeight > 0 ? viewportHeight : 1;
+  let left = Math.min(width * 0.48, finiteNonNegative(insets.left));
+  let right = Math.min(width * 0.48, finiteNonNegative(insets.right));
+  let top = Math.min(height * 0.48, finiteNonNegative(insets.top));
+  let bottom = Math.min(height * 0.48, finiteNonNegative(insets.bottom));
+  if (left + right > width * 0.92) {
+    const scale = width * 0.92 / (left + right);
+    left *= scale;
+    right *= scale;
+  }
+  if (top + bottom > height * 0.92) {
+    const scale = height * 0.92 / (top + bottom);
+    top *= scale;
+    bottom *= scale;
+  }
+  return Object.freeze({
+    minX: -1 + (left / width) * 2,
+    maxX: 1 - (right / width) * 2,
+    minY: -1 + (bottom / height) * 2,
+    maxY: 1 - (top / height) * 2,
+  });
+}
+
+/**
+ * Matches the current touch HUD footprint without baking DOM knowledge into
+ * the camera solver. The bottom reservation moves actors above both control
+ * clusters; small side gutters retain room for edge markers.
+ */
+export function gameplayCameraInsetsForViewport(
+  viewportWidth: number,
+  viewportHeight: number,
+  coarsePointer: boolean,
+): CameraViewportInsets {
+  const width = Number.isFinite(viewportWidth) && viewportWidth > 0 ? viewportWidth : 1;
+  const height = Number.isFinite(viewportHeight) && viewportHeight > 0 ? viewportHeight : 1;
+  if (!coarsePointer) return Object.freeze({ left: 12, right: 12, top: 12, bottom: 18 });
+  const portrait = height >= width;
+  return Object.freeze({
+    left: Math.min(22, width * 0.055),
+    right: Math.min(22, width * 0.055),
+    top: Math.min(portrait ? 74 : 60, height * 0.12),
+    bottom: Math.min(portrait ? 132 : 82, height * (portrait ? 0.19 : 0.16)),
+  });
+}
+
+function cameraBasis(cameraDirection: CameraFramingVector) {
+  const direction = normalize3(cameraDirection, { x: 0, y: 1, z: 0 });
+  const forward = { x: -direction.x, y: -direction.y, z: -direction.z };
+  const right = normalize3(cross3(forward, { x: 0, y: 1, z: 0 }), { x: 1, y: 0, z: 0 });
+  const up = normalize3(cross3(right, forward), { x: 0, y: 1, z: 0 });
+  return { direction, forward, right, up };
+}
+
+function projectionSlopes(verticalFovDegrees: number, aspect: number) {
+  const halfFovRadians = Math.min(89, Math.max(1, verticalFovDegrees / 2)) * Math.PI / 180;
+  const vertical = Math.tan(halfFovRadians);
+  return { vertical, horizontal: vertical * Math.max(0.1, aspect) };
+}
+
+function normalizedSafeViewport(safeViewport: CameraSafeViewport): CameraSafeViewport {
+  const finiteOr = (value: number, fallback: number) => (
+    Number.isFinite(value) ? value : fallback
+  );
+  let minX = Math.min(-0.001, finiteOr(safeViewport.minX, -0.82));
+  let maxX = Math.max(0.001, finiteOr(safeViewport.maxX, 0.82));
+  let minY = Math.min(-0.001, finiteOr(safeViewport.minY, -0.8));
+  let maxY = Math.max(0.001, finiteOr(safeViewport.maxY, 0.8));
+  minX = Math.max(-1, minX);
+  maxX = Math.min(1, maxX);
+  minY = Math.max(-1, minY);
+  maxY = Math.min(1, maxY);
+  return { minX, maxX, minY, maxY };
+}
+
+function safeViewportCapacities(request: CameraFramingRequest) {
+  if (request.safeViewport) {
+    const safeViewport = normalizedSafeViewport(request.safeViewport);
+    return {
+      left: Math.max(0.05, -safeViewport.minX),
+      right: Math.max(0.05, safeViewport.maxX),
+      down: Math.max(0.05, -safeViewport.minY),
+      up: Math.max(0.05, safeViewport.maxY),
+    };
+  }
+  const horizontal = Math.min(0.98, Math.max(0.1, request.safeHorizontalNdc ?? 0.82));
+  const vertical = Math.min(0.98, Math.max(0.1, request.safeVerticalNdc ?? 0.8));
+  return { left: horizontal, right: horizontal, down: vertical, up: vertical };
+}
+
 /**
  * Calculates the minimum focus-to-camera distance needed to keep every actor
  * anchor (plus an authored body margin) inside a safe NDC rectangle. The
@@ -110,15 +229,9 @@ const cross3 = (left: CameraFramingVector, right: CameraFramingVector): CameraFr
  */
 export function requiredCameraDistanceForFraming(request: CameraFramingRequest): number {
   if (!request.points.length) return 0;
-  const direction = normalize3(request.cameraDirection, { x: 0, y: 1, z: 0 });
-  const forward = { x: -direction.x, y: -direction.y, z: -direction.z };
-  const right = normalize3(cross3(forward, { x: 0, y: 1, z: 0 }), { x: 1, y: 0, z: 0 });
-  const up = normalize3(cross3(right, forward), { x: 0, y: 1, z: 0 });
-  const halfFovRadians = Math.min(89, Math.max(1, request.verticalFovDegrees / 2)) * Math.PI / 180;
-  const verticalSlope = Math.tan(halfFovRadians);
-  const horizontalSlope = verticalSlope * Math.max(0.1, request.aspect);
-  const safeHorizontal = Math.min(0.98, Math.max(0.1, request.safeHorizontalNdc ?? 0.82));
-  const safeVertical = Math.min(0.98, Math.max(0.1, request.safeVerticalNdc ?? 0.8));
+  const { forward, right, up } = cameraBasis(request.cameraDirection);
+  const slopes = projectionSlopes(request.verticalFovDegrees, request.aspect);
+  const safe = safeViewportCapacities(request);
   const horizontalMargin = Math.max(0, request.horizontalMargin ?? 0.9);
   const verticalMargin = Math.max(0, request.verticalMargin ?? 1.05);
   let required = 0;
@@ -129,13 +242,231 @@ export function requiredCameraDistanceForFraming(request: CameraFramingRequest):
       z: point.z - request.focus.z,
     };
     const forwardOffset = dot3(relative, forward);
-    const horizontal = (Math.abs(dot3(relative, right)) + horizontalMargin)
-      / (horizontalSlope * safeHorizontal) - forwardOffset;
-    const vertical = (Math.abs(dot3(relative, up)) + verticalMargin)
-      / (verticalSlope * safeVertical) - forwardOffset;
+    const cameraX = dot3(relative, right);
+    const cameraY = dot3(relative, up);
+    const horizontal = Math.max(
+      (cameraX + horizontalMargin) / (slopes.horizontal * safe.right),
+      (-cameraX + horizontalMargin) / (slopes.horizontal * safe.left),
+    ) - forwardOffset;
+    const vertical = Math.max(
+      (cameraY + verticalMargin) / (slopes.vertical * safe.up),
+      (-cameraY + verticalMargin) / (slopes.vertical * safe.down),
+    ) - forwardOffset;
     required = Math.max(required, horizontal, vertical);
   }
   return Math.max(0, required);
+}
+
+export interface FixedCameraProjectionRequest {
+  readonly focus: CameraFramingVector;
+  readonly point: CameraFramingVector;
+  readonly cameraDirection: CameraFramingVector;
+  readonly cameraDistance: number;
+  readonly verticalFovDegrees: number;
+  readonly aspect: number;
+}
+
+/** Projects a world point without constructing a Three.js camera. */
+export function projectPointToFixedCameraNdc(
+  request: FixedCameraProjectionRequest,
+): CameraFramingVector | null {
+  if (
+    !Number.isFinite(request.cameraDistance)
+    || request.cameraDistance <= 0
+    || !Number.isFinite(request.aspect)
+    || request.aspect <= 0
+  ) return null;
+  const { direction, forward, right, up } = cameraBasis(request.cameraDirection);
+  const slopes = projectionSlopes(request.verticalFovDegrees, request.aspect);
+  const cameraPosition = {
+    x: request.focus.x + direction.x * request.cameraDistance,
+    y: request.focus.y + direction.y * request.cameraDistance,
+    z: request.focus.z + direction.z * request.cameraDistance,
+  };
+  const relative = {
+    x: request.point.x - cameraPosition.x,
+    y: request.point.y - cameraPosition.y,
+    z: request.point.z - cameraPosition.z,
+  };
+  const depth = dot3(relative, forward);
+  if (!Number.isFinite(depth) || depth <= 1e-6) return null;
+  return {
+    x: dot3(relative, right) / (depth * slopes.horizontal),
+    y: dot3(relative, up) / (depth * slopes.vertical),
+    z: depth,
+  };
+}
+
+export interface SafeViewportCameraFocusRequest {
+  readonly focus: CameraFramingVector;
+  readonly cameraDirection: CameraFramingVector;
+  readonly cameraDistance: number;
+  readonly verticalFovDegrees: number;
+  readonly aspect: number;
+  readonly safeViewport: CameraSafeViewport;
+}
+
+/**
+ * Translates the look-at point while preserving camera direction, placing the
+ * original gameplay focus at the center of an asymmetric mobile safe area.
+ */
+export function cameraFocusForSafeViewport(
+  request: SafeViewportCameraFocusRequest,
+): CameraFramingVector {
+  if (
+    !Number.isFinite(request.cameraDistance)
+    || request.cameraDistance <= 0
+    || !Number.isFinite(request.aspect)
+    || request.aspect <= 0
+  ) return { ...request.focus };
+  const { right, up } = cameraBasis(request.cameraDirection);
+  const slopes = projectionSlopes(request.verticalFovDegrees, request.aspect);
+  const safeViewport = normalizedSafeViewport(request.safeViewport);
+  const centerX = (safeViewport.minX + safeViewport.maxX) / 2;
+  const centerY = (safeViewport.minY + safeViewport.maxY) / 2;
+  const horizontalShift = -centerX * request.cameraDistance * slopes.horizontal;
+  const verticalShift = -centerY * request.cameraDistance * slopes.vertical;
+  return {
+    x: request.focus.x + right.x * horizontalShift + up.x * verticalShift,
+    y: request.focus.y + right.y * horizontalShift + up.y * verticalShift,
+    z: request.focus.z + right.z * horizontalShift + up.z * verticalShift,
+  };
+}
+
+export interface CameraActorReadabilityTarget {
+  /** Character-bounds center, not the ground/root point. */
+  readonly center: CameraFramingVector;
+  readonly height: number;
+}
+
+export interface ActorScreenHeightRequest {
+  readonly focus: CameraFramingVector;
+  readonly actor: CameraActorReadabilityTarget;
+  readonly cameraDirection: CameraFramingVector;
+  readonly cameraDistance: number;
+  readonly verticalFovDegrees: number;
+  readonly aspect: number;
+  readonly viewportHeightPixels: number;
+}
+
+/** Exact projected head-to-foot height for a fixed-direction camera. */
+export function projectedActorScreenHeightPixels(request: ActorScreenHeightRequest): number {
+  if (
+    !Number.isFinite(request.actor.height)
+    || request.actor.height <= 0
+    || !Number.isFinite(request.viewportHeightPixels)
+    || request.viewportHeightPixels <= 0
+  ) return 0;
+  const halfHeight = request.actor.height / 2;
+  const feet = projectPointToFixedCameraNdc({
+    ...request,
+    point: { ...request.actor.center, y: request.actor.center.y - halfHeight },
+  });
+  const head = projectPointToFixedCameraNdc({
+    ...request,
+    point: { ...request.actor.center, y: request.actor.center.y + halfHeight },
+  });
+  if (!feet || !head) return 0;
+  return Math.abs(head.y - feet.y) * request.viewportHeightPixels / 2;
+}
+
+export interface ActorReadabilityDistanceRequest extends Omit<ActorScreenHeightRequest, "cameraDistance"> {
+  readonly minimumScreenHeightPixels: number;
+  readonly minimumDistance?: number;
+  readonly maximumDistance?: number;
+}
+
+/**
+ * Returns the furthest camera distance that preserves a minimum actor height.
+ * A zero result means the requested size is impossible in the supplied range.
+ */
+export function maximumCameraDistanceForActorReadability(
+  request: ActorReadabilityDistanceRequest,
+): number {
+  const minimumDistance = Math.max(0.1, request.minimumDistance ?? 0.5);
+  const maximumDistance = Math.max(minimumDistance, request.maximumDistance ?? 120);
+  if (!Number.isFinite(request.minimumScreenHeightPixels) || request.minimumScreenHeightPixels <= 0) {
+    return maximumDistance;
+  }
+  const screenHeightAt = (cameraDistance: number) => projectedActorScreenHeightPixels({
+    ...request,
+    cameraDistance,
+  });
+  if (screenHeightAt(minimumDistance) + 1e-9 < request.minimumScreenHeightPixels) return 0;
+  if (screenHeightAt(maximumDistance) >= request.minimumScreenHeightPixels) return maximumDistance;
+  let low = minimumDistance;
+  let high = maximumDistance;
+  for (let iteration = 0; iteration < 44; iteration += 1) {
+    const middle = (low + high) / 2;
+    if (screenHeightAt(middle) >= request.minimumScreenHeightPixels) low = middle;
+    else high = middle;
+  }
+  return low;
+}
+
+export interface FixedCameraCompositionRequest extends Omit<CameraFramingRequest, "points"> {
+  readonly actors: readonly CameraActorReadabilityTarget[];
+  readonly viewportHeightPixels: number;
+  readonly minimumActorScreenHeightPixels: number;
+  readonly preferredDistance: number;
+  readonly minimumDistance?: number;
+  readonly maximumDistance?: number;
+}
+
+export interface FixedCameraCompositionConstraints {
+  readonly distance: number;
+  readonly requiredFramingDistance: number;
+  readonly maximumReadableDistance: number;
+  readonly feasible: boolean;
+  readonly framingSatisfied: boolean;
+  readonly readabilitySatisfied: boolean;
+}
+
+/**
+ * Resolves dual-target visibility and character readability without rotating
+ * the camera. Honest two-actor framing wins when the constraints conflict,
+ * and the result explicitly reports that compromise to telemetry/QA.
+ */
+export function fixedCameraCompositionConstraints(
+  request: FixedCameraCompositionRequest,
+): FixedCameraCompositionConstraints {
+  const minimumDistance = Math.max(0.1, request.minimumDistance ?? 0.5);
+  const maximumDistance = Math.max(minimumDistance, request.maximumDistance ?? 120);
+  const framingDistance = requiredCameraDistanceForFraming({
+    ...request,
+    points: request.actors.map(({ center }) => center),
+  });
+  const readableDistances = request.actors.map((actor) => maximumCameraDistanceForActorReadability({
+    focus: request.focus,
+    actor,
+    cameraDirection: request.cameraDirection,
+    verticalFovDegrees: request.verticalFovDegrees,
+    aspect: request.aspect,
+    viewportHeightPixels: request.viewportHeightPixels,
+    minimumScreenHeightPixels: request.minimumActorScreenHeightPixels,
+    minimumDistance,
+    maximumDistance,
+  }));
+  const maximumReadableDistance = readableDistances.length
+    ? Math.min(...readableDistances)
+    : maximumDistance;
+  const required = Math.max(minimumDistance, framingDistance);
+  const readable = Math.min(maximumDistance, maximumReadableDistance);
+  const feasible = required <= readable + 1e-7;
+  const preferred = Number.isFinite(request.preferredDistance)
+    ? request.preferredDistance
+    : required;
+  const distance = feasible
+    ? Math.min(readable, Math.max(required, preferred))
+    : Math.min(maximumDistance, required);
+  return Object.freeze({
+    distance,
+    requiredFramingDistance: framingDistance,
+    maximumReadableDistance,
+    feasible,
+    framingSatisfied: distance + 1e-7 >= framingDistance,
+    readabilitySatisfied: distance <= maximumReadableDistance + 1e-7,
+  });
 }
 
 /**

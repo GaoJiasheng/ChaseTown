@@ -70,6 +70,7 @@ function runCertifiedHideRoute(level, hideSpotId) {
   let stage = "draw-attention";
   let hiddenSeconds = 0;
   let patrolSeconds = 0;
+  let quietEscapeSeconds = 0;
   let reachedHidden = false;
   const maxFrames = SAFE_ROUTE_TIMEOUT_SECONDS / FRAME_SECONDS;
 
@@ -103,8 +104,15 @@ function runCertifiedHideRoute(level, hideSpotId) {
       }
     } else if (stage === "exit-hide-spot" && state.player.mode === "free") {
       stage = "escape";
+      quietEscapeSeconds = 1.5;
     } else if (stage === "escape") {
       input.move = routeIntent(level, state.player.position, level.exit);
+      // A certified route exercises the player-facing Q mechanic: leave the
+      // cabinet quietly, create separation, then resume the faster sprint.
+      if (quietEscapeSeconds > 0) {
+        input.sneakHeld = true;
+        quietEscapeSeconds -= FRAME_SECONDS;
+      }
     }
 
     const next = simulation.advance(FRAME_SECONDS, input);
@@ -120,7 +128,11 @@ test("all ten campaign levels punish a shortest-path sprint with chase and captu
   for (const level of CAMPAIGN_LEVELS) {
     await t.test(`${level.campaign.levelNumber}. ${level.id}`, () => {
       const result = runDirectRoute(level);
-      assert.equal(result.seenModes.has("suspicious"), true, `${level.id} never warns the player`);
+      assert.equal(
+        result.seenModes.has("suspicious") || result.seenModes.has("go-to-last-known"),
+        true,
+        `${level.id} never warns the player`,
+      );
       assert.equal(result.seenModes.has("chase"), true, `${level.id} never establishes a chase`);
       assert.equal(result.state.phase, "lost", `${level.id} shortest route escaped or timed out`);
       assert.equal(result.state.player.mode, "caught", `${level.id} must end through capture`);

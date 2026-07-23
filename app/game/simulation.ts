@@ -1,4 +1,5 @@
 import type {
+  CaptureReason,
   GameConfig,
   GamePhase,
   GameState,
@@ -22,7 +23,12 @@ import {
   moveWithCollision,
   normalizeVector,
 } from "./navigation.ts";
-import { isPlayerVisuallyExposed, samplePlayerPerception } from "./perception.ts";
+import {
+  isPlayerVisuallyExposed,
+  samplePlayerPerception,
+  sampleSoundPerception,
+  type SoundStimulus,
+} from "./perception.ts";
 
 export interface GameSimulationOptions {
   level?: LevelDefinition;
@@ -99,6 +105,9 @@ export class GameSimulation {
   private pendingInteract = false;
   private heldMove: MoveIntent = { ...ZERO_INTENT };
   private heldPeek = false;
+  private heldSneak = false;
+  private pendingSound: SoundStimulus | null = null;
+  private playerSoundCooldownSeconds = 0;
   private readonly initialPlayerPosition: Point;
   private readonly initialPlayerHeading: Point;
   private readonly initialChaserPosition: Point;
@@ -137,6 +146,9 @@ export class GameSimulation {
     this.pendingInteract = false;
     this.heldMove = { ...ZERO_INTENT };
     this.heldPeek = false;
+    this.heldSneak = false;
+    this.pendingSound = null;
+    this.playerSoundCooldownSeconds = 0;
     this.hideTurnPlan = null;
     this.planner.clear();
     return this.getState();
@@ -154,6 +166,7 @@ export class GameSimulation {
     if (!Number.isFinite(realDeltaSeconds) || realDeltaSeconds < 0) throw new Error("Delta time must be a finite non-negative number");
     this.heldMove = copyPoint(input.move ?? ZERO_INTENT);
     this.heldPeek = input.peekHeld ?? false;
+    this.heldSneak = input.sneakHeld ?? false;
     this.pendingInteract ||= input.interactPressed ?? false;
     this.accumulatorSeconds += Math.min(realDeltaSeconds, this.config.maxFrameDeltaSeconds);
     const frameEvents: SimulationEvent[] = [];
@@ -162,6 +175,7 @@ export class GameSimulation {
       frameEvents.push(...this.fixedStep({
         move: this.heldMove,
         peekHeld: this.heldPeek,
+        sneakHeld: this.heldSneak,
         interactPressed: this.pendingInteract,
       }));
       this.pendingInteract = false;
@@ -190,6 +204,7 @@ export class GameSimulation {
         position: copyPoint(this.state.chaser.position),
         heading: copyPoint(this.state.chaser.heading),
         scanOriginHeading: copyPoint(this.state.chaser.scanOriginHeading),
+        inspectedHideSpotIds: [...this.state.chaser.inspectedHideSpotIds],
         memory: {
           ...this.state.chaser.memory,
           lastKnownPosition: this.state.chaser.memory.lastKnownPosition
@@ -219,12 +234,27 @@ export class GameSimulation {
       "peekEnterSeconds",
       "peekExitSeconds",
       "lastKnownScanSeconds",
+      "suspiciousSeconds",
+      "lostSightGraceSeconds",
+      "searchSeconds",
+      "searchWaypointSeconds",
+      "checkHideSeconds",
+      "hearingRange",
     ] as const;
     for (const name of positive) {
       if (!(this.config[name] > 0)) throw new Error(`${name} must be greater than zero`);
     }
     if (this.config.visionConeDegrees <= 0 || this.config.visionConeDegrees > 360) {
       throw new Error("visionConeDegrees must be in (0, 360]");
+    }
+    if (!Number.isInteger(this.config.searchHideCheckBudget) || this.config.searchHideCheckBudget < 0) {
+      throw new Error("searchHideCheckBudget must be a non-negative integer");
+    }
+    if (this.config.searchHideRadiusCells < 0 || !Number.isFinite(this.config.searchHideRadiusCells)) {
+      throw new Error("searchHideRadiusCells must be a finite non-negative number");
+    }
+    if (this.config.soundUncertaintyCells < 0 || !Number.isFinite(this.config.soundUncertaintyCells)) {
+      throw new Error("soundUncertaintyCells must be a finite non-negative number");
     }
     if (this.config.hideExitExposureSeconds >= this.config.hideExitSeconds) {
       throw new Error("hideExitExposureSeconds must be shorter than hideExitSeconds");
@@ -237,6 +267,7 @@ export class GameSimulation {
   private makeInitialState(phase: GamePhase): GameState {
     return {
       phase,
+      captureReason: null,
       elapsedSeconds: 0,
       tick: 0,
       player: {
@@ -256,19 +287,23 @@ export class GameSimulation {
     };
   }
 
-  private fixedStep(input: Required<Pick<SimulationInput, "move" | "peekHeld" | "interactPressed">>): SimulationEvent[] {
+  private fixedStep(input: Required<Pick<SimulationInput, "move" | "peekHeld" | "sneakHeld" | "interactPressed">>): SimulationEvent[] {
     const events: SimulationEvent[] = [];
     if (this.state.phase !== "playing") return events;
 
     const delta = this.config.fixedStepSeconds;
     this.state.elapsedSeconds += delta;
     this.state.tick += 1;
+    this.playerSoundCooldownSeconds = Math.max(0, this.playerSoundCooldownSeconds - delta);
+    const playerBefore = copyPoint(this.state.player.position);
+    const modeBefore = this.state.player.mode;
     this.updatePlayer(input, delta, events);
+    this.updatePlayerSound(playerBefore, modeBefore, input, delta);
     this.updateChaserBrain(delta, events);
     this.moveChaser(delta);
 
     if (this.resolveNormalCapture()) {
-      this.capturePlayer(events);
+      this.capturePlayer(events, this.normalCaptureReason());
       return events;
     }
     if (this.state.player.mode === "free" && distanceBetween(this.state.player.position, this.level.exit) <= this.config.exitRange) {
@@ -279,7 +314,7 @@ export class GameSimulation {
   }
 
   private updatePlayer(
-    input: Required<Pick<SimulationInput, "move" | "peekHeld" | "interactPressed">>,
+    input: Required<Pick<SimulationInput, "move" | "peekHeld" | "sneakHeld" | "interactPressed">>,
     delta: number,
     events: SimulationEvent[],
   ) {
@@ -300,7 +335,13 @@ export class GameSimulation {
           }
         }
         const before = player.position;
-        const movement = moveWithCollision(this.level, before, input.move, this.config.playerSpeed, delta);
+        const movement = moveWithCollision(
+          this.level,
+          before,
+          input.move,
+          this.config.playerSpeed * (input.sneakHeld ? 0.58 : 1),
+          delta,
+        );
         player.position = movement.position;
         if (
           distanceBetween(before, movement.position) > 1e-9
@@ -445,6 +486,57 @@ export class GameSimulation {
     }
   }
 
+  private queuePlayerSound(position: Point, strength: number) {
+    const normalized = Math.min(1, Math.max(0, strength));
+    if (normalized <= 0) return;
+    if (this.pendingSound && this.pendingSound.strength >= normalized) return;
+    this.pendingSound = { position: copyPoint(position), strength: normalized };
+  }
+
+  private updatePlayerSound(
+    before: Point,
+    modeBefore: PlayerMode,
+    input: Required<Pick<SimulationInput, "move" | "peekHeld" | "sneakHeld" | "interactPressed">>,
+    delta: number,
+  ) {
+    const moved = distanceBetween(before, this.state.player.position);
+    const requestedMovement = Math.hypot(input.move.x, input.move.y) > 0.1;
+    const movementMode = modeBefore === "free" || modeBefore === "aligning-hide";
+    if (movementMode && moved > delta * 0.05 && this.playerSoundCooldownSeconds <= 1e-9) {
+      this.queuePlayerSound(
+        this.state.player.position,
+        modeBefore === "aligning-hide" ? 0.24 : input.sneakHeld ? 0.1 : 0.46,
+      );
+      this.playerSoundCooldownSeconds = modeBefore === "free" && input.sneakHeld ? 0.56 : 0.32;
+    } else if (
+      modeBefore === "free"
+      && requestedMovement
+      && moved <= delta * 0.05
+      && this.playerSoundCooldownSeconds <= 1e-9
+    ) {
+      // A full-speed collision is a readable mistake, not a perfect sonar
+      // ping: sampleSoundPerception still applies path distance and error.
+      this.queuePlayerSound(this.state.player.position, input.sneakHeld ? 0.08 : 0.32);
+      this.playerSoundCooldownSeconds = 0.48;
+    }
+
+    const modeAfter = this.state.player.mode;
+    if (modeAfter !== modeBefore) {
+      if (modeAfter === "entering-hide") {
+        this.queuePlayerSound(this.state.player.position, 0.5);
+        this.playerSoundCooldownSeconds = Math.max(this.playerSoundCooldownSeconds, 0.42);
+      } else if (modeAfter === "exiting-hide") {
+        // The cabinet latch remains a meaningful close-range risk without
+        // turning a successful hide into a guaranteed re-aggro from the next
+        // corridor. Running immediately afterwards is still much louder.
+        this.queuePlayerSound(this.state.player.position, 0.28);
+        this.playerSoundCooldownSeconds = Math.max(this.playerSoundCooldownSeconds, 0.42);
+      } else if (modeAfter === "entering-peek" || modeAfter === "exiting-peek") {
+        this.queuePlayerSound(this.state.player.position, 0.12);
+      }
+    }
+  }
+
   private nearestAvailableHideSpot(): HideSpotDefinition | null {
     let nearest: HideSpotDefinition | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
@@ -473,7 +565,7 @@ export class GameSimulation {
     }
     while (this.state.aiAccumulatorSeconds + 1e-12 >= this.config.aiTickSeconds) {
       this.state.aiAccumulatorSeconds -= this.config.aiTickSeconds;
-      const evidence = samplePlayerPerception(
+      let evidence = samplePlayerPerception(
         this.level,
         this.state.chaser,
         {
@@ -485,6 +577,18 @@ export class GameSimulation {
         this.config,
         this.state.elapsedSeconds,
       );
+      if (evidence.kind === "none" && this.pendingSound) {
+        evidence = sampleSoundPerception(
+          this.level,
+          this.state.chaser,
+          this.pendingSound,
+          this.config,
+          this.state.elapsedSeconds,
+        );
+      }
+      // A step or door edge is a transient. Consuming it once prevents a
+      // single sound from resetting the search timer on every AI tick.
+      this.pendingSound = null;
       const previousMode = this.state.chaser.mode;
       const result = stepChaserBrain(this.state.chaser, this.level, this.config, {
         evidence,
@@ -500,7 +604,12 @@ export class GameSimulation {
         const occupied = Boolean(this.state.hideSpots[result.completedHideCheckId]?.occupiedByPlayer);
         events.push({ type: "hide-check-completed", hideSpotId: result.completedHideCheckId, occupied });
         if (occupied) {
-          this.capturePlayer(events);
+          this.capturePlayer(
+            events,
+            result.completedHideCheckSource === "search"
+              ? "search-hide-check"
+              : "witnessed-hide-check",
+          );
           return;
         }
       }
@@ -524,7 +633,17 @@ export class GameSimulation {
     return hasLineOfSight(this.level, this.state.chaser.position, this.state.player.position);
   }
 
-  private capturePlayer(events: SimulationEvent[]) {
+  private normalCaptureReason(): CaptureReason {
+    if (["aligning-hide", "entering-hide"].includes(this.state.player.mode)) {
+      return "exposed-hide-entry";
+    }
+    if (["entering-peek", "peeking", "exiting-peek", "exiting-hide"].includes(this.state.player.mode)) {
+      return "unsafe-hide-exit";
+    }
+    return "direct-contact";
+  }
+
+  private capturePlayer(events: SimulationEvent[], reason: CaptureReason) {
     if (this.state.phase !== "playing") return;
     const toPlayer = {
       x: this.state.player.position.x - this.state.chaser.position.x,
@@ -543,6 +662,8 @@ export class GameSimulation {
     this.state.player.hideTurnCycle = -1;
     this.state.player.hideTurnSegmentDurationSeconds = 0;
     this.hideTurnPlan = null;
+    this.state.captureReason = reason;
+    events.push({ type: "player-captured", reason });
     setPlayerMode(this.state, "caught", events);
     setPhase(this.state, "lost", events);
   }

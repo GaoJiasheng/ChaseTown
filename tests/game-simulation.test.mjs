@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createInitialChaser, getChaserTarget, hasReachedChaserTarget, stepChaserBrain } from "../app/game/chaser-fsm.ts";
+import {
+  createInitialChaser,
+  evidenceRankedHideCandidates,
+  getChaserTarget,
+  hasReachedChaserTarget,
+  stepChaserBrain,
+} from "../app/game/chaser-fsm.ts";
 import { createDefaultLevel, createLevel, DEFAULT_GAME_CONFIG } from "../app/game/level.ts";
 import { distanceBetween, findPath, GridPathPlanner, hasLineOfSight, isWalkable, moveAlongGridPath, moveWithCollision } from "../app/game/navigation.ts";
-import { isPlayerVisuallyExposed, samplePlayerPerception } from "../app/game/perception.ts";
+import { isPlayerVisuallyExposed, samplePlayerPerception, sampleSoundPerception } from "../app/game/perception.ts";
 import { chaserSpeedForMode, GameSimulation } from "../app/game/simulation.ts";
 
 function testLevel(rows, options = {}) {
@@ -86,6 +92,7 @@ test("spawn protection disables both movement and capture", () => {
 
   state = runFor(simulation, 0.12, 1 / 60);
   assert.equal(state.phase, "lost", "capture becomes legal only after protection ends");
+  assert.equal(state.captureReason, "direct-contact");
 });
 
 test("walls block both visual acquisition and close-range capture", () => {
@@ -105,6 +112,72 @@ test("walls block both visual acquisition and close-range capture", () => {
   assert.equal(state.phase, "playing");
   assert.equal(state.chaser.mode, "patrol");
   assert.equal(state.chaser.memory.lastKnownPosition, null);
+});
+
+test("sound evidence follows navigable distance and never reports an exact distant source", () => {
+  const level = testLevel(["......."], {
+    playerStart: { x: 6, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    exit: { x: 6, y: 0 },
+  });
+  const stimulus = { position: { x: 6, y: 0 }, strength: 1 };
+  const heard = sampleSoundPerception(
+    level,
+    { position: { x: 0, y: 0 } },
+    stimulus,
+    { hearingRange: 8, soundUncertaintyCells: 2 },
+    3,
+  );
+  assert.equal(heard.kind, "sound");
+  assert.deepEqual(heard.position, { x: 4, y: 0 });
+  assert.notDeepEqual(heard.position, stimulus.position);
+  assert.deepEqual(
+    heard,
+    sampleSoundPerception(
+      level,
+      { position: { x: 0, y: 0 } },
+      stimulus,
+      { hearingRange: 8, soundUncertaintyCells: 2 },
+      3,
+    ),
+  );
+
+  const tooFar = sampleSoundPerception(
+    level,
+    { position: { x: 0, y: 0 } },
+    stimulus,
+    { hearingRange: 5, soundUncertaintyCells: 1 },
+    3,
+  );
+  assert.equal(tooFar.kind, "none");
+});
+
+test("heard evidence redirects patrol using only its imprecise reported point", () => {
+  const level = testLevel(["......."], {
+    playerStart: { x: 6, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    exit: { x: 6, y: 0 },
+  });
+  const cfg = config({ spawnDelaySeconds: 0 });
+  const initial = createInitialChaser(level, cfg);
+  const evidence = sampleSoundPerception(
+    level,
+    initial,
+    { position: { x: 6, y: 0 }, strength: 1 },
+    { hearingRange: 8, soundUncertaintyCells: 2 },
+    2,
+  );
+  const result = stepChaserBrain(initial, level, cfg, {
+    evidence,
+    reachedTarget: false,
+    nowSeconds: 2,
+    deltaSeconds: cfg.aiTickSeconds,
+  });
+  assert.equal(result.state.mode, "go-to-last-known");
+  assert.equal(result.state.memory.lastKnownEvidence, "sound");
+  assert.equal(result.state.memory.lastSeenAtSeconds, null);
+  assert.equal(result.state.memory.lastHeardAtSeconds, 2);
+  assert.deepEqual(getChaserTarget(result.state, level), evidence.position);
 });
 
 test("pushing into a wall does not rotate the actor or camera toward empty space", () => {
@@ -702,6 +775,101 @@ test("search order is evidence-seeded, deterministic, and advances only after an
   assert.equal(state.searchWaypointElapsedSeconds, 0);
 });
 
+test("evidence-ranked locker search is deterministic, budgeted, and occupancy-blind", () => {
+  const hideSpots = [
+    { id: "locker-left", approach: { x: 1, y: 1 }, concealed: { x: 1, y: 1 }, facing: { x: 1, y: 0 } },
+    { id: "locker-right", approach: { x: 5, y: 1 }, concealed: { x: 5, y: 1 }, facing: { x: -1, y: 0 } },
+    { id: "locker-far", approach: { x: 6, y: 2 }, concealed: { x: 6, y: 2 }, facing: { x: -1, y: 0 } },
+  ];
+  const level = testLevel([
+    ".......",
+    ".......",
+    ".......",
+  ], {
+    playerStart: { x: 0, y: 0 },
+    chaserStart: { x: 3, y: 1 },
+    exit: { x: 6, y: 0 },
+    hideSpots,
+  });
+  const cfg = config({
+    spawnDelaySeconds: 0,
+    searchSeconds: 20,
+    searchHideCheckBudget: 2,
+    searchHideRadiusCells: 3,
+    checkHideSeconds: 0.2,
+  });
+  const initial = createInitialChaser(level, cfg);
+  const searching = {
+    ...initial,
+    mode: "search",
+    searchSeed: 17,
+    searchHideSpotId: null,
+    hideCheckSource: null,
+    memory: {
+      ...initial.memory,
+      lastKnownPosition: { x: 3, y: 1 },
+      lastSeenAtSeconds: 1,
+      lastKnownEvidence: "visual",
+    },
+  };
+  const candidates = evidenceRankedHideCandidates(searching, level, cfg);
+  assert.deepEqual(candidates, evidenceRankedHideCandidates(searching, level, cfg));
+  assert.deepEqual(new Set(candidates), new Set(["locker-left", "locker-right"]));
+  assert.equal(candidates.includes("locker-far"), false);
+
+  let state = {
+    ...searching,
+    position: { ...hideSpots.find((spot) => spot.id === candidates[0]).approach },
+    searchHideSpotId: candidates[0],
+    hideCheckSource: "search",
+  };
+  state = stepChaserBrain(state, level, cfg, {
+    evidence: { kind: "none", observedAtSeconds: 2 },
+    reachedTarget: true,
+    nowSeconds: 2,
+    deltaSeconds: cfg.aiTickSeconds,
+  }).state;
+  assert.equal(state.mode, "check-hide");
+  assert.equal(state.searchHideSpotId, candidates[0]);
+
+  const completed = stepChaserBrain(state, level, cfg, {
+    evidence: { kind: "none", observedAtSeconds: 2.2 },
+    reachedTarget: true,
+    nowSeconds: 2.2,
+    deltaSeconds: cfg.checkHideSeconds,
+  });
+  assert.equal(completed.completedHideCheckId, candidates[0]);
+  assert.equal(completed.completedHideCheckSource, "search");
+  assert.equal(completed.state.searchHideChecksCompleted, 1);
+  assert.deepEqual(completed.state.inspectedHideSpotIds, [candidates[0]]);
+  assert.notEqual(completed.state.searchHideSpotId, candidates[0], "an inspected locker cannot be selected again");
+
+  const afterBudget = {
+    ...completed.state,
+    searchHideChecksCompleted: cfg.searchHideCheckBudget,
+    searchHideSpotId: null,
+  };
+  assert.deepEqual(evidenceRankedHideCandidates(afterBudget, level, cfg), [candidates[1]]);
+  const exhausted = stepChaserBrain({
+    ...afterBudget,
+    mode: "scan-last-known",
+    modeElapsedSeconds: cfg.lastKnownScanSeconds,
+  }, level, cfg, {
+    evidence: { kind: "none", observedAtSeconds: 3 },
+    reachedTarget: true,
+    nowSeconds: 3,
+    deltaSeconds: cfg.aiTickSeconds,
+  }).state;
+  assert.equal(exhausted.mode, "search");
+  assert.equal(exhausted.searchHideSpotId, null, "the public candidates cannot bypass the configured budget");
+  // Candidate ranking has no occupancy argument or runtime hide-spot state;
+  // changing which locker contains the player cannot affect this decision.
+  assert.deepEqual(
+    evidenceRankedHideCandidates({ ...afterBudget }, level, cfg),
+    evidenceRankedHideCandidates({ ...afterBudget }, level, cfg),
+  );
+});
+
 test("path following reaches a continuous last-known point inside its goal cell", () => {
   const level = testLevel(["....."], {
     playerStart: { x: 0, y: 0 },
@@ -745,13 +913,29 @@ test("FAIR-01: an unwitnessed locker choice cannot alter chaser decisions", () =
     level: testLevel([".......", "...#...", "......."], { ...common, playerStart: hideSpots[0].approach }),
     autoStart: true,
     initialPlayerHeading: hideSpots[0].facing,
-    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0, hideEnterSeconds: 0.3, hideInteractRange: 0.2, catchRange: 0.1, visionRange: 10 }),
+    config: config({
+      spawnDelaySeconds: 0,
+      chaserSpeed: 0,
+      hideEnterSeconds: 0.3,
+      hideInteractRange: 0.2,
+      catchRange: 0.1,
+      visionRange: 10,
+      hearingRange: 0.1,
+    }),
   });
   const right = new GameSimulation({
     level: testLevel([".......", "...#...", "......."], { ...common, playerStart: hideSpots[1].approach }),
     autoStart: true,
     initialPlayerHeading: hideSpots[1].facing,
-    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0, hideEnterSeconds: 0.3, hideInteractRange: 0.2, catchRange: 0.1, visionRange: 10 }),
+    config: config({
+      spawnDelaySeconds: 0,
+      chaserSpeed: 0,
+      hideEnterSeconds: 0.3,
+      hideInteractRange: 0.2,
+      catchRange: 0.1,
+      visionRange: 10,
+      hearingRange: 0.1,
+    }),
   });
 
   left.advance(1 / 60, { interactPressed: true });
@@ -1049,9 +1233,113 @@ test("capture respects protection, exposure, LOS, and completed fair locker chec
   const caughtInLocker = runFor(checked, 0.7 - 1 / 60, 1 / 60);
   assert.equal(caughtInLocker.phase, "lost");
   assert.equal(caughtInLocker.player.mode, "caught");
+  assert.equal(caughtInLocker.captureReason, "witnessed-hide-check");
   assert.equal(caughtInLocker.player.hideSpotId, null, "capture must release the presentation from the locker anchor");
   assert.equal(caughtInLocker.hideSpots[witnessedLocker.id].occupiedByPlayer, false, "capture must clear locker occupancy");
   assert.equal(caughtInLocker.player.transitionRemainingSeconds, 0);
+});
+
+test("capture reasons distinguish exposed entry, unsafe exit, and evidence-ranked search", () => {
+  const exposedLocker = {
+    id: "exposed-entry",
+    approach: { x: 2, y: 0 },
+    concealed: { x: 2, y: 0 },
+    facing: { x: -1, y: 0 },
+  };
+  const exposedEntry = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: exposedLocker.approach,
+      chaserStart: { x: 1.9, y: 0 },
+      chaserStartHeading: { x: 1, y: 0 },
+      exit: { x: 4, y: 0 },
+      hideSpots: [exposedLocker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: exposedLocker.facing,
+    config: config({ spawnDelaySeconds: 0, chaserSpeed: 0, hideInteractRange: 0.2, catchRange: 0.2 }),
+  });
+  const exposedResult = exposedEntry.advance(1 / 60, { interactPressed: true });
+  assert.equal(exposedResult.phase, "lost");
+  assert.equal(exposedResult.captureReason, "exposed-hide-entry");
+  assert.equal(
+    exposedResult.events.some((event) => event.type === "player-captured" && event.reason === "exposed-hide-entry"),
+    true,
+  );
+
+  const exitLocker = {
+    id: "unsafe-exit",
+    approach: { x: 2, y: 0 },
+    concealed: { x: 2, y: 0 },
+    facing: { x: 1, y: 0 },
+  };
+  const unsafeExit = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: exitLocker.approach,
+      chaserStart: exitLocker.approach,
+      exit: { x: 4, y: 0 },
+      hideSpots: [exitLocker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: exitLocker.facing,
+    config: config({
+      spawnDelaySeconds: 0.5,
+      chaserSpeed: 0,
+      hideEnterSeconds: 0.1,
+      hideExitSeconds: 0.3,
+      hideInteractRange: 0.2,
+    }),
+  });
+  unsafeExit.advance(1 / 60, { interactPressed: true });
+  let state = runFor(unsafeExit, 0.65, 1 / 60);
+  assert.equal(state.player.mode, "hidden");
+  unsafeExit.advance(1 / 60, { interactPressed: true });
+  state = runFor(unsafeExit, 0.35, 1 / 60);
+  assert.equal(state.phase, "lost");
+  assert.equal(state.captureReason, "unsafe-hide-exit");
+
+  const searchedLocker = {
+    id: "searched",
+    approach: { x: 2, y: 0 },
+    concealed: { x: 2, y: 0 },
+    facing: { x: 1, y: 0 },
+  };
+  const searched = new GameSimulation({
+    level: testLevel(["....."], {
+      playerStart: searchedLocker.approach,
+      chaserStart: { x: 0, y: 0 },
+      chaserStartHeading: { x: 1, y: 0 },
+      exit: { x: 4, y: 0 },
+      hideSpots: [searchedLocker],
+    }),
+    autoStart: true,
+    initialPlayerHeading: searchedLocker.facing,
+    config: config({
+      spawnDelaySeconds: 0.5,
+      aiTickSeconds: 0.05,
+      suspiciousSeconds: 0.1,
+      chaserSpeed: 1,
+      catchRange: 0.05,
+      visionRange: 10,
+      hideEnterSeconds: 0.1,
+      hideInteractRange: 0.2,
+      peekEnterSeconds: 0.05,
+      peekExitSeconds: 0.05,
+      lastKnownScanSeconds: 0.1,
+      searchSeconds: 8,
+      searchWaypointSeconds: 0.1,
+      searchHideCheckBudget: 1,
+      searchHideRadiusCells: 3,
+      checkHideSeconds: 0.1,
+    }),
+  });
+  searched.advance(1 / 60, { interactPressed: true });
+  state = runFor(searched, 0.65, 1 / 60);
+  assert.equal(state.player.mode, "hidden");
+  runFor(searched, 0.25, 1 / 60, { peekHeld: true });
+  runFor(searched, 0.15, 1 / 60, { peekHeld: false });
+  state = runFor(searched, 8, 1 / 60);
+  assert.equal(state.phase, "lost");
+  assert.equal(state.captureReason, "search-hide-check");
 });
 
 test("capture aligns both authored performances face-to-face even from behind", () => {

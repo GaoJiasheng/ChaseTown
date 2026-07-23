@@ -378,6 +378,15 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
 
     if (publicPath.includes("/characters/")) {
       assert.ok((gltf.skins?.length ?? 0) > 0, `${publicPath} must retain its character rig`);
+      assert.ok(
+        gltf.extensionsRequired?.includes("EXT_meshopt_compression"),
+        `${publicPath} must use the pinned character Meshopt transport`,
+      );
+      assert.equal(
+        gltf.extensionsRequired?.includes("KHR_mesh_quantization"),
+        false,
+        `${publicPath} must retain authored floating-point geometry`,
+      );
     }
   }
 

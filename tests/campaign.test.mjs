@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   CAMPAIGN_LEVEL_COUNT,
   CAMPAIGN_LEVELS,
+  getCampaignGameplayConfig,
   getCampaignLevelById,
   getCampaignLevelByIndex,
   getCampaignLevelByNumber,
@@ -160,6 +161,33 @@ test("campaign covers all requested themes with a progressive difficulty curve",
   assert.deepEqual([...difficulties].sort((a, b) => a - b), difficulties);
   assert.equal(difficulties[0], 1);
   assert.equal(difficulties.at(-1), 5);
+});
+
+test("campaign difficulty scales confirmation, search intensity, hearing and fair hide checks", () => {
+  const configs = CAMPAIGN_LEVELS.map(getCampaignGameplayConfig);
+  const nondecreasing = (field) => {
+    for (let index = 1; index < configs.length; index += 1) {
+      assert.ok(configs[index][field] >= configs[index - 1][field], `${field} regressed at chapter ${index + 1}`);
+    }
+  };
+  const nonincreasing = (field) => {
+    for (let index = 1; index < configs.length; index += 1) {
+      assert.ok(configs[index][field] <= configs[index - 1][field], `${field} regressed at chapter ${index + 1}`);
+    }
+  };
+
+  for (const field of ["chaserSpeed", "visionRange", "searchSeconds", "searchHideCheckBudget", "searchHideRadiusCells", "hearingRange"]) {
+    nondecreasing(field);
+  }
+  for (const field of ["spawnDelaySeconds", "suspiciousSeconds", "searchWaypointSeconds", "checkHideSeconds", "soundUncertaintyCells"]) {
+    nonincreasing(field);
+  }
+  assert.deepEqual(configs.slice(0, 3).map((config) => config.searchHideCheckBudget), [0, 0, 0]);
+  assert.deepEqual(configs.slice(7).map((config) => config.searchHideCheckBudget), [2, 2, 2]);
+  assert.ok(configs.every((config) => Math.abs(config.aiTickSeconds - 0.05) < 1e-12));
+  assert.ok(new Set(configs.map((config) => config.searchSeconds)).size >= 8);
+  assert.ok(configs.at(-1).searchSeconds > configs[0].searchSeconds);
+  assert.ok(configs.at(-1).suspiciousSeconds < configs[0].suspiciousSeconds);
 });
 
 test("campaign lookup supports ids, zero-based indexes and player-facing numbers", () => {

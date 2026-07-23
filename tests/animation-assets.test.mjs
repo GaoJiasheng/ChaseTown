@@ -140,25 +140,35 @@ const CHARACTER_CONTRACTS = {
     clips: ["Idle", "Walk", "Run", "TurnLeft", "TurnRight", "HideEnter", "HideIdle", "HidePeek", "HideExit", "Caught", "EscapeCelebrate", "Interact"],
     minimumDuration: { TurnLeft: 0.55, TurnRight: 0.55, Caught: 0.8, HideEnter: 1, HideIdle: 1.5, HidePeek: 0.8, HideExit: 0.8 },
     exactDuration: { TurnLeft: 0.6, TurnRight: 0.6 },
+    maxBytes: 5_100_000,
   },
   villain: {
     clips: ["Idle", "PatrolWalk", "Run", "Alert", "LostSight", "Search", "CheckHide", "Catch"],
     minimumDuration: { Alert: 0.35, LostSight: 1, Search: 1, CheckHide: 1.5, Catch: 0.7 },
+    maxBytes: 4_850_000,
   },
   police: {
     clips: ["Idle", "Run", "Alert", "Interact", "Resolve"],
     minimumDuration: { Resolve: 0.7 },
+    maxBytes: 8_850_000,
   },
 };
 
 for (const [role, contract] of Object.entries(CHARACTER_CONTRACTS)) {
   test(`${role} ships only its complete moving production animation set`, async () => {
     const filename = path.join(ROOT, "public/models/characters", `${role}.glb`);
-    const asset = readGlb(await readFile(filename), filename);
+    const buffer = await readFile(filename);
+    const asset = await decodeMeshoptBufferViews(readGlb(buffer, filename));
     const animations = asset.json.animations ?? [];
     assert.deepEqual(animations.map((animation) => animation.name).sort(), [...contract.clips].sort());
     assert.equal(asset.json.skins?.[0]?.joints?.length, 21, `${role} must keep the approved 21-bone web rig`);
-    assert.ok((await readFile(filename)).length < 12 * 1024 * 1024, `${role} exceeds the per-character web budget`);
+    assert.ok(buffer.length <= contract.maxBytes, `${role} exceeds its Meshopt web budget (${buffer.length} bytes)`);
+    assert.ok(asset.json.extensionsRequired?.includes("EXT_meshopt_compression"), `${role} must require Meshopt compression`);
+    assert.equal(
+      asset.json.extensionsRequired?.includes("KHR_mesh_quantization"),
+      false,
+      `${role} must retain authored floating-point geometry`,
+    );
 
     for (const animation of animations) {
       const duration = animationDuration(asset, animation);

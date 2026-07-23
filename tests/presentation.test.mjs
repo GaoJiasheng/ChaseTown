@@ -7,9 +7,16 @@ import {
   boundedFrameDeltaSeconds,
   cameraDistanceScaleForPlayerMode,
   cameraFocusForEdgeHide,
+  cameraFocusForSafeViewport,
+  cameraSafeViewportFromInsets,
   canChaserTakeLockerDoor,
   chaserAnimationForMode,
+  fixedCameraCompositionConstraints,
+  gameplayCameraInsetsForViewport,
   lockerVisionMix,
+  maximumCameraDistanceForActorReadability,
+  projectPointToFixedCameraNdc,
+  projectedActorScreenHeightPixels,
   requiredCameraDistanceForFraming,
   shouldFrameChaser,
   shouldRenderChaserModel,
@@ -173,6 +180,140 @@ test("portrait baseline keeps actors readable without weakening safe framing", (
   assert.ok(baseCameraDistanceForAspect(0.7) > 14.25);
   assert.ok(baseCameraDistanceForAspect(0.7) < 16.25);
   assert.equal(baseCameraDistanceForAspect(Number.NaN), 16.25);
+});
+
+test("mobile UI insets produce a bounded asymmetric camera-safe viewport", () => {
+  const insets = gameplayCameraInsetsForViewport(390, 746, true);
+  assert.ok(insets.top >= 70);
+  assert.ok(insets.bottom >= 125);
+  assert.ok(insets.bottom > insets.top);
+
+  const safe = cameraSafeViewportFromInsets(390, 746, insets);
+  assert.ok(safe.minX < 0 && safe.maxX > 0);
+  assert.ok(safe.minY < 0 && safe.maxY > 0);
+  assert.ok((safe.minY + safe.maxY) / 2 > 0, "bottom controls must move the visual center upward");
+
+  const malformed = cameraSafeViewportFromInsets(0, Number.NaN, {
+    left: Number.POSITIVE_INFINITY,
+    right: -10,
+    top: Number.NaN,
+    bottom: 99,
+  });
+  assert.ok(Object.values(malformed).every(Number.isFinite));
+  assert.ok(malformed.minX < malformed.maxX);
+  assert.ok(malformed.minY < malformed.maxY);
+});
+
+test("safe viewport focus translation preserves azimuth and moves gameplay above controls", () => {
+  const focus = { x: 2, y: 0.92, z: -3 };
+  const cameraDirection = { x: 0.3451465392455413, y: 0.7308985536964403, z: -0.588779390477688 };
+  const safeViewport = cameraSafeViewportFromInsets(
+    390,
+    746,
+    gameplayCameraInsetsForViewport(390, 746, true),
+  );
+  const shiftedFocus = cameraFocusForSafeViewport({
+    focus,
+    cameraDirection,
+    cameraDistance: 15,
+    verticalFovDegrees: 56,
+    aspect: 390 / 746,
+    safeViewport,
+  });
+  const projection = projectPointToFixedCameraNdc({
+    focus: shiftedFocus,
+    point: focus,
+    cameraDirection,
+    cameraDistance: 15,
+    verticalFovDegrees: 56,
+    aspect: 390 / 746,
+  });
+  assert.ok(projection);
+  assert.ok(Math.abs(projection.x - (safeViewport.minX + safeViewport.maxX) / 2) < 1e-9);
+  assert.ok(Math.abs(projection.y - (safeViewport.minY + safeViewport.maxY) / 2) < 1e-9);
+});
+
+test("actor readability returns a maximum distance at the requested pixel height", () => {
+  const request = {
+    focus: { x: 0, y: 0.92, z: 0 },
+    actor: { center: { x: 0, y: 0.76, z: 0 }, height: 1.52 },
+    cameraDirection: { x: 0.3451465392455413, y: 0.7308985536964403, z: -0.588779390477688 },
+    verticalFovDegrees: 56,
+    aspect: 16 / 9,
+    viewportHeightPixels: 860,
+    minimumScreenHeightPixels: 48,
+    minimumDistance: 3,
+    maximumDistance: 44,
+  };
+  const maximum = maximumCameraDistanceForActorReadability(request);
+  assert.ok(maximum > 14 && maximum < 24, `unexpected readability distance ${maximum}`);
+  const height = projectedActorScreenHeightPixels({ ...request, cameraDistance: maximum });
+  assert.ok(Math.abs(height - request.minimumScreenHeightPixels) < 1e-6);
+  assert.ok(
+    projectedActorScreenHeightPixels({ ...request, cameraDistance: maximum + 1 }) < request.minimumScreenHeightPixels,
+  );
+});
+
+test("fixed camera composition reports feasible and conflicting two-actor constraints", () => {
+  const common = {
+    focus: { x: 0, y: 0.92, z: 0 },
+    cameraDirection: { x: 0, y: 0.7308985536964403, z: -0.682486121 },
+    verticalFovDegrees: 56,
+    aspect: 390 / 746,
+    viewportHeightPixels: 684,
+    minimumActorScreenHeightPixels: 42,
+    preferredDistance: 15,
+    minimumDistance: 8,
+    maximumDistance: 44,
+    horizontalMargin: 0.38,
+    verticalMargin: 0.92,
+    safeViewport: cameraSafeViewportFromInsets(390, 684, { left: 18, right: 18, top: 62, bottom: 118 }),
+  };
+  const nearby = fixedCameraCompositionConstraints({
+    ...common,
+    actors: [
+      { center: { x: -2, y: 0.76, z: 0 }, height: 1.52 },
+      { center: { x: 2, y: 0.94, z: 0 }, height: 1.88 },
+    ],
+  });
+  assert.equal(nearby.feasible, true);
+  assert.equal(nearby.framingSatisfied, true);
+  assert.equal(nearby.readabilitySatisfied, true);
+  assert.ok(nearby.distance >= nearby.requiredFramingDistance);
+  assert.ok(nearby.distance <= nearby.maximumReadableDistance);
+
+  const separated = fixedCameraCompositionConstraints({
+    ...common,
+    actors: [
+      { center: { x: -8, y: 0.76, z: 0 }, height: 1.52 },
+      { center: { x: 8, y: 0.94, z: 0 }, height: 1.88 },
+    ],
+  });
+  assert.equal(separated.feasible, false);
+  assert.equal(separated.framingSatisfied, true, "honest two-actor visibility wins over target pixel size");
+  assert.equal(separated.readabilitySatisfied, false);
+  assert.ok(separated.requiredFramingDistance > separated.maximumReadableDistance);
+});
+
+test("asymmetric touch safe area increases framing only toward the obstructed side", () => {
+  const common = {
+    focus: { x: 0, y: 0.92, z: 0 },
+    cameraDirection: { x: 0, y: 0.73, z: -0.68 },
+    verticalFovDegrees: 56,
+    aspect: 0.6,
+    horizontalMargin: 0.2,
+    verticalMargin: 0.5,
+    safeViewport: { minX: -0.88, maxX: 0.42, minY: -0.62, maxY: 0.82 },
+  };
+  const wideSide = requiredCameraDistanceForFraming({
+    ...common,
+    points: [{ x: 5, y: 0.92, z: 0 }],
+  });
+  const narrowSide = requiredCameraDistanceForFraming({
+    ...common,
+    points: [{ x: -5, y: 0.92, z: 0 }],
+  });
+  assert.ok(narrowSide > wideSide * 1.6);
 });
 
 test("locker performances receive a close readable camera without shrinking exploration", () => {

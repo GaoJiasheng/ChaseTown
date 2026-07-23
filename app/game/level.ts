@@ -32,7 +32,13 @@ export const DEFAULT_GAME_CONFIG: Readonly<GameConfig> = Object.freeze({
   lastKnownScanSeconds: 1.5,
   searchSeconds: 4.5,
   searchWaypointSeconds: 0.75,
+  // The reusable vertical-slice default remains conservative. Campaign
+  // chapters opt into evidence-ranked locker checks explicitly.
+  searchHideCheckBudget: 0,
+  searchHideRadiusCells: 3,
   checkHideSeconds: 2.35,
+  hearingRange: 7,
+  soundUncertaintyCells: 1,
   visionRange: 7,
   visionConeDegrees: 110,
   proximitySenseRange: 0.85,
