@@ -484,6 +484,19 @@ try {
     assert.equal(chaseState.visibility.kid.viewport.centerInFrustum, true);
     assert.equal(chaseState.visibility.villain.viewport.centerInFrustum, true);
     assert.equal(chaseState.visibility.villain.worldRendered, true);
+    assert.ok(
+      chaseState.visibility.kid.viewport.worldHeight >= 1.35
+        && chaseState.visibility.kid.viewport.worldHeight <= 1.65,
+      `${level.id} player model lost its authored 1.52m scale: ${chaseState.visibility.kid.viewport.worldHeight}`,
+    );
+    assert.ok(
+      chaseState.visibility.villain.viewport.worldHeight >= 1.7
+        && chaseState.visibility.villain.viewport.worldHeight <= 2.05,
+      `${level.id} chaser model lost its authored 1.88m scale: ${chaseState.visibility.villain.viewport.worldHeight}`,
+    );
+    const chaseName = `${String(level.number).padStart(2, "0")}-${level.propSet}-chase`;
+    const chaseImage = await capturePlayfield(chaseName);
+    await saveState(chaseName, chaseState);
 
     await clickByLabel("重置动态视野");
     await cdp.evaluate(`window.__CHASING_QA__.setScenario(${JSON.stringify({ player: level.representative.hide.player, chaser: level.representative.hide.chaser })})`);
@@ -514,6 +527,7 @@ try {
       screenshots: {
         far: { file: `${beautyName}.png`, ...beautyImage, fingerprint: undefined },
         near: { file: `${nearName}.png`, ...nearImage, fingerprint: undefined },
+        chase: { file: `${chaseName}.png`, ...chaseImage, fingerprint: undefined },
         hide: { file: `${hideName}.png`, ...hideImage, fingerprint: undefined },
       },
       framePerformance,

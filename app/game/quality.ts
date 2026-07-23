@@ -37,6 +37,55 @@ export interface RenderWorkloadSample {
   readonly shadowDrawCalls?: number;
 }
 
+export type RenderBudgetMetric =
+  | "visibleTriangles"
+  | "drawCalls"
+  | "shadowTriangles"
+  | "shadowDrawCalls";
+
+export interface RenderBudgetUtilization {
+  readonly visibleTriangles: number;
+  readonly drawCalls: number;
+  readonly shadowTriangles?: number;
+  readonly shadowDrawCalls?: number;
+  /** Largest supplied workload-to-budget ratio. Invalid counters report Infinity. */
+  readonly peak: number;
+  readonly exceeded: readonly RenderBudgetMetric[];
+}
+
+export type EmergencyDegradationLevel = 0 | 1 | 2 | 3;
+
+export interface EmergencyDegradationState {
+  readonly level: EmergencyDegradationLevel;
+  readonly overloadSeconds: number;
+  readonly recoverySeconds: number;
+}
+
+export interface EmergencyDegradationInput {
+  readonly tier: RenderQualityTier;
+  readonly p95FrameMilliseconds: number;
+  readonly elapsedSeconds: number;
+  readonly workload: RenderWorkloadSample;
+}
+
+export interface EmergencyRenderPolicy {
+  readonly level: EmergencyDegradationLevel;
+  /** Added to a decorative object's normal full/reduced/impostor LOD index. */
+  readonly decorativeLodBias: 0 | 1 | 2 | 3;
+  /** Applied before the profile's decorativeDistanceMeters cutoff. */
+  readonly decorativeDistanceScale: number;
+  /** Applied after the profile's authored atmosphericParticleScale. */
+  readonly atmosphericParticleScale: number;
+  readonly dynamicLightScale: number;
+  readonly shadowCasterMode:
+    | "profile"
+    | "critical-and-near"
+    | "critical-only"
+    | "characters-only";
+  readonly hideOptionalDecorations: boolean;
+  readonly disableExpensivePostEffects: boolean;
+}
+
 export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQualityTier, RenderQualityProfile>> =
   Object.freeze({
     high: Object.freeze({
@@ -83,6 +132,58 @@ export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQualityTier, RenderQ
     }),
   });
 
+export const INITIAL_EMERGENCY_DEGRADATION_STATE: EmergencyDegradationState =
+  Object.freeze({
+    level: 0,
+    overloadSeconds: 0,
+    recoverySeconds: 0,
+  });
+
+export const EMERGENCY_RENDER_POLICIES: Readonly<
+  Record<EmergencyDegradationLevel, EmergencyRenderPolicy>
+> = Object.freeze({
+  0: Object.freeze({
+    level: 0,
+    decorativeLodBias: 0,
+    decorativeDistanceScale: 1,
+    atmosphericParticleScale: 1,
+    dynamicLightScale: 1,
+    shadowCasterMode: "profile",
+    hideOptionalDecorations: false,
+    disableExpensivePostEffects: false,
+  }),
+  1: Object.freeze({
+    level: 1,
+    decorativeLodBias: 1,
+    decorativeDistanceScale: 0.82,
+    atmosphericParticleScale: 0.72,
+    dynamicLightScale: 0.8,
+    shadowCasterMode: "critical-and-near",
+    hideOptionalDecorations: false,
+    disableExpensivePostEffects: false,
+  }),
+  2: Object.freeze({
+    level: 2,
+    decorativeLodBias: 2,
+    decorativeDistanceScale: 0.64,
+    atmosphericParticleScale: 0.42,
+    dynamicLightScale: 0.6,
+    shadowCasterMode: "critical-only",
+    hideOptionalDecorations: false,
+    disableExpensivePostEffects: true,
+  }),
+  3: Object.freeze({
+    level: 3,
+    decorativeLodBias: 3,
+    decorativeDistanceScale: 0.48,
+    atmosphericParticleScale: 0.2,
+    dynamicLightScale: 0.4,
+    shadowCasterMode: "characters-only",
+    hideOptionalDecorations: true,
+    disableExpensivePostEffects: true,
+  }),
+});
+
 /**
  * Pick a conservative first frame without permanently penalising capable
  * phones. The runtime governor may still move one tier in either direction
@@ -121,6 +222,50 @@ function isFiniteNonNegative(value: number): boolean {
   return Number.isFinite(value) && value >= 0;
 }
 
+function budgetRatio(value: number | undefined, maximum: number): number | undefined {
+  if (value === undefined) return undefined;
+  if (!isFiniteNonNegative(value)) return Number.POSITIVE_INFINITY;
+  return value / maximum;
+}
+
+/**
+ * Detailed counterpart to renderWorkloadFitsProfile(). Keeping shadow pass
+ * counters separate is important: a cheap colour pass can still be dominated
+ * by one oversized realtime shadow map.
+ */
+export function renderBudgetUtilization(
+  profile: RenderQualityProfile,
+  workload: RenderWorkloadSample,
+): RenderBudgetUtilization {
+  const values = {
+    visibleTriangles: budgetRatio(
+      workload.visibleTriangles,
+      profile.maximumVisibleTriangles,
+    )!,
+    drawCalls: budgetRatio(workload.drawCalls, profile.maximumDrawCalls)!,
+    shadowTriangles: budgetRatio(
+      workload.shadowTriangles,
+      profile.maximumShadowTriangles,
+    ),
+    shadowDrawCalls: budgetRatio(
+      workload.shadowDrawCalls,
+      profile.maximumShadowDrawCalls,
+    ),
+  };
+  const exceeded = (Object.entries(values) as Array<
+    [RenderBudgetMetric, number | undefined]
+  >)
+    .filter(([, value]) => value !== undefined && value > 1)
+    .map(([metric]) => metric);
+  const suppliedRatios = Object.values(values)
+    .filter((value): value is number => value !== undefined);
+  return Object.freeze({
+    ...values,
+    peak: Math.max(...suppliedRatios),
+    exceeded: Object.freeze(exceeded),
+  });
+}
+
 /**
  * Pure budget predicate used by both the governor and renderer integration.
  * Omitted shadow counters are permitted while a backend cannot expose a
@@ -130,27 +275,78 @@ export function renderWorkloadFitsProfile(
   profile: RenderQualityProfile,
   workload: RenderWorkloadSample,
 ): boolean {
+  return renderBudgetUtilization(profile, workload).exceeded.length === 0;
+}
+
+function emergencyLevel(value: number): EmergencyDegradationLevel {
+  return Math.min(3, Math.max(0, Math.floor(value))) as EmergencyDegradationLevel;
+}
+
+/**
+ * Mobile is already the lowest quality tier, so a sustained overload there
+ * needs a second, independently hysteretic safety valve. This state machine
+ * escalates one step at a time and only recovers with durable 20% workload
+ * headroom. Gameplay-critical renderables are protected by
+ * resolveRuntimeObjectPolicy() in runtime-visibility.ts.
+ */
+export function updateEmergencyDegradation(
+  current: EmergencyDegradationState,
+  input: EmergencyDegradationInput,
+): EmergencyDegradationState {
   if (
-    !isFiniteNonNegative(workload.visibleTriangles)
-    || !isFiniteNonNegative(workload.drawCalls)
-    || workload.visibleTriangles > profile.maximumVisibleTriangles
-    || workload.drawCalls > profile.maximumDrawCalls
-  ) return false;
-  if (
-    workload.shadowTriangles !== undefined
-    && (
-      !isFiniteNonNegative(workload.shadowTriangles)
-      || workload.shadowTriangles > profile.maximumShadowTriangles
-    )
-  ) return false;
-  if (
-    workload.shadowDrawCalls !== undefined
-    && (
-      !isFiniteNonNegative(workload.shadowDrawCalls)
-      || workload.shadowDrawCalls > profile.maximumShadowDrawCalls
-    )
-  ) return false;
-  return true;
+    input.tier !== "mobile"
+    || !Number.isFinite(input.elapsedSeconds)
+    || input.elapsedSeconds <= 0
+  ) return input.tier === "mobile" ? current : INITIAL_EMERGENCY_DEGRADATION_STATE;
+
+  const profile = RENDER_QUALITY_PROFILES.mobile;
+  const utilization = renderBudgetUtilization(profile, input.workload);
+  const validFrameTime = Number.isFinite(input.p95FrameMilliseconds)
+    && input.p95FrameMilliseconds > 0;
+  const overloaded = utilization.peak > 1
+    || (validFrameTime && input.p95FrameMilliseconds > 35);
+  const durableHeadroom = utilization.peak <= 0.8
+    && validFrameTime
+    && input.p95FrameMilliseconds < 24;
+
+  if (overloaded) {
+    const overloadSeconds = Math.max(0, current.overloadSeconds) + input.elapsedSeconds;
+    const activationSeconds = current.level === 0 ? 1.5 : 2.5;
+    if (overloadSeconds >= activationSeconds && current.level < 3) {
+      return Object.freeze({
+        level: emergencyLevel(current.level + 1),
+        overloadSeconds: 0,
+        recoverySeconds: 0,
+      });
+    }
+    return Object.freeze({
+      level: current.level,
+      overloadSeconds,
+      recoverySeconds: 0,
+    });
+  }
+
+  if (durableHeadroom && current.level > 0) {
+    const recoverySeconds = Math.max(0, current.recoverySeconds) + input.elapsedSeconds;
+    if (recoverySeconds >= 10) {
+      return Object.freeze({
+        level: emergencyLevel(current.level - 1),
+        overloadSeconds: 0,
+        recoverySeconds: 0,
+      });
+    }
+    return Object.freeze({
+      level: current.level,
+      overloadSeconds: 0,
+      recoverySeconds,
+    });
+  }
+
+  return Object.freeze({
+    level: current.level,
+    overloadSeconds: 0,
+    recoverySeconds: 0,
+  });
 }
 
 /**

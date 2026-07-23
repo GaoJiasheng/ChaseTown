@@ -191,19 +191,26 @@ test("checked-in Basis transcoder is byte-identical to the pinned Three.js runti
   }
 });
 
-test("hero locker retains its shared PNG contract instead of duplicating KTX2 payloads", async () => {
+test("hero locker consumes the shared two-atlas bootstrap without duplicating texture payloads", async () => {
   const filename = path.join(ROOT, "public", "models", "environment", "locker.glb");
   const glb = readGlb(await readFile(filename), filename);
-  assert.equal(glb.json.extensionsRequired?.includes("KHR_texture_basisu"), false);
-  assert.ok(glb.json.images.length >= 6);
+  assert.ok(glb.json.extensionsRequired?.includes("KHR_texture_basisu"));
+  assert.ok(glb.json.extensionsRequired?.includes("KHR_texture_transform"));
+  assert.equal(glb.json.images.length, 2);
+  assert.equal(glb.json.textures.length, 2);
   assert.ok(
     glb.json.images.every(
       (image) => image.bufferView === undefined
-        && image.uri?.startsWith("../SharedTextures/")
-        && image.uri.endsWith(".png"),
+        && image.uri?.startsWith("SharedTexturesBootstrapKTX2/")
+        && image.uri.endsWith(".ktx2"),
     ),
   );
-  assert.ok(glb.json.textures.every((texture) => Number.isInteger(texture.source)));
+  assert.ok(
+    glb.json.textures.every(
+      (texture) => texture.source === undefined
+        && Number.isInteger(texture.extensions?.KHR_texture_basisu?.source),
+    ),
+  );
 });
 
 test("KTX2 pipeline check is self-contained and no native encoder binary is committed", async () => {

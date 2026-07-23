@@ -29,6 +29,44 @@ const state = simulation.advance(renderDeltaSeconds, {
 - 不要自行按 60 Hz 循环。`advance()` 内部已经用 `fixedStepSeconds` 累积和推进，并限制异常的大帧间隔。
 - 一个渲染帧可能包含多个固定步；返回的 `state.events` 会保留这些固定步产生的全部事件。
 
+### 主动主题机关
+
+周期主题事件仍可继续使用 `sampleThemeMechanic(theme, elapsedSeconds)`。需要把铃声、呼叫器、排烟阀或蒸汽阀落到真实位置时，使用纯状态机：
+
+```ts
+import {
+  createMechanicInstance,
+  createThemeMechanicDefinition,
+  stepMechanicInstance,
+} from "./game/theme-mechanics.ts";
+
+let bell = createMechanicInstance(
+  createThemeMechanicDefinition("campus", "bell-west", { x: 7, y: 5 }),
+);
+
+const result = stepMechanicInstance(bell, {
+  deltaSeconds,
+  nowSeconds: simulation.getState().elapsedSeconds,
+  activationRequested: interactPressed,
+  actorPosition: simulation.getState().player.position,
+});
+bell = result.instance;
+
+if (result.emittedSoundStimulus) {
+  simulation.emitWorldSound(result.emittedSoundStimulus);
+}
+simulation.advance(deltaSeconds, {
+  environmentSoundMasking: result.sample.soundMasking,
+  visionRangeMultiplier: result.sample.visionRangeMultiplier,
+});
+```
+
+- `warning-started` 用于预警灯、拉杆动画和提示音；不要在玩家按键瞬间直接跳到满强度效果。
+- `activation-cost-applied` 是公开表现合同，按 `noise / exposure / time` 播放对应代价反馈。
+- `emittedSoundStimulus` 只能交给 `emitWorldSound()`；该入口仍会经过导航距离、听觉范围和位置误差，禁止直接构造 AI 目标。
+- 同一稳定环境声源被连续滥用会降低置信度；视觉以及目击进柜证据始终优先。
+- 环境声源驱动的后续搜索从真实导航岔路生成 3–5 条可达假设；原有十关视觉/脚步搜索继续使用已经认证的局部搜索顺序。
+
 ## 3. 快照、事件与渲染
 
 每帧按以下顺序接线：

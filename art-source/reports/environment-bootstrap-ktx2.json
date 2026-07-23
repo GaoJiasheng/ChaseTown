@@ -1,0 +1,2030 @@
+{
+  "formatVersion": 1,
+  "policy": {
+    "geometryAndAnimationBinaryByteStable": true,
+    "sourceResolution": "BaseColor retains 512px tiles; Normal uses a reviewed 256px first-paint derivative.",
+    "atlasLayout": "BaseColor 512px+8px and Normal 256px+4px share an exactly equivalent normalized 4x3 layout.",
+    "baseColor": "ETC1S quality 10 with BasisLZ supercompression",
+    "normal": "Reuse theme-bootstrap 256px/tile UASTC quality 10 atlas with Zstandard supercompression",
+    "normalAtlasNormalizedUvEquivalent": true,
+    "normalAtlasSourceHashesExact": true,
+    "fallbackImages": false,
+    "applicationUrlChangesRequired": false
+  },
+  "tool": {
+    "name": "gltfpack",
+    "version": "gltfpack 1.2",
+    "arguments": [
+      "-c",
+      "-kn",
+      "-km",
+      "-ke",
+      "-noq",
+      "-tc",
+      "color",
+      "-tu",
+      "normal,attrib",
+      "-tq",
+      "color",
+      "10",
+      "-tq",
+      "normal,attrib",
+      "10",
+      "-tj",
+      "4"
+    ],
+    "nativeBinaryCommitted": false
+  },
+  "atlas": {
+    "columns": 4,
+    "rows": 3,
+    "textureFamilies": [
+      "Blackboard",
+      "BluePaintedMetal",
+      "GlassBlue",
+      "Grass",
+      "HallwayTile",
+      "PaintedWall",
+      "Paper",
+      "RedPaintedMetal",
+      "RubberBlack",
+      "WoodTrim",
+      "WornMetal"
+    ],
+    "normalizedUvLayoutEquivalent": true,
+    "normalizedTransformMaxDelta": 0,
+    "baseColor": {
+      "sourceTileWidth": 512,
+      "sourceTileHeight": 512,
+      "gutterPixels": 8,
+      "width": 2112,
+      "height": 1584
+    },
+    "normal": {
+      "sourceTileWidth": 256,
+      "sourceTileHeight": 256,
+      "gutterPixels": 4,
+      "width": 1056,
+      "height": 792
+    }
+  },
+  "totals": {
+    "originalGlbBytes": 3787384,
+    "sourceTextureBytes": 8721102,
+    "originalRuntimeBytes": 12508486,
+    "originalRuntimeRequests": 41,
+    "outputGlbBytes": 3840420,
+    "atlasBytes": 1064908,
+    "outputRuntimeBytes": 4905328,
+    "outputRuntimeRequests": 21,
+    "savedBytes": 7603158,
+    "savedPercent": 60.784,
+    "requestsSaved": 20,
+    "supersededNormalAtlasBytes": 2288853,
+    "compactNormalAtlasBytes": 597993,
+    "normalAtlasBytesSaved": 1690860
+  },
+  "levelOneFirstPlayable": {
+    "assets": [
+      "front-gate.glb",
+      "exit.glb",
+      "locker.glb",
+      "bench.glb",
+      "tree.glb",
+      "shrub.glb",
+      "police-car.glb",
+      "basketball.glb",
+      "desk-chair.glb",
+      "podium.glb"
+    ],
+    "originalGlbBytes": 2893920,
+    "sourceTextureBytes": 6161273,
+    "originalRuntimeBytes": 9055193,
+    "originalRuntimeRequests": 26,
+    "outputGlbBytes": 2920560,
+    "atlasBytes": 1064908,
+    "outputRuntimeBytes": 3985468,
+    "outputRuntimeRequests": 12,
+    "savedBytes": 5069725,
+    "requestsSaved": 14
+  },
+  "sourceTextures": [
+    {
+      "family": "Blackboard",
+      "textureClass": "BaseColor",
+      "basename": "Env_Blackboard_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_Blackboard_BaseColor_2K.png",
+      "bytes": 255344,
+      "sha256": "8fcf2af1339fed40a0c38c925fcc7d32f5ad47b925e6d378351ca571090acd82",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Blackboard",
+      "textureClass": "Normal",
+      "basename": "Env_Blackboard_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_Blackboard_Normal_2K.png",
+      "bytes": 468441,
+      "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "BluePaintedMetal",
+      "textureClass": "BaseColor",
+      "basename": "Env_BluePaintedMetal_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png",
+      "bytes": 240862,
+      "sha256": "6d3e3dd97e6e2531b4150216ebf196aca57f3087e9f433dbd0a5fe9d97ebd43b",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "BluePaintedMetal",
+      "textureClass": "Normal",
+      "basename": "Env_BluePaintedMetal_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_BluePaintedMetal_Normal_2K.png",
+      "bytes": 238232,
+      "sha256": "f4e9a793da2f3d7196a1012592b63e7c8d3d5ed1dfceaff5bdd15ad500e9c0c2",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "GlassBlue",
+      "textureClass": "BaseColor",
+      "basename": "Env_GlassBlue_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_GlassBlue_BaseColor_2K.png",
+      "bytes": 386676,
+      "sha256": "65ca81808f86ad9320b878446ead399fa00b50351e3dd447a104f1576f71b427",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "GlassBlue",
+      "textureClass": "Normal",
+      "basename": "Env_GlassBlue_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_GlassBlue_Normal_2K.png",
+      "bytes": 514865,
+      "sha256": "a55a377be48adb85e399f7a27170a323a4a9cdc69d80c18de91d06ea6c810a43",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Grass",
+      "textureClass": "BaseColor",
+      "basename": "Env_Grass_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_Grass_BaseColor_2K.png",
+      "bytes": 424344,
+      "sha256": "5b95e9f3b62a4a3fbe86bc0e688d0f213e9f73ad27b77b31636c8c0a9462576d",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Grass",
+      "textureClass": "Normal",
+      "basename": "Env_Grass_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_Grass_Normal_2K.png",
+      "bytes": 633575,
+      "sha256": "ffe94134bb492e0ab9f8b5a7d81831d9817d0faf14cd3373932fb86e43391f50",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "HallwayTile",
+      "textureClass": "BaseColor",
+      "basename": "Env_HallwayTile_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_HallwayTile_BaseColor_2K.png",
+      "bytes": 515697,
+      "sha256": "5e8c88d503835559c4d572c50e16f7252aadc774ffec22ad2090f89139ec3fa1",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "HallwayTile",
+      "textureClass": "Normal",
+      "basename": "Env_HallwayTile_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_HallwayTile_Normal_2K.png",
+      "bytes": 514865,
+      "sha256": "a55a377be48adb85e399f7a27170a323a4a9cdc69d80c18de91d06ea6c810a43",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "PaintedWall",
+      "textureClass": "BaseColor",
+      "basename": "Env_PaintedWall_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_PaintedWall_BaseColor_2K.png",
+      "bytes": 337041,
+      "sha256": "d170145aeceef25f0d495e5c9b7a014409ec1b59611e152f4e064fb076d4f055",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "PaintedWall",
+      "textureClass": "Normal",
+      "basename": "Env_PaintedWall_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_PaintedWall_Normal_2K.png",
+      "bytes": 468441,
+      "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Paper",
+      "textureClass": "BaseColor",
+      "basename": "Env_Paper_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_Paper_BaseColor_2K.png",
+      "bytes": 357651,
+      "sha256": "2a8f4b209774d22864b7e8760156f3c298b636f6db246a2c8f3f810f5e34bde2",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Paper",
+      "textureClass": "Normal",
+      "basename": "Env_Paper_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_Paper_Normal_2K.png",
+      "bytes": 468441,
+      "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "RedPaintedMetal",
+      "textureClass": "BaseColor",
+      "basename": "Env_RedPaintedMetal_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png",
+      "bytes": 236566,
+      "sha256": "ac5dd05be43b5e0cd37163919fe822ac72fba807e724e28787fe5a53d101ce19",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "RedPaintedMetal",
+      "textureClass": "Normal",
+      "basename": "Env_RedPaintedMetal_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_RedPaintedMetal_Normal_2K.png",
+      "bytes": 238232,
+      "sha256": "f4e9a793da2f3d7196a1012592b63e7c8d3d5ed1dfceaff5bdd15ad500e9c0c2",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "RubberBlack",
+      "textureClass": "BaseColor",
+      "basename": "Env_RubberBlack_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_RubberBlack_BaseColor_2K.png",
+      "bytes": 322399,
+      "sha256": "9a2ff207de46d99a44726225029090f85b4a64cc6dea4766aa42ffab348fa246",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "RubberBlack",
+      "textureClass": "Normal",
+      "basename": "Env_RubberBlack_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_RubberBlack_Normal_2K.png",
+      "bytes": 538559,
+      "sha256": "9524e289cee12352e3be693ba485203443e46b120643d88a3215a8b0fadfe52f",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "WoodTrim",
+      "textureClass": "BaseColor",
+      "basename": "Env_WoodTrim_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_WoodTrim_BaseColor_2K.png",
+      "bytes": 320934,
+      "sha256": "3c5afb866e270bc57d91f86d7f475b6f3549f312b04177b2c6e44ffa5cf7c0c4",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "WoodTrim",
+      "textureClass": "Normal",
+      "basename": "Env_WoodTrim_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_WoodTrim_Normal_2K.png",
+      "bytes": 424334,
+      "sha256": "cc38fef8995e817656c78bc713466d1a96003096c1c63efa1a713c9c2d4d8e44",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "WornMetal",
+      "textureClass": "BaseColor",
+      "basename": "Env_WornMetal_BaseColor_2K.png",
+      "path": "public/models/SharedTextures/Env_WornMetal_BaseColor_2K.png",
+      "bytes": 335168,
+      "sha256": "0005313319441eafc994109d7cf8243e381db94cd83365a2b8f567895ef2d3eb",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "WornMetal",
+      "textureClass": "Normal",
+      "basename": "Env_WornMetal_Normal_2K.png",
+      "path": "public/models/SharedTextures/Env_WornMetal_Normal_2K.png",
+      "bytes": 480435,
+      "sha256": "2c860a16a61ba4bd7a4f9f27c8a8951a5ffbb5ccc68de0680823a16033d62c29",
+      "width": 512,
+      "height": 512
+    }
+  ],
+  "atlases": [
+    {
+      "textureClass": "baseColor",
+      "expectedMode": "ETC1S",
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+      "bytes": 466915,
+      "sha256": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91",
+      "width": 2112,
+      "height": 1584,
+      "levels": 12,
+      "supercompressionScheme": 1,
+      "sourceTileWidth": 512,
+      "sourceTileHeight": 512,
+      "gutterPixels": 8,
+      "reusedFromThemeBootstrap": false,
+      "normalizedTransformMaxDelta": 0
+    },
+    {
+      "textureClass": "normal",
+      "expectedMode": "UASTC",
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+      "bytes": 597993,
+      "sha256": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9",
+      "width": 1056,
+      "height": 792,
+      "levels": 11,
+      "supercompressionScheme": 2,
+      "sourceTileWidth": 256,
+      "sourceTileHeight": 256,
+      "gutterPixels": 4,
+      "reusedFromThemeBootstrap": true,
+      "normalizedTransformMaxDelta": 0
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/models/environment/backpack.glb",
+      "original": {
+        "bytes": 59128,
+        "sha256": "136d3d995686d2d87ef96d8130ee662a5525a4dd29ef903fff6f4493107dbed6",
+        "externalPngRequests": 6
+      },
+      "output": {
+        "bytes": 61512,
+        "sha256": "65d9715045660ff167712fe98bb31a8ad964e2c64d4133d642b7eeaf2c9745b7",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "488cffda3a26ab3759faaee831ce40540f9022b8dade67182d27a9bb5d9e6aab",
+      "structure": {
+        "nodes": {
+          "count": 22,
+          "sha256": "6ebdb71c69b4c628dafd654062110907b70f0becefb294e580d4387805dc76e2"
+        },
+        "meshes": {
+          "count": 12,
+          "sha256": "e8e67f77c7df82f43ac7fa176356d1fa181fdbf259807be5a382b5858c839821"
+        },
+        "materials": {
+          "count": 3,
+          "sha256": "a85109db0f1bd16bc89832d2fbaaf2fe0575ddb9018452947a5324e563e97ea6"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 60,
+          "sha256": "3c41a25216c7bd3b65aa15bcf6c5ecac60faab583c24cf956fbb6afdd452ed65"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 22,
+      "meshes": 12,
+      "materials": 3,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/basketball.glb",
+      "original": {
+        "bytes": 145244,
+        "sha256": "82cff58d6d36c6fc434f4367e3d22544c0b10caaa269d14ab48a42e88cd6c5ca",
+        "externalPngRequests": 8
+      },
+      "output": {
+        "bytes": 148036,
+        "sha256": "2c9e51e0e345a9b24f19362c461be02d0f9260820d1eabac5f99df49b17be350",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "2e42e4c22f483d3927b88f6ae58d08c768f3761d4ec9322e3c3f53849cc85d4d",
+      "structure": {
+        "nodes": {
+          "count": 37,
+          "sha256": "c6a6ed51201dfb93472920fbec0c42098b848d7bd9d6f8698f47e7fbe58ef73b"
+        },
+        "meshes": {
+          "count": 27,
+          "sha256": "b368d13f02190ff7660e9e0d515adbef308b404d5ccaef68119f1fca899355cd"
+        },
+        "materials": {
+          "count": 4,
+          "sha256": "7d30b064cb1e0d450f1682993c0f916045cc25320c74d563a8c004cf301fe68b"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 135,
+          "sha256": "4ebdf8b6a7e1e8e8b930faeb401a8dac7b420918319070491410308e27ad50fe"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 37,
+      "meshes": 27,
+      "materials": 4,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/bench.glb",
+      "original": {
+        "bytes": 86152,
+        "sha256": "760843abc5c9817db5b12aee9ea6de5f34415094be72e0442b052132ce00a31b",
+        "externalPngRequests": 4
+      },
+      "output": {
+        "bytes": 88192,
+        "sha256": "91212404d9a800fd1ed5294c85896b1643af21f3cf517c69a63e594ba5a905a1",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "e5731899fe12c79aff7867aaa679d5da57dc6a978278c2be12f5376eb30f7820",
+      "structure": {
+        "nodes": {
+          "count": 34,
+          "sha256": "b975c705bc06a62e8adb4417313409e98427d953f4ab650a8467a379b1f0e8bc"
+        },
+        "meshes": {
+          "count": 15,
+          "sha256": "f06559cc2ad004425a5d402cd16006336ba2f67f2698f5e2f5ab435fc7ad8f7c"
+        },
+        "materials": {
+          "count": 2,
+          "sha256": "cbe6c85ec1738297df587e01c89fdc7a522016391f337b7dafce2a61290e5a75"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 75,
+          "sha256": "1c91c10b9d13383284238aaab673d816b195b651375897797b6ea9039462a99d"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 34,
+      "meshes": 15,
+      "materials": 2,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/blackboard.glb",
+      "original": {
+        "bytes": 66584,
+        "sha256": "5181601c883709cb856d643c6a425fcd7b4ec54d16cf3840eea1bdec9538a09e",
+        "externalPngRequests": 8
+      },
+      "output": {
+        "bytes": 69300,
+        "sha256": "46d8dee376d75431ac2d2de2167a75135f976e3e3f216b128fa91932f8b82a54",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "6c8e8da031ffaf7ff6f4e7778e0a8014b269e7084249d7e54081c6279cab305b",
+      "structure": {
+        "nodes": {
+          "count": 15,
+          "sha256": "ea8318bb771d6b38e265f5307c117953032180ae63db7685c67a4f154c9acffa"
+        },
+        "meshes": {
+          "count": 10,
+          "sha256": "a6f025aa56fe7063e9216382083ec1f1d93898802e4a323e4b08d4742756566f"
+        },
+        "materials": {
+          "count": 4,
+          "sha256": "4c53927b88c496eabec7d3002ac6ee8e3c489eb699b5f7c50a3439e646bfbebd"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 50,
+          "sha256": "a0f7b2a3c21334bf6f8c2b8e98d413efc7b05b6e8e0ac8ad26761bbe926ede80"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 15,
+      "meshes": 10,
+      "materials": 4,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Blackboard_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Blackboard_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/books.glb",
+      "original": {
+        "bytes": 289632,
+        "sha256": "07ce39352bc78878ff61982b2b8e13bfb4d4bace0eee1faf0ff8d36b8fa29c73",
+        "externalPngRequests": 10
+      },
+      "output": {
+        "bytes": 292804,
+        "sha256": "fec50806cbd19458e5ad5d4ca6d5652765432784023a7932ddccc49f1df7a2e3",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "d5ed3f290c57141f80d28681f2b5d1167f4f21e9be41dca7b36b5503ea16c288",
+      "structure": {
+        "nodes": {
+          "count": 49,
+          "sha256": "e32f849bba16cabe040c2d336eee0c7589e0b1cffea6f99f294d84b1b3f90211"
+        },
+        "meshes": {
+          "count": 38,
+          "sha256": "e560d7f44c0f3077f20184c3a7f59c38559cb3256631050202cfbe4f70c7e543"
+        },
+        "materials": {
+          "count": 5,
+          "sha256": "56abd7ede6eaf2c21e8cfc667e96c7988ba8e77b4895b9335d173bdf21ef15e0"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 190,
+          "sha256": "8f46354ebfe3e83269c1f38936b938f014ce63a59c2f7071df0f6d457b07d417"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 49,
+      "meshes": 38,
+      "materials": 5,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/bulletin.glb",
+      "original": {
+        "bytes": 75136,
+        "sha256": "09449aef7d6bb2ffa875f0611abc90ecb5443a2bcd918251964f308fb23517a8",
+        "externalPngRequests": 10
+      },
+      "output": {
+        "bytes": 78216,
+        "sha256": "86cdf1a3e628bea6ca68336edee37e8e0640918f1ddf80db2c64420b9c6e464b",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "b2a3b00e47e84e3770950a9a423d6ade4f148a14696ab38039facfcbe3c215f2",
+      "structure": {
+        "nodes": {
+          "count": 22,
+          "sha256": "5ab3c979b8cd2df92acf09413908c4db6de14f4e1aa19e01ca2f0f3876ae40cc"
+        },
+        "meshes": {
+          "count": 10,
+          "sha256": "a6f025aa56fe7063e9216382083ec1f1d93898802e4a323e4b08d4742756566f"
+        },
+        "materials": {
+          "count": 5,
+          "sha256": "67e64996c1e2d4ee4a16040712800b41c7f62c83abe616ecb7f1942a2bb15b77"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 50,
+          "sha256": "77b80c001a8681b1859f574a7934f8b37bff92f8f0b1e158c14faf5a456442d8"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 22,
+      "meshes": 10,
+      "materials": 5,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/ceiling-light.glb",
+      "original": {
+        "bytes": 37164,
+        "sha256": "587e11a8bbddb1ed8c967b9a08bda0b6ab369f69940c2998c2d85b7693fdd596",
+        "externalPngRequests": 4
+      },
+      "output": {
+        "bytes": 39660,
+        "sha256": "7c0e3e0265b8ec091e21f4b82a9477bc08d7e48e6ea2d99768a9dd1610da2d0a",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "b6bc2cfd59208d906f2bba14ff7879a7e6c554533b24bbe5403cbcfd69b18b19",
+      "structure": {
+        "nodes": {
+          "count": 10,
+          "sha256": "4be87d1b660095633a5157e7f9dbf8fb8143969a70b6022747e63cf9e0ea6a60"
+        },
+        "meshes": {
+          "count": 7,
+          "sha256": "37a06e5154de9ef5fdb08ede626ffb29630db236bda6cc9bd2f7868b61a9c25b"
+        },
+        "materials": {
+          "count": 3,
+          "sha256": "d262fec63eec20e90dd054359ed862c06f2da31899d729c2d49749c6e068ed78"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 35,
+          "sha256": "9d35b6dae48a60efd2bdceb7905f6e80fcae6c71dd72a60cb5e88de27760ab31"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 10,
+      "meshes": 7,
+      "materials": 3,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/classroom-door.glb",
+      "original": {
+        "bytes": 69104,
+        "sha256": "6c03e160de172156ecb05a4041b9187233635f855a55fe3242b0efb74d11c710",
+        "externalPngRequests": 8
+      },
+      "output": {
+        "bytes": 71820,
+        "sha256": "26f9e06f9359b030c3dab2fad41a11d5fff81a5c8e9910e0cda9b0ece96ac2ee",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "f2306f6ef935eaca197a2d411c2cbb5ed96c32b4ef9faa87639a70486f4a3945",
+      "structure": {
+        "nodes": {
+          "count": 17,
+          "sha256": "4525b7e311442d35368e1cb5091d5c4d1924a95f29774bfbabae50029303b3da"
+        },
+        "meshes": {
+          "count": 10,
+          "sha256": "a6f025aa56fe7063e9216382083ec1f1d93898802e4a323e4b08d4742756566f"
+        },
+        "materials": {
+          "count": 4,
+          "sha256": "0102c70adbe60e96025fab207ec7d4ba3858376e9d80ef2ba32caf1fc9a33f58"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 50,
+          "sha256": "0a1fcaaf8c276b7f21b26065d7d9395605976a99563a6a11c584356d3449804e"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 17,
+      "meshes": 10,
+      "materials": 4,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/desk-chair.glb",
+      "original": {
+        "bytes": 189268,
+        "sha256": "f1115c2553057eab375f118e322c517187647739696382f75f356efadb41a445",
+        "externalPngRequests": 12
+      },
+      "output": {
+        "bytes": 192832,
+        "sha256": "b61a65c65fa0a270658680f4dab11d895101fe103ac9c80cc1dbdae7a514c90d",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "907ca8552f26de6381f8cda1ea9b775df3099c709a72175f9077b5e863b04e77",
+      "structure": {
+        "nodes": {
+          "count": 51,
+          "sha256": "9f498ddb150bd2cc698cd8570c7ce0d499690e82de373012acecaeb7dbef49f2"
+        },
+        "meshes": {
+          "count": 29,
+          "sha256": "2bd62e4cefa850d6e6af88ea817be11d58df6608a278f65323090cc72a26e536"
+        },
+        "materials": {
+          "count": 6,
+          "sha256": "2ce57e0b1ab1f547d5dc489e58cccecc0261eefba9831ba3f18d9104a20dfe16"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 145,
+          "sha256": "1c35fb865cdb9b321566b38ff5531f0da68bfe26c5e260da7a15e17f7c9e0fd4"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 51,
+      "meshes": 29,
+      "materials": 6,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        },
+        {
+          "materialIndex": 5,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 5,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/exit.glb",
+      "original": {
+        "bytes": 69136,
+        "sha256": "276c22ed31fa7cf4b6fdc497cf6a8be05d2f1ddda103c283d2c11711a4bce06d",
+        "externalPngRequests": 8
+      },
+      "output": {
+        "bytes": 71856,
+        "sha256": "bcef307170dd552b79cfdc637f9c770c50fa2ef76a8252f1d47236abb69511e4",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "f2306f6ef935eaca197a2d411c2cbb5ed96c32b4ef9faa87639a70486f4a3945",
+      "structure": {
+        "nodes": {
+          "count": 17,
+          "sha256": "4525b7e311442d35368e1cb5091d5c4d1924a95f29774bfbabae50029303b3da"
+        },
+        "meshes": {
+          "count": 10,
+          "sha256": "a6f025aa56fe7063e9216382083ec1f1d93898802e4a323e4b08d4742756566f"
+        },
+        "materials": {
+          "count": 4,
+          "sha256": "4331244d856d101d8babb6fd11ca832a911ce7e05cac66ee4cc9cdb3ea1696a7"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 50,
+          "sha256": "0a1fcaaf8c276b7f21b26065d7d9395605976a99563a6a11c584356d3449804e"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 17,
+      "meshes": 10,
+      "materials": 4,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/extinguisher.glb",
+      "original": {
+        "bytes": 53148,
+        "sha256": "4f0586fba3ea484517301bb301ebce70f4442fe3122c013995782e326be06d34",
+        "externalPngRequests": 8
+      },
+      "output": {
+        "bytes": 55844,
+        "sha256": "da717f0c3b859b0fa47ed7877d79ad86eeeb2581ab340adc5b89a7ab4adf26d4",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "52b5bb8ec14d42efa4a3d5ebdc6e315316a473c9ff7621caa64f6bc07607dc91",
+      "structure": {
+        "nodes": {
+          "count": 11,
+          "sha256": "64301906292dfa37b1fe1f7843067515a0176d6d123e80b8087f6c94ddcc3037"
+        },
+        "meshes": {
+          "count": 9,
+          "sha256": "c9ac51d80592c85014fe20fdde9b6c1ab92752e2cc1366dcec394d92daf107f4"
+        },
+        "materials": {
+          "count": 4,
+          "sha256": "d2075852b4b604025bcf8473283c8972ac9df089cc76127cd96259b64d6e2f4d"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 45,
+          "sha256": "9f888655ecbed571da68d9bccef523bf966c5e1b0d77b18691bda0506da1bd0d"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 11,
+      "meshes": 9,
+      "materials": 4,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/front-gate.glb",
+      "original": {
+        "bytes": 75768,
+        "sha256": "9eaf4ca15615b5d75537515f88fcfb9d37f36389ec8aa1daae94979862ece886",
+        "externalPngRequests": 8
+      },
+      "output": {
+        "bytes": 78500,
+        "sha256": "d5d118208ac9dfb1d9b5960d107df39c648e3329c9f69493a4157ecb91f85962",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "39363789edc984bdaf1b9836dc90b907dfbd8c5a101271760b4f5abc62ecdcd2",
+      "structure": {
+        "nodes": {
+          "count": 20,
+          "sha256": "19f88e5b55a729c7cfff747e33b6967e193f3f5b2e876c01b6f83562b3cbad27"
+        },
+        "meshes": {
+          "count": 11,
+          "sha256": "5bf50ca6b5fc9b89a962c420ee0d7fd54447a3bc4e7d268b22dea1d04769c23d"
+        },
+        "materials": {
+          "count": 4,
+          "sha256": "28aede82e962441eebe5c188c09674d69d86258fcf8a6de552ae844de2d05aea"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 55,
+          "sha256": "fd69286e127ee16392199a4428f34c6137ab82d4e40ec92e948973b5de68fb31"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 20,
+      "meshes": 11,
+      "materials": 4,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/locker.glb",
+      "original": {
+        "bytes": 1602276,
+        "sha256": "6442702bb232543e2c9aad680b7a9ffccc1de2a09707a7dbf77ed9f41f5fbf04",
+        "externalPngRequests": 6
+      },
+      "output": {
+        "bytes": 1604392,
+        "sha256": "a48288662f52db924b4fa6a0cce34dd533e00320d44f3cc2a36dd002ddcf0421",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "6e792a42786678c79fd8b1d1698a613adc36b72f3cee50fa0083c98cfb4257e4",
+      "structure": {
+        "nodes": {
+          "count": 43,
+          "sha256": "cccedcbea60f5d33ab3623bcce8664d8e7fdb600d56c1ecf6ed0867d33df779e"
+        },
+        "meshes": {
+          "count": 18,
+          "sha256": "1c9b259ddbe06c1c95009bb2e588ab4a42611a715353ac82142aba8ff9b36674"
+        },
+        "materials": {
+          "count": 10,
+          "sha256": "b19c284f6f988cca5cdb0da22b7310e318e4f31c9754e6c8a99b87b16cb5b16e"
+        },
+        "animations": {
+          "count": 6,
+          "sha256": "b59b83f05a3cba776407e1b08ed2e8b900f270163d7f6bc15d98b08668e9fe29"
+        },
+        "accessors": {
+          "count": 102,
+          "sha256": "c110fb8f7d51f88447f3fdeec0f922c4db33b19bfde89e1d4e4cf23a996db562"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 43,
+      "meshes": 18,
+      "materials": 10,
+      "animations": [
+        "Locker_Door_Check_Close",
+        "Locker_Door_Check_Open",
+        "Locker_Door_Close_Enter",
+        "Locker_Door_Close_Exit",
+        "Locker_Door_Open_Enter",
+        "Locker_Door_Open_Exit"
+      ],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 5,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 5,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 8,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 8,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/podium.glb",
+      "original": {
+        "bytes": 75936,
+        "sha256": "c53bfeb102766096366a7d1b7fd5f21d1f09944fca6483d4740af61867ace822",
+        "externalPngRequests": 8
+      },
+      "output": {
+        "bytes": 78644,
+        "sha256": "12b7acb94b86ceaab4a57b1d812edd518888e5ffd2dd904023a1c1dfde1b79e5",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "1c997359a7f9ebf1a7c2a758a1f04affd7a0a9c41124d3f6525821d8e5b46282",
+      "structure": {
+        "nodes": {
+          "count": 16,
+          "sha256": "e37aa7f164a75b35417a5eb92b4cec932a53bf10da73d70e60ee3a7bf10baf13"
+        },
+        "meshes": {
+          "count": 10,
+          "sha256": "a6f025aa56fe7063e9216382083ec1f1d93898802e4a323e4b08d4742756566f"
+        },
+        "materials": {
+          "count": 4,
+          "sha256": "5df7eb2566a597496fe9531f1c570a5c1bfa69d22575c3fe173ca43a603cf85f"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 50,
+          "sha256": "1430cf3f4d1d5b07673e85d817464c2f3fec5e8e10965a9686e003273c6e5c51"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 16,
+      "meshes": 10,
+      "materials": 4,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/police-car.glb",
+      "original": {
+        "bytes": 163456,
+        "sha256": "38b6d34dca8e898946a75e7c679af3993d1b4e062ad0d04ee5b66538ab80de95",
+        "externalPngRequests": 12
+      },
+      "output": {
+        "bytes": 167004,
+        "sha256": "d1ed7abfc999ea1f367d474591ad4bf681af93b637fe22ffbcda2cae0d624baf",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "607ab7bede45761c3a750029956e414224fecd7df690c08c8a5a0c1809f90209",
+      "structure": {
+        "nodes": {
+          "count": 48,
+          "sha256": "07e78266305cc0b8a1d9061fb2f93d32db94a9536a9d580b17793e8d2537e6b1"
+        },
+        "meshes": {
+          "count": 26,
+          "sha256": "63917cd37ce22c2760b11c2224f087b27547dbe1ca9de4456a2d9ef2fa89ed59"
+        },
+        "materials": {
+          "count": 6,
+          "sha256": "150bd92c54cbefb61a6b73a271749f616effb92770cd69367536cb41c1840e57"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 125,
+          "sha256": "75e1c9447dd910d94b743088347cf59f2ae8baf7e7e3e2b9fce5080487b7d2ad"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 48,
+      "meshes": 26,
+      "materials": 6,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_Normal_2K.png"
+        },
+        {
+          "materialIndex": 5,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 5,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/shrub.glb",
+      "original": {
+        "bytes": 230424,
+        "sha256": "f43cf5a4f0db7e1e85fc1161b3d4decbac7370743391e5f3976f785b9f68ae2a",
+        "externalPngRequests": 6
+      },
+      "output": {
+        "bytes": 232788,
+        "sha256": "7b2ccc55d82322e8b12e6a248c297ecbf8952d51ecf49b5bc97850eafaeefe92",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "3d5435e623814e54bdec826070d8181d249396954b84b2bd809113c9cb06e215",
+      "structure": {
+        "nodes": {
+          "count": 16,
+          "sha256": "8d24192524ba065a74775daec8e5c2358233ad461961f86144ce6ae4936deeb2"
+        },
+        "meshes": {
+          "count": 15,
+          "sha256": "f06559cc2ad004425a5d402cd16006336ba2f67f2698f5e2f5ab435fc7ad8f7c"
+        },
+        "materials": {
+          "count": 3,
+          "sha256": "9a4bd408e192e967393a98d10ad0660b449ca9722742536814ec7aa9a77f10fa"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 75,
+          "sha256": "8806a08f76c9bc4b9e48073f118311dc1f15448f6bb1e17df3226e0111879663"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 16,
+      "meshes": 15,
+      "materials": 3,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Grass_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Grass_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/station.glb",
+      "original": {
+        "bytes": 184976,
+        "sha256": "1ee9145154bcf93c6a4c574f838cd6dd3a1d94b626596dc7593d4ba1560543f5",
+        "externalPngRequests": 14
+      },
+      "output": {
+        "bytes": 189404,
+        "sha256": "1cd06355bd3e20ad433e420f5164df5e12b78e482e7ba8aaab3ea4afe2fd7e72",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "597c19d7e25d832dc22bec09981b66e8937d95b2f289be34ded64a15415c55f8",
+      "structure": {
+        "nodes": {
+          "count": 44,
+          "sha256": "1cac5a8c400224fb40b3a0b8538737200d83ef6e0d7b444108c8b51ec8efe82f"
+        },
+        "meshes": {
+          "count": 29,
+          "sha256": "2bd62e4cefa850d6e6af88ea817be11d58df6608a278f65323090cc72a26e536"
+        },
+        "materials": {
+          "count": 8,
+          "sha256": "eb8fa48043755d5ff238b5664b5c1d3d628874b4bb02ec5b2a3c66391e49c9a8"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 145,
+          "sha256": "eb9815af2c60bd7fc9138363e21c77babba2fe0f59435c60b2b770d39f5f341f"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 44,
+      "meshes": 29,
+      "materials": 8,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_GlassBlue_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_PaintedWall_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_PaintedWall_Normal_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_HallwayTile_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 4,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_HallwayTile_Normal_2K.png"
+        },
+        {
+          "materialIndex": 5,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 5,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        },
+        {
+          "materialIndex": 6,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 6,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 7,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 7,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RedPaintedMetal_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/trash.glb",
+      "original": {
+        "bytes": 58592,
+        "sha256": "c29f1ea19a0c5e41190bdee1b7d248c2e2922d8d9bef0eea646ddc7f55d0b722",
+        "externalPngRequests": 8
+      },
+      "output": {
+        "bytes": 61300,
+        "sha256": "6711f8ebad8be09ed3cede4c6a561fd85c6590ff4897ab03d7da5d82bbe1f8a1",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "89eeadf23af95930e9b65dc90acd8882df1ad150a6660f69ba54944f3878e530",
+      "structure": {
+        "nodes": {
+          "count": 13,
+          "sha256": "c410dca856bf867e5ca0beb31e3568ab980281c5c45d4aa75894ca943954d06e"
+        },
+        "meshes": {
+          "count": 8,
+          "sha256": "574fee1a0aba0d9a42e3c4b5e191bb8ebabe6578cf58009020a837ae9901f682"
+        },
+        "materials": {
+          "count": 4,
+          "sha256": "557e10658a7171702ce797254bf148b2c68b5ba70419853f75570d39d4252f36"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 40,
+          "sha256": "acc598bf76961a5c527b2b059c5707e5ec15998a81c0b609bed789f8a3a428e2"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 13,
+      "meshes": 8,
+      "materials": 4,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_RubberBlack_Normal_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 2,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 3,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/tree.glb",
+      "original": {
+        "bytes": 256260,
+        "sha256": "0f5841b377206589b917818c9b3f46963765599f084f08f08b27b3c3b78decce",
+        "externalPngRequests": 4
+      },
+      "output": {
+        "bytes": 258316,
+        "sha256": "423b18518d28c862bb370ed95b5fb27244b0997f9b7911d673d6be1ed090896b",
+        "atlasRequests": 2
+      },
+      "geometryBinarySha256": "032d22ef680c8cb0e24d96d837529e96467170d294f3333e6369caeced42b32a",
+      "structure": {
+        "nodes": {
+          "count": 37,
+          "sha256": "b4520190e475c7d5d2187baaab71c972deb8afd64f94e8bda45936f1565d539c"
+        },
+        "meshes": {
+          "count": 36,
+          "sha256": "14a21133ca005d49b322b55336018ebe42e5936dc6c7c5f80e9b1f5a665172fb"
+        },
+        "materials": {
+          "count": 2,
+          "sha256": "74ae9f41fe374482911946f3a7d2d0f0e033e21408fc5278637e3ed1a6ffd05a"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "accessors": {
+          "count": 180,
+          "sha256": "80b254ef553139738c5b2da6b28f87c3bc8d2dbd54be35b6f8b25b80269c08f2"
+        },
+        "skins": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "nodes": 37,
+      "meshes": 36,
+      "materials": 2,
+      "animations": [],
+      "sourceSlots": [
+        {
+          "materialIndex": 0,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 0,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_WoodTrim_Normal_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "baseColor",
+          "sourceUri": "../SharedTextures/Env_Grass_BaseColor_2K.png"
+        },
+        {
+          "materialIndex": 1,
+          "slot": "normal",
+          "sourceUri": "../SharedTextures/Env_Grass_Normal_2K.png"
+        }
+      ]
+    }
+  ]
+}

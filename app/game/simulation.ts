@@ -226,11 +226,37 @@ export class GameSimulation {
                 position: copyPoint(this.state.chaser.memory.deferredSoundEvidence.position),
               }
             : null,
+          evidenceTrail: this.state.chaser.memory.evidenceTrail?.map((entry) => ({
+            ...entry,
+            position: copyPoint(entry.position),
+          })),
         },
       },
       hideSpots: Object.fromEntries(Object.entries(this.state.hideSpots).map(([id, spot]) => [id, { ...spot }])),
       events: this.state.events.map((event) => ({ ...event })),
     };
+  }
+
+  /**
+   * Queues one authored world sound for the next perception tick. This is the
+   * integration point for MechanicInstanceStep.emittedSoundStimulus; the
+   * stimulus still goes through navigable distance and uncertainty sampling.
+   */
+  emitWorldSound(stimulus: SoundStimulus): boolean {
+    if (
+      !Number.isFinite(stimulus.position.x)
+      || !Number.isFinite(stimulus.position.y)
+      || !Number.isFinite(stimulus.strength)
+      || stimulus.strength <= 0
+    ) return false;
+    const normalized: SoundStimulus = {
+      ...stimulus,
+      position: copyPoint(stimulus.position),
+      strength: clamp01(stimulus.strength),
+    };
+    if (this.pendingSound && this.pendingSound.strength >= normalized.strength) return false;
+    this.pendingSound = normalized;
+    return true;
   }
 
   private validateConfig() {
@@ -512,14 +538,26 @@ export class GameSimulation {
     }
   }
 
-  private queuePlayerSound(position: Point, strength: number) {
+  private queuePlayerSound(
+    position: Point,
+    strength: number,
+    sourceType: "player-movement" | "hide-interaction" = "player-movement",
+    sourceId?: string,
+  ) {
     const normalized = Math.min(
       1,
       Math.max(0, strength * (1 - this.heldEnvironmentSoundMasking)),
     );
     if (normalized <= 0) return;
     if (this.pendingSound && this.pendingSound.strength >= normalized) return;
-    this.pendingSound = { position: copyPoint(position), strength: normalized };
+    this.pendingSound = {
+      position: copyPoint(position),
+      strength: normalized,
+      sourceType,
+      ...(sourceId ? { sourceId } : {}),
+      confidence: sourceType === "hide-interaction" ? 0.85 : 0.72,
+      decayPerSecond: sourceType === "hide-interaction" ? 0.16 : 0.2,
+    };
   }
 
   private updatePlayerSound(
@@ -552,16 +590,31 @@ export class GameSimulation {
     const modeAfter = this.state.player.mode;
     if (modeAfter !== modeBefore) {
       if (modeAfter === "entering-hide") {
-        this.queuePlayerSound(this.state.player.position, 0.5);
+        this.queuePlayerSound(
+          this.state.player.position,
+          0.5,
+          "hide-interaction",
+          this.state.player.hideSpotId ? `locker:${this.state.player.hideSpotId}` : undefined,
+        );
         this.playerSoundCooldownSeconds = Math.max(this.playerSoundCooldownSeconds, 0.42);
       } else if (modeAfter === "exiting-hide") {
         // The cabinet latch remains a meaningful close-range risk without
         // turning a successful hide into a guaranteed re-aggro from the next
         // corridor. Running immediately afterwards is still much louder.
-        this.queuePlayerSound(this.state.player.position, 0.28);
+        this.queuePlayerSound(
+          this.state.player.position,
+          0.28,
+          "hide-interaction",
+          this.state.player.hideSpotId ? `locker:${this.state.player.hideSpotId}` : undefined,
+        );
         this.playerSoundCooldownSeconds = Math.max(this.playerSoundCooldownSeconds, 0.42);
       } else if (modeAfter === "entering-peek" || modeAfter === "exiting-peek") {
-        this.queuePlayerSound(this.state.player.position, 0.12);
+        this.queuePlayerSound(
+          this.state.player.position,
+          0.12,
+          "hide-interaction",
+          this.state.player.hideSpotId ? `locker:${this.state.player.hideSpotId}` : undefined,
+        );
       }
     }
   }
@@ -611,21 +664,26 @@ export class GameSimulation {
             },
         this.state.elapsedSeconds,
       );
-      if (evidence.kind === "none" && this.pendingSound) {
-        evidence = sampleSoundPerception(
+      const sampledSound = this.pendingSound
+        ? sampleSoundPerception(
           this.level,
           this.state.chaser,
           this.pendingSound,
           this.config,
           this.state.elapsedSeconds,
-        );
-      }
+        )
+        : null;
+      const secondarySoundEvidence = evidence.kind !== "none" && sampledSound?.kind === "sound"
+        ? sampledSound
+        : undefined;
+      if (evidence.kind === "none" && sampledSound) evidence = sampledSound;
       // A step or door edge is a transient. Consuming it once prevents a
       // single sound from resetting the search timer on every AI tick.
       this.pendingSound = null;
       const previousMode = this.state.chaser.mode;
       const result = stepChaserBrain(this.state.chaser, this.level, this.config, {
         evidence,
+        ...(secondarySoundEvidence ? { secondarySoundEvidence } : {}),
         reachedTarget: hasReachedChaserTarget(this.state.chaser, this.level),
         nowSeconds: this.state.elapsedSeconds,
         deltaSeconds: this.config.aiTickSeconds,
@@ -633,6 +691,13 @@ export class GameSimulation {
       this.state.chaser = result.state;
       if (previousMode !== result.state.mode) {
         events.push({ type: "chaser-mode-changed", from: previousMode, to: result.state.mode });
+      }
+      if (result.completedSoundInvestigation) {
+        events.push({
+          type: "evidence-investigation-completed",
+          evidenceId: result.completedSoundInvestigation.sourceId,
+          sourceType: result.completedSoundInvestigation.sourceType,
+        });
       }
       if (result.completedHideCheckId) {
         const occupied = Boolean(this.state.hideSpots[result.completedHideCheckId]?.occupiedByPlayer);

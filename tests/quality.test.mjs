@@ -2,10 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  EMERGENCY_RENDER_POLICIES,
+  INITIAL_EMERGENCY_DEGRADATION_STATE,
   nextRenderQuality,
   RENDER_QUALITY_PROFILES,
+  renderBudgetUtilization,
   renderWorkloadFitsProfile,
   selectInitialRenderQuality,
+  updateEmergencyDegradation,
 } from "../app/game/quality.ts";
 
 test("initial render quality protects constrained touch devices", () => {
@@ -116,4 +120,85 @@ test("upgrade waits for durable frame headroom and an in-budget workload", () =>
   assert.equal(nextRenderQuality("mobile", 14, 11.99, withinBudget), "mobile");
   assert.equal(nextRenderQuality("mobile", 14, 12, withinBudget), "balanced");
   assert.equal(nextRenderQuality("mobile", 14, 30, overBudget), "mobile");
+});
+
+test("budget utilization exposes colour and shadow overload reasons separately", () => {
+  const profile = RENDER_QUALITY_PROFILES.mobile;
+  const utilization = renderBudgetUtilization(profile, {
+    visibleTriangles: profile.maximumVisibleTriangles * 0.8,
+    drawCalls: profile.maximumDrawCalls * 0.75,
+    shadowTriangles: profile.maximumShadowTriangles * 1.01,
+    shadowDrawCalls: profile.maximumShadowDrawCalls * 1.2,
+  });
+  assert.equal(utilization.visibleTriangles, 0.8);
+  assert.equal(utilization.drawCalls, 0.75);
+  assert.equal(utilization.shadowTriangles, 1.01);
+  assert.equal(utilization.shadowDrawCalls, 1.2);
+  assert.equal(utilization.peak, 1.2);
+  assert.deepEqual(utilization.exceeded, ["shadowTriangles", "shadowDrawCalls"]);
+});
+
+test("mobile overload escalates emergency degradation and durable headroom recovers it", () => {
+  const mobile = RENDER_QUALITY_PROFILES.mobile;
+  const overShadowBudget = {
+    visibleTriangles: mobile.maximumVisibleTriangles * 0.7,
+    drawCalls: mobile.maximumDrawCalls * 0.7,
+    shadowTriangles: mobile.maximumShadowTriangles + 1,
+    shadowDrawCalls: mobile.maximumShadowDrawCalls,
+  };
+  let state = updateEmergencyDegradation(INITIAL_EMERGENCY_DEGRADATION_STATE, {
+    tier: "mobile",
+    p95FrameMilliseconds: 22,
+    elapsedSeconds: 1.49,
+    workload: overShadowBudget,
+  });
+  assert.equal(state.level, 0);
+  state = updateEmergencyDegradation(state, {
+    tier: "mobile",
+    p95FrameMilliseconds: 22,
+    elapsedSeconds: 0.01,
+    workload: overShadowBudget,
+  });
+  assert.equal(state.level, 1);
+
+  state = updateEmergencyDegradation(state, {
+    tier: "mobile",
+    p95FrameMilliseconds: 38,
+    elapsedSeconds: 2.5,
+    workload: overShadowBudget,
+  });
+  assert.equal(state.level, 2);
+
+  const headroom = {
+    visibleTriangles: mobile.maximumVisibleTriangles * 0.6,
+    drawCalls: mobile.maximumDrawCalls * 0.6,
+    shadowTriangles: mobile.maximumShadowTriangles * 0.6,
+    shadowDrawCalls: mobile.maximumShadowDrawCalls * 0.6,
+  };
+  state = updateEmergencyDegradation(state, {
+    tier: "mobile",
+    p95FrameMilliseconds: 20,
+    elapsedSeconds: 9.99,
+    workload: headroom,
+  });
+  assert.equal(state.level, 2);
+  state = updateEmergencyDegradation(state, {
+    tier: "mobile",
+    p95FrameMilliseconds: 20,
+    elapsedSeconds: 0.01,
+    workload: headroom,
+  });
+  assert.equal(state.level, 1);
+});
+
+test("emergency rendering removes optional work monotonically", () => {
+  assert.deepEqual(
+    Object.values(EMERGENCY_RENDER_POLICIES).map((policy) => policy.decorativeLodBias),
+    [0, 1, 2, 3],
+  );
+  assert.deepEqual(
+    Object.values(EMERGENCY_RENDER_POLICIES).map((policy) => policy.shadowCasterMode),
+    ["profile", "critical-and-near", "critical-only", "characters-only"],
+  );
+  assert.equal(EMERGENCY_RENDER_POLICIES[3].hideOptionalDecorations, true);
 });

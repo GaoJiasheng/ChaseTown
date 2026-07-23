@@ -138,9 +138,18 @@ export interface ChaserMemory {
     position: Point;
     strength: number;
     observedAtSeconds: number;
+    sourceType?: SoundEvidenceSourceType;
+    sourceId?: string;
+    confidence?: number;
+    decayPerSecond?: number;
   } | null;
   /** Set only when the chaser actually witnesses a hide-entry transition. */
   witnessedHideSpotId: string | null;
+  /**
+   * At most three facts the brain was legally given by perception. This is a
+   * bounded public-evidence ledger, never a copy of player or locker state.
+   */
+  evidenceTrail?: readonly PublicEvidenceMemory[];
 }
 
 export interface ChaserState {
@@ -191,12 +200,47 @@ export type PerceptionEvidence =
       position: Point;
       strength: number;
       observedAtSeconds: number;
+      /** Explicit provenance lets authored decoys remain auditable and fair. */
+      sourceType?: SoundEvidenceSourceType;
+      /** Stable authored emitter id. Omit for one-off or anonymous sounds. */
+      sourceId?: string;
+      /** Perception certainty before age decay. Defaults to perceived strength. */
+      confidence?: number;
+      /** Linear certainty loss per second. */
+      decayPerSecond?: number;
     }
   | { kind: "none"; observedAtSeconds: number };
+
+export type SoundEvidenceSourceType =
+  | "player-movement"
+  | "hide-interaction"
+  | "environment-decoy"
+  | "environment-hazard"
+  | "ambient"
+  | "unknown";
+
+export interface PublicEvidenceMemory {
+  readonly kind: "visual" | "hide-entry-visible" | "sound";
+  readonly position: Point;
+  readonly observedAtSeconds: number;
+  readonly confidence: number;
+  readonly decayPerSecond: number;
+  readonly sourceType: SoundEvidenceSourceType | "player";
+  readonly sourceId: string | null;
+  /** Consecutive uses of the same stable environmental emitter. */
+  readonly repeatCount: number;
+  readonly hideSpotId: string | null;
+  readonly strength: number;
+}
 
 export type SimulationEvent =
   | { type: "player-mode-changed"; from: PlayerMode; to: PlayerMode }
   | { type: "chaser-mode-changed"; from: ChaserMode; to: ChaserMode }
+  | {
+      type: "evidence-investigation-completed";
+      evidenceId: string;
+      sourceType: SoundEvidenceSourceType;
+    }
   | { type: "hide-check-completed"; hideSpotId: string; occupied: boolean }
   | { type: "player-captured"; reason: CaptureReason }
   | { type: "phase-changed"; from: GamePhase; to: GamePhase };

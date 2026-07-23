@@ -5,21 +5,34 @@ import type {
   LevelDefinition,
   PerceptionEvidence,
   Point,
+  PublicEvidenceMemory,
+  SoundEvidenceSourceType,
 } from "./contracts.ts";
-import { distanceBetween, findPath, isWalkable, normalizeVector, pointKey } from "./navigation.ts";
+import { distanceBetween, findPath, isWalkable, neighbors, normalizeVector, pointKey } from "./navigation.ts";
 
 export interface ChaserBrainInput {
   /** Deliberately contains evidence, not PlayerState or playerPosition. */
   evidence: PerceptionEvidence;
+  /**
+   * A simultaneously heard public sound. Visual evidence remains primary;
+   * this can only enter the bounded ledger/deferred queue.
+   */
+  secondarySoundEvidence?: Extract<PerceptionEvidence, { kind: "sound" }>;
   reachedTarget: boolean;
   nowSeconds: number;
   deltaSeconds: number;
+}
+
+export interface CompletedSoundInvestigation {
+  readonly sourceId: string;
+  readonly sourceType: SoundEvidenceSourceType;
 }
 
 export interface ChaserBrainResult {
   state: ChaserState;
   completedHideCheckId: string | null;
   completedHideCheckSource: "witnessed" | "search" | null;
+  completedSoundInvestigation?: CompletedSoundInvestigation;
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -77,6 +90,7 @@ export function createInitialChaser(
       lastKnownEvidence: null,
       deferredSoundEvidence: null,
       witnessedHideSpotId: null,
+      evidenceTrail: Object.freeze([]),
     },
   };
 }
@@ -105,6 +119,135 @@ function stableIdHash(value: string, seed: number): number {
     hash = Math.imul(hash, 16777619);
   }
   return hash >>> 0;
+}
+
+const MAX_PUBLIC_EVIDENCE = 3;
+const MIN_ACTIONABLE_SOUND_CONFIDENCE = 0.16;
+
+function soundSourceType(
+  evidence: Pick<Extract<PerceptionEvidence, { kind: "sound" }>, "sourceType">,
+): SoundEvidenceSourceType {
+  return evidence.sourceType ?? "unknown";
+}
+
+function soundBaseConfidence(
+  evidence: Pick<Extract<PerceptionEvidence, { kind: "sound" }>, "confidence" | "strength">,
+): number {
+  return clamp01(evidence.confidence ?? evidence.strength);
+}
+
+function repeatedSourceCount(
+  state: ChaserState,
+  evidence: Extract<PerceptionEvidence, { kind: "sound" }>,
+): number {
+  if (!evidence.sourceId) return -1;
+  return state.memory.evidenceTrail?.find((entry) => (
+    entry.kind === "sound"
+    && entry.sourceId === evidence.sourceId
+    && entry.sourceType === soundSourceType(evidence)
+  ))?.repeatCount ?? -1;
+}
+
+/**
+ * A stable authored emitter becomes less persuasive when repeatedly abused.
+ * Anonymous footsteps do not habituate because they cannot be linked without
+ * inventing hidden identity.
+ */
+export function actionableSoundConfidence(
+  state: ChaserState,
+  evidence: Extract<PerceptionEvidence, { kind: "sound" }>,
+): number {
+  const priorRepeatCount = repeatedSourceCount(state, evidence);
+  const nextRepeatCount = priorRepeatCount < 0 ? 0 : priorRepeatCount + 1;
+  const habituation = 1 / (1 + nextRepeatCount * 0.65);
+  return soundBaseConfidence(evidence) * habituation;
+}
+
+function publicEvidenceRecord(
+  state: ChaserState,
+  evidence: Exclude<PerceptionEvidence, { kind: "none" }>,
+): PublicEvidenceMemory {
+  if (evidence.kind === "sound") {
+    const priorRepeatCount = repeatedSourceCount(state, evidence);
+    const repeatCount = priorRepeatCount < 0 ? 0 : priorRepeatCount + 1;
+    return Object.freeze({
+      kind: "sound",
+      position: Object.freeze({ ...evidence.position }),
+      observedAtSeconds: evidence.observedAtSeconds,
+      confidence: actionableSoundConfidence(state, evidence),
+      decayPerSecond: Math.max(0, evidence.decayPerSecond ?? 0.12),
+      sourceType: soundSourceType(evidence),
+      sourceId: evidence.sourceId ?? null,
+      repeatCount,
+      hideSpotId: null,
+      strength: clamp01(evidence.strength),
+    });
+  }
+  return Object.freeze({
+    kind: evidence.kind === "hide-entry-visible" ? "hide-entry-visible" : "visual",
+    position: Object.freeze({ ...evidence.position }),
+    observedAtSeconds: evidence.observedAtSeconds,
+    confidence: 1,
+    decayPerSecond: evidence.kind === "hide-entry-visible" ? 0.025 : 0.08,
+    sourceType: "player",
+    sourceId: evidence.kind === "hide-entry-visible" ? `hide:${evidence.hideSpotId}` : "player-visual",
+    repeatCount: 0,
+    hideSpotId: evidence.kind === "hide-entry-visible" ? evidence.hideSpotId : null,
+    strength: 1,
+  });
+}
+
+function decayedEvidenceConfidence(entry: PublicEvidenceMemory, nowSeconds: number): number {
+  const age = Math.max(0, nowSeconds - entry.observedAtSeconds);
+  return clamp01(entry.confidence - age * Math.max(0, entry.decayPerSecond));
+}
+
+function evidencePriority(entry: PublicEvidenceMemory): number {
+  switch (entry.kind) {
+    case "hide-entry-visible": return 3;
+    case "visual": return 2;
+    case "sound": return 1;
+  }
+}
+
+function rememberPublicEvidence(
+  state: ChaserState,
+  evidence: Exclude<PerceptionEvidence, { kind: "none" }>,
+): readonly PublicEvidenceMemory[] {
+  const nextRecord = publicEvidenceRecord(state, evidence);
+  const previous = state.memory.evidenceTrail ?? [];
+  const replaces = (entry: PublicEvidenceMemory) => (
+    nextRecord.sourceId !== null
+    && entry.kind === nextRecord.kind
+    && entry.sourceId === nextRecord.sourceId
+    && entry.sourceType === nextRecord.sourceType
+  );
+  const retained = previous.filter((entry) => (
+    !replaces(entry)
+    && decayedEvidenceConfidence(entry, evidence.observedAtSeconds) > 0.05
+  ));
+  return Object.freeze([...retained, nextRecord]
+    .sort((left, right) => (
+      evidencePriority(right) - evidencePriority(left)
+      || decayedEvidenceConfidence(right, evidence.observedAtSeconds)
+        - decayedEvidenceConfidence(left, evidence.observedAtSeconds)
+      || right.observedAtSeconds - left.observedAtSeconds
+      || (right.sourceId ?? "").localeCompare(left.sourceId ?? "")
+    ))
+    .slice(0, MAX_PUBLIC_EVIDENCE));
+}
+
+export function publicEvidenceLedger(
+  state: ChaserState,
+  nowSeconds: number,
+): readonly PublicEvidenceMemory[] {
+  return Object.freeze((state.memory.evidenceTrail ?? [])
+    .filter((entry) => decayedEvidenceConfidence(entry, nowSeconds) > 0.05)
+    .map((entry) => Object.freeze({
+      ...entry,
+      position: Object.freeze({ ...entry.position }),
+      confidence: decayedEvidenceConfidence(entry, nowSeconds),
+    })));
 }
 
 /**
@@ -176,6 +319,7 @@ function enterLastKnownScan(state: ChaserState): ChaserState {
 
 function rememberVisibleTarget(state: ChaserState, evidence: Exclude<PerceptionEvidence, { kind: "none" } | { kind: "sound" }>): ChaserState {
   const preserveActiveHideCheck = state.mode === "check-hide" && evidence.kind === "player-visible";
+  const evidenceTrail = rememberPublicEvidence(state, evidence);
   return {
     ...state,
     searchHideSpotId: preserveActiveHideCheck ? state.searchHideSpotId : null,
@@ -187,12 +331,15 @@ function rememberVisibleTarget(state: ChaserState, evidence: Exclude<PerceptionE
       lastSeenAtSeconds: evidence.observedAtSeconds,
       lastHeardAtSeconds: null,
       lastKnownEvidence: "visual",
-      deferredSoundEvidence: null,
+      // A fresh visual point remains primary, but must not erase a legally
+      // heard secondary cue before its post-visual investigation window.
+      deferredSoundEvidence: state.memory.deferredSoundEvidence,
       witnessedHideSpotId: evidence.kind === "hide-entry-visible"
         ? evidence.hideSpotId
         : state.mode === "check-hide"
           ? state.memory.witnessedHideSpotId
           : null,
+      evidenceTrail,
     },
   };
 }
@@ -201,6 +348,7 @@ function rememberSoundTarget(
   state: ChaserState,
   evidence: Extract<PerceptionEvidence, { kind: "sound" }>,
 ): ChaserState {
+  const evidenceTrail = rememberPublicEvidence(state, evidence);
   return {
     ...state,
     searchHideSpotId: null,
@@ -214,6 +362,7 @@ function rememberSoundTarget(
       lastKnownEvidence: "sound",
       deferredSoundEvidence: null,
       witnessedHideSpotId: null,
+      evidenceTrail,
     },
   };
 }
@@ -233,7 +382,7 @@ function soundEvidenceUtility(
   state: Pick<ChaserState, "position">,
   level: LevelDefinition,
   config: GameConfig,
-  evidence: Pick<SoundEvidence, "position" | "strength" | "observedAtSeconds">,
+  evidence: Pick<SoundEvidence, "position" | "strength" | "observedAtSeconds" | "confidence">,
   nowSeconds: number,
 ): number {
   const age = Math.max(0, nowSeconds - evidence.observedAtSeconds);
@@ -245,7 +394,8 @@ function soundEvidenceUtility(
   const distanceScale = Math.max(1, config.hearingRange + config.soundUncertaintyCells);
   const freshness = 1 - clamp01(age / maxAge);
   const proximity = 1 - clamp01(routeDistance / distanceScale);
-  return clamp01(evidence.strength) * 0.6 + freshness * 0.3 + proximity * 0.1;
+  const confidence = clamp01(evidence.confidence ?? evidence.strength);
+  return clamp01(evidence.strength) * 0.35 + confidence * 0.25 + freshness * 0.3 + proximity * 0.1;
 }
 
 function deferSoundEvidence(
@@ -277,9 +427,46 @@ function deferSoundEvidence(
         position: { ...evidence.position },
         strength: clamp01(evidence.strength),
         observedAtSeconds: evidence.observedAtSeconds,
+        sourceType: soundSourceType(evidence),
+        ...(evidence.sourceId ? { sourceId: evidence.sourceId } : {}),
+        confidence: actionableSoundConfidence(state, evidence),
+        decayPerSecond: Math.max(0, evidence.decayPerSecond ?? 0.12),
       },
+      evidenceTrail: rememberPublicEvidence(state, evidence),
     },
   };
+}
+
+function rememberConcurrentSound(
+  state: ChaserState,
+  level: LevelDefinition,
+  config: GameConfig,
+  evidence: SoundEvidence,
+  nowSeconds: number,
+): ChaserState {
+  const confidence = actionableSoundConfidence(state, evidence);
+  const stableEnvironmentEmitter = Boolean(
+    evidence.sourceId
+    && ["environment-decoy", "environment-hazard"].includes(soundSourceType(evidence)),
+  );
+  if (stableEnvironmentEmitter && confidence < MIN_ACTIONABLE_SOUND_CONFIDENCE) {
+    return {
+      ...state,
+      memory: {
+        ...state.memory,
+        evidenceTrail: rememberPublicEvidence(state, evidence),
+      },
+    };
+  }
+  return deferSoundEvidence(state, level, config, evidence, nowSeconds);
+}
+
+function drivingSoundEvidence(state: ChaserState): PublicEvidenceMemory | null {
+  if (state.memory.lastKnownEvidence !== "sound") return null;
+  return (state.memory.evidenceTrail ?? []).find((entry) => (
+    entry.kind === "sound"
+    && Math.abs(entry.observedAtSeconds - (state.memory.lastHeardAtSeconds ?? -1)) <= 1e-6
+  )) ?? null;
 }
 
 function promoteDeferredSound(
@@ -296,13 +483,26 @@ function promoteDeferredSound(
     !deferred
     || soundEvidenceUtility(state, level, config, deferred, nowSeconds) < 0.2
   ) return { state: withoutDeferred, promoted: false };
+  const promoted = {
+    ...withoutDeferred,
+    searchHideSpotId: null,
+    hideCheckSource: null,
+    searchHideChecksCompleted: 0,
+    inspectedHideSpotIds: Object.freeze([]),
+    memory: {
+      ...withoutDeferred.memory,
+      lastKnownPosition: { ...deferred.position },
+      lastHeardAtSeconds: deferred.observedAtSeconds,
+      lastKnownEvidence: "sound" as const,
+      deferredSoundEvidence: null,
+      witnessedHideSpotId: null,
+    },
+  };
   return {
-    state: enterMode(rememberSoundTarget(withoutDeferred, {
-      kind: "sound",
-      position: deferred.position,
-      strength: deferred.strength,
-      observedAtSeconds: deferred.observedAtSeconds,
-    }), "go-to-last-known"),
+    // The deferred sample was already registered when first heard. Promotion
+    // changes only which public fact drives navigation; it is not a second
+    // emitter use and therefore must not add another habituation penalty.
+    state: enterMode(promoted, "go-to-last-known"),
     promoted: true,
   };
 }
@@ -333,6 +533,15 @@ export function stepChaserBrain(
       searchHideSpotId: input.evidence.hideSpotId,
       hideCheckSource: "witnessed",
     };
+    if (input.secondarySoundEvidence) {
+      next = rememberConcurrentSound(
+        next,
+        level,
+        config,
+        input.secondarySoundEvidence,
+        input.nowSeconds,
+      );
+    }
     return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
   }
 
@@ -362,20 +571,46 @@ export function stepChaserBrain(
         }, "chase");
       }
     }
+    if (input.secondarySoundEvidence) {
+      next = rememberConcurrentSound(
+        next,
+        level,
+        config,
+        input.secondarySoundEvidence,
+        input.nowSeconds,
+      );
+    }
     return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
   }
 
   if (input.evidence.kind === "sound") {
-    const committedToVisualAnchor = state.memory.lastKnownEvidence === "visual"
-      && ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known"].includes(state.mode);
-    if (committedToVisualAnchor || state.mode === "check-hide") {
-      // Preserve the stronger visual point and the authored locker inspection,
-      // but do not discard the new sound. Only its already-imprecise perceived
-      // point is stored; no player position or locker occupancy enters memory.
-      next = deferSoundEvidence(next, level, config, input.evidence, input.nowSeconds);
+    const confidence = actionableSoundConfidence(next, input.evidence);
+    const stableEnvironmentEmitter = Boolean(
+      input.evidence.sourceId
+      && ["environment-decoy", "environment-hazard"].includes(soundSourceType(input.evidence)),
+    );
+    if (stableEnvironmentEmitter && confidence < MIN_ACTIONABLE_SOUND_CONFIDENCE) {
+      // The brain remembers that this public emitter cried wolf, but a worn-out
+      // decoy can no longer reset its route or search timer.
+      next = {
+        ...next,
+        memory: {
+          ...next.memory,
+          evidenceTrail: rememberPublicEvidence(next, input.evidence),
+        },
+      };
     } else {
-      next = enterMode(rememberSoundTarget(next, input.evidence), "go-to-last-known");
-      return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
+      const committedToVisualAnchor = state.memory.lastKnownEvidence === "visual"
+        && ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known"].includes(state.mode);
+      if (committedToVisualAnchor || state.mode === "check-hide") {
+        // Preserve the stronger visual point and the authored locker inspection,
+        // but do not discard the new sound. Only its already-imprecise perceived
+        // point is stored; no player position or locker occupancy enters memory.
+        next = deferSoundEvidence(next, level, config, input.evidence, input.nowSeconds);
+      } else {
+        next = enterMode(rememberSoundTarget(next, input.evidence), "go-to-last-known");
+        return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
+      }
     }
   }
 
@@ -399,6 +634,7 @@ export function stepChaserBrain(
     next = { ...next, visualConfirmationSeconds: null };
   }
 
+  let completedSoundInvestigation: CompletedSoundInvestigation | undefined;
   switch (state.mode) {
     case "patrol":
       if (input.reachedTarget && level.patrol.length) {
@@ -427,6 +663,16 @@ export function stepChaserBrain(
         heading: lastKnownScanHeading(state.scanOriginHeading, elapsed, config.lastKnownScanSeconds),
       };
       if (elapsed + 1e-9 >= config.lastKnownScanSeconds) {
+        const investigatedSound = drivingSoundEvidence(state);
+        if (
+          investigatedSound?.sourceId
+          && investigatedSound.sourceType !== "player"
+        ) {
+          completedSoundInvestigation = {
+            sourceId: investigatedSound.sourceId,
+            sourceType: investigatedSound.sourceType,
+          };
+        }
         const deferred = promoteDeferredSound(next, level, config, input.nowSeconds);
         if (deferred.promoted) {
           next = deferred.state;
@@ -460,6 +706,7 @@ export function stepChaserBrain(
             lastKnownEvidence: null,
             deferredSoundEvidence: null,
             witnessedHideSpotId: null,
+            evidenceTrail: Object.freeze([]),
           },
         }, "patrol");
       } else if (state.searchHideSpotId && input.reachedTarget) {
@@ -505,10 +752,149 @@ export function stepChaserBrain(
       break;
     }
   }
-  return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
+  return {
+    state: next,
+    completedHideCheckId: null,
+    completedHideCheckSource: null,
+    ...(completedSoundInvestigation ? { completedSoundInvestigation } : {}),
+  };
 }
 
-function searchWaypoints(level: LevelDefinition, anchor: Point, seed: number): Point[] {
+export interface SearchHypothesis {
+  /** Reachable point the chaser will physically inspect. */
+  readonly target: Point;
+  /** Real navigation-graph junction from which this branch originates. */
+  readonly junction: Point;
+  readonly routeDistance: number;
+  readonly branchHeading: Point;
+  readonly fallback: boolean;
+}
+
+/**
+ * Builds three-to-five public-geometry search hypotheses. Real junction
+ * branches are preferred; narrow maps fall back to reachable bends/dead ends
+ * rather than inventing off-grid offsets.
+ */
+export function generateSearchHypotheses(
+  level: LevelDefinition,
+  anchor: Point,
+  seed: number,
+  maximum = 5,
+): readonly SearchHypothesis[] {
+  const limit = Math.max(3, Math.min(5, Math.floor(maximum)));
+  const origin = { x: Math.round(anchor.x), y: Math.round(anchor.y) };
+  if (!isWalkable(level, origin)) return Object.freeze([]);
+
+  const parent = new Map<string, Point | null>([[pointKey(origin), null]]);
+  const distance = new Map<string, number>([[pointKey(origin), 0]]);
+  const queue: Point[] = [origin];
+  const reachable: Point[] = [];
+  const maximumGraphDistance = Math.max(6, Math.min(12, Math.ceil(Math.hypot(level.width, level.height) / 2)));
+  for (let index = 0; index < queue.length; index += 1) {
+    const current = queue[index];
+    const currentDistance = distance.get(pointKey(current)) ?? 0;
+    reachable.push(current);
+    if (currentDistance >= maximumGraphDistance) continue;
+    for (const next of neighbors(level, current)) {
+      const key = pointKey(next);
+      if (parent.has(key)) continue;
+      parent.set(key, current);
+      distance.set(key, currentDistance + 1);
+      queue.push(next);
+    }
+  }
+
+  const candidates: SearchHypothesis[] = [];
+  for (const junction of reachable) {
+    const junctionNeighbors = neighbors(level, junction);
+    if (junctionNeighbors.length < 3) continue;
+    const incoming = parent.get(pointKey(junction));
+    for (const firstStep of junctionNeighbors) {
+      if (incoming && pointKey(firstStep) === pointKey(incoming)) continue;
+      let previous = junction;
+      let target = firstStep;
+      // Follow a definite branch through a short corridor. Stop at the next
+      // decision so a hypothesis never crosses a second unexplained fork.
+      for (let depth = 1; depth < 2; depth += 1) {
+        const onward = neighbors(level, target)
+          .filter((candidate) => pointKey(candidate) !== pointKey(previous));
+        if (onward.length !== 1) break;
+        previous = target;
+        target = onward[0];
+      }
+      const route = findPath(level, origin, target);
+      if (!route.length || pointKey(target) === pointKey(origin)) continue;
+      candidates.push(Object.freeze({
+        target: Object.freeze({ ...target }),
+        junction: Object.freeze({ ...junction }),
+        routeDistance: route.length - 1,
+        branchHeading: Object.freeze(normalizeVector({
+          x: firstStep.x - junction.x,
+          y: firstStep.y - junction.y,
+        })),
+        fallback: false,
+      }));
+    }
+  }
+
+  const ordered = candidates.sort((left, right) => (
+    left.routeDistance - right.routeDistance
+    || stableIdHash(`${pointKey(left.junction)}>${pointKey(left.target)}`, seed)
+      - stableIdHash(`${pointKey(right.junction)}>${pointKey(right.target)}`, seed)
+    || pointKey(left.target).localeCompare(pointKey(right.target))
+  ));
+  const unique: SearchHypothesis[] = [];
+  const seen = new Set<string>([pointKey(origin)]);
+  for (const candidate of ordered) {
+    const key = pointKey(candidate.target);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(candidate);
+    if (unique.length >= limit) break;
+  }
+
+  if (unique.length < 3) {
+    const fallback = reachable
+      .filter((point) => pointKey(point) !== pointKey(origin) && !seen.has(pointKey(point)))
+      .sort((left, right) => (
+        stableIdHash(pointKey(left), seed ^ 0x9e3779b9)
+          - stableIdHash(pointKey(right), seed ^ 0x9e3779b9)
+        || (distance.get(pointKey(left)) ?? 0) - (distance.get(pointKey(right)) ?? 0)
+      ));
+    for (const target of fallback) {
+      const route = findPath(level, origin, target);
+      if (!route.length) continue;
+      const junction = route.slice(0, -1).reverse()
+        .find((point) => neighbors(level, point).length >= 3)
+        ?? origin;
+      const previous = route[Math.max(0, route.length - 2)] ?? origin;
+      unique.push(Object.freeze({
+        target: Object.freeze({ ...target }),
+        junction: Object.freeze({ ...junction }),
+        routeDistance: route.length - 1,
+        branchHeading: Object.freeze(normalizeVector({
+          x: target.x - previous.x,
+          y: target.y - previous.y,
+        })),
+        fallback: true,
+      }));
+      seen.add(pointKey(target));
+      if (unique.length >= Math.min(3, limit)) break;
+    }
+  }
+  return Object.freeze(unique.slice(0, limit));
+}
+
+function graphSearchWaypoints(level: LevelDefinition, anchor: Point, seed: number): Point[] {
+  // The exact, potentially sub-cell evidence point supplies the planted
+  // post-scan beat. Broader points are branch hypotheses from the nav graph.
+  return [
+    { ...anchor },
+    ...generateSearchHypotheses(level, anchor, seed).map((hypothesis) => ({ ...hypothesis.target })),
+  ];
+}
+
+function legacyLocalSearchWaypoints(level: LevelDefinition, anchor: Point, seed: number): Point[] {
   const origin = { x: Math.round(anchor.x), y: Math.round(anchor.y) };
   const offsets = [
     { x: 1, y: 0 },
@@ -533,8 +919,6 @@ function searchWaypoints(level: LevelDefinition, anchor: Point, seed: number): P
     seen.add(key);
     return true;
   });
-  // Fisher-Yates with a tiny deterministic PRNG keeps fixed-step/replay tests
-  // reproducible while varying the search order with observed encounter data.
   let randomState = seed >>> 0 || 1;
   const random = () => {
     randomState ^= randomState << 13;
@@ -546,10 +930,21 @@ function searchWaypoints(level: LevelDefinition, anchor: Point, seed: number): P
     const swap = Math.floor(random() * (index + 1));
     [unique[index], unique[swap]] = [unique[swap], unique[index]];
   }
-  // The exact, potentially sub-cell evidence point is never shuffled away.
-  // It supplies the planted post-scan beat; only the surrounding search order
-  // varies with observed encounter evidence.
   return [{ ...anchor }, ...unique];
+}
+
+function searchWaypoints(state: ChaserState, level: LevelDefinition, anchor: Point): Point[] {
+  const drivingSound = drivingSoundEvidence(state);
+  const authoredEnvironmentEvidence = Boolean(
+    drivingSound
+    && ["environment-decoy", "environment-hazard"].includes(drivingSound.sourceType),
+  );
+  // Certified visual/footstep routes retain their calibrated local sweep.
+  // Player-triggered authored mechanisms opt into the richer branch search,
+  // giving the new system depth without silently invalidating ten fair routes.
+  return authoredEnvironmentEvidence
+    ? graphSearchWaypoints(level, anchor, state.searchSeed)
+    : legacyLocalSearchWaypoints(level, anchor, state.searchSeed);
 }
 
 /** Derives navigation intent exclusively from chaser-owned memory and level data. */
@@ -568,7 +963,7 @@ export function getChaserTarget(state: ChaserState, level: LevelDefinition): Poi
         const spot = level.hideSpots.find((candidate) => candidate.id === state.searchHideSpotId);
         if (spot) return { ...spot.approach };
       }
-      const candidates = searchWaypoints(level, state.memory.lastKnownPosition, state.searchSeed);
+      const candidates = searchWaypoints(state, level, state.memory.lastKnownPosition);
       if (!candidates.length) return { ...state.memory.lastKnownPosition };
       const index = state.searchIndex % candidates.length;
       return { ...candidates[index] };

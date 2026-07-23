@@ -4,9 +4,12 @@ import test from "node:test";
 import {
   footstepCueForAnimationMarker,
   ImmersiveSoundscapeController,
+  lockerListeningMix,
   soundPanForWorldPoints,
+  spatializeWorldSound,
   themeMechanicAudioProfile,
   themeSoundProfile,
+  worldSoundPriority,
 } from "../app/game/audio/immersive-soundscape.ts";
 import { screenMoveToWorld } from "../app/game/input.ts";
 
@@ -30,6 +33,8 @@ test("theme sound profiles provide distinct material and ambience palettes", () 
   assert.notEqual(campus.stepNoiseColorHertz, hospital.stepNoiseColorHertz);
   assert.ok(factory.machineryGain > campus.machineryGain);
   assert.ok(fire.playerStepHertz > factory.playerStepHertz);
+  assert.notEqual(campus.ambienceIdentity, hospital.ambienceIdentity);
+  assert.notEqual(fire.detailPulseSeconds, factory.detailPulseSeconds);
 });
 
 test("directional footsteps agree with the immutable screen-right axis", () => {
@@ -81,6 +86,87 @@ test("animation marker footsteps use player-safe chaser audibility bands", () =>
   });
   assert.equal(quiet?.pan, 0.42);
   assert.equal(quiet?.peakGain, sameBand?.peakGain, "gain must not reveal continuous distance");
+});
+
+test("world sound spatialization combines authored distance, screen pan and obstruction", () => {
+  const listenerPosition = { x: 5, y: 5 };
+  const near = spatializeWorldSound({
+    listenerPosition,
+    sourcePosition: { x: 7, y: 5 },
+    kind: "objective",
+    maxDistance: 12,
+    baseGain: 0.2,
+  });
+  const far = spatializeWorldSound({
+    listenerPosition,
+    sourcePosition: { x: 14, y: 5 },
+    kind: "objective",
+    maxDistance: 12,
+    baseGain: 0.2,
+  });
+  const obstructed = spatializeWorldSound({
+    listenerPosition,
+    sourcePosition: { x: 7, y: 5 },
+    kind: "objective",
+    maxDistance: 12,
+    baseGain: 0.2,
+    occlusion: 1,
+  });
+  assert.ok(near.gain > far.gain, "distance attenuation must be monotonic");
+  assert.ok(near.pan !== 0, "a non-centred world source must preserve fixed-camera direction");
+  assert.ok(obstructed.gain < near.gain, "walls reduce energy");
+  assert.ok(obstructed.lowpassHertz < near.lowpassHertz, "walls also remove high frequencies");
+  assert.equal(spatializeWorldSound({
+    listenerPosition,
+    sourcePosition: { x: 50, y: 50 },
+    kind: "ambient-detail",
+    maxDistance: 4,
+  }).gain, 0);
+});
+
+test("locker acoustics muffle the room but preserve door-side threat readability", () => {
+  const open = lockerListeningMix({ insideHideSpot: false }, 0);
+  const calmHidden = lockerListeningMix({
+    insideHideSpot: true,
+    doorOpenness: 0,
+    breathIntensity: 0.6,
+  }, 0);
+  const dangerHidden = lockerListeningMix({
+    insideHideSpot: true,
+    doorOpenness: 0,
+    breathIntensity: 0.6,
+  }, 1);
+  const peeking = lockerListeningMix({
+    insideHideSpot: true,
+    doorOpenness: 0.45,
+    breathIntensity: 0.6,
+  }, 0.5);
+  assert.ok(calmHidden.externalGain < open.externalGain);
+  assert.ok(calmHidden.externalLowpassHertz < open.externalLowpassHertz);
+  assert.ok(peeking.externalLowpassHertz > calmHidden.externalLowpassHertz);
+  assert.ok(dangerHidden.externalLowpassHertz > calmHidden.externalLowpassHertz);
+  assert.ok(dangerHidden.threatGainBoost > calmHidden.threatGainBoost);
+  assert.ok(dangerHidden.breathGain < calmHidden.breathGain, "breath ducks under readable door footsteps");
+});
+
+test("auditory priority protects gameplay evidence from decorative ambience", () => {
+  assert.ok(worldSoundPriority("threat-interaction") > worldSoundPriority("threat-footstep"));
+  assert.ok(worldSoundPriority("threat-footstep") > worldSoundPriority("objective"));
+  assert.ok(worldSoundPriority("objective") > worldSoundPriority("theme-event"));
+  assert.ok(worldSoundPriority("theme-event") > worldSoundPriority("ambient-detail"));
+
+  const common = {
+    listenerPosition: { x: 1, y: 1 },
+    sourcePosition: { x: 4, y: 1 },
+    maxDistance: 10,
+    baseGain: 0.12,
+    occlusion: 0.8,
+    listenerAcoustics: { insideHideSpot: true, doorOpenness: 0 },
+  };
+  const threat = spatializeWorldSound({ ...common, kind: "threat-footstep" });
+  const ambience = spatializeWorldSound({ ...common, kind: "ambient-detail" });
+  assert.ok(threat.gain > ambience.gain);
+  assert.ok(threat.lowpassHertz > ambience.lowpassHertz);
 });
 
 function createFakeAudioContext() {
@@ -156,6 +242,44 @@ test("theme activity smooths only local ambience and theme trigger prefers CC0 b
     controller.setThemeMechanicActivity(0.53);
     assert.equal(fake.gains[1].gain.targets.length, ambienceTargetCount + 1);
 
+    const enclosure = controller.setListenerAcoustics({
+      insideHideSpot: true,
+      doorOpenness: 0,
+      breathIntensity: 0.7,
+    }, 0.8);
+    assert.ok(enclosure.externalLowpassHertz < 2000);
+    assert.ok(enclosure.breathGain > 0);
+    const enclosureTargetCount = fake.gains[4].gain.targets.length;
+    controller.setListenerAcoustics({
+      insideHideSpot: true,
+      doorOpenness: 0,
+      breathIntensity: 0.705,
+    }, 0.8);
+    assert.equal(
+      fake.gains[4].gain.targets.length,
+      enclosureTargetCount,
+      "breath-only micro changes do not churn the external filter graph",
+    );
+    const sourcesBeforeBreath = fake.bufferSources.length;
+    controller.update({
+      elapsedSeconds: 1,
+      playerPosition: { x: 1, y: 1 },
+      chaserPosition: { x: 1, y: 1 },
+      playerSpeed: 0,
+      chaserSpeed: 0,
+      chaserMode: "search",
+      chaserAudibility: 0.8,
+      listenerAcoustics: {
+        insideHideSpot: true,
+        doorOpenness: 0,
+        breathIntensity: 0.705,
+      },
+    });
+    assert.ok(
+      fake.bufferSources.length > sourcesBeforeBreath,
+      "the hidden listener gets a restrained procedural breath layer",
+    );
+
     const audioProfile = themeMechanicAudioProfile("factory");
     controller.foleyBuffers.set(audioProfile.foleySet, [{}]);
     const oscillatorsBeforeSample = fake.oscillators.length;
@@ -168,6 +292,20 @@ test("theme activity smooths only local ambience and theme trigger prefers CC0 b
     assert.equal(controller.triggerThemeMechanic(), true);
     assert.ok(fake.oscillators.length > oscillatorsBeforeSample, "synth is safe when no sample decoded");
     assert.equal(controller.triggerThemeMechanic.length, 0, "theme event never accepts hidden positions");
+
+    controller.foleyBuffers.set("step-hard", [{}]);
+    const worldSourcesBefore = fake.bufferSources.length;
+    const worldMix = controller.triggerWorldSound({
+      listenerPosition: { x: 2, y: 2 },
+      sourcePosition: { x: 4, y: 2 },
+      kind: "threat-footstep",
+      maxDistance: 10,
+      baseGain: 0.11,
+      occlusion: 0.5,
+      foleySet: "step-hard",
+    });
+    assert.ok((worldMix?.gain ?? 0) > 0);
+    assert.ok(fake.bufferSources.length > worldSourcesBefore);
   } finally {
     await controller.dispose();
     globalThis.fetch = originalFetch;

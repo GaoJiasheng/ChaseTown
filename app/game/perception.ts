@@ -5,6 +5,7 @@ import type {
   PerceptionEvidence,
   PlayerMode,
   Point,
+  SoundEvidenceSourceType,
 } from "./contracts.ts";
 import { distanceBetween, findPath, hasLineOfSight, normalizeVector } from "./navigation.ts";
 
@@ -20,6 +21,14 @@ export interface SoundStimulus {
   readonly position: Point;
   /** Normalized authored loudness. Values outside [0, 1] are clamped. */
   readonly strength: number;
+  /** Explicit public provenance; authored mechanisms should never pose as footsteps. */
+  readonly sourceType?: SoundEvidenceSourceType;
+  /** Stable id enables fair, deterministic habituation to a repeatedly abused emitter. */
+  readonly sourceId?: string;
+  /** Authored reliability before distance attenuation. */
+  readonly confidence?: number;
+  /** Linear reliability loss per second after the sample is heard. */
+  readonly decayPerSecond?: number;
 }
 
 /**
@@ -50,11 +59,21 @@ export function sampleSoundPerception(
   );
   const reportedIndex = Math.max(0, route.length - 1 - uncertaintySteps);
   const attenuatedStrength = authoredStrength * (1 - distance / Math.max(audibleRange + 1, 1));
+  const perceivedStrength = Math.min(1, Math.max(0.01, attenuatedStrength));
+  const authoredConfidence = Number.isFinite(stimulus.confidence)
+    ? Math.min(1, Math.max(0, stimulus.confidence ?? 1))
+    : 1;
   return {
     kind: "sound",
     position: { ...route[reportedIndex] },
-    strength: Math.min(1, Math.max(0.01, attenuatedStrength)),
+    strength: perceivedStrength,
     observedAtSeconds,
+    sourceType: stimulus.sourceType ?? "unknown",
+    ...(stimulus.sourceId ? { sourceId: stimulus.sourceId } : {}),
+    confidence: Math.min(1, perceivedStrength * authoredConfidence),
+    decayPerSecond: Number.isFinite(stimulus.decayPerSecond)
+      ? Math.max(0, stimulus.decayPerSecond ?? 0)
+      : 0,
   };
 }
 

@@ -1,0 +1,641 @@
+{
+  "formatVersion": 2,
+  "generatedAt": "2026-07-23T13:23:21.267Z",
+  "policy": {
+    "derivativeOnly": true,
+    "highModelsUnmodified": true,
+    "lod1ModelsUnmodified": true,
+    "declaredReferenceModelsUnmodified": true,
+    "geometrySimplification": false,
+    "geometrySkinAnimationTransport": "Byte-identical to each declared reference model.",
+    "referenceVariant": {
+      "kid": "lod1",
+      "villain": "lod1",
+      "police": "original"
+    },
+    "baseColor": {
+      "kid": "512px UASTC quality 10",
+      "villain": "1024px ETC1S quality 10",
+      "police": "skin 1024px; uniform and trouser 512px; ETC1S quality 10"
+    },
+    "normalAndOrm": "512px UASTC quality 10",
+    "intendedUse": "First-paint actors; promote to their declared reference when runtime budget permits."
+  },
+  "tool": {
+    "name": "gltfpack",
+    "version": "gltfpack 1.2",
+    "arguments": {
+      "kid": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-si",
+        "1",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tu",
+        "color,normal,attrib",
+        "-tq",
+        "color,normal,attrib",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "villain": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-si",
+        "1",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tc",
+        "color",
+        "-tu",
+        "normal,attrib",
+        "-tq",
+        "color",
+        "10",
+        "-tq",
+        "normal,attrib",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "police": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-si",
+        "1",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tc",
+        "color",
+        "-tu",
+        "normal,attrib",
+        "-tq",
+        "color",
+        "10",
+        "-tq",
+        "normal,attrib",
+        "10",
+        "-tj",
+        "4"
+      ]
+    }
+  },
+  "budgets": {
+    "perCharacterBytes": {
+      "kid": 1677721,
+      "villain": 1677721,
+      "police": 2097152
+    },
+    "combinedBytes": 5242880
+  },
+  "totals": {
+    "referenceBytes": 12391416,
+    "bootstrapBytes": 4785296,
+    "savedBytes": 7606120,
+    "savedPercent": 61.382
+  },
+  "characters": [
+    {
+      "role": "kid",
+      "reference": {
+        "variant": "lod1",
+        "path": "public/models/characters/kid-lod1.glb",
+        "bytes": 2946584,
+        "sha256": "f803147b49b5a854e6bf232fb6795da4dab62a670397818612972a06e8f74395",
+        "triangles": 92686
+      },
+      "bootstrap": {
+        "path": "public/models/characters/kid-bootstrap.glb",
+        "bytes": 1573988,
+        "sha256": "ebedbd74c3ac28ad6c2be05453fd684bc9e5ef98951156a7ecdd8646f00a0077",
+        "savedBytes": 1372596,
+        "savedPercent": 46.583,
+        "triangles": 92686,
+        "triangleRatio": 1
+      },
+      "quality": {
+        "namedNodes": 57,
+        "joints": 21,
+        "clips": [
+          "Caught",
+          "EscapeCelebrate",
+          "HideEnter",
+          "HideExit",
+          "HideIdle",
+          "HidePeek",
+          "Idle",
+          "Interact",
+          "Run",
+          "TurnLeft",
+          "TurnRight",
+          "Walk"
+        ],
+        "animationContractSha256": "67cb97212bcc96f16912da3b191d35c25dc4e0f0fc52a0b312343bd72d613d33",
+        "silhouetteContract": {
+          "primitiveCount": 35,
+          "sha256": "682644a887e75ed2c536c44db93c3675c99f77e3caa69c80d603eb3f81789385"
+        },
+        "nonImageTransport": {
+          "entries": 11,
+          "bytes": 752450,
+          "sha256": "087323c80a1c40904d37ada80da2507ccdd9ecb9c1f2c606c1139ccb2d2f1f6f"
+        },
+        "semanticJsonSha256": "51326183da9421b404eb9284d0b945f3fcf1a8ee63706f7b576d637b3bdfd2ab",
+        "textures": [
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_Normal_768",
+            "textureClass": "normal",
+            "bytes": 267117,
+            "sha256": "4889dd01e2160b8f107ea0abcc6fb88aff69321a9ff8b90cb5f8fd7ef444a7fc",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+            "textureClass": "orm",
+            "bytes": 267748,
+            "sha256": "c4346d9cdc8d1b7f8cb34a9f9c14b0d60ae008f18cbf1bb427f2aab4d36349d8",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+            "textureClass": "baseColor",
+            "bytes": 192321,
+            "sha256": "3a2b22217238e30e9cdc3b717eb29d506ccb9bf996734abdcf19311f1e0acbdb",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          }
+        ],
+        "derivativePngs": [
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_Normal_768",
+            "textureClass": "normal",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 318257,
+            "pngSha256": "5be6db07e3861daea2f406b52708c2dab36c96b13bc23fb6acbdef3864ca65f3"
+          },
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+            "textureClass": "orm",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 327494,
+            "pngSha256": "614749822d77964b101c15cfadf0481f8567ca9f98838aa2f8ab4f20cde821ac"
+          },
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+            "textureClass": "baseColor",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 251857,
+            "pngSha256": "c2245b26c03b9e5036f2cb2417706c7435b1d867fb809d0f1f7b0e68f6084399"
+          }
+        ],
+        "sourceTextures": [
+          {
+            "name": "baseColor",
+            "path": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Kid_PrecisionRemodel_v21_BaseColor_2K.png",
+            "bytes": 1103463,
+            "sha256": "0ac2b4c10404c7ea68c9647e36acd4d91bd6d9ff293285dfbe018801d0b9d732"
+          },
+          {
+            "name": "normal",
+            "path": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Kid_PrecisionRemodel_v21_Normal_2K.png",
+            "bytes": 2493211,
+            "sha256": "7d9470dc390ba230f47e0c9482ce50dfea49d23564e0376c0a5ffa9894f206c8"
+          },
+          {
+            "name": "ao",
+            "path": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Kid_PrecisionRemodel_v21_AO_2K.png",
+            "bytes": 962784,
+            "sha256": "bb6f18b801e5a1bdcf2432945085e8af81031c8fa665118149f61ecf69474525"
+          },
+          {
+            "name": "metallicSmoothness",
+            "path": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Kid_PrecisionRemodel_v21_MetallicSmoothness_2K.png",
+            "bytes": 1319443,
+            "sha256": "560deaf7f5ad0839712842c95c5fa0db4e729fbab6ddc2db05ecc197f461556f"
+          }
+        ]
+      }
+    },
+    {
+      "role": "villain",
+      "reference": {
+        "variant": "lod1",
+        "path": "public/models/characters/villain-lod1.glb",
+        "bytes": 2570964,
+        "sha256": "0b0266b2c3b365cb286606dfdaea188fa2eeb2035dcc33d0ab7feff83a0cb4c2",
+        "triangles": 102131
+      },
+      "bootstrap": {
+        "path": "public/models/characters/villain-bootstrap.glb",
+        "bytes": 1474540,
+        "sha256": "91ad6c102194d06f6e4d6c5a8a7130e01dda42c5c0fa3ab1111c1942f0b9811f",
+        "savedBytes": 1096424,
+        "savedPercent": 42.646,
+        "triangles": 102131,
+        "triangleRatio": 1
+      },
+      "quality": {
+        "namedNodes": 34,
+        "joints": 21,
+        "clips": [
+          "Alert",
+          "Catch",
+          "CheckHide",
+          "Idle",
+          "LostSight",
+          "PatrolWalk",
+          "Run",
+          "Search"
+        ],
+        "animationContractSha256": "ccabd435be7c03f598a8da27293c3f735aef47f3a1f2705b649dccc4f6d4c0d4",
+        "silhouetteContract": {
+          "primitiveCount": 12,
+          "sha256": "f00bd24ae0310ed92ef16489aa054765deabf491baa0e3bf8f5e3e0084e0ee7b"
+        },
+        "nonImageTransport": {
+          "entries": 11,
+          "bytes": 791661,
+          "sha256": "cb59d186437b0e70c29ea4bdcb7f5283c13dd4c410fc9f3bb407331801d19abc"
+        },
+        "semanticJsonSha256": "676ed19742f4a5eb2c9669c7a774b779ce456f730f711841c106637c2c35d1a5",
+        "textures": [
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+            "textureClass": "normal",
+            "bytes": 266410,
+            "sha256": "a556e9d5e67356b8897aa83ba876c23bf7a701bcd8caa636e6d6b317d5b0debc",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
+            "textureClass": "orm",
+            "bytes": 267747,
+            "sha256": "6f3c9e1ce3db5f80891c4c6e4b928649a59e1fb55982e80e64a2f893d8843b16",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+            "textureClass": "baseColor",
+            "bytes": 90576,
+            "sha256": "274dcda6a6b0fe9955632d454a9a7bc4137d93692eb367aba29686027c48fa53",
+            "width": 1024,
+            "height": 1024,
+            "levels": 11,
+            "mode": "ETC1S",
+            "supercompressionScheme": 1
+          }
+        ],
+        "derivativePngs": [
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+            "textureClass": "normal",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 318635,
+            "pngSha256": "f30726034332576a3c8fddf8916c91ec8289499986e7db4d9010ded1dc9142bd"
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
+            "textureClass": "orm",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 327823,
+            "pngSha256": "2d6bb029b5217227e86e758b2ae1756e3eb9cdeb6d312e2dcd7f02e244042884"
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+            "textureClass": "baseColor",
+            "width": 1024,
+            "height": 1024,
+            "pngBytes": 294147,
+            "pngSha256": "725f8ea09fe102e9c2e33cbd25d1a457061f3c23eb7321dd9dc4746c345e8093"
+          }
+        ],
+        "sourceTextures": [
+          {
+            "name": "baseColor",
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Villain_PrecisionRemodel_v21_BaseColor_2K.png",
+            "bytes": 712561,
+            "sha256": "1c708f5d1a75e86c87d092ed26cf23cca32a84fb8012e3d73ef0decb22b43a5a"
+          },
+          {
+            "name": "normal",
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_Normal_2K.png",
+            "bytes": 2497010,
+            "sha256": "3ffa8439dccd345d7a82651f9fc6e711646fb9211a44b8e1fd6cd982363a2086"
+          },
+          {
+            "name": "ao",
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_AO_2K.png",
+            "bytes": 963629,
+            "sha256": "46c7e02242aa7f52becb09a1079d3df8e03818ac034b39ff11521539c59c8d6c"
+          },
+          {
+            "name": "metallicSmoothness",
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_MetallicSmoothness_2K.png",
+            "bytes": 1321245,
+            "sha256": "9eeca9650f9c743528f946c1f8389a2ec53449bdc09d7961bae55a9b07b05aab"
+          }
+        ]
+      }
+    },
+    {
+      "role": "police",
+      "reference": {
+        "variant": "original",
+        "path": "public/models/characters/police.glb",
+        "bytes": 6873868,
+        "sha256": "768841bb45da54f12805e5593a5c1876f2eb6600422da821b9899a583efe9fa4",
+        "triangles": 40120
+      },
+      "bootstrap": {
+        "path": "public/models/characters/police-bootstrap.glb",
+        "bytes": 1736768,
+        "sha256": "a429aee2b409052888ac59e6f808f9ac963a482eafac37d04f4cee6e6126837a",
+        "savedBytes": 5137100,
+        "savedPercent": 74.734,
+        "triangles": 40120,
+        "triangleRatio": 1
+      },
+      "quality": {
+        "namedNodes": 60,
+        "joints": 21,
+        "clips": [
+          "Alert",
+          "Idle",
+          "Interact",
+          "Resolve",
+          "Run"
+        ],
+        "animationContractSha256": "365d1f0ac97662626e4f335fe3f3effcd95fedc7c240385c6e9e9cb98bea7935",
+        "silhouetteContract": {
+          "primitiveCount": 39,
+          "sha256": "1d93c7edb98e6413c00fc956bff22657526e148e00992c147f1ce6f615b6e25e"
+        },
+        "nonImageTransport": {
+          "entries": 10,
+          "bytes": 589932,
+          "sha256": "17067c2013600c897da8a0fcde3ee9168640e4fd064143d0e31f065c3327427e"
+        },
+        "semanticJsonSha256": "0e648fdafae80c27f05adb4ffde7d261a0001f401022b28558971cd61a9c0ce2",
+        "textures": [
+          {
+            "name": "Police_v22_Skin_MicroNormal_768",
+            "textureClass": "normal",
+            "bytes": 238381,
+            "sha256": "db70aef1c9274a8b34f18ea30105fe35e473fa99f5d1f4c82f90574241bc5710",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Police_v22_Skin_ORM_768",
+            "textureClass": "orm",
+            "bytes": 217157,
+            "sha256": "776511db65a03bef1d2087eb6274b3ed148852174e15c8390626617573bd479a",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "young_lightskinned_male_diffuse2",
+            "textureClass": "baseColor",
+            "bytes": 170565,
+            "sha256": "dc93c20c708f1f899303447e41f8c1a4da3b14c6a0e4fa8f9bd58da485e7b640",
+            "width": 1024,
+            "height": 1024,
+            "levels": 11,
+            "mode": "ETC1S",
+            "supercompressionScheme": 1
+          },
+          {
+            "name": "Police_v22_CasualSuit_Normal_1K",
+            "textureClass": "normal",
+            "bytes": 240675,
+            "sha256": "c76f6b178234f4f5cc451287cab8d4981bdff5dc09ece7fbfd984457fa933b41",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Police_v22_Uniform_ORM_768",
+            "textureClass": "orm",
+            "bytes": 217085,
+            "sha256": "c1acb332b096b4ea1ffec5b71d59f511855bef4f47004b3a74518c0c8ae72a4d",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Police_v22_Uniform_BaseColor_768",
+            "textureClass": "baseColor",
+            "bytes": 966,
+            "sha256": "5bfd4db847154632e4bf8e49874ba740384af1317276b5bfd1af48c5680d7bc0",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "ETC1S",
+            "supercompressionScheme": 1
+          },
+          {
+            "name": "Police_v22_Trouser_BaseColor_768",
+            "textureClass": "baseColor",
+            "bytes": 1141,
+            "sha256": "30ff841aa112b59e3c7823f2d09b95e466984c472957e307ba25a5cbb2188f6e",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "ETC1S",
+            "supercompressionScheme": 1
+          }
+        ],
+        "derivativePngs": [
+          {
+            "name": "Police_v22_Skin_MicroNormal_768",
+            "textureClass": "normal",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 533064,
+            "pngSha256": "0d88e8ed49fc954d3f7ce638aae24765a71ab057c7b9272c7da24b16ac929bf3"
+          },
+          {
+            "name": "Police_v22_Skin_ORM_768",
+            "textureClass": "orm",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 236447,
+            "pngSha256": "554780a595dbf13579388e253954db9a1db862c204fd0d7069760d10802529ca"
+          },
+          {
+            "name": "young_lightskinned_male_diffuse2",
+            "textureClass": "baseColor",
+            "width": 1024,
+            "height": 1024,
+            "pngBytes": 1118228,
+            "pngSha256": "041270b8ff80f219c20cc65e0fcca0e841942f4e9dd855234dc58f7a637389bd"
+          },
+          {
+            "name": "Police_v22_CasualSuit_Normal_1K",
+            "textureClass": "normal",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 314433,
+            "pngSha256": "c990cf69d4358b8886af23b37d6de6c4951227b45bbc118579dd1dfecd854991"
+          },
+          {
+            "name": "Police_v22_Uniform_ORM_768",
+            "textureClass": "orm",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 237077,
+            "pngSha256": "40d94da8d7c73ad36b3dd6dfefbb7d347d88e35094a1cf5f9414bcc540e68c5e"
+          },
+          {
+            "name": "Police_v22_Uniform_BaseColor_768",
+            "textureClass": "baseColor",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 115230,
+            "pngSha256": "a691fb39a58c042cca326191e1ac77e761d8eb75f406f18b66dbeca586e458de"
+          },
+          {
+            "name": "Police_v22_Trouser_BaseColor_768",
+            "textureClass": "baseColor",
+            "width": 512,
+            "height": 512,
+            "pngBytes": 117876,
+            "pngSha256": "9888ebc0ad1bf6df97081968dc06835b62176fc6e1a08a22e660c4da3cab6695"
+          }
+        ],
+        "sourceTextures": [
+          {
+            "name": "Police_v22_Skin_MicroNormal_768",
+            "path": "public/models/characters/police.glb#image=Police_v22_Skin_MicroNormal_768",
+            "bytes": 458512,
+            "sha256": "cf7098b403c97f7d8b174f953d25087b6ab448f7a0c06b4a2ed57114835805ed",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
+          },
+          {
+            "name": "Police_v22_Skin_ORM_768",
+            "path": "public/models/characters/police.glb#image=Police_v22_Skin_ORM_768",
+            "bytes": 465037,
+            "sha256": "1fc5c20ae9bbc33b8fc53d37c50f36761b5252b7c6ceda72fbea50c8b84fabb6",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
+          },
+          {
+            "name": "young_lightskinned_male_diffuse2",
+            "path": "public/models/characters/police.glb#image=young_lightskinned_male_diffuse2",
+            "bytes": 3653212,
+            "sha256": "25f2c8c9cdfa655066890aec5bd12a0db4a5f74485ecc8436fb7bcdfc7411b47",
+            "width": 2048,
+            "height": 2048,
+            "levels": 12,
+            "mode": "UASTC"
+          },
+          {
+            "name": "Police_v22_CasualSuit_Normal_1K",
+            "path": "public/models/characters/police.glb#image=Police_v22_CasualSuit_Normal_1K",
+            "bytes": 809547,
+            "sha256": "b2fd708c3f52d5645bb0379e48bcd606996ff3ef7a5e31da4ce31af690010947",
+            "width": 1024,
+            "height": 1024,
+            "levels": 11,
+            "mode": "UASTC"
+          },
+          {
+            "name": "Police_v22_Uniform_ORM_768",
+            "path": "public/models/characters/police.glb#image=Police_v22_Uniform_ORM_768",
+            "bytes": 467348,
+            "sha256": "bb29526ed8e9698e02c42f55b5d99e4a18fa5ab740765d883060bc7f4df61f99",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
+          },
+          {
+            "name": "Police_v22_Uniform_BaseColor_768",
+            "path": "public/models/characters/police.glb#image=Police_v22_Uniform_BaseColor_768",
+            "bytes": 187396,
+            "sha256": "3d98e1c22a023bcbc626c135f1d37400db1295cb67d412c06d9ce1018c0453e3",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
+          },
+          {
+            "name": "Police_v22_Trouser_BaseColor_768",
+            "path": "public/models/characters/police.glb#image=Police_v22_Trouser_BaseColor_768",
+            "bytes": 182025,
+            "sha256": "ac0a3f3fde029645e4c0090f002aaa787f49bfc32d01f859c2cf0aa90912d1a9",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
+          }
+        ]
+      }
+    }
+  ]
+}

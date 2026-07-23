@@ -1,0 +1,361 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-07-23T11:06:20.123Z",
+  "policy": {
+    "derivativeOnly": true,
+    "sourceAssetsUnmodified": true,
+    "intendedUse": "First-frame and constrained-device render; retain the high model for later promotion.",
+    "targetTriangleRatio": 0.65,
+    "maximumSimplificationError": 0.002,
+    "geometryQuantization": true,
+    "animationResampling": false,
+    "textures": "Byte-identical embedded KTX2 surfaces retained from the approved high model."
+  },
+  "tool": {
+    "name": "gltfpack",
+    "version": "gltfpack 1.2",
+    "arguments": [
+      "-c",
+      "-kn",
+      "-km",
+      "-ke",
+      "-si",
+      "0.65",
+      "-se",
+      "0.002",
+      "-tu",
+      "-tq",
+      "9",
+      "-ts",
+      "0.75",
+      "-tj",
+      "4",
+      "-af",
+      "0",
+      "-at",
+      "24",
+      "-ar",
+      "16",
+      "-as",
+      "24"
+    ]
+  },
+  "budgets": {
+    "kid": {
+      "maxBytes": 3050000,
+      "minimumTriangleRatio": 0.64,
+      "maximumTriangleRatio": 0.69
+    },
+    "villain": {
+      "maxBytes": 2700000,
+      "minimumTriangleRatio": 0.63,
+      "maximumTriangleRatio": 0.68
+    }
+  },
+  "totals": {
+    "sourceBytes": 8718120,
+    "lodBytes": 5517548,
+    "savedBytes": 3200572,
+    "savedPercent": 36.712
+  },
+  "characters": [
+    {
+      "role": "kid",
+      "source": {
+        "path": "public/models/characters/kid.glb",
+        "bytes": 4492164,
+        "sha256": "c278b6475c516d516691d2357e5446ce46fd10f67110ec73d3a71de542aad5c6",
+        "triangles": 140276
+      },
+      "lod": {
+        "path": "public/models/characters/kid-lod1.glb",
+        "bytes": 2946584,
+        "sha256": "f803147b49b5a854e6bf232fb6795da4dab62a670397818612972a06e8f74395",
+        "savedBytes": 1545580,
+        "savedPercent": 34.406,
+        "triangles": 92686,
+        "triangleRatio": 0.66074
+      },
+      "quality": {
+        "namedNodes": 57,
+        "joints": 21,
+        "materials": [
+          "M_Kid_BackpackLeather",
+          "M_Kid_BackpackNavy",
+          "M_Kid_BackpackTrim",
+          "M_Kid_EyeHighlight",
+          "M_Kid_EyeWhite_EyeGloss",
+          "M_Kid_FacialHair",
+          "M_Kid_HoodieNavy",
+          "M_Kid_IrisBrown_EyeGloss",
+          "M_Kid_PrecisionRemodel_v21_URP",
+          "M_Kid_Pupil_EyeGloss",
+          "M_Kid_Sock",
+          "M_Kid_ZipperMetal"
+        ],
+        "textures": [
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_Normal_768",
+            "bytes": 594568,
+            "sha256": "78cadafa0b7ed6d0af435ffead2839d7d436704f1151461d60dd14194d399546",
+            "width": 768,
+            "height": 768,
+            "levels": 10
+          },
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+            "bytes": 565917,
+            "sha256": "d2187ed1eaa39c92bdb8542cfb4b2a193969d061631267c54110e6346c31f386",
+            "width": 768,
+            "height": 768,
+            "levels": 10
+          },
+          {
+            "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+            "bytes": 939328,
+            "sha256": "4d3bbeb4d351f9034f3577e8a81d2cb6368b4f8b61f76cc443f7cd65a06ea41a",
+            "width": 2048,
+            "height": 2048,
+            "levels": 12
+          }
+        ],
+        "clips": [
+          "Caught",
+          "EscapeCelebrate",
+          "HideEnter",
+          "HideExit",
+          "HideIdle",
+          "HidePeek",
+          "Idle",
+          "Interact",
+          "Run",
+          "TurnLeft",
+          "TurnRight",
+          "Walk"
+        ],
+        "animations": {
+          "Caught": {
+            "durationSeconds": 1,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 166.90304,
+            "translationTravelMeters": 0.0370968,
+            "scaleTravel": 0
+          },
+          "EscapeCelebrate": {
+            "durationSeconds": 1.2333334,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 1314.68476,
+            "translationTravelMeters": 0.3707261,
+            "scaleTravel": 0
+          },
+          "HideEnter": {
+            "durationSeconds": 1.2999999,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 1115.34608,
+            "translationTravelMeters": 0.3536095,
+            "scaleTravel": 0
+          },
+          "HideExit": {
+            "durationSeconds": 1.0333333,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 1580.13541,
+            "translationTravelMeters": 0.3647224,
+            "scaleTravel": 0
+          },
+          "HideIdle": {
+            "durationSeconds": 1.6666666,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 52.94353,
+            "translationTravelMeters": 0,
+            "scaleTravel": 0
+          },
+          "HidePeek": {
+            "durationSeconds": 1.6,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 170.36988,
+            "translationTravelMeters": 0,
+            "scaleTravel": 0
+          },
+          "Idle": {
+            "durationSeconds": 2.5,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 280.61987,
+            "translationTravelMeters": 0.0352351,
+            "scaleTravel": 0
+          },
+          "Interact": {
+            "durationSeconds": 2,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 725.38964,
+            "translationTravelMeters": 0.025662,
+            "scaleTravel": 0
+          },
+          "Run": {
+            "durationSeconds": 0.6666667,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 2548.81207,
+            "translationTravelMeters": 0.4969219,
+            "scaleTravel": 0
+          },
+          "TurnLeft": {
+            "durationSeconds": 0.6,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 563.10347,
+            "translationTravelMeters": 0.3062957,
+            "scaleTravel": 0
+          },
+          "TurnRight": {
+            "durationSeconds": 0.6,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 555.33057,
+            "translationTravelMeters": 0.2674117,
+            "scaleTravel": 0
+          },
+          "Walk": {
+            "durationSeconds": 1.3333334,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 1562.3242,
+            "translationTravelMeters": 0.2359136,
+            "scaleTravel": 0
+          }
+        },
+        "boundsMaxDeltaMeters": 0.000031421,
+        "animationDeviation": {
+          "maxRotationDegrees": 0.0000034,
+          "maxTranslationMeters": 0,
+          "maxScaleDelta": 0
+        }
+      }
+    },
+    {
+      "role": "villain",
+      "source": {
+        "path": "public/models/characters/villain.glb",
+        "bytes": 4225956,
+        "sha256": "5a3244fa2e8a09c3b3476a912f0d4b5f21f21cdc14669a867257baa43e445871",
+        "triangles": 157148
+      },
+      "lod": {
+        "path": "public/models/characters/villain-lod1.glb",
+        "bytes": 2570964,
+        "sha256": "0b0266b2c3b365cb286606dfdaea188fa2eeb2035dcc33d0ab7feff83a0cb4c2",
+        "savedBytes": 1654992,
+        "savedPercent": 39.163,
+        "triangles": 102131,
+        "triangleRatio": 0.649903
+      },
+      "quality": {
+        "namedNodes": 34,
+        "joints": 21,
+        "materials": [
+          "M_Villain_EyeWhite_EyeGloss",
+          "M_Villain_FaceLine",
+          "M_Villain_Iris_EyeGloss",
+          "M_Villain_PrecisionRemodel_v21_URP",
+          "M_Villain_Pupil_EyeGloss",
+          "M_Villain_Skin"
+        ],
+        "textures": [
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+            "bytes": 594845,
+            "sha256": "ab458195524d518b2acd8b0d37040503c589e1c7952986f10f2b515896820989",
+            "width": 768,
+            "height": 768,
+            "levels": 10
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
+            "bytes": 565991,
+            "sha256": "74437c7125eb0b1d430eb6f556520b2d9491345e28772dda0be2ba416ba3fae0",
+            "width": 768,
+            "height": 768,
+            "levels": 10
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+            "bytes": 560264,
+            "sha256": "65a56bbaedfe76449c909f9bd51c52194557123d20dfadc34257d18aeabb46e6",
+            "width": 2048,
+            "height": 2048,
+            "levels": 12
+          }
+        ],
+        "clips": [
+          "Alert",
+          "Catch",
+          "CheckHide",
+          "Idle",
+          "LostSight",
+          "PatrolWalk",
+          "Run",
+          "Search"
+        ],
+        "animations": {
+          "Alert": {
+            "durationSeconds": 0.6,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 205.87133,
+            "translationTravelMeters": 0.063703,
+            "scaleTravel": 0
+          },
+          "Catch": {
+            "durationSeconds": 1.2000001,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 547.20599,
+            "translationTravelMeters": 0.1059541,
+            "scaleTravel": 0
+          },
+          "CheckHide": {
+            "durationSeconds": 2.2666666,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 724.08703,
+            "translationTravelMeters": 0.0364718,
+            "scaleTravel": 0
+          },
+          "Idle": {
+            "durationSeconds": 2.5,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 280.61997,
+            "translationTravelMeters": 0.0501424,
+            "scaleTravel": 0
+          },
+          "LostSight": {
+            "durationSeconds": 1.7666666,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 149.84256,
+            "translationTravelMeters": 0.022329,
+            "scaleTravel": 0
+          },
+          "PatrolWalk": {
+            "durationSeconds": 1.4666667,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 1344.55951,
+            "translationTravelMeters": 0.212076,
+            "scaleTravel": 0
+          },
+          "Run": {
+            "durationSeconds": 0.8666667,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 2595.38506,
+            "translationTravelMeters": 1.1972144,
+            "scaleTravel": 0
+          },
+          "Search": {
+            "durationSeconds": 1.4333333,
+            "animatedJointChannels": 21,
+            "rotationTravelDegrees": 149.73547,
+            "translationTravelMeters": 0.0223205,
+            "scaleTravel": 0
+          }
+        },
+        "boundsMaxDeltaMeters": 0.000910097,
+        "animationDeviation": {
+          "maxRotationDegrees": 0.0000034,
+          "maxTranslationMeters": 0,
+          "maxScaleDelta": 0
+        }
+      }
+    }
+  ]
+}

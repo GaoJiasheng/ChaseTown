@@ -1,0 +1,188 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-07-23T12:04:26.305Z",
+  "method": "Chromium WebGL2; actual Three.js Meshopt and KTX2 decode; matched camera, lights and exposure.",
+  "url": "http://localhost:4173/",
+  "viewport": {
+    "width": 1440,
+    "height": 1050,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "assets": {
+    "campus": {
+      "source": {
+        "path": "public/models/environment/themes/campus-kit.glb",
+        "bytes": 1585960,
+        "sha256": "c5672bda88ab26056c2e02303108c186cdba0b51256ad903ab54a5f3042f9745",
+        "nodes": 348,
+        "namedNodes": 342,
+        "meshes": 155,
+        "primitives": 240,
+        "triangles": 53360,
+        "materials": 26,
+        "externalTextureRequests": 22
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/campus-kit-bootstrap.glb",
+        "bytes": 759072,
+        "sha256": "38ebd088fc2949c2b271d84c907339627d761899cf3e12da7a0314b7f6b91d03",
+        "savedGlbBytes": 826888,
+        "savedGlbPercent": 52.138,
+        "nodes": 656,
+        "namedNodes": 342,
+        "meshes": 155,
+        "primitives": 240,
+        "triangles": 53360,
+        "materials": 26,
+        "atlasRequests": 3
+      }
+    },
+    "hospital": {
+      "source": {
+        "path": "public/models/environment/themes/hospital-kit.glb",
+        "bytes": 1063652,
+        "sha256": "77b9deba829f6e259d867bdba444bc83c8e154ae5baf3b742bcfdd5103428992",
+        "nodes": 390,
+        "namedNodes": 383,
+        "meshes": 163,
+        "primitives": 211,
+        "triangles": 32896,
+        "materials": 24,
+        "externalTextureRequests": 16
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/hospital-kit-bootstrap.glb",
+        "bytes": 567388,
+        "sha256": "ac86d756ce283b2eeee947187661abd6b0b1bc3c0ea311df7085ab8d9a819f62",
+        "savedGlbBytes": 496264,
+        "savedGlbPercent": 46.657,
+        "nodes": 745,
+        "namedNodes": 383,
+        "meshes": 163,
+        "primitives": 211,
+        "triangles": 32896,
+        "materials": 24,
+        "atlasRequests": 3
+      }
+    },
+    "fire-station": {
+      "source": {
+        "path": "public/models/environment/themes/fire-station-kit.glb",
+        "bytes": 1092952,
+        "sha256": "5c033374387bf951ec274847c9f6f43687dcb5afcbdfc166a04bd0dd914770a4",
+        "nodes": 699,
+        "namedNodes": 697,
+        "meshes": 157,
+        "primitives": 210,
+        "triangles": 40816,
+        "materials": 25,
+        "externalTextureRequests": 17
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/fire-station-kit-bootstrap.glb",
+        "bytes": 639596,
+        "sha256": "24b04e6e199c657acf89775924c4fb6c740557633a06d5e0679845ad87100b47",
+        "savedGlbBytes": 453356,
+        "savedGlbPercent": 41.48,
+        "nodes": 1363,
+        "namedNodes": 697,
+        "meshes": 157,
+        "primitives": 210,
+        "triangles": 40816,
+        "materials": 25,
+        "atlasRequests": 3
+      }
+    },
+    "factory": {
+      "source": {
+        "path": "public/models/environment/themes/factory-kit.glb",
+        "bytes": 1613744,
+        "sha256": "8be3fa3986183b7627137f6db1931825d62f3ef975975b77499b4a3532520f23",
+        "nodes": 584,
+        "namedNodes": 581,
+        "meshes": 159,
+        "primitives": 234,
+        "triangles": 56456,
+        "materials": 23,
+        "externalTextureRequests": 19
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/factory-kit-bootstrap.glb",
+        "bytes": 819840,
+        "sha256": "28b38065e5106effa8aab2e194ce2a55cd95a402495a9feeab1b387256857fa3",
+        "savedGlbBytes": 793904,
+        "savedGlbPercent": 49.196,
+        "nodes": 1127,
+        "namedNodes": 581,
+        "meshes": 159,
+        "primitives": 234,
+        "triangles": 56456,
+        "materials": 23,
+        "atlasRequests": 3
+      }
+    }
+  },
+  "atlases": [
+    {
+      "textureClass": "baseColor",
+      "reusedExisting": true,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+      "bytes": 466915,
+      "sha256": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91",
+      "width": 2112,
+      "height": 1584,
+      "levels": 12,
+      "mode": "ETC1S",
+      "supercompressionScheme": 1
+    },
+    {
+      "textureClass": "normal",
+      "reusedExisting": false,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+      "bytes": 597993,
+      "sha256": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9",
+      "width": 1056,
+      "height": 792,
+      "levels": 11,
+      "mode": "UASTC",
+      "supercompressionScheme": 2
+    },
+    {
+      "textureClass": "orm",
+      "reusedExisting": false,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+      "bytes": 70981,
+      "sha256": "9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a",
+      "width": 1056,
+      "height": 792,
+      "levels": 11,
+      "mode": "ETC1S",
+      "supercompressionScheme": 1
+    }
+  ],
+  "result": {
+    "campus": {
+      "silhouetteIou": 0.9998446078939189,
+      "rgbMeanAbsoluteError": 1.0032464729144002
+    },
+    "hospital": {
+      "silhouetteIou": 0.9998179368605032,
+      "rgbMeanAbsoluteError": 1.3666083958530604
+    },
+    "fire-station": {
+      "silhouetteIou": 0.9999019928128062,
+      "rgbMeanAbsoluteError": 1.7139978871935613
+    },
+    "factory": {
+      "silhouetteIou": 0.9999789131855851,
+      "rgbMeanAbsoluteError": 1.138318361379388
+    }
+  },
+  "gates": {
+    "minimumSilhouetteIou": 0.9995,
+    "maximumRgbMeanAbsoluteError": 3
+  },
+  "screenshotSha256": "7e954764056416ebbf448cb1b945faf4a10b1ab59fac86eece3ede30cd7ad148",
+  "screenshot": "/tmp/chasing-theme-bootstrap-visual-qa-final/theme-bootstrap-comparison.png"
+}

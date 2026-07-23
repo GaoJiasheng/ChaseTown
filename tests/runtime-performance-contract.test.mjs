@@ -22,6 +22,10 @@ test("first playable frame gates only on navigation-critical scene assets", () =
 });
 
 test("resolution actor streams near the exit and retains an immediate victory fallback", () => {
+  assert.match(
+    SOURCE,
+    /police:\s*\{\s*url: "\/models\/characters\/police-bootstrap\.glb\?v=1"/,
+  );
   assert.equal(
     SOURCE.match(/loadGlbWithRetry\(ACTOR_SPECS\.police\.url\)/g)?.length,
     1,
@@ -32,9 +36,38 @@ test("resolution actor streams near the exit and retains an immediate victory fa
   assert.match(SOURCE, /event\.to === "won"[\s\S]*void requestPoliceAsset\?\.\(\)/);
 });
 
+test("quantized authored geometry expands before CPU world-matrix baking", () => {
+  assert.match(
+    SOURCE,
+    /function cloneGeometryForStaticBake\([\s\S]*new Float32Array\([\s\S]*return geometry\.applyMatrix4\(matrixWorld\)/,
+  );
+  assert.equal(
+    SOURCE.match(/cloneGeometryForStaticBake\(object\.geometry, object\.matrixWorld\)/g)?.length,
+    2,
+    "Both static flattening paths must decode compact attributes before matrix baking",
+  );
+});
+
+test("quantized skinned actors calibrate against GPU-decoded geometry bounds", () => {
+  assert.match(
+    SOURCE,
+    /function staticMeshBounds\([\s\S]*geometry\.boundingBox\.clone\(\)\.applyMatrix4\(object\.matrixWorld\)/,
+  );
+  const fitActorSource = SOURCE.match(/function fitActor\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(fitActorSource, /const initial = staticMeshBounds\(visual\)/);
+  assert.match(fitActorSource, /const fitted = staticMeshBounds\(visual\)/);
+  assert.doesNotMatch(fitActorSource, /setFromObject/);
+  assert.match(SOURCE, /worldHeight: size\.y/);
+});
+
 test("runtime quality profiles control real rendering work", () => {
   assert.match(SOURCE, /renderQualityProfile\.occlusionProbeSeconds/);
-  assert.match(SOURCE, /slice\(0, renderQualityProfile\.maximumDynamicLights\)/);
+  assert.match(
+    SOURCE,
+    /renderQualityProfile\.maximumDynamicLights[\s\S]*emergencyPolicy\.dynamicLightScale/,
+  );
+  assert.match(SOURCE, /active[\s\S]*\.slice\([\s\S]*Math\.floor\(/);
+  assert.match(SOURCE, /resolveRuntimeObjectPolicy\(\{/);
   assert.match(SOURCE, /renderQualityProfile\.staticEnvironmentShadows/);
   assert.match(SOURCE, /visibleTriangles: renderer\.info\.render\.triangles/);
   assert.match(SOURCE, /drawCalls: renderer\.info\.render\.calls/);
@@ -62,13 +95,29 @@ test("mobile controls, pause and theme mechanics drive the real simulation", () 
   assert.match(SOURCE, /combineScreenMove\(/);
   assert.match(SOURCE, /if \(joystickPointerId\.current !== null\) return/);
   assert.match(SOURCE, /className="stick-ring" aria-hidden="true" ref=\{joystickBase\}/);
-  assert.match(SOURCE, /touchInteractAvailable = Boolean\(interaction\) \|\| playerMode === "aligning-hide"/);
+  assert.match(
+    SOURCE,
+    /touchInteractAvailable = Boolean\(interaction\)[\s\S]*Boolean\(themeMechanic\?\.canActivate\)[\s\S]*playerMode === "aligning-hide"/,
+  );
   assert.match(SOURCE, /setPointerCapture\(event\.pointerId\)/);
   assert.match(SOURCE, /ready && !pausedRef\.current/);
   assert.match(SOURCE, /environmentSoundMasking: environment\.soundMasking/);
   assert.match(SOURCE, /visionRangeMultiplier: environment\.visionRangeMultiplier/);
   assert.match(SOURCE, /triggerAnimationFootstep\(/);
-  assert.match(SOURCE, /setThemeMechanicActivity\(environmentActivity\)/);
+  assert.match(SOURCE, /stepMechanicInstance\(/);
+  assert.match(SOURCE, /simulation\.emitWorldSound\(/);
+  assert.match(
+    SOURCE,
+    /emittedMechanicSound\?\.sourceType === "environment-decoy"[\s\S]*type: "decoy-deployed"/,
+  );
+  assert.match(
+    SOURCE,
+    /event\.type === "evidence-investigation-completed"[\s\S]*source: "theme-mechanic"/,
+  );
+  assert.match(
+    SOURCE,
+    /event\.evidenceId === mechanicDefinition\.soundSource\.sourceId[\s\S]*type: "theme-mechanic-advantage"/,
+  );
 });
 
 test("player HUD receives only release-smoothed public threat while a chaser is unobservable", () => {

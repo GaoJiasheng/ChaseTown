@@ -20,8 +20,11 @@ import {
   soundPanForWorldPoints,
 } from "./game/audio/immersive-soundscape.ts";
 import {
+  auditFirstPlayableAssetBudget,
   createSceneAssetLoader,
   externalAssetUrisFromGlb,
+  type AssetBudgetManifestEntry,
+  type FirstPlayableAssetCategory,
 } from "./game/asset-loading.ts";
 import { runtimeAtmosphereForLevel } from "./game/atmosphere.ts";
 import {
@@ -36,6 +39,7 @@ import {
 } from "./game/campaign.ts";
 import {
   createCampaignProgress,
+  recordCampaignCompletion,
   sanitizeCampaignProgress,
   type CampaignProgress,
 } from "./game/campaign-progress.ts";
@@ -56,15 +60,20 @@ import {
   shouldIgnoreFocusedControlKey,
 } from "./game/input.ts";
 import {
-  applyRunEvents,
+  applyRunTelemetryFrame,
   createRunTelemetry,
   evaluateRunMastery,
   masteryTargetSeconds,
-  mergeStoredMastery,
   personalBestDelta,
+  previewRunMastery,
+  type RunCausalEvent,
   type MasteryRank,
   type RunMasteryResult,
 } from "./game/mastery.ts";
+import {
+  GhostInputRecorder,
+  savePersonalGhost,
+} from "./game/ghost-replay.ts";
 import { distanceBetween, GridPathPlanner, hasLineOfSight } from "./game/navigation.ts";
 import {
   createObjectiveGuidanceState,
@@ -73,12 +82,17 @@ import {
 } from "./game/navigation-guidance.ts";
 import { isPlayerVisuallyExposed } from "./game/perception.ts";
 import {
+  EMERGENCY_RENDER_POLICIES,
+  INITIAL_EMERGENCY_DEGRADATION_STATE,
   nextRenderQuality,
   RENDER_QUALITY_PROFILES,
   selectInitialRenderQuality,
+  updateEmergencyDegradation,
+  type EmergencyDegradationState,
   type RenderQualityProfile,
   type RenderQualityTier,
 } from "./game/quality.ts";
+import { resolveRuntimeObjectPolicy } from "./game/runtime-visibility.ts";
 import {
   authoredRoomFloorRegions,
   enclosedRoomFloorRegions,
@@ -108,7 +122,14 @@ import {
   type FixedCameraFollowState,
 } from "./game/presentation.ts";
 import { GameSimulation, type HideInteraction } from "./game/simulation.ts";
-import { sampleThemeMechanic, type ThemeMechanicSample } from "./game/theme-mechanics.ts";
+import {
+  createMechanicInstance,
+  createThemeMechanicDefinition,
+  sampleMechanicInstance,
+  stepMechanicInstance,
+  type MechanicInstance,
+  type MechanicInstanceSample,
+} from "./game/theme-mechanics.ts";
 import { combineScreenMove, sampleVirtualStick } from "./game/virtual-stick.ts";
 
 type ActorName = "kid" | "villain" | "police";
@@ -144,6 +165,7 @@ const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
 const ACTOR_SPECS = {
   kid: {
     url: "/models/characters/kid.glb?v=32",
+    bootstrapUrl: "/models/characters/kid-bootstrap.glb?v=1",
     height: 1.52,
     aliases: {
       idle: "Idle",
@@ -163,6 +185,7 @@ const ACTOR_SPECS = {
   },
   villain: {
     url: "/models/characters/villain.glb?v=32",
+    bootstrapUrl: "/models/characters/villain-bootstrap.glb?v=1",
     height: 1.88,
     aliases: {
       idle: "Idle",
@@ -177,7 +200,7 @@ const ACTOR_SPECS = {
     required: ["idle", "walk", "run", "alert", "loseSight", "search", "checkLocker", "catch"] as AnimationState[],
   },
   police: {
-    url: "/models/characters/police.glb?v=32",
+    url: "/models/characters/police-bootstrap.glb?v=1",
     height: 1.82,
     aliases: {
       idle: "Idle",
@@ -216,10 +239,10 @@ const DETAIL_ASSETS = {
 } as const;
 
 const THEME_KIT_ASSETS: Readonly<Record<CampaignTheme, string>> = {
-  campus: "/models/environment/themes/campus-kit.glb?v=6",
-  hospital: "/models/environment/themes/hospital-kit.glb?v=6",
-  "fire-station": "/models/environment/themes/fire-station-kit.glb?v=6",
-  factory: "/models/environment/themes/factory-kit.glb?v=6",
+  campus: "/models/environment/themes/campus-kit-bootstrap.glb?v=1",
+  hospital: "/models/environment/themes/hospital-kit-bootstrap.glb?v=1",
+  "fire-station": "/models/environment/themes/fire-station-kit-bootstrap.glb?v=1",
+  factory: "/models/environment/themes/factory-kit-bootstrap.glb?v=1",
 };
 
 type ThemePropSpec = { node: string; height: number };
@@ -308,6 +331,7 @@ const PROP_SET_STANDALONE_PROPS: Readonly<Record<string, readonly StandaloneProp
   "campus-classic": [
     { asset: "classroomDoor", height: 2.2, role: "interior-1", tangent: -1.38, depth: -0.12 },
     { asset: "blackboard", height: 1.5, role: "interior-2", tangent: 1.2, depth: -0.16 },
+    { asset: "books", height: 0.21, role: "interior-3", tangent: 0.82, depth: -0.08, elevation: 0.76 },
     { asset: "backpack", height: 0.52, role: "arrival", tangent: -1.85, depth: -0.3 },
     { asset: "station", height: 3.25, role: "exit", tangent: 2.15, depth: -0.72 },
   ],
@@ -325,6 +349,35 @@ const PROP_SET_STANDALONE_PROPS: Readonly<Record<string, readonly StandaloneProp
 type FeaturedThemeProps = {
   readonly interior: readonly string[];
   readonly arrival: readonly string[];
+};
+
+type ThemeMechanicArtSpec = {
+  readonly node: string;
+  readonly height: number;
+  readonly label: string;
+};
+
+const THEME_MECHANIC_ART: Readonly<Record<CampaignTheme, ThemeMechanicArtSpec>> = {
+  campus: {
+    node: "CampusWayfinding",
+    height: 2.05,
+    label: "走廊总铃控制台",
+  },
+  hospital: {
+    node: "HospitalWayfinding",
+    height: 2.05,
+    label: "门帘呼叫控制站",
+  },
+  "fire-station": {
+    node: "FireHoseReel",
+    height: 1.8,
+    label: "训练排烟阀",
+  },
+  factory: {
+    node: "FactoryControlConsole",
+    height: 1.62,
+    label: "设备旁路控制台",
+  },
 };
 
 const PROP_SET_FEATURED_THEME_PROPS: Readonly<Record<string, FeaturedThemeProps>> = {
@@ -496,6 +549,76 @@ function world(point: Point, level: LevelDefinition) {
     0,
     (point.y - (level.height - 1) / 2) * CELL,
   );
+}
+
+function lockerSightDirection(
+  spot: HideSpotDefinition,
+  level: LevelDefinition,
+): Point {
+  const origin = {
+    x: Math.round(spot.approach.x),
+    y: Math.round(spot.approach.y),
+  };
+  const candidates: readonly Point[] = [
+    { x: 0, y: 1 },
+    { x: 1, y: 0 },
+    { x: 0, y: -1 },
+    { x: -1, y: 0 },
+  ];
+  let best = spot.facing;
+  let bestScore = -Infinity;
+  for (const direction of candidates) {
+    const facingPreference = direction.x * spot.facing.x + direction.y * spot.facing.y;
+    // Looking back through the cabinet body can score well when the corridor
+    // continues behind a wall-mounted prop, but it produces a useless close-up
+    // of the door. Peeking may turn left or right, never 180° through the model.
+    if (facingPreference < -0.1) continue;
+    let visibleCells = 0;
+    for (let step = 1; step <= 8; step += 1) {
+      const x = origin.x + direction.x * step;
+      const y = origin.y + direction.y * step;
+      if (!level.walkable[y]?.[x]) break;
+      visibleCells += 1;
+    }
+    const score = visibleCells * 10 + facingPreference;
+    if (score > bestScore) {
+      best = direction;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function themeMechanicPlacement(level: LevelDefinition): Point {
+  const route = new GridPathPlanner(level).path(level.playerStart, level.exit);
+  const routeCandidates = route.slice(
+    Math.max(1, Math.floor(route.length * 0.24)),
+    Math.max(2, Math.ceil(route.length * 0.72)),
+  );
+  const occupied = [
+    level.playerStart,
+    level.exit,
+    ...level.hideSpots.flatMap((spot) => [spot.approach, spot.concealed]),
+  ];
+  const junctionScore = (point: Point) => {
+    const exits = [
+      { x: point.x - 1, y: point.y },
+      { x: point.x + 1, y: point.y },
+      { x: point.x, y: point.y - 1 },
+      { x: point.x, y: point.y + 1 },
+    ].filter((candidate) => level.walkable[candidate.y]?.[candidate.x]).length;
+    const clearance = Math.min(...occupied.map((anchor) => distanceBetween(point, anchor)));
+    return exits * 10 + Math.min(8, clearance);
+  };
+  const eligible = routeCandidates.filter((point) => (
+    occupied.every((anchor) => distanceBetween(point, anchor) >= 2.25)
+  ));
+  return { ...(
+    eligible.sort((left, right) => junctionScore(right) - junctionScore(left))[0]
+    ?? routeCandidates[Math.floor(routeCandidates.length / 2)]
+    ?? level.patrol[Math.floor(level.patrol.length / 2)]
+    ?? level.playerStart
+  ) };
 }
 
 function levelArtLayout(theme: CampaignTheme, propSet: string): LevelArtLayout {
@@ -680,6 +803,64 @@ function createHideBeaconTexture(accent: THREE.ColorRepresentation) {
   return texture;
 }
 
+function createMechanicBeaconTexture(
+  accent: THREE.ColorRepresentation,
+  label: string,
+) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 192;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("无法创建主题机关引导纹理");
+  const color = new THREE.Color(accent);
+  const red = Math.round(color.r * 255);
+  const green = Math.round(color.g * 255);
+  const blue = Math.round(color.b * 255);
+  const glow = `rgb(${red} ${green} ${blue})`;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  const panel = context.createLinearGradient(30, 22, 482, 170);
+  panel.addColorStop(0, "rgba(4, 12, 17, .96)");
+  panel.addColorStop(1, `rgba(${red}, ${green}, ${blue}, .18)`);
+  context.shadowColor = glow;
+  context.shadowBlur = 24;
+  context.fillStyle = panel;
+  context.strokeStyle = `rgba(${red}, ${green}, ${blue}, .92)`;
+  context.lineWidth = 5;
+  context.beginPath();
+  context.roundRect(20, 24, 472, 144, 32);
+  context.fill();
+  context.stroke();
+  context.shadowBlur = 0;
+  context.fillStyle = `rgba(${red}, ${green}, ${blue}, .2)`;
+  context.beginPath();
+  context.arc(84, 96, 42, 0, Math.PI * 2);
+  context.fill();
+  context.strokeStyle = glow;
+  context.lineWidth = 7;
+  context.beginPath();
+  context.arc(84, 96, 25, -Math.PI * 0.78, Math.PI * 0.78);
+  context.stroke();
+  context.beginPath();
+  context.moveTo(84, 65);
+  context.lineTo(84, 100);
+  context.stroke();
+  context.fillStyle = "#f5fbfa";
+  context.font = '800 34px Inter, "PingFang SC", sans-serif';
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.fillText(label, 146, 79);
+  context.font = '700 21px Inter, "PingFang SC", sans-serif';
+  context.fillStyle = glow;
+  context.fillText("靠近后按 E 启动 · 可误导追捕者", 148, 124);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.name = "Authored_Theme_Mechanic_Beacon";
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  return texture;
+}
+
 function createFixedCameraDirection() {
   // A restrained shoulder offset preserves depth without rotating the control
   // axes. This vector is immutable for the entire run; only focus and distance
@@ -764,6 +945,57 @@ function tuneMeshes(root: THREE.Object3D, options: { culling?: boolean; castShad
   });
 }
 
+function stripTransparentArchitecture(source: THREE.Object3D) {
+  const root = source.clone(true);
+  const removable: THREE.Object3D[] = [];
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    if (materials.some((material) => material.transparent || material.opacity < 0.98)) {
+      removable.push(object);
+    }
+  });
+  for (const object of removable) object.parent?.remove(object);
+  return root;
+}
+
+function cloneGeometryForStaticBake(
+  source: THREE.BufferGeometry,
+  matrixWorld: THREE.Matrix4,
+) {
+  const geometry = source.clone();
+  // gltfpack keeps POSITION/NORMAL/TANGENT in compact integer accessors and
+  // reconstructs their authored range with a node transform. BufferGeometry's
+  // CPU transform methods write back through the original attribute type:
+  // writing a fitted 0..2.1 m wall into Uint16 rounds it to just 0/1/2 and
+  // collapses many triangles. The isolated GLB renders correctly because the
+  // GPU applies that transform without rewriting the accessor. Decode only the
+  // attributes touched by applyMatrix4 before baking the hierarchy to preserve
+  // both the compact asset on disk and continuous runtime geometry.
+  for (const name of ["position", "normal", "tangent"] as const) {
+    const attribute = geometry.getAttribute(name);
+    if (
+      !attribute
+      || (
+        attribute instanceof THREE.BufferAttribute
+        && attribute.array instanceof Float32Array
+      )
+    ) {
+      continue;
+    }
+    const values = new Float32Array(attribute.count * attribute.itemSize);
+    for (let index = 0; index < attribute.count; index += 1) {
+      const offset = index * attribute.itemSize;
+      values[offset] = attribute.getX(index);
+      if (attribute.itemSize > 1) values[offset + 1] = attribute.getY(index);
+      if (attribute.itemSize > 2) values[offset + 2] = attribute.getZ(index);
+      if (attribute.itemSize > 3) values[offset + 3] = attribute.getW(index);
+    }
+    geometry.setAttribute(name, new THREE.BufferAttribute(values, attribute.itemSize));
+  }
+  return geometry.applyMatrix4(matrixWorld);
+}
+
 function flattenStatic(root: THREE.Object3D, castShadow = false) {
   root.updateMatrixWorld(true);
   const flat = new THREE.Group();
@@ -771,7 +1003,10 @@ function flattenStatic(root: THREE.Object3D, castShadow = false) {
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh) || object instanceof THREE.SkinnedMesh) return;
     if (Array.isArray(object.material) || Object.keys(object.geometry.morphAttributes).length > 0) {
-      const mesh = new THREE.Mesh(object.geometry.clone().applyMatrix4(object.matrixWorld), object.material);
+      const mesh = new THREE.Mesh(
+        cloneGeometryForStaticBake(object.geometry, object.matrixWorld),
+        object.material,
+      );
       mesh.castShadow = castShadow;
       mesh.receiveShadow = true;
       flat.add(mesh);
@@ -780,7 +1015,10 @@ function flattenStatic(root: THREE.Object3D, castShadow = false) {
     const attributes = (Object.entries(object.geometry.attributes) as [string, THREE.BufferAttribute | THREE.InterleavedBufferAttribute][])
       .map(([name, attribute]) => {
         const array = attribute instanceof THREE.InterleavedBufferAttribute ? attribute.data.array : attribute.array;
-        return `${name}:${attribute.itemSize}:${attribute.normalized}:${array.constructor.name}`;
+        const gpuType = attribute instanceof THREE.InterleavedBufferAttribute
+          ? "interleaved"
+          : attribute.gpuType;
+        return `${name}:${attribute.itemSize}:${attribute.normalized}:${array.constructor.name}:${gpuType}`;
       })
       .sort()
       .join("|");
@@ -789,7 +1027,7 @@ function flattenStatic(root: THREE.Object3D, castShadow = false) {
       material: object.material,
       geometries: [],
     };
-    bucket.geometries.push(object.geometry.clone().applyMatrix4(object.matrixWorld));
+    bucket.geometries.push(cloneGeometryForStaticBake(object.geometry, object.matrixWorld));
     buckets.set(signature, bucket);
   });
   for (const { material, geometries } of buckets.values()) {
@@ -801,6 +1039,24 @@ function flattenStatic(root: THREE.Object3D, castShadow = false) {
     flat.add(mesh);
   }
   return flat;
+}
+
+function staticMeshBounds(root: THREE.Object3D) {
+  // gltfpack represents quantized POSITION data with a decode transform on the
+  // mesh node. SkinnedMesh.computeBoundingBox()/getVertexPosition() can apply
+  // that transform at the wrong stage, so both Three.js generic Box3 paths are
+  // unreliable for absolute character scale. Geometry bounds transformed by
+  // each mesh's matrixWorld match the actual GPU decode path for compressed and
+  // uncompressed actors alike.
+  root.updateMatrixWorld(true);
+  const bounds = new THREE.Box3();
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+    if (!object.geometry.boundingBox) return;
+    bounds.union(object.geometry.boundingBox.clone().applyMatrix4(object.matrixWorld));
+  });
+  return bounds;
 }
 
 function fitActor(source: THREE.Object3D, height: number) {
@@ -823,10 +1079,10 @@ function fitActor(source: THREE.Object3D, height: number) {
   const visual = new THREE.Group();
   visual.name = "character-visual";
   visual.add(cloned);
-  const initial = new THREE.Box3().setFromObject(visual);
+  const initial = staticMeshBounds(visual);
   const initialSize = initial.getSize(new THREE.Vector3());
   visual.scale.setScalar(height / Math.max(initialSize.y, 0.001));
-  const fitted = new THREE.Box3().setFromObject(visual);
+  const fitted = staticMeshBounds(visual);
   const center = fitted.getCenter(new THREE.Vector3());
   visual.position.set(-center.x, -fitted.min.y, -center.z);
   const actor = new THREE.Group();
@@ -1033,7 +1289,10 @@ function addInstancedModuleBatches(
         const attributes = (Object.entries(object.geometry.attributes) as [string, THREE.BufferAttribute | THREE.InterleavedBufferAttribute][])
           .map(([name, attribute]) => {
             const array = attribute instanceof THREE.InterleavedBufferAttribute ? attribute.data.array : attribute.array;
-            return `${name}:${attribute.itemSize}:${attribute.normalized}:${array.constructor.name}`;
+            const gpuType = attribute instanceof THREE.InterleavedBufferAttribute
+              ? "interleaved"
+              : attribute.gpuType;
+            return `${name}:${attribute.itemSize}:${attribute.normalized}:${array.constructor.name}:${gpuType}`;
           })
           .sort()
           .join("|");
@@ -1060,15 +1319,23 @@ function addInstancedModuleBatches(
         (total, item) => total + (item.geometry.getAttribute("position")?.count ?? 0),
         0,
       );
+      // BatchedMesh converts non-indexed geometry to indexed draw ranges
+      // internally. A batch can contain both forms, so taking the larger of
+      // the aggregate index and vertex counts under-allocates whenever both
+      // are present. That overflow presents as giant stray triangles across
+      // the maze rather than a clean WebGL error. Reserve every geometry's
+      // actual draw count instead.
       const maxIndexCount = batch.geometries.reduce(
-        (total, item) => total + (item.geometry.index?.count ?? 0),
+        (total, item) => total + (item.geometry.index?.count
+          ?? item.geometry.getAttribute("position")?.count
+          ?? 0),
         0,
       );
       if (!maxInstanceCount || !maxVertexCount) continue;
       const batched = new THREE.BatchedMesh(
         maxInstanceCount,
         maxVertexCount,
-        Math.max(maxIndexCount, maxVertexCount),
+        maxIndexCount,
         batch.material,
       );
       batched.name = `${namePrefix}-batch-${signature.slice(0, 8)}`;
@@ -1171,6 +1438,8 @@ type LockerView = {
   id: string;
   root: THREE.Group;
   approach: Point;
+  cameraAnchor: THREE.Object3D;
+  peekAnchor: THREE.Object3D;
   beacon: THREE.Sprite;
   beaconLight: THREE.PointLight;
   mixer: THREE.AnimationMixer;
@@ -1184,6 +1453,19 @@ type LockerView = {
   delayRemaining: number;
   playbackRate: number;
   owner: "idle" | "player" | "chaser";
+};
+
+type MechanicView = {
+  root: THREE.Group;
+  beacon: THREE.Sprite;
+  light: THREE.PointLight;
+  position: Point;
+  baseScale: THREE.Vector3;
+};
+
+type ThemeMechanicUiState = MechanicInstanceSample & {
+  readonly distanceMeters: number;
+  readonly activationCostLabel: string;
 };
 
 type CameraOccluder = {
@@ -1442,6 +1724,7 @@ type TextureDeduplication = {
   sourceTextures: number;
   canonicalTextures: number;
   assignmentsShared: number;
+  sourcesShared: number;
 };
 
 type LoadedAsset = { id: string; asset: GLTF };
@@ -1468,8 +1751,10 @@ function configureAssetTextures(assets: Iterable<LoadedAsset>, renderer: THREE.W
 
 function deduplicateAssetTextures(assets: Iterable<LoadedAsset>): TextureDeduplication {
   const canonical = new Map<string, THREE.Texture>();
+  const canonicalSources = new Map<string, THREE.Texture["source"]>();
   const sourceTextures = new Set<THREE.Texture>();
   let assignmentsShared = 0;
+  let sourcesShared = 0;
 
   for (const { id: assetId, asset } of assets) {
     asset.scene.traverse((object) => {
@@ -1483,21 +1768,48 @@ function deduplicateAssetTextures(assets: Iterable<LoadedAsset>): TextureDedupli
           const image = value.image as { width?: number; height?: number; src?: string; currentSrc?: string } | undefined;
           const externalSource = image?.currentSrc || image?.src;
           const textureName = value.name.trim();
+          const bootstrapAtlasClass = textureName.match(
+            /^(?:Environment|Theme)Bootstrap(BaseColor|Normal|Orm)Atlas$/u,
+          )?.[1];
+          const normalizedSharedTextureName = bootstrapAtlasClass
+            ? `Bootstrap${bootstrapAtlasClass}Atlas`
+            : textureName;
           // ImageBitmap deliberately omits a URL. GLTFLoader still assigns
           // the source filename to Texture.name. Only the explicitly shared
           // Env_* library may cross an asset boundary by name; generic embedded
           // names such as BaseColor are scoped to their owning GLB so unrelated
           // high-resolution art can never be merged accidentally.
           const explicitlyShared = /(?:^|\/)Env_[A-Za-z0-9_-]+(?:\.(?:png|webp|ktx2))?$/u.test(textureName)
-            || textureName.includes("/SharedTextures/");
+            || textureName.includes("/SharedTextures/")
+            || textureName.includes("/SharedTexturesBootstrapKTX2/")
+            || Boolean(bootstrapAtlasClass);
           const sourceIdentity = externalSource
             ? `url:${externalSource}`
             : explicitlyShared
-              ? `shared:${textureName}`
+              ? `shared:${normalizedSharedTextureName}`
               : textureName
                 ? `asset:${assetId}:${textureName}`
                 : "";
           if (!sourceIdentity) continue;
+          if (externalSource || explicitlyShared) {
+            const sourceKey = [
+              sourceIdentity,
+              image?.width ?? 0,
+              image?.height ?? 0,
+              value.colorSpace,
+            ].join("|");
+            const sharedSource = canonicalSources.get(sourceKey);
+            if (!sharedSource) {
+              canonicalSources.set(sourceKey, value.source);
+            } else if (sharedSource !== value.source) {
+              // Texture transforms live on Texture, while decoded image data
+              // lives on Source. Sharing only Source therefore preserves every
+              // atlas offset/repeat while collapsing repeated KTX2 uploads.
+              value.source = sharedSource;
+              value.needsUpdate = true;
+              sourcesShared += 1;
+            }
+          }
           const key = [
             slot,
             sourceIdentity,
@@ -1540,6 +1852,7 @@ function deduplicateAssetTextures(assets: Iterable<LoadedAsset>): TextureDedupli
     sourceTextures: sourceTextures.size,
     canonicalTextures: canonical.size,
     assignmentsShared,
+    sourcesShared,
   };
 }
 
@@ -1560,7 +1873,9 @@ function collectObjectTextures(roots: Iterable<THREE.Object3D>) {
 }
 
 function countSceneTextures(root: THREE.Object3D) {
-  return collectObjectTextures([root]).size;
+  return new Set(
+    [...collectObjectTextures([root])].map((texture) => texture.source),
+  ).size;
 }
 
 function findInvalidSceneTextures(root: THREE.Object3D) {
@@ -1703,6 +2018,11 @@ export function ChasingGame() {
   const gameplayConfig = useMemo(() => getCampaignGameplayConfig(campaignLevel), [campaignLevel]);
   const hideGuidancePolicy = useMemo(() => getCampaignHideGuidancePolicy(campaignLevel), [campaignLevel]);
   const atmosphere = useMemo(() => runtimeAtmosphereForLevel(campaignLevel), [campaignLevel]);
+  const masteryPreview = useMemo(() => previewRunMastery(
+    campaignLevel,
+    gameplayConfig,
+    { levelId: campaignLevel.id, theme: campaignLevel.campaign.theme },
+  ), [campaignLevel, gameplayConfig]);
   const [campaignProgress, setCampaignProgress] = useState<CampaignProgress>(
     createCampaignProgress,
   );
@@ -1742,7 +2062,7 @@ export function ChasingGame() {
   const [musicMuted, setMusicMuted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [joystickThumb, setJoystickThumb] = useState({ x: 0, y: 0, active: false });
-  const [themeMechanic, setThemeMechanic] = useState<ThemeMechanicSample | null>(null);
+  const [themeMechanic, setThemeMechanic] = useState<ThemeMechanicUiState | null>(null);
   const [lastCaptureReason, setLastCaptureReason] = useState<CaptureReason | null>(null);
   const [lastRunSummary, setLastRunSummary] = useState<LastRunSummary | null>(null);
 
@@ -1899,20 +2219,31 @@ export function ChasingGame() {
       interactPressed.current = false;
       resetAnalogueMove();
     };
+    const qaRun = new URLSearchParams(location.search).has("qa");
+    const clearBlurInput = () => {
+      if (!qaRun) clearInput();
+    };
     const clearHiddenInput = () => {
-      if (document.visibilityState !== "visible") {
+      if (document.visibilityState !== "visible" && !qaRun) {
         clearInput();
-        if (phase === "playing" && !pausedRef.current) commands.current.togglePause();
+        // Production play still pauses immediately when the tab is hidden.
+        // Visual regression runs use a dedicated `qa` query and may briefly
+        // lose foreground focus to the host browser's updater; suppressing the
+        // overlay there keeps evidence frames deterministic without changing
+        // player-facing behaviour.
+        if (phase === "playing" && !pausedRef.current) {
+          commands.current.togglePause();
+        }
       }
     };
     addEventListener("keydown", keyDown);
     addEventListener("keyup", keyUp);
-    addEventListener("blur", clearInput);
+    addEventListener("blur", clearBlurInput);
     document.addEventListener("visibilitychange", clearHiddenInput);
     return () => {
       removeEventListener("keydown", keyDown);
       removeEventListener("keyup", keyUp);
-      removeEventListener("blur", clearInput);
+      removeEventListener("blur", clearBlurInput);
       document.removeEventListener("visibilitychange", clearHiddenInput);
     };
   }, [chooseLevel, phase, resetAnalogueMove, selectedLevelIndex]);
@@ -1964,8 +2295,13 @@ export function ChasingGame() {
       sourceTextures: 0,
       canonicalTextures: 0,
       assignmentsShared: 0,
+      sourcesShared: 0,
     };
     let cameraDistance = baseCameraDistanceForAspect(16 / 9);
+    let lockerCameraBlend = 0;
+    const lockerCameraPosition = new THREE.Vector3();
+    const lockerCameraTarget = new THREE.Vector3();
+    const lockerPeekPosition = new THREE.Vector3();
     let resultTimer: ReturnType<typeof setTimeout> | null = null;
     let lastCheckSpot: string | null = null;
     let guidedLockerId: string | null = null;
@@ -1974,19 +2310,32 @@ export function ChasingGame() {
     let guidedBreakSight = false;
     let playerKnownChaser: PlayerKnownChaserEvidence | null = null;
     let lastScoreThreat = Number.NaN;
-    let themeEventWasActive = false;
     let captureStageRemaining = 0;
     let capturePerformanceStarted = false;
     const artLayout = levelArtLayout(
       campaignLevel.campaign.theme,
       campaignLevel.campaign.atmosphere.propSet,
     );
+    const mechanicPosition = themeMechanicPlacement(campaignLevel);
+    const mechanicDefinition = createThemeMechanicDefinition(
+      campaignLevel.campaign.theme,
+      `${campaignLevel.id}:primary-mechanic`,
+      mechanicPosition,
+      { interactionRadius: 1.35 },
+    );
+    let mechanicInstance: MechanicInstance = createMechanicInstance(mechanicDefinition);
+    let mechanicView: MechanicView | null = null;
     let simulation = new GameSimulation({ level: campaignLevel, config: gameplayConfig });
     let latestState = simulation.getState();
     let runTelemetry = createRunTelemetry({
       levelId: campaignLevel.id,
       theme: campaignLevel.campaign.theme,
     });
+    let ghostRecorder = new GhostInputRecorder(
+      campaignLevel.id,
+      simulation.config.fixedStepSeconds,
+    );
+    let ghostLastRecordedTick = -1;
     let playerKnowledge = createPlayerKnowledge();
     let objectiveGuidanceState = createObjectiveGuidanceState();
     let lastObjectiveGuidanceSeconds = latestState.elapsedSeconds;
@@ -2033,10 +2382,16 @@ export function ChasingGame() {
       hardwareConcurrency: navigator.hardwareConcurrency,
     });
     let renderQualityProfile: RenderQualityProfile = RENDER_QUALITY_PROFILES[renderQualityTier];
+    let emergencyDegradation: EmergencyDegradationState = INITIAL_EMERGENCY_DEGRADATION_STATE;
     let qualitySamples: number[] = [];
     let qualityEvaluationSeconds = 0;
     let qualityDecisionSeconds = 0;
     let qualityCandidate: RenderQualityTier = renderQualityTier;
+    let deferredDressingRoot: THREE.Group | null = null;
+    let latestFirstPlayableAudit: ReturnType<typeof auditFirstPlayableAssetBudget> | null = null;
+    const loadedTransferBytes = new Map<string, number>();
+    const assetDependencyUrls = new Map<string, readonly string[]>();
+    const firstPlayableManifest: AssetBudgetManifestEntry[] = [];
     const score = new AdaptiveScoreController();
     const soundscape = new ImmersiveSoundscapeController(campaignLevel.campaign.theme);
     try {
@@ -2090,6 +2445,7 @@ export function ChasingGame() {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = atmosphere.exposure;
+    renderer.info.autoReset = false;
     const supportsMultiDraw = renderer.extensions.has("WEBGL_multi_draw")
       && !new URLSearchParams(location.search).has("no-multi-draw");
     host.appendChild(renderer.domElement);
@@ -2126,6 +2482,7 @@ export function ChasingGame() {
       new THREE.Color(campaignLevel.campaign.palette.floor).multiplyScalar(0.34),
       atmosphere.hemisphereIntensity,
     );
+    hemisphere.layers.enable(1);
     scene.add(hemisphere);
     const moon = new THREE.DirectionalLight(
       campaignLevel.campaign.theme === "factory" ? 0x91dced : 0xb9d7ff,
@@ -2133,13 +2490,22 @@ export function ChasingGame() {
     );
     moon.position.set(14, 28, 18);
     moon.castShadow = true;
+    moon.target.position.copy(cameraFocus);
+    moon.layers.enable(1);
+    scene.add(moon.target);
     moon.shadow.mapSize.set(renderQualityProfile.shadowMapSize, renderQualityProfile.shadowMapSize);
-    moon.shadow.camera.left = -32;
-    moon.shadow.camera.right = 32;
-    moon.shadow.camera.top = 32;
-    moon.shadow.camera.bottom = -32;
-    moon.shadow.bias = -0.00025;
-    moon.shadow.normalBias = 0.018;
+    moon.shadow.camera.left = -18;
+    moon.shadow.camera.right = 18;
+    moon.shadow.camera.top = 18;
+    moon.shadow.camera.bottom = -18;
+    moon.shadow.camera.near = 1;
+    moon.shadow.camera.far = 68;
+    // Dense bevelled wall kits otherwise self-shadow at sub-pixel depth and
+    // produce diagonal acne from the elevated camera. A slightly larger
+    // receiver offset keeps contact shadows intact while stabilising the
+    // architectural faces across desktop and mobile DPRs.
+    moon.shadow.bias = -0.00055;
+    moon.shadow.normalBias = 0.045;
     scene.add(moon);
     const warmBounceColor = new THREE.Color(campaignLevel.campaign.palette.emissive).lerp(
       new THREE.Color(campaignLevel.campaign.palette.accent),
@@ -2149,6 +2515,7 @@ export function ChasingGame() {
       warmBounceColor,
       atmosphere.bounceIntensity * (0.72 + artLayout.warmLightMix * 0.28),
     );
+    warmBounce.layers.enable(1);
     warmBounce.position.set(-18, 12, -14);
     scene.add(warmBounce);
 
@@ -2196,17 +2563,131 @@ export function ChasingGame() {
     let occlusionRaycastRemaining = 0;
 
     const registerPerformanceLight = (light: THREE.Light, priority: number) => {
+      light.layers.enable(1);
       performanceLights.push({ light, priority });
+    };
+    const buildThemeMechanicView = (themeKit: GLTF): MechanicView => {
+      const art = THEME_MECHANIC_ART[campaignLevel.campaign.theme];
+      const source = resolveThemeNode(
+        themeKit.scene,
+        campaignLevel.campaign.theme,
+        [art.node],
+      );
+      if (!source) {
+        throw new Error(`${campaignLevel.campaign.themeLabel}主题模型缺少主动机关节点 ${art.node}`);
+      }
+      const root = fitProp(source, art.height, true);
+      root.name = `active-theme-mechanic-${mechanicDefinition.id}`;
+      const adjacentWallDirection = [
+        { x: -1, y: 0 },
+        { x: 1, y: 0 },
+        { x: 0, y: -1 },
+        { x: 0, y: 1 },
+      ].find((direction) => (
+        !campaignLevel.walkable[mechanicPosition.y + direction.y]?.[mechanicPosition.x + direction.x]
+      )) ?? nearestExteriorDirection(mechanicPosition, campaignLevel);
+      root.position.copy(world(mechanicPosition, campaignLevel)).add(new THREE.Vector3(
+        adjacentWallDirection.x * CELL * 0.62,
+        0,
+        adjacentWallDirection.y * CELL * 0.62,
+      ));
+      root.rotation.y = Math.atan2(-adjacentWallDirection.x, -adjacentWallDirection.y);
+      applyThemeSurface(root, campaignLevel.campaign.palette.accent, {
+        blend: 0.08,
+        emissive: campaignLevel.campaign.palette.emissive,
+        emissiveIntensity: 0.11,
+        roughnessShift: -0.04,
+      });
+      const beaconMaterial = new THREE.SpriteMaterial({
+        map: createMechanicBeaconTexture(
+          campaignLevel.campaign.palette.emissive,
+          art.label,
+        ),
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false,
+      });
+      const beacon = new THREE.Sprite(beaconMaterial);
+      beacon.name = `theme-mechanic-beacon-${mechanicDefinition.id}`;
+      beacon.center.set(0.5, 0);
+      beacon.position.set(0, art.height + 0.22, 0);
+      beacon.scale.set(2.8, 1.05, 1);
+      beacon.renderOrder = 19;
+      beacon.visible = false;
+      root.add(beacon);
+      const light = new THREE.PointLight(
+        campaignLevel.campaign.palette.emissive,
+        0.6,
+        7.5,
+        2,
+      );
+      light.position.set(0, Math.max(1.05, art.height * 0.67), -0.12);
+      root.add(light);
+      registerPerformanceLight(light, 2);
+      campus.add(root);
+      placedAssetIds.add(`theme-node:${source.name || art.node}`);
+      placedAssetIds.add(`gameplay:theme-mechanic:${mechanicDefinition.id}`);
+      const view: MechanicView = {
+        root,
+        beacon,
+        light,
+        position: mechanicPosition,
+        baseScale: root.scale.clone(),
+      };
+      mechanicView = view;
+      return view;
+    };
+    const updateThemeMechanicView = (
+      view: MechanicView,
+      sample: MechanicInstanceSample,
+      nowMilliseconds: number,
+    ) => {
+      const beaconMaterial = view.beacon.material as THREE.SpriteMaterial;
+      const promptVisible = sample.phase === "ready" && sample.canActivate;
+      view.beacon.visible = promptVisible || sample.phase === "warning";
+      beaconMaterial.opacity = sample.phase === "warning"
+        ? 0.72 + Math.sin(nowMilliseconds * 0.018) * 0.18
+        : promptVisible ? 0.88 : 0;
+      const phaseIntensity = sample.phase === "active"
+        ? 5.2
+        : sample.phase === "warning"
+          ? 2.8 + Math.sin(nowMilliseconds * 0.022) * 0.8
+          : promptVisible
+            ? 1.5
+            : sample.phase === "cooldown"
+              ? 0.28
+              : 0.58;
+      view.light.intensity = Math.max(0, phaseIntensity);
+      view.light.color.set(
+        sample.phase === "warning"
+          ? 0xffa44d
+          : sample.phase === "active"
+            ? campaignLevel.campaign.palette.emissive
+            : promptVisible
+              ? 0x5ae0a0
+              : campaignLevel.campaign.palette.accent,
+      );
+      const pulse = sample.phase === "active"
+        ? 1 + Math.sin(nowMilliseconds * 0.014) * 0.018
+        : 1;
+      view.root.scale.copy(view.baseScale).multiplyScalar(pulse);
     };
     let performanceLightingBuilt = false;
     const buildPerformanceLighting = () => {
       if (performanceLightingBuilt) return;
       performanceLightingBuilt = true;
+      const escapeRoute = objectivePaths.path(
+        campaignLevel.playerStart,
+        campaignLevel.exit,
+      );
       const lightPoints = [
         campaignLevel.playerStart,
-        ...campaignLevel.patrol.filter((_, index) => index % 2 === 0),
+        escapeRoute[Math.floor(escapeRoute.length * 0.28)],
+        escapeRoute[Math.floor(escapeRoute.length * 0.58)],
         campaignLevel.exit,
-      ].slice(0, 4);
+      ].filter((point): point is Point => Boolean(point));
       for (const point of lightPoints) {
         const lampColor = new THREE.Color(campaignLevel.campaign.palette.emissive).lerp(
           new THREE.Color(campaignLevel.campaign.palette.accent),
@@ -2220,6 +2701,7 @@ export function ChasingGame() {
     };
     const lightWorldPosition = new THREE.Vector3();
     const updatePerformanceLightBudget = (focus: THREE.Vector3) => {
+      const emergencyPolicy = EMERGENCY_RENDER_POLICIES[emergencyDegradation.level];
       const active = performanceLights
         .filter(({ light }) => light.intensity > 1e-4)
         .map((entry) => ({
@@ -2230,7 +2712,16 @@ export function ChasingGame() {
         .sort((left, right) => right.score - left.score);
       const selected = new Set(
         active
-          .slice(0, renderQualityProfile.maximumDynamicLights)
+          .slice(
+            0,
+            Math.max(
+              1,
+              Math.floor(
+                renderQualityProfile.maximumDynamicLights
+                * emergencyPolicy.dynamicLightScale,
+              ),
+            ),
+          )
           .map(({ light }) => light),
       );
       for (const { light } of performanceLights) {
@@ -2238,9 +2729,14 @@ export function ChasingGame() {
       }
     };
     const applyNonCriticalShadowPolicy = () => {
-      const enabled = renderQualityProfile.staticEnvironmentShadows;
       for (const entry of nonCriticalShadowCasters) {
-        entry.object.castShadow = enabled && entry.castShadow;
+        entry.object.castShadow = resolveRuntimeObjectPolicy({
+          role: "decoration",
+          baseVisible: entry.object.visible,
+          baseCastShadow: renderQualityProfile.staticEnvironmentShadows && entry.castShadow,
+          nearShadowCaster: false,
+          emergencyLevel: emergencyDegradation.level,
+        }).castShadow;
       }
     };
     const registerNonCriticalShadowCasters = (root: THREE.Object3D) => {
@@ -2249,6 +2745,25 @@ export function ChasingGame() {
         nonCriticalShadowCasters.push({ object, castShadow: object.castShadow });
       });
       applyNonCriticalShadowPolicy();
+    };
+    const estimateShadowWorkload = () => {
+      let shadowTriangles = 0;
+      let shadowDrawCalls = 0;
+      scene.traverseVisible((object) => {
+        if (!(object instanceof THREE.Mesh) || !object.castShadow) return;
+        const geometry = object.geometry;
+        const primitiveTriangles = geometry.index
+          ? geometry.index.count / 3
+          : (geometry.getAttribute("position")?.count ?? 0) / 3;
+        const instances = object instanceof THREE.InstancedMesh
+          ? Math.max(1, object.count)
+          : 1;
+        shadowTriangles += Math.ceil(primitiveTriangles * instances);
+        shadowDrawCalls += Array.isArray(object.material)
+          ? Math.max(1, object.material.length)
+          : 1;
+      });
+      return { shadowTriangles, shadowDrawCalls };
     };
     const startDeferredDressingFade = (root: THREE.Object3D) => {
       const clonedMaterials = new Map<string, THREE.Material>();
@@ -2324,6 +2839,7 @@ export function ChasingGame() {
     const applyRenderQuality = (tier: RenderQualityTier) => {
       renderQualityTier = tier;
       renderQualityProfile = RENDER_QUALITY_PROFILES[tier];
+      const emergencyPolicy = EMERGENCY_RENDER_POLICIES[emergencyDegradation.level];
       const bounds = host.getBoundingClientRect();
       renderer.setPixelRatio(Math.min(devicePixelRatio, renderQualityProfile.maximumPixelRatio));
       renderer.setSize(
@@ -2339,14 +2855,27 @@ export function ChasingGame() {
       }
       atmosphereGeometry.setDrawRange(
         0,
-        Math.floor(atmosphereParticleCount * renderQualityProfile.atmosphericParticleScale),
+        Math.floor(
+          atmosphereParticleCount
+          * renderQualityProfile.atmosphericParticleScale
+          * emergencyPolicy.atmosphericParticleScale,
+        ),
       );
       occlusionRaycastRemaining = Math.min(
         occlusionRaycastRemaining,
         renderQualityProfile.occlusionProbeSeconds,
       );
       applyNonCriticalShadowPolicy();
+      if (deferredDressingRoot) {
+        deferredDressingRoot.visible = resolveRuntimeObjectPolicy({
+          role: "decoration",
+          baseVisible: true,
+          baseCastShadow: false,
+          emergencyLevel: emergencyDegradation.level,
+        }).visible;
+      }
       document.documentElement.dataset.chasingQuality = tier;
+      document.documentElement.dataset.chasingEmergency = String(emergencyDegradation.level);
     };
     applyRenderQuality(renderQualityTier);
 
@@ -2455,7 +2984,10 @@ float cameraOcclusionAlong = clamp(
 vec3 cameraOcclusionClosest = cameraOcclusionOrigin + cameraOcclusionSegment * cameraOcclusionAlong;
 float cameraOcclusionDistance = distance( vCameraOccluderWorldPosition, cameraOcclusionClosest );
 float cameraOcclusionCorridor = 1.0 - smoothstep( 0.58, 1.08, cameraOcclusionDistance );
-float cameraOcclusionEnds = smoothstep( 0.035, 0.12, cameraOcclusionAlong )
+// Only open architecture in the final part of the camera-to-actor ray. A
+// constant-width world-space corridor close to the camera projects across most
+// of the screen and makes every repeated wall look diagonally shredded.
+float cameraOcclusionEnds = smoothstep( 0.76, 0.84, cameraOcclusionAlong )
   * ( 1.0 - smoothstep( 0.985, 1.0, cameraOcclusionAlong ) );
 vec3 cameraOcclusionSegmentB = cameraOcclusionTargetB - cameraOcclusionOrigin;
 float cameraOcclusionLengthSquaredB = max( dot( cameraOcclusionSegmentB, cameraOcclusionSegmentB ), 0.0001 );
@@ -2467,7 +2999,7 @@ float cameraOcclusionAlongB = clamp(
 vec3 cameraOcclusionClosestB = cameraOcclusionOrigin + cameraOcclusionSegmentB * cameraOcclusionAlongB;
 float cameraOcclusionDistanceB = distance( vCameraOccluderWorldPosition, cameraOcclusionClosestB );
 float cameraOcclusionCorridorB = 1.0 - smoothstep( 0.58, 1.08, cameraOcclusionDistanceB );
-float cameraOcclusionEndsB = smoothstep( 0.035, 0.12, cameraOcclusionAlongB )
+float cameraOcclusionEndsB = smoothstep( 0.76, 0.84, cameraOcclusionAlongB )
   * ( 1.0 - smoothstep( 0.985, 1.0, cameraOcclusionAlongB ) );
 float cameraOcclusionFade = cameraOcclusionStrength * max(
   cameraOcclusionCorridor * cameraOcclusionEnds,
@@ -2486,6 +3018,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     };
 
     const registerCameraOccluder = (name: string, roots: readonly THREE.Object3D[]) => {
+      if (new URLSearchParams(location.search).has("no-camera-cutout")) return;
       const meshes: THREE.Mesh[] = [];
       for (const root of roots) {
         root.traverse((object) => {
@@ -2495,20 +3028,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (!meshes.length) return;
       const strength = { value: 0 };
       const baseMaterials = new Map<string, THREE.Material>();
-      const overlayMaterials = new Map<string, THREE.Material>();
       const cloneBaseMaterial = (material: THREE.Material) => {
         const existing = baseMaterials.get(material.uuid);
         if (existing) return existing;
         const cloned = patchOccludingMaterial(material, strength, "opaque-cutout");
         baseMaterials.set(material.uuid, cloned);
-        return cloned;
-      };
-      const cloneOverlayMaterial = (material: THREE.Material) => {
-        const existing = overlayMaterials.get(material.uuid);
-        if (existing) return existing;
-        const cloned = patchOccludingMaterial(material, strength, "transparent-overlay");
-        if (material.transparent || material.opacity < 0.98) cloned.visible = false;
-        overlayMaterials.set(material.uuid, cloned);
         return cloned;
       };
       const overlays: THREE.Mesh[] = [];
@@ -2517,19 +3041,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         mesh.material = Array.isArray(mesh.material)
           ? sourceMaterials.map(cloneBaseMaterial)
           : cloneBaseMaterial(sourceMaterials[0]);
-        if (sourceMaterials.some((material) => !material.transparent && material.opacity >= 0.98)) {
-          const overlay = mesh.clone(false) as THREE.Mesh;
-          overlay.name = `${mesh.name}-camera-occlusion-overlay`;
-          overlay.material = Array.isArray(mesh.material)
-            ? sourceMaterials.map(cloneOverlayMaterial)
-            : cloneOverlayMaterial(sourceMaterials[0]);
-          overlay.castShadow = false;
-          overlay.receiveShadow = true;
-          overlay.renderOrder = mesh.renderOrder + 1;
-          overlay.visible = false;
-          mesh.parent?.add(overlay);
-          overlays.push(overlay);
-        }
       }
       const occluder: CameraOccluder = { name, meshes, overlays, strength, obscured: false };
       cameraOccluders.push(occluder);
@@ -2541,7 +3052,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
     const updateCameraOcclusion = (readableAnchors: readonly THREE.Vector3[], delta: number) => {
       const primaryAnchor = readableAnchors[0];
-      if (!primaryAnchor) return;
+      if (!primaryAnchor) {
+        for (const occluder of cameraOccluders) {
+          occluder.obscured = false;
+          occluder.strength.value = smoothOcclusionStrength(
+            occluder.strength.value,
+            false,
+            delta,
+          );
+          const overlayVisible = occluder.strength.value > 0.002;
+          for (const overlay of occluder.overlays) overlay.visible = overlayVisible;
+        }
+        return;
+      }
       cameraOcclusionOrigin.value.copy(camera.position);
       cameraOcclusionTarget.value.copy(primaryAnchor);
       cameraOcclusionTargetB.value.copy(readableAnchors[1] ?? primaryAnchor);
@@ -2612,22 +3135,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           completedSeconds,
         );
         setLastRunSummary({ ...masteryResult, ...bestDelta });
+        const completedTick = Math.max(
+          0,
+          Math.floor(latestState.elapsedSeconds / simulation.config.fixedStepSeconds),
+        );
+        const ghost = ghostRecorder.finish(completedTick);
+        if (ghost) savePersonalGhost(localStorage, ghost);
         setCampaignProgress((current) => {
-          const previousBest = current.bestSeconds[campaignLevel.id];
-          const updated: CampaignProgress = {
-            unlockedThrough: Math.max(
-              current.unlockedThrough,
-              Math.min(CAMPAIGN_LEVELS.length, campaignLevel.campaign.levelNumber + 1),
+          const updated = recordCampaignCompletion(
+            current,
+            campaignLevel.id,
+            completedSeconds,
+            masteryResult,
+            Math.min(
+              CAMPAIGN_LEVELS.length,
+              campaignLevel.campaign.levelNumber + 1,
             ),
-            bestSeconds: {
-              ...current.bestSeconds,
-              [campaignLevel.id]: previousBest ? Math.min(previousBest, completedSeconds) : completedSeconds,
-            },
-            mastery: {
-              ...current.mastery,
-              [campaignLevel.id]: mergeStoredMastery(current.mastery[campaignLevel.id], masteryResult),
-            },
-          };
+          );
           try {
             localStorage.setItem(CAMPAIGN_PROGRESS_KEY, JSON.stringify(updated));
           } catch {
@@ -2669,6 +3193,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         levelId: campaignLevel.id,
         theme: campaignLevel.campaign.theme,
       });
+      ghostRecorder = new GhostInputRecorder(
+        campaignLevel.id,
+        simulation.config.fixedStepSeconds,
+      );
+      ghostLastRecordedTick = -1;
+      mechanicInstance = createMechanicInstance(mechanicDefinition);
+      if (mechanicView) {
+        updateThemeMechanicView(
+          mechanicView,
+          sampleMechanicInstance(mechanicInstance, state.player.position),
+          performance.now(),
+        );
+      }
       playerKnowledge = createPlayerKnowledge();
       setPublicThreat("calm");
       setThemeMechanic(null);
@@ -2681,6 +3218,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       capturePerformanceStarted = false;
       lastHudUpdate = 0;
       cameraZoom.value = 1;
+      lockerCameraBlend = 0;
+      camera.fov = 56;
+      camera.updateProjectionMatrix();
       setResultVisible(false);
       setPhase(state.phase);
       setPlayerMode(state.player.mode);
@@ -2757,7 +3297,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (!ready) return;
       setPauseState(false);
       latestState = simulation.start();
-      themeEventWasActive = false;
       soundscape.setThemeMechanicActivity(0);
       resetPresentation(latestState);
       void score.unlock().then((result) => {
@@ -2809,6 +3348,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         requestInit: { cache: "force-cache" },
       }).then((dependencyBytes) => {
         if (disposed) throw new DOMException("Scene disposed", "AbortError");
+        loadedTransferBytes.set(key, dependencyBytes.byteLength);
         const extension = dependencyUrl.pathname.split(".").pop()?.toLowerCase();
         const mimeType = extension === "ktx2"
           ? "image/ktx2"
@@ -2834,11 +3374,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const bytes = await sceneAssets.fetchArrayBuffer(absoluteUrl, {
         requestInit: { cache: "force-cache" },
       });
+      loadedTransferBytes.set(absoluteUrl.href, bytes.byteLength);
       const assetBaseUrl = new URL(".", absoluteUrl);
+      const dependencies = externalAssetUrisFromGlb(bytes)
+        .map((dependency) => new URL(dependency, assetBaseUrl));
       await Promise.all(
-        externalAssetUrisFromGlb(bytes).map((dependency) => (
-          fetchControlledDependency(new URL(dependency, assetBaseUrl))
-        )),
+        dependencies.map(fetchControlledDependency),
+      );
+      assetDependencyUrls.set(
+        absoluteUrl.href,
+        Object.freeze(dependencies.map((dependency) => dependency.href)),
       );
       const loader = await parser;
       const asset = await loader.parseAsync(bytes, assetBaseUrl.href);
@@ -2848,6 +3393,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
       loadedAssetRoots.add(asset.scene);
       return asset;
+    };
+    const registerFirstPlayableAsset = (
+      id: string,
+      url: string,
+      category: FirstPlayableAssetCategory,
+    ) => {
+      const absolute = new URL(url, location.href).href;
+      const urls = [absolute, ...(assetDependencyUrls.get(absolute) ?? [])];
+      urls.forEach((entryUrl, index) => {
+        firstPlayableManifest.push({
+          id: index === 0 ? id : `${id}:dependency:${index}`,
+          url: entryUrl,
+          transferBytes: loadedTransferBytes.get(entryUrl) ?? 0,
+          phase: "first-playable",
+          category,
+        });
+      });
     };
 
     const loadAll = async () => {
@@ -2895,19 +3457,27 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       // never postpone the first playable frame.
       const initialLoads = [
         ...essentialActorEntries.map(async ([name, spec]) => {
-          const asset = await loadGlbWithRetry(spec.url);
+          const bootstrapUrl = "bootstrapUrl" in spec ? spec.bootstrapUrl : spec.url;
+          const asset = await loadGlbWithRetry(bootstrapUrl);
           actorAssets[name] = asset;
           const id = `actor:${name}`;
           loadedAssets.push({ id, asset });
           loadedAssetIds.add(id);
+          registerFirstPlayableAsset(
+            id,
+            bootstrapUrl,
+            name === "kid" ? "player" : "threat",
+          );
           mark(name === "kid" ? "主角动作集" : "追捕者动作集");
         }),
         (async () => {
-          const asset = await loadGlbWithRetry(THEME_KIT_ASSETS[campaignLevel.campaign.theme]);
+          const themeUrl = THEME_KIT_ASSETS[campaignLevel.campaign.theme];
+          const asset = await loadGlbWithRetry(themeUrl);
           themeKitAsset = asset;
           const id = `theme:${campaignLevel.campaign.theme}`;
           loadedAssets.push({ id, asset });
           loadedAssetIds.add(id);
+          registerFirstPlayableAsset(id, themeUrl, "theme");
           mark(`${campaignLevel.campaign.themeLabel}高精度主题模型`);
         })(),
         ...structureEntries.map(async ([name, url]) => {
@@ -2916,6 +3486,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           const id = `structure:${name}`;
           loadedAssets.push({ id, asset });
           loadedAssetIds.add(id);
+          registerFirstPlayableAsset(id, url, name === "exit" ? "navigation" : "shell");
           mark(name === "frontGate" ? "入口建筑模型" : "出口建筑模型");
         }),
         ...essentialDetailEntries.map(async ([name, url]) => {
@@ -2924,6 +3495,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           const id = `detail:${name}`;
           loadedAssets.push({ id, asset });
           loadedAssetIds.add(id);
+          registerFirstPlayableAsset(
+            id,
+            url,
+            name === "locker" ? "hide-spot" : "navigation",
+          );
           mark(name === "locker" ? "英雄储物柜与门动画" : "关卡叙事物件");
         }),
       ];
@@ -2935,11 +3511,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         return;
       }
       if (!themeKitAsset) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型未载入`);
+      latestFirstPlayableAudit = auditFirstPlayableAssetBudget(firstPlayableManifest);
 
       configureAssetTextures(loadedAssets, renderer);
       textureDeduplication = deduplicateAssetTextures(loadedAssets);
       buildCampus(structureAssets, themeKitAsset, campus);
       buildPerformanceLighting();
+      buildThemeMechanicView(themeKitAsset);
       buildDetails(detailAssets, themeKitAsset, campus, lockers, "essential");
       placeActors(actorAssets, actors, scene, ["kid", "villain"]);
 
@@ -3028,6 +3606,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }
         const deferredDressing = new THREE.Group();
         deferredDressing.name = `${campaignLevel.id}-deferred-dressing`;
+        deferredDressingRoot = deferredDressing;
         const deferredAssets = loadedDecorations.map(({ name, asset }) => ({
           id: `detail:${name}`,
           asset,
@@ -3048,10 +3627,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           registerNonCriticalShadowCasters(deferredDressing);
           startDeferredDressingFade(deferredDressing);
           campus.add(deferredDressing);
+          applyRenderQuality(renderQualityTier);
           loadedAssets.push(...deferredAssets);
           for (const { id } of deferredAssets) loadedAssetIds.add(id);
           decorativeAssetsReady = true;
         } catch (error) {
+          deferredDressingRoot = null;
           for (const { name } of loadedDecorations) delete detailAssets[name];
           // Dedupe runs before assembly so optional props share the already
           // playable scene's canonical textures. A failed optional build must
@@ -3249,14 +3830,33 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const authoredArchitectureWall = themeKit.scene.getObjectByName(THEME_WALL_NODES[theme])
         ?? resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallA", "ArchitectureWall_A", "WallA"]);
       if (!authoredArchitectureWall) throw new Error(`${campaignLevel.campaign.themeLabel}主题套件缺少建筑墙体模块`);
-      const architectureWall = authoredArchitectureWall;
-      const wallA = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallA", "ArchitectureWall_A", "WallA"]) ?? architectureWall;
-      const wallB = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallB", "ArchitectureWall_B", "WallB"]) ?? architectureWall;
-      const wallC = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallC", "ArchitectureWall_C", "WallC"]) ?? architectureWall;
-      const wallEnd = resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallEnd", "ArchitectureEndWall", "WallEnd"]) ?? architectureWall;
+      // Campus modules include showcase glass intended for isolated hero
+      // displays. Repeating those alpha-blended panes across a dense maze
+      // produces severe overlap moiré from an elevated camera, so the runtime
+      // wall kit keeps the authored opaque shell/trim and reserves glass for
+      // dedicated landmark props.
+      const runtimeArchitecture = (source: THREE.Object3D) => (
+        theme === "campus" ? stripTransparentArchitecture(source) : source
+      );
+      const wallA = runtimeArchitecture(
+        resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallA", "ArchitectureWall_A", "WallA"]) ?? authoredArchitectureWall,
+      );
+      const wallB = runtimeArchitecture(
+        resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallB", "ArchitectureWall_B", "WallB"]) ?? authoredArchitectureWall,
+      );
+      const wallC = runtimeArchitecture(
+        resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallC", "ArchitectureWall_C", "WallC"]) ?? authoredArchitectureWall,
+      );
+      const wallEnd = runtimeArchitecture(
+        resolveThemeNode(themeKit.scene, theme, ["ArchitectureWallEnd", "ArchitectureEndWall", "WallEnd"]) ?? authoredArchitectureWall,
+      );
       const wallCorner = requireThemeModule(["ArchitectureCorner", "ArchitectureCornerPost", "CornerPost"], "墙角");
-      const wallDoorway = requireThemeModule(["ArchitectureDoorway", "ArchitectureDoorFrame", "Doorway"], "门洞");
-      const wallWide = requireThemeModule(["ArchitectureWallWide", "ArchitectureWideWall", "WallWide"], "四米连续墙");
+      const wallDoorway = runtimeArchitecture(
+        requireThemeModule(["ArchitectureDoorway", "ArchitectureDoorFrame", "Doorway"], "门洞"),
+      );
+      const wallWide = runtimeArchitecture(
+        requireThemeModule(["ArchitectureWallWide", "ArchitectureWideWall", "WallWide"], "四米连续墙"),
+      );
       const wallJunction = requireThemeModule(["ArchitectureJunction", "JunctionPortal", "ChoiceLandmark"], "路口地标");
       // Long boundaries keep their premium continuous module everywhere. On
       // browsers without multi-draw, the few unpaired one-cell remainders use
@@ -3275,22 +3875,30 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
       if (wallBatches.corner.length) placedAssetIds.add(`theme-node:${wallCorner.name}`);
       if (wallBatches.junction.length) placedAssetIds.add(`theme-node:${wallJunction.name}`);
+      const preserveAuthoredWallScale = theme !== "campus";
       const wallMeshes = [
         ...addInstancedModuleBatches([
-          { source: wallA, placements: wallBatches.a, preserveAuthoredScale: true },
-          { source: runtimeWallB, placements: wallBatches.b, preserveAuthoredScale: true },
-          { source: runtimeWallC, placements: wallBatches.c, preserveAuthoredScale: true },
-          { source: wallWide, placements: wallBatches.wide, preserveAuthoredScale: true },
-          { source: wallEnd, placements: wallBatches.end, preserveAuthoredScale: true },
-          { source: wallDoorway, placements: wallBatches.doorway, preserveAuthoredScale: true },
-        ], new THREE.Vector3(CELL + 0.08, wallHeight, 0.23), parent, true, `${theme}-wall`, supportsMultiDraw),
+          { source: wallA, placements: wallBatches.a, preserveAuthoredScale: preserveAuthoredWallScale },
+          { source: runtimeWallB, placements: wallBatches.b, preserveAuthoredScale: preserveAuthoredWallScale },
+          { source: runtimeWallC, placements: wallBatches.c, preserveAuthoredScale: preserveAuthoredWallScale },
+          { source: wallEnd, placements: wallBatches.end, preserveAuthoredScale: preserveAuthoredWallScale },
+          { source: wallDoorway, placements: wallBatches.doorway, preserveAuthoredScale: preserveAuthoredWallScale },
+        ], new THREE.Vector3(CELL, wallHeight, 0.23), parent, true, `${theme}-wall`, supportsMultiDraw),
         ...addInstancedModuleBatches([
-          { source: wallCorner, placements: wallBatches.corner, preserveAuthoredScale: true },
+          { source: wallWide, placements: wallBatches.wide, preserveAuthoredScale: preserveAuthoredWallScale },
+        ], new THREE.Vector3(CELL * 2, wallHeight, 0.23), parent, true, `${theme}-wall-wide`, supportsMultiDraw),
+        ...addInstancedModuleBatches([
+          { source: wallCorner, placements: wallBatches.corner, preserveAuthoredScale: preserveAuthoredWallScale },
         ], new THREE.Vector3(0.32, wallHeight, 0.32), parent, true, `${theme}-corner`, supportsMultiDraw),
         ...addInstancedModuleBatches([
-          { source: wallJunction, placements: wallBatches.junction, preserveAuthoredScale: true },
+          { source: wallJunction, placements: wallBatches.junction, preserveAuthoredScale: preserveAuthoredWallScale },
         ], new THREE.Vector3(CELL, 2.7, CELL), parent, true, `${theme}-junction`, supportsMultiDraw),
       ];
+      // Walls still cast grounded shadows onto floors and props. They do not
+      // need to receive the same directional map themselves: the dense,
+      // double-sided bevel shells sit within a few millimetres of one another
+      // and otherwise exhibit visible self-shadow acne at the game camera.
+      for (const wallMesh of wallMeshes) wallMesh.receiveShadow = false;
       registerCameraOccluder(`${theme}-walls`, wallMeshes);
 
       const wallContactGeometry = new THREE.PlaneGeometry(CELL + 0.12, 0.48);
@@ -3670,8 +4278,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         root.position.copy(world(visualPoint, campaignLevel));
         root.updateMatrixWorld(true);
         const anchor = root.getObjectByName("HideAnchor");
+        const cameraAnchor = root.getObjectByName("CameraAnchor");
+        const peekAnchor = root.getObjectByName("PeekAnchor");
         const pivot = root.getObjectByName("DoorPivot");
-        if (!anchor || !pivot) throw new Error("Hero locker is missing HideAnchor or DoorPivot; refusing an art fallback");
+        if (!anchor || !cameraAnchor || !peekAnchor || !pivot) {
+          throw new Error("Hero locker is missing HideAnchor, CameraAnchor, PeekAnchor or DoorPivot; refusing an art fallback");
+        }
         const anchorWorld = anchor.getWorldPosition(new THREE.Vector3());
         root.position.add(world(visualPoint, campaignLevel).sub(anchorWorld));
         const beaconMaterial = new THREE.SpriteMaterial({
@@ -3706,6 +4318,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           id: spot.id,
           root,
           approach: spot.approach,
+          cameraAnchor,
+          peekAnchor,
           beacon,
           beaconLight,
           mixer: new THREE.AnimationMixer(root),
@@ -4073,6 +4687,48 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         object.name = `semantic-${campaignLevel.campaign.atmosphere.propSet}-${placement.asset}`;
       }
 
+      if (campaignLevel.campaign.atmosphere.propSet === "campus-classic") {
+        const classroomOffsets = [
+          { tangent: -0.72, depth: -0.12 },
+          { tangent: 0.72, depth: -0.12 },
+          { tangent: -0.72, depth: 0.72 },
+          { tangent: 0.72, depth: 0.72 },
+        ];
+        interiorNarrativeAnchors.slice(0, 2).forEach((roomAnchor, roomIndex) => {
+          classroomOffsets.forEach((offset, deskIndex) => {
+            const anchor = offsetAnchor(roomAnchor, offset.tangent, offset.depth);
+            const supported = roomFloorSupportForFootprint(
+              campaignLevel,
+              roomTopology,
+              {
+                center: anchor.point,
+                halfWidth: 0.3,
+                halfDepth: 0.36,
+                rotationRadians: anchor.rotation,
+              },
+            ).supported;
+            if (!supported) return;
+            const desk = addProp(
+              "deskChair",
+              anchor.point,
+              1.05,
+              anchor.rotation + (roomIndex % 2 === 0 ? 0 : Math.PI),
+            );
+            desk.name = `classroom-desk-${roomIndex + 1}-${deskIndex + 1}`;
+            if (deskIndex % 2 === 0) {
+              const books = addProp(
+                "books",
+                anchor.point,
+                0.18,
+                anchor.rotation + (deskIndex === 0 ? 0.08 : -0.12),
+                new THREE.Vector3(0, 0.74, 0),
+              );
+              books.name = `classroom-desk-books-${roomIndex + 1}-${deskIndex + 1}`;
+            }
+          });
+        });
+      }
+
       // Theme-kit props and complete A/B/C clusters share a compact material
       // library. Collapse the whole non-interactive authored dressing pass by
       // material after semantic placement; the visual result is unchanged but
@@ -4143,8 +4799,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         addProp(name, anchor.point, height, anchor.rotation);
       });
 
-      const lightPoints = [campaignLevel.playerStart, ...campaignLevel.patrol.filter((_, index) => index % 2 === 0), campaignLevel.exit]
-        .slice(0, 4);
+      const lightRoute = objectivePaths.path(campaignLevel.playerStart, campaignLevel.exit);
+      const lightPoints = [
+        campaignLevel.playerStart,
+        lightRoute[Math.floor(lightRoute.length * 0.28)],
+        lightRoute[Math.floor(lightRoute.length * 0.58)],
+        campaignLevel.exit,
+      ].filter((point): point is Point => Boolean(point));
       for (const point of lightPoints) {
         addProp("ceilingLight", point, 0.16, 0, new THREE.Vector3(0, 2.35, 0));
       }
@@ -4181,6 +4842,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : nearestExteriorDirection(campaignLevel.exit, campaignLevel);
         root.position.copy(world(initialPoint, campaignLevel));
         root.rotation.y = Math.atan2(initialHeading.x, initialHeading.y);
+        if (name === "kid") {
+          root.traverse((object) => object.layers.enable(1));
+        }
         targetScene.add(root);
         placedAssetIds.add(`actor:${name}`);
         const durationByState: Partial<Record<AnimationState, number>> = {};
@@ -4253,8 +4917,44 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
     };
 
-    const consumeEvents = (state: GameState) => {
-      runTelemetry = applyRunEvents(runTelemetry, state.events);
+    const consumeEvents = (
+      state: GameState,
+      deltaSeconds: number,
+      causalEvents: readonly RunCausalEvent[] = [],
+    ) => {
+      const telemetryThreatStrength = publicThreatStrengthForMode(state.chaser.mode);
+      const completedInvestigations: RunCausalEvent[] = [];
+      for (const event of state.events) {
+        if (
+          event.type === "evidence-investigation-completed"
+          && event.sourceType === "environment-decoy"
+        ) {
+          completedInvestigations.push({
+            type: "investigation-completed",
+            evidenceId: event.evidenceId,
+            source: "theme-mechanic",
+          });
+          if (event.evidenceId === mechanicDefinition.soundSource.sourceId) {
+            completedInvestigations.push({
+              type: "theme-mechanic-advantage",
+              mechanicId: mechanicDefinition.id,
+              advantage: "diverted-pursuer",
+            });
+          }
+        }
+      }
+      runTelemetry = applyRunTelemetryFrame(runTelemetry, {
+        deltaSeconds,
+        events: state.events,
+        phase: state.phase,
+        playerMode: state.player.mode,
+        threat: telemetryThreatStrength >= 0.7
+          ? "active"
+          : telemetryThreatStrength >= 0.2
+            ? "caution"
+            : "calm",
+        causalEvents: [...causalEvents, ...completedInvestigations],
+      });
       for (const event of state.events) {
         if (event.type === "hide-check-completed") {
           const locker = lockers.get(event.hideSpotId);
@@ -4603,6 +5303,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         qualitySamples.push(delta * 1_000);
         qualityEvaluationSeconds += delta;
         if (qualityEvaluationSeconds >= 1 && qualitySamples.length >= 20) {
+          const sampleWindowSeconds = qualityEvaluationSeconds;
           const sortedSamples = [...qualitySamples].sort((left, right) => left - right);
           const p95 = sortedSamples[Math.min(
             sortedSamples.length - 1,
@@ -4611,6 +5312,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           const workload = {
             visibleTriangles: renderer.info.render.triangles,
             drawCalls: renderer.info.render.calls,
+            ...estimateShadowWorkload(),
           };
           const candidate = nextRenderQuality(renderQualityTier, p95, 999, workload);
           if (candidate !== renderQualityTier) {
@@ -4633,6 +5335,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           } else {
             qualityCandidate = renderQualityTier;
             qualityDecisionSeconds = 0;
+          }
+          const nextEmergency = updateEmergencyDegradation(
+            emergencyDegradation,
+            {
+              tier: renderQualityTier,
+              p95FrameMilliseconds: p95,
+              elapsedSeconds: sampleWindowSeconds,
+              workload,
+            },
+          );
+          if (nextEmergency.level !== emergencyDegradation.level) {
+            emergencyDegradation = nextEmergency;
+            applyRenderQuality(renderQualityTier);
+          } else {
+            emergencyDegradation = nextEmergency;
           }
           qualitySamples = [];
           qualityEvaluationSeconds = 0;
@@ -4694,27 +5411,82 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           analogueMove.current,
         );
         const move = screenMoveToWorld(screenMove);
-        const environment = sampleThemeMechanic(
-          campaignLevel.campaign.theme,
-          latestState.elapsedSeconds,
+        const interactionEdge = interactPressed.current;
+        const beforeMechanic = sampleMechanicInstance(
+          mechanicInstance,
+          latestState.player.position,
         );
+        const hideInteractionBeforeStep = simulation.getHideInteraction();
+        const mechanicConsumesInteraction = beforeMechanic.canActivate
+          && hideInteractionBeforeStep === null;
+        const mechanicStep = stepMechanicInstance(mechanicInstance, {
+          deltaSeconds: delta,
+          nowSeconds: latestState.elapsedSeconds,
+          activationRequested: interactionEdge && mechanicConsumesInteraction,
+          actorPosition: latestState.player.position,
+        });
+        mechanicInstance = mechanicStep.instance;
+        const environment = mechanicStep.sample;
         const environmentPlaying = latestState.phase === "playing";
-        const environmentActivity = environmentPlaying && environment.active
+        const environmentActivity = environmentPlaying && environment.phase === "active"
           ? Math.sin(environment.progress * Math.PI)
           : 0;
         soundscape.setThemeMechanicActivity(environmentActivity);
-        if (environmentPlaying && environment.active && !themeEventWasActive) {
-          soundscape.triggerThemeMechanic();
+        const causalEvents: RunCausalEvent[] = [];
+        if (mechanicStep.events.some((event) => event.type === "activated")) {
+          causalEvents.push({
+            type: "theme-mechanic-used",
+            mechanicId: mechanicDefinition.id,
+          });
         }
-        themeEventWasActive = environmentPlaying && environment.active;
-        latestState = simulation.advance(delta, {
+        const emittedMechanicSound = mechanicStep.emittedSoundStimulus;
+        if (
+          emittedMechanicSound?.sourceType === "environment-decoy"
+          && emittedMechanicSound.sourceId
+        ) {
+          causalEvents.push({
+            type: "decoy-deployed",
+            decoyId: emittedMechanicSound.sourceId,
+          });
+        }
+        if (environmentPlaying && emittedMechanicSound) {
+          simulation.emitWorldSound(emittedMechanicSound);
+          soundscape.triggerWorldSound({
+            listenerPosition: latestState.player.position,
+            sourcePosition: emittedMechanicSound.position,
+            kind: "theme-event",
+            maxDistance: Math.max(10, mechanicDefinition.effectRadius * 2),
+            baseGain: 0.32,
+            occlusion: hasLineOfSight(
+              campaignLevel,
+              latestState.player.position,
+              emittedMechanicSound.position,
+            ) ? 0 : 0.58,
+            foleySet: campaignLevel.campaign.theme === "factory"
+              ? "metal-hit"
+              : campaignLevel.campaign.theme === "fire-station"
+                ? "cloth"
+                : "locker-latch",
+            playbackRate: campaignLevel.campaign.theme === "hospital" ? 1.18 : 0.92,
+          });
+        }
+        const simulationInput = {
           move,
-          interactPressed: interactPressed.current,
+          interactPressed: interactionEdge && !mechanicConsumesInteraction,
           peekHeld: held("q"),
           sneakHeld: held("q"),
           environmentSoundMasking: environment.soundMasking,
           visionRangeMultiplier: environment.visionRangeMultiplier,
-        });
+        };
+        latestState = simulation.advance(delta, simulationInput);
+        const currentGhostTick = Math.max(
+          0,
+          Math.floor(latestState.elapsedSeconds / simulation.config.fixedStepSeconds),
+        );
+        if (currentGhostTick > ghostLastRecordedTick) {
+          ghostRecorder.record(currentGhostTick, simulationInput);
+          ghostLastRecordedTick = currentGhostTick;
+        }
         if (
           latestState.phase === "won"
           || distanceBetween(latestState.player.position, campaignLevel.exit)
@@ -4723,7 +5495,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           void requestPoliceAsset?.();
         }
         interactPressed.current = false;
-        consumeEvents(latestState);
+        consumeEvents(latestState, delta, causalEvents);
+        if (mechanicView) updateThemeMechanicView(mechanicView, environment, now);
         updateLockerVisionStyle(latestState);
         const playerActuallyVisible = latestState.phase !== "playing"
           || isPlayerVisuallyExposed(latestState.player, simulation.config);
@@ -4748,6 +5521,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           lastScoreThreat = scoreThreat;
         }
         syncAnimations(latestState, delta);
+        const lockerListening = lockerVisionMix(latestState.player, simulation.config);
+        const insideHideSpot = !["free", "aligning-hide", "exiting-hide"].includes(
+          latestState.player.mode,
+        );
         soundscape.update({
           elapsedSeconds: latestState.elapsedSeconds,
           playerPosition: latestState.player.position,
@@ -4767,18 +5544,32 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           chaserPan: chaserKnowledgeObservable
             ? soundPanForWorldPoints(latestState.player.position, latestState.chaser.position)
             : 0,
+          listenerAcoustics: {
+            insideHideSpot,
+            doorOpenness: insideHideSpot
+              ? THREE.MathUtils.clamp(
+                lockerListening.peek + (1 - lockerListening.cover) * 0.42,
+                0,
+                1,
+              )
+              : 1,
+            roomOcclusion: insideHideSpot ? 0.72 : 0.08,
+            breathIntensity: insideHideSpot
+              ? THREE.MathUtils.clamp(0.22 + scoreThreat * 0.72, 0, 1)
+              : 0,
+          },
         });
         if (actors.kid) {
           updateActorVisibility(
             actors.kid,
-            playerActuallyVisible,
+            playerActuallyVisible && lockerCameraBlend < 0.65,
             delta,
             latestState.phase !== "playing",
           );
           actors.kid.readabilityRim.value = actorReadabilityRimStrength(
             "player",
             latestState.chaser.mode,
-            playerActuallyVisible,
+            playerActuallyVisible && lockerCameraBlend < 0.65,
           );
         }
         if (actors.villain) {
@@ -4806,6 +5597,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           playerPresentationPoint(latestState, campaignLevel, simulation.config),
           campaignLevel,
         ).add(new THREE.Vector3(0, 0.92, 0));
+        moon.target.position.copy(playerAnchor).setY(0);
+        moon.position.copy(moon.target.position).add(new THREE.Vector3(14, 28, 18));
+        moon.target.updateMatrixWorld();
         updatePerformanceLightBudget(playerAnchor);
         const chaserAnchor = world(latestState.chaser.position, campaignLevel).add(new THREE.Vector3(0, 1.05, 0));
         const policeAnchor = actors.police?.root.position.clone().add(new THREE.Vector3(0, 1.05, 0)) ?? playerAnchor;
@@ -4924,13 +5718,99 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         );
         camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
         camera.lookAt(cameraFocus);
+        const activeLocker = latestState.player.hideSpotId
+          ? lockers.get(latestState.player.hideSpotId)
+          : undefined;
+        const desiredLockerCameraBlend = activeLocker
+          ? THREE.MathUtils.clamp(
+            Math.max(lockerListening.cover, lockerListening.peek),
+            0,
+            1,
+          )
+          : 0;
+        lockerCameraBlend = THREE.MathUtils.damp(
+          lockerCameraBlend,
+          desiredLockerCameraBlend,
+          desiredLockerCameraBlend > lockerCameraBlend ? 7.8 : 9.5,
+          delta,
+        );
+        if (activeLocker && lockerCameraBlend > 0.002) {
+          activeLocker.cameraAnchor.getWorldPosition(lockerCameraPosition);
+          activeLocker.peekAnchor.getWorldPosition(lockerPeekPosition);
+          const hideSpot = campaignLevel.hideSpots.find(
+            (spot) => spot.id === activeLocker.id,
+          );
+          const outward = hideSpot?.facing ?? { x: 0, y: 1 };
+          const sightDirection = hideSpot
+            ? lockerSightDirection(hideSpot, campaignLevel)
+            : outward;
+          // The authored anchors sit physically inside the cabinet. A closed,
+          // double-sided hero door quite correctly blocks that camera, but an
+          // entirely black screen is not a useful hiding view. Move the render
+          // eye just beyond the door skin and let the diegetic slat mask below
+          // restore the feeling of looking through the locker vents.
+          lockerCameraPosition.add(new THREE.Vector3(
+            outward.x * 0.48,
+            0.04,
+            outward.y * 0.48,
+          ));
+          if (hideSpot) {
+            // Authored locker anchors are ideal for the door animation but can
+            // sit centimetres behind a neighbouring wall once a cabinet is
+            // rotated into a maze alcove. A fully-open peek therefore moves to
+            // the centre of the certified walkable approach cell, then leans a
+            // little into the longest visible corridor. This keeps every
+            // cabinet useful without detaching the covered view from its model.
+            const approachCamera = world(hideSpot.approach, campaignLevel);
+            approachCamera.y = lockerPeekPosition.y + 0.06;
+            approachCamera.add(new THREE.Vector3(
+              outward.x * 0.78 + sightDirection.x * 0.16,
+              0,
+              outward.y * 0.78 + sightDirection.y * 0.16,
+            ));
+            lockerPeekPosition.copy(approachCamera);
+          } else {
+            lockerPeekPosition.add(new THREE.Vector3(
+              outward.x * 0.54,
+              0.06,
+              outward.y * 0.54,
+            ));
+          }
+          lockerCameraPosition.lerp(
+            lockerPeekPosition,
+            THREE.MathUtils.clamp(lockerListening.peek, 0, 1),
+          );
+          lockerCameraTarget.copy(lockerCameraPosition).add(new THREE.Vector3(
+            sightDirection.x * CELL * 4,
+            -0.08,
+            sightDirection.y * CELL * 4,
+          ));
+          camera.position.lerp(lockerCameraPosition, lockerCameraBlend);
+          const blendedLookTarget = cameraFocus.clone().lerp(
+            lockerCameraTarget,
+            lockerCameraBlend,
+          );
+          camera.lookAt(blendedLookTarget);
+        }
+        const targetFov = THREE.MathUtils.lerp(56, 62, lockerCameraBlend);
+        if (Math.abs(camera.fov - targetFov) > 0.01) {
+          camera.fov = targetFov;
+          camera.updateProjectionMatrix();
+        }
         const readableOcclusionAnchors = [playerAnchor];
         if (latestState.phase === "won" && actors.police) readableOcclusionAnchors.push(policeAnchor);
         else if (
           chaserWorldRendered
           && (chaserKnowledgeObservable || latestState.phase === "lost")
         ) readableOcclusionAnchors.push(chaserAnchor);
-        updateCameraOcclusion(readableOcclusionAnchors, delta);
+        // Inside a hide spot the camera is the player's eye, not an overhead
+        // readability camera. Fading maze walls toward the concealed avatar
+        // creates layered transparent bands across the vent view, so settle
+        // every occluder back to its authored opaque material while hidden.
+        updateCameraOcclusion(
+          lockerCameraBlend > 0.12 ? [] : readableOcclusionAnchors,
+          delta,
+        );
 
         if (now - lastHudUpdate > 120) {
           setPhase(latestState.phase);
@@ -4940,7 +5820,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setChaserObservable(chaserKnowledgeObservable);
           setPublicThreat(playerKnowledge.threat);
           setElapsed(Math.floor(latestState.elapsedSeconds));
-          setThemeMechanic(environment);
+          setThemeMechanic({
+            ...environment,
+            distanceMeters: Math.round(
+              distanceBetween(latestState.player.position, mechanicPosition) * CELL,
+            ),
+            activationCostLabel: mechanicDefinition.activationCost.label,
+          });
           const objectiveRoute = objectivePaths.path(latestState.player.position, campaignLevel.exit);
           const routeGeometry = deriveRouteGuidanceGeometry(objectiveRoute, CELL);
           setObjectiveDistance(Math.round(routeGeometry.routeDistanceMeters));
@@ -4970,7 +5856,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       // loading card. The first real render happens after all fixed-budget
       // gameplay lights have been registered, avoiding a duplicate PBR
       // shader set when deferred dressing arrives.
-      if (ready) renderer.render(scene, camera);
+      if (ready) {
+        renderer.autoClear = false;
+        renderer.info.reset();
+        camera.layers.set(0);
+        renderer.clear(true, true, true);
+        renderer.render(scene, camera);
+      }
       frame = requestAnimationFrame(animate);
     };
 
@@ -5003,11 +5895,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     const projectActorToViewport = (view: ActorView | undefined) => {
       if (!view) return null;
       camera.updateMatrixWorld();
-      const projected = view.root.position.clone().add(new THREE.Vector3(0, 0.92, 0)).project(camera);
+      const bounds = staticMeshBounds(view.root);
+      const size = bounds.getSize(new THREE.Vector3());
+      const actorCenter = bounds.isEmpty()
+        ? view.root.position.clone().add(new THREE.Vector3(0, 0.92, 0))
+        : bounds.getCenter(new THREE.Vector3());
+      const projected = actorCenter.project(camera);
       return {
         x: (projected.x + 1) / 2,
         y: (1 - projected.y) / 2,
         depth: projected.z,
+        worldHeight: size.y,
         centerInFrustum: Math.abs(projected.x) <= 1
           && Math.abs(projected.y) <= 1
           && projected.z >= -1
@@ -5066,10 +5964,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             chaserObservable: canPlayerObserveChaser(latestState, campaignLevel, simulation.config),
             publicThreat: playerKnowledge,
           },
-          themeMechanic: sampleThemeMechanic(
-            campaignLevel.campaign.theme,
-            latestState.elapsedSeconds,
-          ),
+          themeMechanic: {
+            definition: mechanicDefinition,
+            state: mechanicInstance,
+            sample: sampleMechanicInstance(
+              mechanicInstance,
+              latestState.player.position,
+            ),
+          },
+          telemetry: runTelemetry,
           sceneIntegrity: {
             expectedMovementBlockers: campaignLevel.movementBlockers?.length ?? 0,
             renderedMovementBlockers,
@@ -5132,14 +6035,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           },
           render: {
             batching: supportsMultiDraw ? "multi-draw" : "instanced-mesh",
+            qualityTier: renderQualityTier,
+            emergencyDegradation,
             calls: renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
+            shadow: estimateShadowWorkload(),
             memory: renderer.info.memory,
             programs: renderer.info.programs?.length ?? 0,
             sceneTextures: countSceneTextures(scene),
             invalidSceneTextures: findInvalidSceneTextures(scene),
             textureDeduplication,
           },
+          firstPlayableBudget: latestFirstPlayableAudit,
         }),
         start: beginGame,
         interact: () => { interactPressed.current = true; },
@@ -5220,6 +6127,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
       delete document.documentElement.dataset.chasingReady;
       delete document.documentElement.dataset.chasingQuality;
+      delete document.documentElement.dataset.chasingEmergency;
       if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
       for (const actor of Object.values(actors)) actor?.animator.dispose();
       for (const locker of lockers.values()) locker.mixer.stopAllAction();
@@ -5252,9 +6160,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
   const danger = chaserObservable
     ? threatForMode(chaserMode)
     : publicThreat === "active" ? 0.52 : publicThreat === "caution" ? 0.28 : 0;
-  const themeEventActivity = themeMechanic?.active
+  const themeEventActivity = themeMechanic?.phase === "active"
     ? Math.sin(themeMechanic.progress * Math.PI)
     : 0;
+  const themeEventVisible = Boolean(
+    themeMechanic
+    && (
+      themeMechanic.phase !== "ready"
+      || themeMechanic.canActivate
+      || themeMechanic.distanceMeters <= 10
+    ),
+  );
   const displayedChaserStatus = chaserObservable
     ? chaserConfirming ? "重新确认目标" : chaserStatus(chaserMode)
     : publicThreat === "active"
@@ -5267,6 +6183,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     ? "躲进储物柜"
     : interaction?.kind === "exit"
       ? publicThreat === "calm" ? "离开储物柜" : "冒险离开储物柜"
+      : themeMechanic?.canActivate
+        ? `启动${themeMechanic.label}`
       : playerMode === "entering-hide"
         ? "正在藏好…"
         : playerMode === "aligning-hide"
@@ -5279,7 +6197,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           ? "正在离开…"
           : null;
   const hasNextLevel = selectedLevelIndex < CAMPAIGN_LEVELS.length - 1;
-  const touchInteractAvailable = Boolean(interaction) || playerMode === "aligning-hide";
+  const touchInteractAvailable = Boolean(interaction)
+    || Boolean(themeMechanic?.canActivate)
+    || playerMode === "aligning-hide";
   const primaryAction = phase === "won" && hasNextLevel
     ? () => chooseLevel(selectedLevelIndex + 1)
     : begin;
@@ -5316,7 +6236,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       </header>
 
       <section
-        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${themeMechanic?.active ? " theme-event-active" : ""}`}
+        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${themeMechanic?.phase === "active" ? " theme-event-active" : ""}${["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? " locker-interior" : ""}`}
         style={{
           "--threat": danger,
           "--theme-event": themeEventActivity,
@@ -5363,12 +6283,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           </div>
         )}
 
-        {!loading && !paused && phase === "playing" && themeMechanic?.active && (
-          <div className="theme-mechanic" role="status" aria-live="polite">
+        {!loading && !paused && phase === "playing" && themeEventVisible && themeMechanic && (
+          <div className={`theme-mechanic phase-${themeMechanic.phase}`} role="status" aria-live="polite">
             <span aria-hidden="true" />
             <div>
-              <small>{themeMechanic.label}</small>
+              <small>
+                主动机关 · {themeMechanic.distanceMeters}m · {
+                  themeMechanic.phase === "ready"
+                    ? themeMechanic.canActivate ? "可启动" : "未启动"
+                    : themeMechanic.phase === "warning"
+                      ? "预警"
+                      : themeMechanic.phase === "active"
+                        ? "生效中"
+                        : "冷却中"
+                }
+              </small>
               <strong>{themeMechanic.hudHint}</strong>
+              {themeMechanic.canActivate && <em>{themeMechanic.activationCostLabel}</em>}
             </div>
           </div>
         )}
@@ -5427,6 +6358,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             <kbd className="desktop-key">E</kbd>
             <kbd className="touch-key">互动</kbd>
             <strong>{interactionText}</strong>
+            {themeMechanic?.canActivate && !interaction && (
+              <small>{themeMechanic.activationCostLabel}；预警结束后效果才会生效</small>
+            )}
             {playerMode === "aligning-hide" && <small>移动或再次互动可立即取消</small>}
             {interaction?.kind === "exit" && publicThreat !== "calm" && (
               <small>外面仍有威胁声；建议等提示恢复绿色后再离柜</small>
@@ -5523,7 +6457,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 <div className="hide-loop" aria-label="躲柜玩法流程">
                   <span><b>1</b>绕墙切断视线</span>
                   <span><b>2</b>识别藏柜风险标记</span>
-                  <span><b>3</b>按互动键 / E 藏好，等搜索结束</span>
+                  <span><b>3</b>用主题机关制造假线索，或藏好等待搜索结束</span>
+                </div>
+              )}
+
+              {phase === "ready" && (
+                <div className="mastery-preview" aria-label="本关精通目标">
+                  <div>
+                    <small>STANDARD · 本关精通</small>
+                    <strong>目标时间 {masteryPreview.targetSeconds.toFixed(1)}s</strong>
+                  </div>
+                  {masteryPreview.objectives.map((objective) => (
+                    <span key={objective.id} title={objective.description}>
+                      <i aria-hidden="true">◇</i>
+                      <b>{objective.label}</b>
+                      <small>{objective.description}</small>
+                    </span>
+                  ))}
                 </div>
               )}
 
@@ -5600,6 +6550,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <button type="button" className={touchInteractAvailable ? "available" : ""} disabled={!touchInteractAvailable} onClick={interact}>
                 {playerMode === "aligning-hide"
                   ? "取消躲藏"
+                  : themeMechanic?.canActivate && !interaction
+                    ? "启动机关"
                   : interaction?.kind === "enter"
                     ? "躲进藏柜"
                     : interaction?.kind === "exit"

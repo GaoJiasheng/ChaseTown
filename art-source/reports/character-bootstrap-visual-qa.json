@@ -1,0 +1,70 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-07-23T13:23:36.186Z",
+  "method": "Chromium WebGL2; actual Three.js Meshopt and KTX2 decode; matched Idle pose, camera, lights and exposure.",
+  "url": "http://localhost:4174/",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "assets": {
+    "kid": {
+      "reference": {
+        "path": "public/models/characters/kid-lod1.glb",
+        "bytes": 2946584,
+        "sha256": "f803147b49b5a854e6bf232fb6795da4dab62a670397818612972a06e8f74395"
+      },
+      "bootstrap": {
+        "path": "public/models/characters/kid-bootstrap.glb",
+        "bytes": 1573988,
+        "sha256": "ebedbd74c3ac28ad6c2be05453fd684bc9e5ef98951156a7ecdd8646f00a0077"
+      }
+    },
+    "villain": {
+      "reference": {
+        "path": "public/models/characters/villain-lod1.glb",
+        "bytes": 2570964,
+        "sha256": "0b0266b2c3b365cb286606dfdaea188fa2eeb2035dcc33d0ab7feff83a0cb4c2"
+      },
+      "bootstrap": {
+        "path": "public/models/characters/villain-bootstrap.glb",
+        "bytes": 1474540,
+        "sha256": "91ad6c102194d06f6e4d6c5a8a7130e01dda42c5c0fa3ab1111c1942f0b9811f"
+      }
+    },
+    "police": {
+      "reference": {
+        "path": "public/models/characters/police.glb",
+        "bytes": 6873868,
+        "sha256": "768841bb45da54f12805e5593a5c1876f2eb6600422da821b9899a583efe9fa4"
+      },
+      "bootstrap": {
+        "path": "public/models/characters/police-bootstrap.glb",
+        "bytes": 1736768,
+        "sha256": "a429aee2b409052888ac59e6f808f9ac963a482eafac37d04f4cee6e6126837a"
+      }
+    }
+  },
+  "result": {
+    "kid": {
+      "silhouetteIou": 1,
+      "rgbMeanAbsoluteError": 0.4405876654827252
+    },
+    "villain": {
+      "silhouetteIou": 1,
+      "rgbMeanAbsoluteError": 0.6699217997611618
+    },
+    "police": {
+      "silhouetteIou": 1,
+      "rgbMeanAbsoluteError": 0.5591789585925004
+    }
+  },
+  "gates": {
+    "minimumSilhouetteIou": 0.9999,
+    "maximumRgbMeanAbsoluteError": 1
+  },
+  "screenshotSha256": "a1b665d881f48f9a6f532fdfac38519c1b633f11eabe0a86f052ba66c14c941f",
+  "screenshot": "/tmp/chasing-character-bootstrap-visual-qa-police-final/character-bootstrap-comparison.png"
+}

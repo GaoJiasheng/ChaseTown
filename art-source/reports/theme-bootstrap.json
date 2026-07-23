@@ -1,0 +1,629 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-07-23T12:04:43.845Z",
+  "policy": {
+    "derivativeOnly": true,
+    "sourceThemeKitsUnmodified": true,
+    "namedRuntimeNodesExact": true,
+    "topologySimplification": false,
+    "geometryTransport": "Meshopt with default 14-bit position quantization and 0.1% error ceiling.",
+    "baseColor": "Reuse existing 512px/tile ETC1S environment bootstrap atlas byte-for-byte.",
+    "normal": "256px/tile UASTC quality 10; same normalized 4x3 atlas layout.",
+    "orm": "256px/tile ETC1S quality 10; same normalized 4x3 atlas layout.",
+    "coldStartDefinition": "One theme GLB plus its three unique external atlas dependencies, empty cache."
+  },
+  "tool": {
+    "name": "gltfpack",
+    "version": "gltfpack 1.2",
+    "geometryArguments": [
+      "-c",
+      "-kn",
+      "-km",
+      "-ke",
+      "-si",
+      "1",
+      "-se",
+      "0.001",
+      "-tr",
+      "-af",
+      "0",
+      "-at",
+      "24",
+      "-ar",
+      "16",
+      "-as",
+      "24"
+    ],
+    "atlasArguments": [
+      "-c",
+      "-kn",
+      "-km",
+      "-ke",
+      "-noq",
+      "-tu",
+      "normal",
+      "-tc",
+      "attrib",
+      "-tq",
+      "normal,attrib",
+      "10",
+      "-tj",
+      "4"
+    ]
+  },
+  "budget": {
+    "perThemeColdStartBytes": 2306867,
+    "perThemeColdStartMiB": 2.2
+  },
+  "atlasLayout": {
+    "columns": 4,
+    "rows": 3,
+    "baseColorTilePixels": 512,
+    "detailTilePixels": 256,
+    "detailGutterPixels": 4,
+    "detailWidth": 1056,
+    "detailHeight": 792,
+    "textureFamilies": [
+      "Blackboard",
+      "BluePaintedMetal",
+      "GlassBlue",
+      "Grass",
+      "HallwayTile",
+      "PaintedWall",
+      "Paper",
+      "RedPaintedMetal",
+      "RubberBlack",
+      "WoodTrim",
+      "WornMetal"
+    ],
+    "themeTextureFamilies": [
+      "BluePaintedMetal",
+      "Grass",
+      "PaintedWall",
+      "Paper",
+      "RedPaintedMetal",
+      "RubberBlack",
+      "WoodTrim",
+      "WornMetal"
+    ]
+  },
+  "atlases": [
+    {
+      "textureClass": "baseColor",
+      "reusedExisting": true,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+      "bytes": 466915,
+      "sha256": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91",
+      "width": 2112,
+      "height": 1584,
+      "levels": 12,
+      "mode": "ETC1S",
+      "supercompressionScheme": 1
+    },
+    {
+      "textureClass": "normal",
+      "reusedExisting": false,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+      "bytes": 597993,
+      "sha256": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9",
+      "width": 1056,
+      "height": 792,
+      "levels": 11,
+      "mode": "UASTC",
+      "supercompressionScheme": 2
+    },
+    {
+      "textureClass": "orm",
+      "reusedExisting": false,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+      "bytes": 70981,
+      "sha256": "9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a",
+      "width": 1056,
+      "height": 792,
+      "levels": 11,
+      "mode": "ETC1S",
+      "supercompressionScheme": 1
+    }
+  ],
+  "sourceTextures": [
+    {
+      "family": "Blackboard",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_Blackboard_Normal_2K.png",
+      "bytes": 468441,
+      "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "BluePaintedMetal",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_BluePaintedMetal_Normal_2K.png",
+      "bytes": 238232,
+      "sha256": "f4e9a793da2f3d7196a1012592b63e7c8d3d5ed1dfceaff5bdd15ad500e9c0c2",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "BluePaintedMetal",
+      "textureClass": "orm",
+      "path": "work/art_pipeline/environment-orm/Env_BluePaintedMetal_ORM_512.png",
+      "bytes": 122663,
+      "sha256": "7822c0e225aa21bd91505fe60c98bd309b1cd1ca5aa2d4a0497165ae06d6fdb4",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "GlassBlue",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_GlassBlue_Normal_2K.png",
+      "bytes": 514865,
+      "sha256": "a55a377be48adb85e399f7a27170a323a4a9cdc69d80c18de91d06ea6c810a43",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Grass",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_Grass_Normal_2K.png",
+      "bytes": 633575,
+      "sha256": "ffe94134bb492e0ab9f8b5a7d81831d9817d0faf14cd3373932fb86e43391f50",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Grass",
+      "textureClass": "orm",
+      "path": "work/art_pipeline/environment-orm/Env_Grass_ORM_512.png",
+      "bytes": 300121,
+      "sha256": "9822cf7323f1066053c7fffbd691c27ae978156e0b7d3885d8b8e5a3192bef5e",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "HallwayTile",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_HallwayTile_Normal_2K.png",
+      "bytes": 514865,
+      "sha256": "a55a377be48adb85e399f7a27170a323a4a9cdc69d80c18de91d06ea6c810a43",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "PaintedWall",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_PaintedWall_Normal_2K.png",
+      "bytes": 468441,
+      "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "PaintedWall",
+      "textureClass": "orm",
+      "path": "work/art_pipeline/environment-orm/Env_PaintedWall_ORM_512.png",
+      "bytes": 161348,
+      "sha256": "4ceb2f49cf097935c49b64409ee5887cb9959055a3442a6b3e53b9949bc47513",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Paper",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_Paper_Normal_2K.png",
+      "bytes": 468441,
+      "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "Paper",
+      "textureClass": "orm",
+      "path": "work/art_pipeline/environment-orm/Env_Paper_ORM_512.png",
+      "bytes": 129489,
+      "sha256": "dff6df01db7daeb40529b613f3a29ebbd66e0f0accb538fb1688a93e4bfde898",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "RedPaintedMetal",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_RedPaintedMetal_Normal_2K.png",
+      "bytes": 238232,
+      "sha256": "f4e9a793da2f3d7196a1012592b63e7c8d3d5ed1dfceaff5bdd15ad500e9c0c2",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "RedPaintedMetal",
+      "textureClass": "orm",
+      "path": "work/art_pipeline/environment-orm/Env_RedPaintedMetal_ORM_512.png",
+      "bytes": 118826,
+      "sha256": "77c2eb7ee5640f7d6f70dd280a2dbdfc452d16bd882e7d18674deeb0e2686307",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "RubberBlack",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_RubberBlack_Normal_2K.png",
+      "bytes": 538559,
+      "sha256": "9524e289cee12352e3be693ba485203443e46b120643d88a3215a8b0fadfe52f",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "RubberBlack",
+      "textureClass": "orm",
+      "path": "work/art_pipeline/environment-orm/Env_RubberBlack_ORM_512.png",
+      "bytes": 243177,
+      "sha256": "d71c62438891d36918328041df3df7a77599354c79843013916498d8545119e7",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "WoodTrim",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_WoodTrim_Normal_2K.png",
+      "bytes": 424334,
+      "sha256": "cc38fef8995e817656c78bc713466d1a96003096c1c63efa1a713c9c2d4d8e44",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "WoodTrim",
+      "textureClass": "orm",
+      "path": "work/art_pipeline/environment-orm/Env_WoodTrim_ORM_512.png",
+      "bytes": 149506,
+      "sha256": "f7cc5799c5940bb64653ffabfec72f1f5d64d207a9f55d7d364b91e5544c8325",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "WornMetal",
+      "textureClass": "normal",
+      "path": "public/models/SharedTextures/Env_WornMetal_Normal_2K.png",
+      "bytes": 480435,
+      "sha256": "2c860a16a61ba4bd7a4f9f27c8a8951a5ffbb5ccc68de0680823a16033d62c29",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "family": "WornMetal",
+      "textureClass": "orm",
+      "path": "work/art_pipeline/environment-orm/Env_WornMetal_ORM_512.png",
+      "bytes": 221638,
+      "sha256": "9b5b09a1e6bf5d049a64d54f2e6f963b3790992da2c4cce680bab1ad9af48f9f",
+      "width": 512,
+      "height": 512
+    }
+  ],
+  "themes": [
+    {
+      "theme": "campus",
+      "source": {
+        "path": "public/models/environment/themes/campus-kit.glb",
+        "bytes": 1585960,
+        "sha256": "c5672bda88ab26056c2e02303108c186cdba0b51256ad903ab54a5f3042f9745",
+        "nodes": 348,
+        "namedNodes": 342,
+        "meshes": 155,
+        "primitives": 240,
+        "triangles": 53360,
+        "materials": 26,
+        "externalTextureRequests": 22
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/campus-kit-bootstrap.glb",
+        "bytes": 759072,
+        "sha256": "38ebd088fc2949c2b271d84c907339627d761899cf3e12da7a0314b7f6b91d03",
+        "savedGlbBytes": 826888,
+        "savedGlbPercent": 52.138,
+        "nodes": 656,
+        "namedNodes": 342,
+        "meshes": 155,
+        "primitives": 240,
+        "triangles": 53360,
+        "materials": 26,
+        "atlasRequests": 3
+      },
+      "quality": {
+        "namedNodeSetExact": true,
+        "triangleRatio": 1,
+        "materialIdentitySetExact": true,
+        "materialSemanticSetExact": true,
+        "pbrSlotContractSha256": "df73efc9d859758cfd2ddd8420c7eb91d3102ec7d450c279877e452f3f443566",
+        "sceneBoundsMaxDeltaMeters": 0.000094821
+      },
+      "requestGraph": {
+        "requests": 4,
+        "glbBytes": 759072,
+        "dependencyBytes": 1135889,
+        "coldStartBytes": 1894961,
+        "coldStartMiB": 1.807,
+        "maxBytes": 2306867,
+        "dependencies": [
+          {
+            "textureClass": "baseColor",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+            "bytes": 466915,
+            "sha256": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91",
+            "width": 2112,
+            "height": 1584,
+            "levels": 12,
+            "supercompressionScheme": 1,
+            "mode": "ETC1S"
+          },
+          {
+            "textureClass": "normal",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+            "bytes": 597993,
+            "sha256": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9",
+            "width": 1056,
+            "height": 792,
+            "levels": 11,
+            "supercompressionScheme": 2,
+            "mode": "UASTC"
+          },
+          {
+            "textureClass": "orm",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+            "bytes": 70981,
+            "sha256": "9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a",
+            "width": 1056,
+            "height": 792,
+            "levels": 11,
+            "supercompressionScheme": 1,
+            "mode": "ETC1S"
+          }
+        ]
+      }
+    },
+    {
+      "theme": "hospital",
+      "source": {
+        "path": "public/models/environment/themes/hospital-kit.glb",
+        "bytes": 1063652,
+        "sha256": "77b9deba829f6e259d867bdba444bc83c8e154ae5baf3b742bcfdd5103428992",
+        "nodes": 390,
+        "namedNodes": 383,
+        "meshes": 163,
+        "primitives": 211,
+        "triangles": 32896,
+        "materials": 24,
+        "externalTextureRequests": 16
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/hospital-kit-bootstrap.glb",
+        "bytes": 567388,
+        "sha256": "ac86d756ce283b2eeee947187661abd6b0b1bc3c0ea311df7085ab8d9a819f62",
+        "savedGlbBytes": 496264,
+        "savedGlbPercent": 46.657,
+        "nodes": 745,
+        "namedNodes": 383,
+        "meshes": 163,
+        "primitives": 211,
+        "triangles": 32896,
+        "materials": 24,
+        "atlasRequests": 3
+      },
+      "quality": {
+        "namedNodeSetExact": true,
+        "triangleRatio": 1,
+        "materialIdentitySetExact": true,
+        "materialSemanticSetExact": true,
+        "pbrSlotContractSha256": "08f459483fc2be301e8028c235d9017e098164fedf69ea1f37a79368964c1626",
+        "sceneBoundsMaxDeltaMeters": 0.000126098
+      },
+      "requestGraph": {
+        "requests": 4,
+        "glbBytes": 567388,
+        "dependencyBytes": 1135889,
+        "coldStartBytes": 1703277,
+        "coldStartMiB": 1.624,
+        "maxBytes": 2306867,
+        "dependencies": [
+          {
+            "textureClass": "baseColor",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+            "bytes": 466915,
+            "sha256": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91",
+            "width": 2112,
+            "height": 1584,
+            "levels": 12,
+            "supercompressionScheme": 1,
+            "mode": "ETC1S"
+          },
+          {
+            "textureClass": "normal",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+            "bytes": 597993,
+            "sha256": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9",
+            "width": 1056,
+            "height": 792,
+            "levels": 11,
+            "supercompressionScheme": 2,
+            "mode": "UASTC"
+          },
+          {
+            "textureClass": "orm",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+            "bytes": 70981,
+            "sha256": "9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a",
+            "width": 1056,
+            "height": 792,
+            "levels": 11,
+            "supercompressionScheme": 1,
+            "mode": "ETC1S"
+          }
+        ]
+      }
+    },
+    {
+      "theme": "fire-station",
+      "source": {
+        "path": "public/models/environment/themes/fire-station-kit.glb",
+        "bytes": 1092952,
+        "sha256": "5c033374387bf951ec274847c9f6f43687dcb5afcbdfc166a04bd0dd914770a4",
+        "nodes": 699,
+        "namedNodes": 697,
+        "meshes": 157,
+        "primitives": 210,
+        "triangles": 40816,
+        "materials": 25,
+        "externalTextureRequests": 17
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/fire-station-kit-bootstrap.glb",
+        "bytes": 639596,
+        "sha256": "24b04e6e199c657acf89775924c4fb6c740557633a06d5e0679845ad87100b47",
+        "savedGlbBytes": 453356,
+        "savedGlbPercent": 41.48,
+        "nodes": 1363,
+        "namedNodes": 697,
+        "meshes": 157,
+        "primitives": 210,
+        "triangles": 40816,
+        "materials": 25,
+        "atlasRequests": 3
+      },
+      "quality": {
+        "namedNodeSetExact": true,
+        "triangleRatio": 1,
+        "materialIdentitySetExact": true,
+        "materialSemanticSetExact": true,
+        "pbrSlotContractSha256": "f9096d8b6520626a09573310f9a9fa0094c2567a8e67e3f53f42c5b07ce17c3b",
+        "sceneBoundsMaxDeltaMeters": 0.000138606
+      },
+      "requestGraph": {
+        "requests": 4,
+        "glbBytes": 639596,
+        "dependencyBytes": 1135889,
+        "coldStartBytes": 1775485,
+        "coldStartMiB": 1.693,
+        "maxBytes": 2306867,
+        "dependencies": [
+          {
+            "textureClass": "baseColor",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+            "bytes": 466915,
+            "sha256": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91",
+            "width": 2112,
+            "height": 1584,
+            "levels": 12,
+            "supercompressionScheme": 1,
+            "mode": "ETC1S"
+          },
+          {
+            "textureClass": "normal",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+            "bytes": 597993,
+            "sha256": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9",
+            "width": 1056,
+            "height": 792,
+            "levels": 11,
+            "supercompressionScheme": 2,
+            "mode": "UASTC"
+          },
+          {
+            "textureClass": "orm",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+            "bytes": 70981,
+            "sha256": "9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a",
+            "width": 1056,
+            "height": 792,
+            "levels": 11,
+            "supercompressionScheme": 1,
+            "mode": "ETC1S"
+          }
+        ]
+      }
+    },
+    {
+      "theme": "factory",
+      "source": {
+        "path": "public/models/environment/themes/factory-kit.glb",
+        "bytes": 1613744,
+        "sha256": "8be3fa3986183b7627137f6db1931825d62f3ef975975b77499b4a3532520f23",
+        "nodes": 584,
+        "namedNodes": 581,
+        "meshes": 159,
+        "primitives": 234,
+        "triangles": 56456,
+        "materials": 23,
+        "externalTextureRequests": 19
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/factory-kit-bootstrap.glb",
+        "bytes": 819840,
+        "sha256": "28b38065e5106effa8aab2e194ce2a55cd95a402495a9feeab1b387256857fa3",
+        "savedGlbBytes": 793904,
+        "savedGlbPercent": 49.196,
+        "nodes": 1127,
+        "namedNodes": 581,
+        "meshes": 159,
+        "primitives": 234,
+        "triangles": 56456,
+        "materials": 23,
+        "atlasRequests": 3
+      },
+      "quality": {
+        "namedNodeSetExact": true,
+        "triangleRatio": 1,
+        "materialIdentitySetExact": true,
+        "materialSemanticSetExact": true,
+        "pbrSlotContractSha256": "39626d0f54edd686666baf283ea8a4286b1de26146935d14c4550fe193c18580",
+        "sceneBoundsMaxDeltaMeters": 0.000137881
+      },
+      "requestGraph": {
+        "requests": 4,
+        "glbBytes": 819840,
+        "dependencyBytes": 1135889,
+        "coldStartBytes": 1955729,
+        "coldStartMiB": 1.865,
+        "maxBytes": 2306867,
+        "dependencies": [
+          {
+            "textureClass": "baseColor",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+            "bytes": 466915,
+            "sha256": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91",
+            "width": 2112,
+            "height": 1584,
+            "levels": 12,
+            "supercompressionScheme": 1,
+            "mode": "ETC1S"
+          },
+          {
+            "textureClass": "normal",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+            "bytes": 597993,
+            "sha256": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9",
+            "width": 1056,
+            "height": 792,
+            "levels": 11,
+            "supercompressionScheme": 2,
+            "mode": "UASTC"
+          },
+          {
+            "textureClass": "orm",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+            "bytes": 70981,
+            "sha256": "9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a",
+            "width": 1056,
+            "height": 792,
+            "levels": 11,
+            "supercompressionScheme": 1,
+            "mode": "ETC1S"
+          }
+        ]
+      }
+    }
+  ],
+  "totals": {
+    "sourceGlbBytes": 5356308,
+    "bootstrapGlbBytes": 2785896,
+    "maximumColdStartBytes": 1955729,
+    "maximumColdStartMiB": 1.865
+  }
+}

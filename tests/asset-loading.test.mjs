@@ -3,10 +3,12 @@ import test from "node:test";
 
 import {
   AssetLoadError,
+  auditFirstPlayableAssetBudget,
   assetRetryDelayMilliseconds,
   classifyAssetHttpStatus,
   createSceneAssetLoader,
   externalAssetUrisFromGlb,
+  FIRST_PLAYABLE_BUDGET_TARGET,
 } from "../app/game/asset-loading.ts";
 
 const bytes = (...values) => new Uint8Array(values).buffer;
@@ -311,4 +313,77 @@ test("invalid loader policies fail before starting network work", () => {
     }),
     /maximumDelayMilliseconds must be at least baseDelayMilliseconds/,
   );
+});
+
+test("10 Mbps first-playable manifest fits the eight-second release gate", () => {
+  const mebibyte = 1024 * 1024;
+  const manifest = [
+    { id: "app-shell", url: "/app.js?v=1", transferBytes: 1 * mebibyte, phase: "shell", category: "shell" },
+    { id: "collision", url: "/levels/01.nav", transferBytes: 0.4 * mebibyte, phase: "first-playable", category: "navigation" },
+    { id: "kid-lod1", url: "/actors/kid-lod1.glb", transferBytes: 2 * mebibyte, phase: "first-playable", category: "player" },
+    { id: "villain-lod1", url: "/actors/villain-lod1.glb", transferBytes: 1.5 * mebibyte, phase: "first-playable", category: "threat" },
+    { id: "locker-core", url: "/props/locker-core.glb", transferBytes: 0.6 * mebibyte, phase: "first-playable", category: "hide-spot" },
+    { id: "campus-core", url: "/themes/campus-core.glb", transferBytes: 1.25 * mebibyte, phase: "first-playable", category: "theme" },
+    { id: "campus-dressing", url: "/themes/campus-dressing.glb", transferBytes: 12 * mebibyte, phase: "deferred", category: "theme" },
+  ].map((entry) => ({ ...entry, transferBytes: Math.round(entry.transferBytes) }));
+  const audit = auditFirstPlayableAssetBudget(manifest);
+  assert.equal(audit.fits, true);
+  assert.equal(audit.criticalTransferBytes, Math.round(6.75 * mebibyte));
+  assert.equal(audit.deferredTransferBytes, 12 * mebibyte);
+  assert.ok(audit.estimatedSeconds < FIRST_PLAYABLE_BUDGET_TARGET.maximumSeconds);
+  assert.deepEqual(audit.exceededCategories, []);
+});
+
+test("duplicate assets transfer once and are promoted to the earliest gate", () => {
+  const audit = auditFirstPlayableAssetBudget([
+    {
+      id: "locker-deferred",
+      url: "/locker.glb?v=1",
+      transferBytes: 700_000,
+      phase: "deferred",
+      category: "hide-spot",
+    },
+    {
+      id: "locker-critical",
+      url: "/locker.glb?v=1",
+      transferBytes: 720_000,
+      phase: "first-playable",
+      category: "hide-spot",
+    },
+  ]);
+  assert.equal(audit.criticalRequestCount, 1);
+  assert.equal(audit.criticalTransferBytes, 720_000);
+  assert.equal(audit.deferredTransferBytes, 0);
+  assert.deepEqual(audit.duplicateUrls, ["/locker.glb?v=1"]);
+});
+
+test("unoptimised first-playable actors fail with actionable category and savings data", () => {
+  const audit = auditFirstPlayableAssetBudget([
+    { id: "kid-hi", url: "/kid.glb", transferBytes: 4_492_164, phase: "first-playable", category: "player" },
+    { id: "villain-hi", url: "/villain.glb", transferBytes: 4_225_956, phase: "first-playable", category: "threat" },
+    { id: "locker-hi", url: "/locker.glb", transferBytes: 2_102_276, phase: "first-playable", category: "hide-spot" },
+    { id: "campus-hi", url: "/campus.glb", transferBytes: 1_585_960, phase: "first-playable", category: "theme" },
+  ]);
+  assert.equal(audit.fits, false);
+  assert.equal(audit.fitsTransferBudget, false);
+  assert.equal(audit.fitsTimeBudget, false);
+  assert.ok(audit.requiredSavingsBytes > 3_000_000);
+  assert.deepEqual(
+    audit.exceededCategories,
+    ["player", "threat", "hide-spot", "theme"],
+  );
+});
+
+test("invalid manifest rows fail the audit instead of silently becoming zero-byte assets", () => {
+  const audit = auditFirstPlayableAssetBudget([
+    {
+      id: "broken",
+      url: "/broken.glb",
+      transferBytes: -1,
+      phase: "first-playable",
+      category: "theme",
+    },
+  ]);
+  assert.equal(audit.fits, false);
+  assert.deepEqual(audit.invalidEntryIds, ["broken"]);
 });

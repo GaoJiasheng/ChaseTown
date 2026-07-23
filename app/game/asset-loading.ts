@@ -50,6 +50,223 @@ export const DEFAULT_ASSET_RETRY_POLICY: AssetRetryPolicy = Object.freeze({
   jitterRatio: 0.2,
 });
 
+export type AssetLoadingPhase = "shell" | "first-playable" | "deferred";
+
+export type FirstPlayableAssetCategory =
+  | "shell"
+  | "navigation"
+  | "player"
+  | "threat"
+  | "hide-spot"
+  | "theme";
+
+export const FIRST_PLAYABLE_ASSET_CATEGORIES: readonly FirstPlayableAssetCategory[] =
+  Object.freeze([
+    "shell",
+    "navigation",
+    "player",
+    "threat",
+    "hide-spot",
+    "theme",
+  ]);
+
+export interface AssetBudgetManifestEntry {
+  readonly id: string;
+  readonly url: string;
+  /** Compressed transfer size, not decoded GPU memory. */
+  readonly transferBytes: number;
+  readonly phase: AssetLoadingPhase;
+  readonly category: FirstPlayableAssetCategory;
+}
+
+export interface FirstPlayableBudgetTarget {
+  readonly maximumTransferBytes: number;
+  readonly maximumSeconds: number;
+  readonly bandwidthMegabitsPerSecond: number;
+  readonly roundTripMilliseconds: number;
+  readonly maximumConcurrentRequests: number;
+  /** Main-thread parse/decode/upload allowance after transfer. */
+  readonly parseDecodeMilliseconds: number;
+  readonly categoryMaximumBytes: Readonly<Record<FirstPlayableAssetCategory, number>>;
+}
+
+export interface FirstPlayableBudgetAudit {
+  readonly fits: boolean;
+  readonly fitsTransferBudget: boolean;
+  readonly fitsTimeBudget: boolean;
+  readonly criticalTransferBytes: number;
+  readonly deferredTransferBytes: number;
+  readonly requiredSavingsBytes: number;
+  readonly estimatedSeconds: number;
+  readonly criticalRequestCount: number;
+  readonly categoryTransferBytes: Readonly<Record<FirstPlayableAssetCategory, number>>;
+  readonly exceededCategories: readonly FirstPlayableAssetCategory[];
+  readonly duplicateUrls: readonly string[];
+  readonly invalidEntryIds: readonly string[];
+}
+
+const MEBIBYTE = 1024 * 1024;
+
+/**
+ * Release gate for a cold 10 Mbps / 80 ms connection. The category caps are
+ * intentionally additive to the 8 MiB total so one unoptimised asset cannot
+ * consume the entire first-playable budget. Navigation and hide-spot retain
+ * enough headroom for the authored gate and animated hero locker; the global
+ * transfer/time ceilings remain the non-negotiable release gate.
+ */
+export const FIRST_PLAYABLE_BUDGET_TARGET: FirstPlayableBudgetTarget = Object.freeze({
+  maximumTransferBytes: 8 * MEBIBYTE,
+  maximumSeconds: 8,
+  bandwidthMegabitsPerSecond: 10,
+  roundTripMilliseconds: 80,
+  maximumConcurrentRequests: 3,
+  parseDecodeMilliseconds: 800,
+  categoryMaximumBytes: Object.freeze({
+    shell: 1.25 * MEBIBYTE,
+    navigation: 2.5 * MEBIBYTE,
+    player: 2 * MEBIBYTE,
+    threat: 1.75 * MEBIBYTE,
+    "hide-spot": 1.75 * MEBIBYTE,
+    theme: 1.5 * MEBIBYTE,
+  }),
+});
+
+const ASSET_PHASE_ORDER: Readonly<Record<AssetLoadingPhase, number>> = Object.freeze({
+  shell: 0,
+  "first-playable": 1,
+  deferred: 2,
+});
+
+function emptyCategoryByteRecord(): Record<FirstPlayableAssetCategory, number> {
+  return {
+    shell: 0,
+    navigation: 0,
+    player: 0,
+    threat: 0,
+    "hide-spot": 0,
+    theme: 0,
+  };
+}
+
+function validBudgetTarget(target: FirstPlayableBudgetTarget): boolean {
+  return (
+    Number.isFinite(target.maximumTransferBytes)
+    && target.maximumTransferBytes >= 0
+    && Number.isFinite(target.maximumSeconds)
+    && target.maximumSeconds >= 0
+    && Number.isFinite(target.bandwidthMegabitsPerSecond)
+    && target.bandwidthMegabitsPerSecond > 0
+    && Number.isFinite(target.roundTripMilliseconds)
+    && target.roundTripMilliseconds >= 0
+    && Number.isInteger(target.maximumConcurrentRequests)
+    && target.maximumConcurrentRequests > 0
+    && Number.isFinite(target.parseDecodeMilliseconds)
+    && target.parseDecodeMilliseconds >= 0
+    && FIRST_PLAYABLE_ASSET_CATEGORIES.every(
+      (category) => {
+        const value = target.categoryMaximumBytes[category];
+        return Number.isFinite(value) && value >= 0;
+      },
+    )
+  );
+}
+
+function validManifestEntry(entry: AssetBudgetManifestEntry): boolean {
+  return (
+    typeof entry.id === "string"
+    && entry.id.length > 0
+    && typeof entry.url === "string"
+    && entry.url.length > 0
+    && Number.isInteger(entry.transferBytes)
+    && entry.transferBytes >= 0
+    && Object.prototype.hasOwnProperty.call(ASSET_PHASE_ORDER, entry.phase)
+    && FIRST_PLAYABLE_ASSET_CATEGORIES.includes(entry.category)
+  );
+}
+
+/**
+ * Estimate a conservative first-playable gate. Duplicate URLs are transferred
+ * once and promoted to the earliest requested phase, matching a shared
+ * browser/LoadingManager cache. Invalid rows fail the audit instead of being
+ * silently counted as zero.
+ */
+export function auditFirstPlayableAssetBudget(
+  manifest: readonly AssetBudgetManifestEntry[],
+  target: FirstPlayableBudgetTarget = FIRST_PLAYABLE_BUDGET_TARGET,
+): FirstPlayableBudgetAudit {
+  if (!validBudgetTarget(target)) throw new RangeError("Invalid first-playable budget target");
+
+  const invalidEntryIds: string[] = [];
+  const duplicateUrls = new Set<string>();
+  const assetsByUrl = new Map<string, AssetBudgetManifestEntry>();
+  for (const entry of manifest) {
+    if (!validManifestEntry(entry)) {
+      invalidEntryIds.push(typeof entry.id === "string" && entry.id ? entry.id : "(missing-id)");
+      continue;
+    }
+    const existing = assetsByUrl.get(entry.url);
+    if (!existing) {
+      assetsByUrl.set(entry.url, entry);
+      continue;
+    }
+    duplicateUrls.add(entry.url);
+    const earliest = ASSET_PHASE_ORDER[entry.phase] < ASSET_PHASE_ORDER[existing.phase]
+      ? entry
+      : existing;
+    assetsByUrl.set(entry.url, {
+      ...earliest,
+      transferBytes: Math.max(existing.transferBytes, entry.transferBytes),
+    });
+  }
+
+  const categoryTransferBytes = emptyCategoryByteRecord();
+  let criticalTransferBytes = 0;
+  let deferredTransferBytes = 0;
+  let criticalRequestCount = 0;
+  for (const entry of assetsByUrl.values()) {
+    if (entry.phase === "deferred") {
+      deferredTransferBytes += entry.transferBytes;
+      continue;
+    }
+    criticalRequestCount += 1;
+    criticalTransferBytes += entry.transferBytes;
+    categoryTransferBytes[entry.category] += entry.transferBytes;
+  }
+
+  const transferSeconds = criticalTransferBytes * 8
+    / (target.bandwidthMegabitsPerSecond * 1_000_000);
+  const requestWaves = Math.ceil(
+    criticalRequestCount / target.maximumConcurrentRequests,
+  );
+  const estimatedSeconds = transferSeconds
+    + requestWaves * target.roundTripMilliseconds / 1_000
+    + target.parseDecodeMilliseconds / 1_000;
+  const exceededCategories = (Object.keys(categoryTransferBytes) as FirstPlayableAssetCategory[])
+    .filter(
+      (category) => (
+        categoryTransferBytes[category] > target.categoryMaximumBytes[category]
+      ),
+    );
+  const fitsTransferBudget = criticalTransferBytes <= target.maximumTransferBytes
+    && exceededCategories.length === 0;
+  const fitsTimeBudget = estimatedSeconds <= target.maximumSeconds;
+
+  return Object.freeze({
+    fits: fitsTransferBudget && fitsTimeBudget && invalidEntryIds.length === 0,
+    fitsTransferBudget,
+    fitsTimeBudget,
+    criticalTransferBytes,
+    deferredTransferBytes,
+    requiredSavingsBytes: Math.max(0, criticalTransferBytes - target.maximumTransferBytes),
+    estimatedSeconds,
+    criticalRequestCount,
+    categoryTransferBytes: Object.freeze(categoryTransferBytes),
+    exceededCategories: Object.freeze(exceededCategories),
+    duplicateUrls: Object.freeze([...duplicateUrls]),
+    invalidEntryIds: Object.freeze(invalidEntryIds),
+  });
+}
+
 const GLB_MAGIC = 0x46546c67;
 const GLB_JSON_CHUNK = 0x4e4f534a;
 

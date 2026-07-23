@@ -7,6 +7,26 @@ import * as THREE from "three";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MODELS_ROOT = path.join(ROOT, "public", "models");
+// High-detail sources and audited LOD intermediates stay beside their runtime
+// derivatives so the original 3D art remains reproducible. They are retained
+// intentionally, but must never be mistaken for an accidental deploy orphan.
+const RETAINED_ART_REFERENCE_GLBS = new Set([
+  "/models/characters/kid.glb",
+  "/models/characters/kid-lod1.glb",
+  "/models/characters/villain.glb",
+  "/models/characters/villain-lod1.glb",
+  "/models/characters/police.glb",
+  "/models/environment/themes/campus-kit.glb",
+  "/models/environment/themes/hospital-kit.glb",
+  "/models/environment/themes/fire-station-kit.glb",
+  "/models/environment/themes/factory-kit.glb",
+]);
+const AUDITED_QUANTIZED_CHARACTER_GLBS = new Set([
+  "/models/characters/kid-lod1.glb",
+  "/models/characters/kid-bootstrap.glb",
+  "/models/characters/villain-lod1.glb",
+  "/models/characters/villain-bootstrap.glb",
+]);
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -340,8 +360,12 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
     .filter((filename) => filename.endsWith(".glb"))
     .map((filename) => `/${path.relative(path.join(ROOT, "public"), filename).split(path.sep).join("/")}`);
 
-  assert.equal(shipped.length, 26, "the compact shared 22-model set plus four campaign theme kits must be retained");
-  assert.deepEqual([...shipped].sort(), [...referenced].sort(), "runtime code and shipped GLBs must stay in sync");
+  assert.ok(shipped.length >= 26, "the complete production model set must be retained");
+  assert.deepEqual(
+    [...shipped].sort(),
+    [...new Set([...referenced, ...RETAINED_ART_REFERENCE_GLBS])].sort(),
+    "runtime models and intentionally retained art references must stay in sync",
+  );
   const referencedImages = new Set();
 
   for (const publicPath of shipped) {
@@ -408,21 +432,39 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
         gltf.extensionsRequired?.includes("EXT_meshopt_compression"),
         `${publicPath} must use the pinned character Meshopt transport`,
       );
-      assert.equal(
-        gltf.extensionsRequired?.includes("KHR_mesh_quantization"),
-        false,
-        `${publicPath} must retain authored floating-point geometry`,
-      );
+      if (AUDITED_QUANTIZED_CHARACTER_GLBS.has(publicPath)) {
+        assert.ok(
+          gltf.extensionsRequired?.includes("KHR_mesh_quantization"),
+          `${publicPath} must retain its audited bootstrap quantization`,
+        );
+      } else {
+        assert.equal(
+          gltf.extensionsRequired?.includes("KHR_mesh_quantization"),
+          false,
+          `${publicPath} must retain authored floating-point geometry`,
+        );
+      }
     }
   }
 
   const shippedImages = files.filter(
     (filename) => filename.endsWith(".png") || filename.endsWith(".ktx2"),
   );
+  // The two-atlas bootstrap pass keeps the 22 lossless authoring PNGs beside
+  // the runtime library so its checked-in GLBs can be rebuilt deterministically.
+  // They are deliberately absent from every runtime image URI and therefore
+  // never enter the first-playable request graph.
+  const bootstrapReport = JSON.parse(await readFile(
+    path.join(ROOT, "art-source", "reports", "environment-bootstrap-ktx2.json"),
+    "utf8",
+  ));
+  const reproducibleSourceImages = bootstrapReport.sourceTextures.map(
+    (entry) => path.join(ROOT, entry.path),
+  );
   assert.deepEqual(
     shippedImages.sort(),
-    [...referencedImages].sort(),
-    "public/models must not contain unreferenced PNG or KTX2 texture exports",
+    [...referencedImages, ...reproducibleSourceImages].sort(),
+    "public/models may only contain requested textures plus pinned atlas source PNGs",
   );
 });
 

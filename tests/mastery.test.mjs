@@ -4,6 +4,7 @@ import test from "node:test";
 import { CAMPAIGN_LEVELS, getCampaignGameplayConfig } from "../app/game/campaign.ts";
 import {
   applyRunEvents,
+  applyRunTelemetryFrame,
   createRunTelemetry,
   evaluateRunMastery,
   getMasteryProfile,
@@ -11,6 +12,8 @@ import {
   masteryTargetSeconds,
   mergeStoredMastery,
   personalBestDelta,
+  previewRunMastery,
+  SAFE_HIDE_EXIT_SECONDS,
 } from "../app/game/mastery.ts";
 
 test("telemetry counts authored stealth beats without double-counting lost-sight recovery", () => {
@@ -23,12 +26,12 @@ test("telemetry counts authored stealth beats without double-counting lost-sight
     { type: "hide-check-completed", hideSpotId: "locker", occupied: false },
   ]);
 
-  assert.deepEqual(telemetry, {
-    detections: 1,
-    hideEntries: 1,
-    safeHideExits: 1,
-    lockerSearches: 1,
-  });
+  assert.equal(telemetry.detections, 1);
+  assert.equal(telemetry.hideEntries, 1);
+  assert.equal(telemetry.hideExits, 1);
+  assert.equal(telemetry.safeHideExits, 1);
+  assert.equal(telemetry.lockerSearches, 1);
+  assert.equal(telemetry.threatReacquisitions, 1);
 });
 
 test("telemetry preserves optional campaign mastery context through event reduction", () => {
@@ -39,6 +42,96 @@ test("telemetry preserves optional campaign mastery context through event reduct
   assert.deepEqual(telemetry.masteryContext, context);
   assert.equal(Object.isFrozen(telemetry.masteryContext), true);
   assert.equal(telemetry.safeHideExits, 1);
+});
+
+test("strict telemetry proves 2.5 calm seconds before counting a safe locker exit", () => {
+  let telemetry = applyRunTelemetryFrame(createRunTelemetry(), {
+    deltaSeconds: 1 / 60,
+    events: [{ type: "player-mode-changed", from: "exiting-hide", to: "free" }],
+    phase: "playing",
+    playerMode: "free",
+    threat: "calm",
+  });
+  assert.equal(telemetry.hideExits, 1);
+  assert.equal(telemetry.safeHideExits, 0);
+
+  for (let elapsed = 0; elapsed < SAFE_HIDE_EXIT_SECONDS; elapsed += 0.5) {
+    telemetry = applyRunTelemetryFrame(telemetry, {
+      deltaSeconds: 0.5,
+      events: [],
+      phase: "playing",
+      playerMode: "free",
+      threat: "calm",
+    });
+  }
+  assert.equal(telemetry.safeHideExits, 1);
+  assert.equal(telemetry.pendingSafeHideExitSeconds, null);
+
+  let unsafe = applyRunTelemetryFrame(createRunTelemetry(), {
+    deltaSeconds: 0,
+    events: [{ type: "player-mode-changed", from: "exiting-hide", to: "free" }],
+    phase: "playing",
+    playerMode: "free",
+    threat: "calm",
+  });
+  unsafe = applyRunTelemetryFrame(unsafe, {
+    deltaSeconds: 2,
+    events: [{ type: "chaser-mode-changed", from: "lost-sight", to: "chase" }],
+    phase: "playing",
+    playerMode: "free",
+    threat: "active",
+  });
+  assert.equal(unsafe.safeHideExits, 0);
+  assert.equal(unsafe.pendingSafeHideExitSeconds, null);
+  assert.equal(unsafe.threatReacquisitions, 1);
+});
+
+test("causal telemetry rejects decorative searches and credits deployed decoys/mechanics once", () => {
+  let telemetry = applyRunTelemetryFrame(createRunTelemetry({
+    levelId: "campus-science-wing",
+    theme: "campus",
+  }), {
+    deltaSeconds: 0.1,
+    events: [{ type: "hide-check-completed", hideSpotId: "empty", occupied: false }],
+    phase: "playing",
+    playerMode: "free",
+    threat: "caution",
+    causalEvents: [
+      { type: "investigation-completed", evidenceId: "not-ours", source: "decoy" },
+      { type: "theme-mechanic-advantage", mechanicId: "bell", advantage: "diverted-pursuer" },
+    ],
+  });
+  assert.equal(telemetry.decoyInvestigations, 0);
+  assert.equal(telemetry.themeMechanicAdvantages, 0);
+
+  telemetry = applyRunTelemetryFrame(telemetry, {
+    deltaSeconds: 0.1,
+    events: [],
+    phase: "playing",
+    playerMode: "free",
+    threat: "caution",
+    causalEvents: [
+      { type: "decoy-deployed", decoyId: "coin-1" },
+      { type: "decoy-deployed", decoyId: "coin-1" },
+      { type: "theme-mechanic-used", mechanicId: "bell" },
+      { type: "investigation-completed", evidenceId: "coin-1", source: "theme-mechanic" },
+      { type: "investigation-completed", evidenceId: "coin-1", source: "theme-mechanic" },
+      { type: "theme-mechanic-advantage", mechanicId: "bell", advantage: "diverted-pursuer" },
+      { type: "route-selected", routeId: "east" },
+      { type: "route-replanned", fromRouteId: "east", toRouteId: "west", reason: "threat" },
+    ],
+  });
+  assert.equal(telemetry.decoysDeployed, 1);
+  assert.equal(telemetry.decoyInvestigations, 1);
+  assert.equal(telemetry.themeMechanicUses, 1);
+  assert.equal(telemetry.themeMechanicAdvantages, 1);
+  assert.equal(telemetry.routeReplans, 1);
+
+  const mastery = evaluateRunMastery(1, 90, telemetry);
+  assert.equal(
+    mastery.challenges.find(({ id }) => id === "decoy-search").completed,
+    true,
+  );
 });
 
 test("every campaign level receives a finite, achievable-looking mastery target", () => {
@@ -95,6 +188,7 @@ test("campaign mastery profiles override theme defaults and remain internally ac
       hideEntries: hideCount,
       safeHideExits: hideCount,
       lockerSearches: ids.has("decoy-search") ? 1 : 0,
+      decoyInvestigations: ids.has("decoy-search") ? 1 : 0,
     });
     assert.equal(result.rank, "gold", `${level.id} profile cannot be completed`);
   }
@@ -105,6 +199,32 @@ test("campaign mastery profiles override theme defaults and remain internally ac
     "theme:campus:v2",
   );
   assert.equal(getMasteryProfile({ levelId: "unknown" }).id, LEGACY_MASTERY_PROFILE.id);
+});
+
+test("pre-run objectives are readable and assisted runs are explicitly unranked", () => {
+  const level = CAMPAIGN_LEVELS[0];
+  const preview = previewRunMastery(level, getCampaignGameplayConfig(level), {
+    levelId: level.id,
+    theme: level.campaign.theme,
+    ruleset: "assisted",
+  });
+  assert.equal(preview.ruleset, "assisted");
+  assert.equal(preview.ranked, false);
+  assert.equal(preview.objectives.length, 3);
+  assert.ok(preview.objectives.every(({ label, description }) => label && description));
+
+  const result = evaluateRunMastery(1, preview.targetSeconds, {
+    ...createRunTelemetry({
+      levelId: level.id,
+      theme: level.campaign.theme,
+      ruleset: "assisted",
+    }),
+    detections: 0,
+    hideEntries: 1,
+    safeHideExits: 1,
+  });
+  assert.equal(result.ruleset, "assisted");
+  assert.equal(result.ranked, false);
 });
 
 test("standard guided telemetry no longer grants automatic Gold across the campaign", () => {
