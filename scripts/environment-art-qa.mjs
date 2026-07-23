@@ -290,7 +290,11 @@ function assertRuntimeIntegrity(state, level, { fallback = false } = {}) {
   // texture per surface family. Keep the live-scene limit at 80 below and a
   // hard renderer-memory ceiling of 256 so the PBR upgrade remains bounded.
   assert.ok(state.render.memory.textures <= 256, `${level.id} texture count exceeded 256`);
-  assert.ok(state.render.programs <= 48, `${level.id} shader program count exceeded 48`);
+  // Rich PBR surfaces, depth/shadow variants, camera-occlusion passes and the
+  // depth-honest actor readability rim share a strict, cross-theme ceiling.
+  // All ten production chapters currently peak at 49; 56 leaves modest driver
+  // variance while still failing the measured 78-program duplicate-light bug.
+  assert.ok(state.render.programs <= 56, `${level.id} shader program count exceeded 56`);
   assert.ok(state.render.sceneTextures <= 80, `${level.id} live scene texture count exceeded 80`);
   if (fallback) assert.equal(state.render.batching, "instanced-mesh", `${level.id} did not enter the no-multi-draw fallback`);
 }

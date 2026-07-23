@@ -596,7 +596,7 @@ export function fixedCameraCompositionConstraints(
 export function baseCameraDistanceForAspect(aspect: number): number {
   const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
   const portraitBlend = Math.min(1, Math.max(0, (0.86 - safeAspect) / 0.4));
-  return 16.25 - portraitBlend * 2;
+  return 14.8 - portraitBlend * 1.6;
 }
 
 /**
@@ -745,7 +745,54 @@ export function cameraFocusForEdgeHide(request: EdgeHideCameraFocusRequest): Cam
   };
 }
 
+/**
+ * Applies a restrained inward bias while the player traverses an outer lane.
+ * This uses the same projection-safe solver as locker framing, but caps the
+ * translation at two cells so the actor remains inside the central safe frame
+ * while excess exterior ground is kept out of the shot.
+ */
+export function cameraFocusForTraversalEdge(
+  request: Omit<EdgeHideCameraFocusRequest, "mode">,
+): CameraFramingVector {
+  return cameraFocusForEdgeHide({
+    ...request,
+    mode: "hidden",
+    edgeInset: request.edgeInset ?? 6.4,
+    maximumShift: request.maximumShift ?? 4,
+    safeHorizontalNdc: request.safeHorizontalNdc ?? 0.44,
+    safeVerticalNdc: request.safeVerticalNdc ?? 0.34,
+  });
+}
+
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+export type ReadableActorRole = "player" | "chaser" | "ally";
+
+/**
+ * Authored character shaders use this bounded Fresnel strength to retain
+ * their textured silhouette in dark chapters. It never bypasses depth or
+ * visibility, so walls and closed lockers continue to hide the pursuer.
+ */
+export function actorReadabilityRimStrength(
+  role: ReadableActorRole,
+  chaserMode: ChaserMode,
+  rendered = true,
+): number {
+  if (!rendered) return 0;
+  if (role === "player") return 0.28;
+  if (role === "ally") return 0.24;
+  switch (chaserMode) {
+    case "chase": return 0.68;
+    case "suspicious":
+    case "lost-sight":
+    case "go-to-last-known": return 0.5;
+    case "scan-last-known":
+    case "search":
+    case "check-hide": return 0.42;
+    case "patrol": return 0.34;
+    case "spawn-delay": return 0.22;
+  }
+}
 
 /**
  * Keeps game and authored animation time aligned at ordinary low frame rates,
@@ -814,6 +861,18 @@ export function lockerVisionMix(
     case "escaped":
       return { cover: 0, peek: 0 };
   }
+}
+
+/**
+ * Models subtle eye adaptation through the observation slit. A sealed locker
+ * receives no lift; a fully open peek remains restrained enough to preserve
+ * each chapter's authored night lighting.
+ */
+export function lockerObservationExposureMultiplier(
+  vision: Readonly<{ cover: number; peek: number }>,
+): number {
+  const openPeek = clamp01(vision.peek) * (1 - clamp01(vision.cover));
+  return 1 + openPeek * 0.18;
 }
 
 /**

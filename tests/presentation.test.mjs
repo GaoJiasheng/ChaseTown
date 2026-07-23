@@ -3,17 +3,20 @@ import test from "node:test";
 
 import { DEFAULT_GAME_CONFIG } from "../app/game/level.ts";
 import {
+  actorReadabilityRimStrength,
   baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
   cameraDistanceScaleForPlayerMode,
   cameraFocusForEdgeHide,
   cameraFocusForSafeViewport,
+  cameraFocusForTraversalEdge,
   cameraSafeViewportFromInsets,
   canChaserTakeLockerDoor,
   chaserAnimationForMode,
   createFixedCameraFollowState,
   fixedCameraCompositionConstraints,
   gameplayCameraInsetsForViewport,
+  lockerObservationExposureMultiplier,
   lockerVisionMix,
   maximumCameraDistanceForActorReadability,
   projectPointToFixedCameraNdc,
@@ -72,6 +75,25 @@ test("peek mask opens and closes continuously instead of popping", () => {
   const closingHalf = mix("exiting-peek", DEFAULT_GAME_CONFIG.peekExitSeconds / 2);
   assert.ok(Math.abs(closingHalf.cover - 0.5) < 1e-9);
   assert.ok(Math.abs(closingHalf.peek - 0.5) < 1e-9);
+});
+
+test("locker observation adapts exposure only through an opened peek slit", () => {
+  assert.equal(lockerObservationExposureMultiplier({ cover: 1, peek: 0 }), 1);
+  assert.equal(lockerObservationExposureMultiplier({ cover: 1, peek: 1 }), 1);
+  assert.equal(lockerObservationExposureMultiplier({ cover: 0, peek: 1 }), 1.18);
+  const openingHalf = lockerObservationExposureMultiplier({ cover: 0.5, peek: 0.5 });
+  assert.ok(Math.abs(openingHalf - 1.045) < 1e-12);
+});
+
+test("authored actor rim stays depth-honest and prioritizes an active pursuer", () => {
+  assert.equal(actorReadabilityRimStrength("chaser", "chase", false), 0);
+  assert.ok(
+    actorReadabilityRimStrength("chaser", "chase")
+      > actorReadabilityRimStrength("chaser", "patrol"),
+  );
+  assert.ok(actorReadabilityRimStrength("chaser", "search") > 0.3);
+  assert.ok(actorReadabilityRimStrength("player", "spawn-delay") > 0.2);
+  assert.ok(actorReadabilityRimStrength("ally", "chase") < actorReadabilityRimStrength("player", "chase"));
 });
 
 test("camera occlusion fades in quickly and restores smoothly at any frame rate", () => {
@@ -217,11 +239,11 @@ test("portrait chase framing derives a safe distance from FOV and actor separati
 });
 
 test("portrait baseline keeps actors readable without weakening safe framing", () => {
-  assert.equal(baseCameraDistanceForAspect(16 / 9), 16.25);
-  assert.equal(baseCameraDistanceForAspect(0.46), 14.25);
-  assert.ok(baseCameraDistanceForAspect(0.7) > 14.25);
-  assert.ok(baseCameraDistanceForAspect(0.7) < 16.25);
-  assert.equal(baseCameraDistanceForAspect(Number.NaN), 16.25);
+  assert.equal(baseCameraDistanceForAspect(16 / 9), 14.8);
+  assert.equal(baseCameraDistanceForAspect(0.46), 13.200000000000001);
+  assert.ok(baseCameraDistanceForAspect(0.7) > 13.2);
+  assert.ok(baseCameraDistanceForAspect(0.7) < 14.8);
+  assert.equal(baseCameraDistanceForAspect(Number.NaN), 14.8);
 });
 
 test("mobile UI insets produce a bounded asymmetric camera-safe viewport", () => {
@@ -397,6 +419,26 @@ test("edge lockers bias only the hide-performance focus into the maze", () => {
     { x: -20, y: 0.92, z: 12 },
     "ordinary traversal must never inherit cinematic edge bias",
   );
+});
+
+test("outer-lane traversal receives a restrained projection-safe inward composition", () => {
+  const common = {
+    bounds: { minX: -24, maxX: 24, minZ: -24, maxZ: 24 },
+    cameraDirection: { x: 0.3451465392455413, y: 0.7308985536964403, z: -0.588779390477688 },
+    cameraDistance: 14.8,
+    verticalFovDegrees: 56,
+  };
+  const edge = { x: -22, y: 0.92, z: 12 };
+  const landscape = cameraFocusForTraversalEdge({ ...common, focus: edge, aspect: 16 / 9 });
+  assert.ok(landscape.x > edge.x + 3.9 && landscape.x <= edge.x + 4 + 1e-9);
+  assert.equal(landscape.y, edge.y);
+  assert.equal(landscape.z, edge.z);
+
+  const portrait = cameraFocusForTraversalEdge({ ...common, focus: edge, aspect: 0.5 });
+  assert.ok(portrait.x > edge.x, "portrait framing still removes exterior dominance");
+  assert.ok(portrait.x - edge.x < landscape.x - edge.x, "portrait keeps the player nearer center");
+  const center = { x: 0, y: 0.92, z: 0 };
+  assert.deepEqual(cameraFocusForTraversalEdge({ ...common, focus: center, aspect: 16 / 9 }), center);
 });
 
 test("portrait edge framing automatically limits performer displacement", () => {

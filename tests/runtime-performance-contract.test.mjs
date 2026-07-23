@@ -52,6 +52,7 @@ test("scene loading is cancellable, retryable, concurrency-limited and KTX2 awar
   assert.match(SOURCE, /loader\.parseAsync\(bytes/);
   assert.match(SOURCE, /import\("three\/examples\/jsm\/loaders\/KTX2Loader\.js"\)[\s\S]*new KTX2Loader\(loadingManager\)[\s\S]*setTranscoderPath\("\/basis\/"\)[\s\S]*detectSupport\(renderer\)/);
   assert.doesNotMatch(SOURCE, /^import \{ KTX2Loader \}/m);
+  assert.match(SOURCE, /const playableTextures = collectObjectTextures\([\s\S]*disposeObjectResources\([\s\S]*playableTextures/);
   assert.match(SOURCE, /sceneAssets\.abort\(new DOMException\("Scene disposed"/);
   assert.match(SOURCE, /ktx2Loader\?\.dispose\(\)/);
 });

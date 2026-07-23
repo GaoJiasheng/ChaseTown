@@ -86,8 +86,10 @@ import {
   roomFloorSupportForFootprint,
 } from "./game/room-floor.ts";
 import {
+  actorReadabilityRimStrength,
   baseCameraDistanceForAspect,
   boundedFrameDeltaSeconds,
+  cameraFocusForTraversalEdge,
   cameraFocusForSafeViewport,
   cameraSafeViewportFromInsets,
   cameraDistanceScaleForPlayerMode,
@@ -96,6 +98,7 @@ import {
   chaserAnimationForMode,
   fixedCameraCompositionConstraints,
   gameplayCameraInsetsForViewport,
+  lockerObservationExposureMultiplier,
   lockerVisionMix,
   shouldFrameChaser,
   shouldRenderChaserModel,
@@ -1105,6 +1108,7 @@ function addInstancedModuleBatches(
 type ActorView = {
   root: THREE.Group;
   animator: ActorAnimator;
+  readabilityRim: { value: number };
   durationByState: Partial<Record<AnimationState, number>>;
   lastPoint: Point;
   lastTick: number;
@@ -1119,6 +1123,49 @@ type ActorView = {
     baseDepthWrite: boolean;
   }>;
 };
+
+function installActorReadabilityRim(
+  root: THREE.Object3D,
+  color: THREE.ColorRepresentation,
+): { value: number } {
+  const strength = { value: 0 };
+  const rimColor = new THREE.Color(color);
+  const configured = new Set<string>();
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (!(material instanceof THREE.MeshStandardMaterial) || configured.has(material.uuid)) continue;
+      configured.add(material.uuid);
+      const previousCompile = material.onBeforeCompile.bind(material);
+      const previousCacheKey = material.customProgramCacheKey.bind(material);
+      material.onBeforeCompile = (shader, renderer) => {
+        previousCompile(shader, renderer);
+        shader.uniforms.actorReadabilityRimColor = { value: rimColor };
+        shader.uniforms.actorReadabilityRimStrength = strength;
+        shader.fragmentShader = shader.fragmentShader.replace(
+          "#include <emissivemap_fragment>",
+          `#include <emissivemap_fragment>
+float actorReadabilityFresnel = pow(
+  1.0 - saturate(dot(normalize(normal), normalize(vViewPosition))),
+  2.35
+);
+totalEmissiveRadiance += actorReadabilityRimColor
+  * actorReadabilityFresnel
+  * actorReadabilityRimStrength;`,
+        ).replace(
+          "#include <common>",
+          `#include <common>
+uniform vec3 actorReadabilityRimColor;
+uniform float actorReadabilityRimStrength;`,
+        );
+      };
+      material.customProgramCacheKey = () => `${previousCacheKey()}:actor-readability-rim-v1`;
+      material.needsUpdate = true;
+    }
+  });
+  return strength;
+}
 
 type LockerView = {
   id: string;
@@ -1496,18 +1543,24 @@ function deduplicateAssetTextures(assets: Iterable<LoadedAsset>): TextureDedupli
   };
 }
 
-function countSceneTextures(root: THREE.Object3D) {
+function collectObjectTextures(roots: Iterable<THREE.Object3D>) {
   const textures = new Set<THREE.Texture>();
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line || object instanceof THREE.Sprite)) return;
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    for (const material of materials) {
-      for (const value of Object.values(material)) {
-        if (value instanceof THREE.Texture) textures.add(value);
+  for (const root of roots) {
+    root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line || object instanceof THREE.Sprite)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        for (const value of Object.values(material)) {
+          if (value instanceof THREE.Texture) textures.add(value);
+        }
       }
-    }
-  });
-  return textures.size;
+    });
+  }
+  return textures;
+}
+
+function countSceneTextures(root: THREE.Object3D) {
+  return collectObjectTextures([root]).size;
 }
 
 function findInvalidSceneTextures(root: THREE.Object3D) {
@@ -1525,7 +1578,10 @@ function findInvalidSceneTextures(root: THREE.Object3D) {
   return [...invalid.values()];
 }
 
-function disposeObjectResources(roots: Iterable<THREE.Object3D>) {
+function disposeObjectResources(
+  roots: Iterable<THREE.Object3D>,
+  preservedTextures: ReadonlySet<THREE.Texture> = new Set(),
+) {
   const geometries = new Set<THREE.BufferGeometry>();
   const materials = new Set<THREE.Material>();
   const textures = new Set<THREE.Texture>();
@@ -1554,7 +1610,7 @@ function disposeObjectResources(roots: Iterable<THREE.Object3D>) {
         if (materials.has(material)) continue;
         for (const value of Object.values(material)) {
           if (value instanceof THREE.Texture && !textures.has(value)) {
-            value.dispose();
+            if (!preservedTextures.has(value)) value.dispose();
             textures.add(value);
           }
         }
@@ -1909,7 +1965,7 @@ export function ChasingGame() {
       canonicalTextures: 0,
       assignmentsShared: 0,
     };
-    let cameraDistance = 16.25;
+    let cameraDistance = baseCameraDistanceForAspect(16 / 9);
     let resultTimer: ReturnType<typeof setTimeout> | null = null;
     let lastCheckSpot: string | null = null;
     let guidedLockerId: string | null = null;
@@ -2141,6 +2197,26 @@ export function ChasingGame() {
 
     const registerPerformanceLight = (light: THREE.Light, priority: number) => {
       performanceLights.push({ light, priority });
+    };
+    let performanceLightingBuilt = false;
+    const buildPerformanceLighting = () => {
+      if (performanceLightingBuilt) return;
+      performanceLightingBuilt = true;
+      const lightPoints = [
+        campaignLevel.playerStart,
+        ...campaignLevel.patrol.filter((_, index) => index % 2 === 0),
+        campaignLevel.exit,
+      ].slice(0, 4);
+      for (const point of lightPoints) {
+        const lampColor = new THREE.Color(campaignLevel.campaign.palette.emissive).lerp(
+          new THREE.Color(campaignLevel.campaign.palette.accent),
+          artLayout.warmLightMix * 0.22,
+        );
+        const lamp = new THREE.PointLight(lampColor, artLayout.lightIntensity, 7.6, 2);
+        lamp.position.copy(world(point, campaignLevel)).add(new THREE.Vector3(0, 2.2, 0));
+        scene.add(lamp);
+        registerPerformanceLight(lamp, 0);
+      }
     };
     const lightWorldPosition = new THREE.Vector3();
     const updatePerformanceLightBudget = (focus: THREE.Vector3) => {
@@ -2515,6 +2591,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const playfield = host.parentElement;
       playfield?.style.setProperty("--locker-cover", mix.cover.toFixed(4));
       playfield?.style.setProperty("--locker-peek", mix.peek.toFixed(4));
+      renderer.toneMappingExposure = atmosphere.exposure
+        * lockerObservationExposureMultiplier(mix);
     };
 
     const updatePhasePresentation = (next: GamePhase) => {
@@ -2635,7 +2713,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       cameraFocus.copy(world(state.player.position, campaignLevel)).add(new THREE.Vector3(0, 0.92, 0));
       cameraFollowState = createFixedCameraFollowState(cameraFocus);
       cameraDirection.copy(createFixedCameraDirection());
-      cameraDistance = 16.25;
+      cameraDistance = baseCameraDistanceForAspect(camera.aspect);
       camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
       camera.lookAt(cameraFocus);
       occlusionRaycastRemaining = 0;
@@ -2861,7 +2939,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       configureAssetTextures(loadedAssets, renderer);
       textureDeduplication = deduplicateAssetTextures(loadedAssets);
       buildCampus(structureAssets, themeKitAsset, campus);
-      buildDetails(detailAssets, themeKitAsset, campus, scene, lockers, "essential");
+      buildPerformanceLighting();
+      buildDetails(detailAssets, themeKitAsset, campus, lockers, "essential");
       placeActors(actorAssets, actors, scene, ["kid", "villain"]);
 
       let policeLoadPromise: Promise<void> | null = null;
@@ -2958,15 +3037,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             detailAssets[name] = asset;
           }
           configureAssetTextures(deferredAssets, renderer);
+          textureDeduplication = deduplicateAssetTextures([...loadedAssets, ...deferredAssets]);
           buildDetails(
             detailAssets,
             themeKitAsset,
             deferredDressing,
-            deferredDressing,
             lockers,
             "decorative",
           );
-          textureDeduplication = deduplicateAssetTextures([...loadedAssets, ...deferredAssets]);
           registerNonCriticalShadowCasters(deferredDressing);
           startDeferredDressingFade(deferredDressing);
           campus.add(deferredDressing);
@@ -2975,7 +3053,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           decorativeAssetsReady = true;
         } catch (error) {
           for (const { name } of loadedDecorations) delete detailAssets[name];
-          disposeObjectResources([deferredDressing, ...loadedDecorations.map(({ asset }) => asset.scene)]);
+          // Dedupe runs before assembly so optional props share the already
+          // playable scene's canonical textures. A failed optional build must
+          // dispose its geometry/materials without invalidating those shared
+          // texture objects underneath the live essential scene.
+          const playableTextures = collectObjectTextures(
+            loadedAssets.map(({ asset }) => asset.scene),
+          );
+          disposeObjectResources(
+            [deferredDressing, ...loadedDecorations.map(({ asset }) => asset.scene)],
+            playableTextures,
+          );
           console.warn("Optional scene dressing failed to assemble; gameplay remains available", error);
         }
       })();
@@ -3393,15 +3481,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       horizonMaterial.emissive.set(0x000000);
       horizonMaterial.emissiveIntensity = 0;
       horizonMaterial.emissiveMap = null;
-      for (const key of ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap"] as const) {
-        const texture = horizonMaterial[key];
-        if (!texture) continue;
-        const repeated = texture.clone();
+      // Keep only distant albedo detail. Normal/ORM response cannot be read
+      // beneath the fog, but cloning those four maps inflated live texture
+      // memory and created another heavyweight PBR shader permutation.
+      const horizonSourceMap = horizonMaterial.map;
+      horizonMaterial.normalMap = null;
+      horizonMaterial.roughnessMap = null;
+      horizonMaterial.metalnessMap = null;
+      horizonMaterial.aoMap = null;
+      if (horizonSourceMap) {
+        const repeated = horizonSourceMap.clone();
         repeated.wrapS = THREE.RepeatWrapping;
         repeated.wrapT = THREE.RepeatWrapping;
         repeated.repeat.set(56, 56);
         repeated.needsUpdate = true;
-        horizonMaterial[key] = repeated;
+        horizonMaterial.map = repeated;
       }
       const horizonGround = new THREE.Mesh(new THREE.PlaneGeometry(224, 224), horizonMaterial);
       horizonGround.name = `${theme}-fog-horizon-ground`;
@@ -3467,7 +3561,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       assets: Partial<Record<DetailAssetName, GLTF>>,
       themeKit: GLTF,
       parent: THREE.Group,
-      targetScene: THREE.Object3D,
       lockerViews: Map<string, LockerView>,
       phase: DetailBuildPhase,
     ) => {
@@ -4054,14 +4147,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         .slice(0, 4);
       for (const point of lightPoints) {
         addProp("ceilingLight", point, 0.16, 0, new THREE.Vector3(0, 2.35, 0));
-        const lampColor = new THREE.Color(campaignLevel.campaign.palette.emissive).lerp(
-          new THREE.Color(campaignLevel.campaign.palette.accent),
-          artLayout.warmLightMix * 0.22,
-        );
-        const lamp = new THREE.PointLight(lampColor, artLayout.lightIntensity, 7.6, 2);
-        lamp.position.copy(world(point, campaignLevel)).add(new THREE.Vector3(0, 2.2, 0));
-        targetScene.add(lamp);
-        registerPerformanceLight(lamp, 0);
       }
     };
 
@@ -4111,9 +4196,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           const materials = Array.isArray(object.material) ? object.material : [object.material];
           for (const material of materials) uniqueMaterials.set(material.uuid, material);
         });
+        const readabilityRim = installActorReadabilityRim(
+          root,
+          name === "villain" ? 0xff3654 : name === "kid" ? 0x70cfff : 0x8eb8ff,
+        );
         const view: ActorView = {
           root,
           animator,
+          readabilityRim,
           durationByState,
           lastPoint: { ...initialPoint },
           lastTick: 0,
@@ -4685,6 +4775,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             delta,
             latestState.phase !== "playing",
           );
+          actors.kid.readabilityRim.value = actorReadabilityRimStrength(
+            "player",
+            latestState.chaser.mode,
+            playerActuallyVisible,
+          );
         }
         if (actors.villain) {
           updateActorVisibility(
@@ -4692,6 +4787,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             chaserWorldRendered,
             delta,
             true,
+          );
+          actors.villain.readabilityRim.value = actorReadabilityRimStrength(
+            "chaser",
+            latestState.chaser.mode,
+            chaserWorldRendered,
+          );
+        }
+        if (actors.police) {
+          actors.police.readabilityRim.value = actorReadabilityRimStrength(
+            "ally",
+            latestState.chaser.mode,
+            actors.police.root.visible,
           );
         }
 
@@ -4745,7 +4852,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         );
         const edgeFocus = threatFocusActive
           ? baseTargetFocus
-          : cameraFocusForEdgeHide({
+          : latestState.player.mode === "free"
+            ? cameraFocusForTraversalEdge({
+                focus: baseTargetFocus,
+                bounds: cameraPlayfieldBounds,
+                cameraDirection,
+                cameraDistance: preferredDistance,
+                verticalFovDegrees: camera.fov,
+                aspect: camera.aspect,
+              })
+            : cameraFocusForEdgeHide({
               focus: baseTargetFocus,
               bounds: cameraPlayfieldBounds,
               mode: latestState.player.mode,
@@ -4850,7 +4966,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           lastHudUpdate = now;
         }
       }
-      renderer.render(scene, camera);
+      // Do not compile an incomplete zero-light material graph behind the
+      // loading card. The first real render happens after all fixed-budget
+      // gameplay lights have been registered, avoiding a duplicate PBR
+      // shader set when deferred dressing arrives.
+      if (ready) renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);
     };
 

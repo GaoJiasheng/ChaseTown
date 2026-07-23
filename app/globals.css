@@ -133,8 +133,8 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
 .cinematic-vignette::after {
   opacity: var(--locker-peek);
   background:
-    linear-gradient(90deg, rgba(1, 3, 5, .96) 0 28%, rgba(2, 4, 6, .66) 39%, transparent 47% 56%, rgba(2, 4, 6, .68) 64%, rgba(1, 3, 5, .96) 74% 100%),
-    radial-gradient(ellipse at 52% 48%, transparent 20%, rgba(1, 3, 5, .72) 68%, rgba(0, 1, 2, .93) 100%);
+    linear-gradient(90deg, rgba(1, 3, 5, .96) 0 18%, rgba(2, 4, 6, .7) 28%, rgba(2, 4, 6, .18) 38%, transparent 43% 61%, rgba(2, 4, 6, .2) 67%, rgba(2, 4, 6, .72) 76%, rgba(1, 3, 5, .96) 85% 100%),
+    radial-gradient(ellipse at 52% 48%, transparent 32%, rgba(1, 3, 5, .44) 70%, rgba(0, 1, 2, .86) 100%);
 }
 .theme-event-wash {
   position: absolute;
