@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -2289,12 +2288,27 @@ export function ChasingGame() {
     loadingManager.setURLModifier((url) => (
       controlledDependencyUrls.get(new URL(url, location.href).href) ?? url
     ));
-    const ktx2Loader = new KTX2Loader(loadingManager)
-      .setTranscoderPath("/basis/")
-      .detectSupport(renderer);
-    const loader = new GLTFLoader(loadingManager);
-    loader.setMeshoptDecoder(MeshoptDecoder);
-    loader.setKTX2Loader(ktx2Loader);
+    let ktx2Loader: import("three/examples/jsm/loaders/KTX2Loader.js").KTX2Loader | null = null;
+    let gltfLoaderPromise: Promise<GLTFLoader> | null = null;
+    const getGlbLoader = () => {
+      if (gltfLoaderPromise) return gltfLoaderPromise;
+      gltfLoaderPromise = import("three/examples/jsm/loaders/KTX2Loader.js")
+        .then(({ KTX2Loader }) => {
+          if (disposed) throw new DOMException("Scene disposed", "AbortError");
+          ktx2Loader = new KTX2Loader(loadingManager)
+            .setTranscoderPath("/basis/")
+            .detectSupport(renderer);
+          const gltfLoader = new GLTFLoader(loadingManager);
+          gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+          gltfLoader.setKTX2Loader(ktx2Loader);
+          return gltfLoader;
+        })
+        .catch((error) => {
+          gltfLoaderPromise = null;
+          throw error;
+        });
+      return gltfLoaderPromise;
+    };
     const cameraOcclusionOrigin = { value: new THREE.Vector3() };
     const cameraOcclusionTarget = { value: new THREE.Vector3() };
     const cameraOcclusionTargetB = { value: new THREE.Vector3() };
@@ -2738,6 +2752,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
     const loadGlbWithRetry = async (url: string) => {
       const absoluteUrl = new URL(url, location.href);
+      const parser = getGlbLoader();
       const bytes = await sceneAssets.fetchArrayBuffer(absoluteUrl, {
         requestInit: { cache: "force-cache" },
       });
@@ -2747,6 +2762,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           fetchControlledDependency(new URL(dependency, assetBaseUrl))
         )),
       );
+      const loader = await parser;
       const asset = await loader.parseAsync(bytes, assetBaseUrl.href);
       if (disposed) {
         disposeObjectResources([asset.scene]);
@@ -5089,7 +5105,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       for (const locker of lockers.values()) locker.mixer.stopAllAction();
       void score.dispose();
       void soundscape.dispose();
-      ktx2Loader.dispose();
+      ktx2Loader?.dispose();
       environmentTarget.dispose();
       disposeObjectResources([scene, ...loadedAssetRoots]);
       for (const objectUrl of controlledDependencyUrls.values()) URL.revokeObjectURL(objectUrl);
