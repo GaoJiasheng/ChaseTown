@@ -345,7 +345,10 @@ try {
   const url = new URL(BASE_URL);
   url.searchParams.set("qa", "environment-art");
   await cdp.navigate(url.href);
-  await cdp.waitFor("window.__CHASING_QA__?.getState()?.ready === true");
+  await cdp.waitFor(`(() => {
+    const state = window.__CHASING_QA__?.getState();
+    return state?.ready === true && state.assets?.decorativeReady === true;
+  })()`);
 
   const clickByLabel = async (label) => {
     const clicked = await cdp.evaluate(`(() => {
@@ -407,6 +410,7 @@ try {
     await cdp.waitFor(`(() => {
       const state=window.__CHASING_QA__?.getState();
       return state?.ready
+        && state.assets?.decorativeReady
         && state.campaign.number===${level.number}
         && state.campaign.propSet===${JSON.stringify(level.propSet)};
     })()`);
@@ -528,7 +532,10 @@ try {
   fallbackUrl.searchParams.set("qa", "environment-art-fallback");
   fallbackUrl.searchParams.set("no-multi-draw", "1");
   await cdp.navigate(fallbackUrl.href);
-  await cdp.waitFor("window.__CHASING_QA__?.getState()?.ready === true");
+  await cdp.waitFor(`(() => {
+    const state = window.__CHASING_QA__?.getState();
+    return state?.ready === true && state.assets?.decorativeReady === true;
+  })()`);
   for (const level of REPRESENTATIVES) {
     await selectAndStart(level);
     const fallbackState = await setZoom(1, "缩小视野");

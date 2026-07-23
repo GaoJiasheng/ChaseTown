@@ -66,6 +66,124 @@ export function shouldFrameChaser(
     && mode !== "spawn-delay";
 }
 
+/**
+ * State for a follow camera whose bearing is owned elsewhere and never
+ * changed by normal movement or threat framing. Keeping direction out of this
+ * value is intentional: callers can move the look-at point without changing
+ * screen-relative movement controls.
+ */
+export interface FixedCameraFollowState {
+  readonly focus: CameraFramingVector;
+  readonly heldThreatFocus: CameraFramingVector | null;
+  readonly threatHoldRemainingSeconds: number;
+}
+
+export interface FixedCameraFollowInput {
+  readonly playerFocus: CameraFramingVector;
+  readonly deltaSeconds: number;
+  /** Only pass a threat the player is allowed to observe. */
+  readonly observableThreatFocus?: CameraFramingVector | null;
+  /** World-space radius in the ground plane before routine follow starts. */
+  readonly deadZoneRadius?: number;
+  /** Keeps the final legal threat composition briefly after line of sight ends. */
+  readonly threatHoldSeconds?: number;
+  /** Optional cap for a presentation-layer smoothing step. */
+  readonly maximumFocusSpeed?: number;
+}
+
+const finiteVector3 = (value: CameraFramingVector | null | undefined): value is CameraFramingVector => {
+  if (!value) return false;
+  return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z);
+};
+
+const finiteDeltaSeconds = (value: number) => (
+  Number.isFinite(value) ? Math.min(0.25, Math.max(0, value)) : 0
+);
+
+export function createFixedCameraFollowState(focus: CameraFramingVector): FixedCameraFollowState {
+  const safeFocus = finiteVector3(focus) ? { ...focus } : { x: 0, y: 0, z: 0 };
+  return Object.freeze({
+    focus: Object.freeze(safeFocus),
+    heldThreatFocus: null,
+    threatHoldRemainingSeconds: 0,
+  });
+}
+
+/**
+ * Advances a fixed-bearing camera focus. A player can roam inside the dead
+ * zone without panning the view; a newly observed threat composes both actors
+ * and remains held for a short, bounded grace period. This function never
+ * supplies or mutates a camera direction, so its use cannot reverse the
+ * screen-to-world input basis.
+ */
+export function stepFixedCameraFollow(
+  previous: FixedCameraFollowState,
+  input: FixedCameraFollowInput,
+): FixedCameraFollowState {
+  const focus = finiteVector3(previous.focus) ? previous.focus : { x: 0, y: 0, z: 0 };
+  const playerFocus = finiteVector3(input.playerFocus) ? input.playerFocus : focus;
+  const deltaSeconds = finiteDeltaSeconds(input.deltaSeconds);
+  const observedThreat = finiteVector3(input.observableThreatFocus)
+    ? input.observableThreatFocus
+    : null;
+  const threatHoldSeconds = Number.isFinite(input.threatHoldSeconds)
+    ? Math.max(0, input.threatHoldSeconds ?? 0)
+    : 0.9;
+  const holdRemaining = observedThreat
+    ? threatHoldSeconds
+    : Math.max(0, Number.isFinite(previous.threatHoldRemainingSeconds)
+      ? previous.threatHoldRemainingSeconds - deltaSeconds
+      : 0);
+  const heldThreatFocus = observedThreat
+    ? { ...observedThreat }
+    : finiteVector3(previous.heldThreatFocus) && holdRemaining > 0
+      ? { ...previous.heldThreatFocus }
+      : null;
+  const target = heldThreatFocus
+    ? {
+      x: (playerFocus.x + heldThreatFocus.x) / 2,
+      y: (playerFocus.y + heldThreatFocus.y) / 2,
+      z: (playerFocus.z + heldThreatFocus.z) / 2,
+    }
+    : playerFocus;
+  const deadZoneRadius = Number.isFinite(input.deadZoneRadius)
+    ? Math.max(0, input.deadZoneRadius ?? 0)
+    : 1.15;
+  const offsetX = target.x - focus.x;
+  const offsetZ = target.z - focus.z;
+  const groundDistance = Math.hypot(offsetX, offsetZ);
+  let desired = groundDistance <= deadZoneRadius || groundDistance <= 1e-9
+    ? { ...focus }
+    : {
+      x: target.x - offsetX / groundDistance * deadZoneRadius,
+      y: target.y,
+      z: target.z - offsetZ / groundDistance * deadZoneRadius,
+    };
+  const maximumFocusSpeed = Number.isFinite(input.maximumFocusSpeed)
+    ? Math.max(0, input.maximumFocusSpeed ?? 0)
+    : Number.POSITIVE_INFINITY;
+  const maximumStep = maximumFocusSpeed * deltaSeconds;
+  const desiredOffset = {
+    x: desired.x - focus.x,
+    y: desired.y - focus.y,
+    z: desired.z - focus.z,
+  };
+  const desiredDistance = vectorLength3(desiredOffset);
+  if (Number.isFinite(maximumStep) && desiredDistance > maximumStep && desiredDistance > 1e-9) {
+    const scale = maximumStep / desiredDistance;
+    desired = {
+      x: focus.x + desiredOffset.x * scale,
+      y: focus.y + desiredOffset.y * scale,
+      z: focus.z + desiredOffset.z * scale,
+    };
+  }
+  return Object.freeze({
+    focus: Object.freeze(desired),
+    heldThreatFocus: heldThreatFocus ? Object.freeze(heldThreatFocus) : null,
+    threatHoldRemainingSeconds: holdRemaining,
+  });
+}
+
 export interface CameraFramingVector {
   x: number;
   y: number;

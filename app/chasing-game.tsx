@@ -21,11 +21,19 @@ import {
   getCampaignHideGuidancePolicy,
   type CampaignTheme,
 } from "./game/campaign.ts";
+import {
+  createCampaignProgress,
+  sanitizeCampaignProgress,
+  type CampaignProgress,
+} from "./game/campaign-progress.ts";
 import type { CaptureReason, ChaserMode, GameConfig, GamePhase, GameState, HideSpotDefinition, LevelDefinition, PlayerMode, Point } from "./game/contracts.ts";
 import { failureFeedback } from "./game/failure-feedback.ts";
 import {
-  recommendHideSpot,
+  planHideGuidance,
+  stabilizeHideGuidance,
   type HideGuidanceRisk,
+  type HideGuidanceSelection,
+  type HideGuidanceTargetState,
   type PlayerKnownChaserEvidence,
 } from "./game/hide-guidance.ts";
 import { pairedHidePresentationPoint } from "./game/hide-performance.ts";
@@ -34,7 +42,22 @@ import {
   screenMoveToWorld,
   shouldIgnoreFocusedControlKey,
 } from "./game/input.ts";
+import {
+  applyRunEvents,
+  createRunTelemetry,
+  evaluateRunMastery,
+  masteryTargetSeconds,
+  mergeStoredMastery,
+  personalBestDelta,
+  type MasteryRank,
+  type RunMasteryResult,
+} from "./game/mastery.ts";
 import { distanceBetween, GridPathPlanner, hasLineOfSight } from "./game/navigation.ts";
+import {
+  createObjectiveGuidanceState,
+  deriveRouteGuidanceGeometry,
+  updateObjectiveGuidance,
+} from "./game/navigation-guidance.ts";
 import { isPlayerVisuallyExposed } from "./game/perception.ts";
 import {
   nextRenderQuality,
@@ -63,7 +86,10 @@ import {
   lockerVisionMix,
   shouldFrameChaser,
   shouldRenderChaserModel,
+  createFixedCameraFollowState,
   smoothOcclusionStrength,
+  stepFixedCameraFollow,
+  type FixedCameraFollowState,
 } from "./game/presentation.ts";
 import { GameSimulation, type HideInteraction } from "./game/simulation.ts";
 
@@ -83,6 +109,8 @@ const CAPTURE_STAGING_SECONDS = 0.26;
 const MAX_CAMERA_DISTANCE = 44;
 const LOCKER_PLAYBACK_RATE = 1.2;
 const HIDE_PROP_FORWARD_OFFSET_CELLS = 0.18;
+const POLICE_PREFETCH_DISTANCE_CELLS = 7.5;
+const DEFERRED_DRESSING_FADE_SECONDS = 0.48;
 
 const ACTOR_SPECS = {
   kid: {
@@ -634,6 +662,23 @@ function createFixedCameraDirection() {
   ).normalize();
 }
 
+function fixedScreenArrowForWorldDirection(direction: Point) {
+  const cameraLength = Math.hypot(
+    FIXED_CAMERA_GROUND_DIRECTION.x,
+    FIXED_CAMERA_GROUND_DIRECTION.y,
+  ) || 1;
+  const cameraBack = {
+    x: FIXED_CAMERA_GROUND_DIRECTION.x / cameraLength,
+    y: FIXED_CAMERA_GROUND_DIRECTION.y / cameraLength,
+  };
+  const screenRight = { x: cameraBack.y, y: -cameraBack.x };
+  const screenX = direction.x * screenRight.x + direction.y * screenRight.y;
+  const screenY = direction.x * cameraBack.x + direction.y * cameraBack.y;
+  return Math.abs(screenX) > Math.abs(screenY)
+    ? screenX >= 0 ? "→" : "←"
+    : screenY >= 0 ? "↓" : "↑";
+}
+
 function objectiveDistanceMeters(point: Point, level: LevelDefinition, paths: GridPathPlanner) {
   const route = paths.path(point, level.exit);
   if (!route.length) return 0;
@@ -1085,12 +1130,17 @@ type GameCommands = {
   resetZoom: () => void;
 };
 
-type CampaignProgress = {
-  unlockedThrough: number;
-  bestSeconds: Record<string, number>;
+type LastRunSummary = RunMasteryResult & {
+  isPersonalBest: boolean;
+  deltaSeconds: number | null;
 };
 
 const CAMPAIGN_PROGRESS_KEY = "chasing.campaign-progress.v1";
+const MASTERY_RANK_LABEL: Readonly<Record<MasteryRank, string>> = Object.freeze({
+  bronze: "铜章",
+  silver: "银章",
+  gold: "金章",
+});
 
 const NOOP_COMMANDS: GameCommands = {
   begin() {},
@@ -1320,6 +1370,7 @@ type TextureDeduplication = {
 };
 
 type LoadedAsset = { id: string; asset: GLTF };
+type DetailBuildPhase = "essential" | "decorative";
 
 function configureAssetTextures(assets: Iterable<LoadedAsset>, renderer: THREE.WebGLRenderer) {
   const textures = new Set<THREE.Texture>();
@@ -1562,10 +1613,9 @@ export function ChasingGame() {
   const gameplayConfig = useMemo(() => getCampaignGameplayConfig(campaignLevel), [campaignLevel]);
   const hideGuidancePolicy = useMemo(() => getCampaignHideGuidancePolicy(campaignLevel), [campaignLevel]);
   const atmosphere = useMemo(() => runtimeAtmosphereForLevel(campaignLevel), [campaignLevel]);
-  const [campaignProgress, setCampaignProgress] = useState<CampaignProgress>({
-    unlockedThrough: 1,
-    bestSeconds: {},
-  });
+  const [campaignProgress, setCampaignProgress] = useState<CampaignProgress>(
+    createCampaignProgress,
+  );
   const campaignProgressRef = useRef(campaignProgress);
   const chooseLevelRef = useRef<(index: number) => void>(() => {});
   const [phase, setPhase] = useState<GamePhase>("ready");
@@ -1577,6 +1627,10 @@ export function ChasingGame() {
   const [objectiveDistance, setObjectiveDistance] = useState(
     objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths),
   );
+  const [objectiveTurnHint, setObjectiveTurnHint] = useState<{
+    arrow: string;
+    distanceMeters: number;
+  } | null>(null);
   const [hideDistance, setHideDistance] = useState(
     nearestHideDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths),
   );
@@ -1587,7 +1641,8 @@ export function ChasingGame() {
     offscreen: boolean;
   } | null>(null);
   const [hideGuideRisk, setHideGuideRisk] = useState<HideGuidanceRisk>("medium");
-  const [hideGuideSelection, setHideGuideSelection] = useState<"tutorial" | "nearest">("nearest");
+  const [hideGuideSelection, setHideGuideSelection] = useState<HideGuidanceSelection>("survivability");
+  const [hideGuideStrategy, setHideGuideStrategy] = useState<"hide" | "break-line-of-sight">("hide");
   const [interaction, setInteraction] = useState<HideInteraction | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -1595,26 +1650,19 @@ export function ChasingGame() {
   const [resultVisible, setResultVisible] = useState(true);
   const [musicMuted, setMusicMuted] = useState(false);
   const [lastCaptureReason, setLastCaptureReason] = useState<CaptureReason | null>(null);
+  const [lastRunSummary, setLastRunSummary] = useState<LastRunSummary | null>(null);
 
   useEffect(() => {
     let active = true;
     try {
-      const stored = JSON.parse(localStorage.getItem(CAMPAIGN_PROGRESS_KEY) ?? "null") as Partial<CampaignProgress> | null;
+      const stored = JSON.parse(localStorage.getItem(CAMPAIGN_PROGRESS_KEY) ?? "null") as unknown;
       if (!stored) return;
-      const unlockedThrough = THREE.MathUtils.clamp(
-        Number.isInteger(stored.unlockedThrough) ? stored.unlockedThrough! : 1,
-        1,
-        CAMPAIGN_LEVELS.length,
+      const sanitized = sanitizeCampaignProgress(
+        stored,
+        CAMPAIGN_LEVELS.map((level) => level.id),
       );
-      const bestSeconds = Object.fromEntries(
-        Object.entries(stored.bestSeconds ?? {}).filter(([id, value]) => (
-          CAMPAIGN_LEVELS.some((level) => level.id === id)
-          && Number.isFinite(value)
-          && value > 0
-        )),
-      ) as Record<string, number>;
       queueMicrotask(() => {
-        if (active) setCampaignProgress({ unlockedThrough, bestSeconds });
+        if (active) setCampaignProgress(sanitized);
       });
     } catch {
       // A corrupt or unavailable store must never block the first chapter.
@@ -1704,19 +1752,28 @@ export function ChasingGame() {
     setChaserMode("spawn-delay");
     setElapsed(0);
     setLastCaptureReason(null);
+    setLastRunSummary(null);
     setObjectiveDistance(objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
+    setObjectiveTurnHint(null);
     setHideDistance(nearestHideDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
     setHideGuideProjection(null);
     setHideGuideRisk("medium");
-    setHideGuideSelection("nearest");
+    setHideGuideSelection("survivability");
+    setHideGuideStrategy("hide");
 
     const scorePrewarmAbort = new AbortController();
-    void prewarmAdaptiveScoreAssets(undefined, scorePrewarmAbort.signal);
+    let scorePrewarmStarted = false;
+    const startScorePrewarm = () => {
+      if (scorePrewarmStarted || scorePrewarmAbort.signal.aborted) return;
+      scorePrewarmStarted = true;
+      void prewarmAdaptiveScoreAssets(undefined, scorePrewarmAbort.signal);
+    };
     let disposed = false;
     let frame = 0;
     let last = performance.now();
     let lastHudUpdate = 0;
     let ready = false;
+    let decorativeAssetsReady = false;
     let textureDeduplication: TextureDeduplication = {
       sourceTextures: 0,
       canonicalTextures: 0,
@@ -1727,6 +1784,8 @@ export function ChasingGame() {
     let lastCheckSpot: string | null = null;
     let guidedLockerId: string | null = null;
     let guidedLockerRisk: HideGuidanceRisk = "medium";
+    let guidedTargetState: HideGuidanceTargetState | null = null;
+    let guidedBreakSight = false;
     let playerKnownChaser: PlayerKnownChaserEvidence | null = null;
     let lastScoreThreat = Number.NaN;
     let captureStageRemaining = 0;
@@ -1737,6 +1796,9 @@ export function ChasingGame() {
     );
     let simulation = new GameSimulation({ level: campaignLevel, config: gameplayConfig });
     let latestState = simulation.getState();
+    let runTelemetry = createRunTelemetry();
+    let objectiveGuidanceState = createObjectiveGuidanceState();
+    let lastObjectiveGuidanceSeconds = latestState.elapsedSeconds;
     const resetFrameClock = () => {
       if (document.visibilityState === "visible") last = performance.now();
     };
@@ -1746,6 +1808,19 @@ export function ChasingGame() {
     const sightObscurers: THREE.Points[] = [];
     const loadedAssetIds = new Set<string>();
     const placedAssetIds = new Set<string>();
+    const performanceLights: Array<{ light: THREE.Light; priority: number }> = [];
+    const nonCriticalShadowCasters: Array<{ object: THREE.Object3D; castShadow: boolean }> = [];
+    let requestPoliceAsset: (() => Promise<void>) | null = null;
+    let deferredDressingFade: {
+      elapsedSeconds: number;
+      materials: Array<{
+        material: THREE.Material;
+        opacity: number;
+        transparent: boolean;
+        depthWrite: boolean;
+      }>;
+      lights: Array<{ light: THREE.Light; intensity: number }>;
+    } | null = null;
     let renderedMovementBlockers = 0;
     const deviceNavigator = navigator as Navigator & { deviceMemory?: number };
     const initialBounds = host.getBoundingClientRect();
@@ -1793,6 +1868,7 @@ export function ChasingGame() {
     const camera = new THREE.PerspectiveCamera(56, 1, 0.08, 150);
     const cameraDirection = createFixedCameraDirection();
     const cameraFocus = world(campaignLevel.playerStart, campaignLevel).add(new THREE.Vector3(0, 0.92, 0));
+    let cameraFollowState: FixedCameraFollowState = createFixedCameraFollowState(cameraFocus);
     const cameraPlayfieldBounds = {
       minX: -((campaignLevel.width - 1) / 2) * CELL,
       maxX: ((campaignLevel.width - 1) / 2) * CELL,
@@ -1925,6 +2001,113 @@ export function ChasingGame() {
     atmosphereField.frustumCulled = false;
     atmosphereField.renderOrder = 1;
     scene.add(atmosphereField);
+    let occlusionRaycastRemaining = 0;
+
+    const registerPerformanceLight = (light: THREE.Light, priority: number) => {
+      performanceLights.push({ light, priority });
+    };
+    const lightWorldPosition = new THREE.Vector3();
+    const updatePerformanceLightBudget = (focus: THREE.Vector3) => {
+      const active = performanceLights
+        .filter(({ light }) => light.intensity > 1e-4)
+        .map((entry) => ({
+          ...entry,
+          score: entry.priority * 10_000
+            - entry.light.getWorldPosition(lightWorldPosition).distanceToSquared(focus),
+        }))
+        .sort((left, right) => right.score - left.score);
+      const selected = new Set(
+        active
+          .slice(0, renderQualityProfile.maximumDynamicLights)
+          .map(({ light }) => light),
+      );
+      for (const { light } of performanceLights) {
+        light.visible = light.intensity > 1e-4 && selected.has(light);
+      }
+    };
+    const applyNonCriticalShadowPolicy = () => {
+      const enabled = renderQualityTier !== "mobile";
+      for (const entry of nonCriticalShadowCasters) {
+        entry.object.castShadow = enabled && entry.castShadow;
+      }
+    };
+    const registerNonCriticalShadowCasters = (root: THREE.Object3D) => {
+      root.traverse((object) => {
+        if (!(object instanceof THREE.Mesh) || !object.castShadow) return;
+        nonCriticalShadowCasters.push({ object, castShadow: object.castShadow });
+      });
+      applyNonCriticalShadowPolicy();
+    };
+    const startDeferredDressingFade = (root: THREE.Object3D) => {
+      const clonedMaterials = new Map<string, THREE.Material>();
+      const materialState = new Map<string, {
+        material: THREE.Material;
+        opacity: number;
+        transparent: boolean;
+        depthWrite: boolean;
+      }>();
+      const lights: Array<{ light: THREE.Light; intensity: number }> = [];
+      const cloneMaterial = (source: THREE.Material) => {
+        const existing = clonedMaterials.get(source.uuid);
+        if (existing) return existing;
+        const cloned = source.clone();
+        clonedMaterials.set(source.uuid, cloned);
+        materialState.set(cloned.uuid, {
+          material: cloned,
+          opacity: cloned.opacity,
+          transparent: cloned.transparent,
+          depthWrite: cloned.depthWrite,
+        });
+        cloned.transparent = true;
+        cloned.depthWrite = false;
+        cloned.opacity = 0;
+        cloned.needsUpdate = true;
+        return cloned;
+      };
+      root.traverse((object) => {
+        if (
+          object instanceof THREE.Mesh
+          || object instanceof THREE.Points
+          || object instanceof THREE.Line
+          || object instanceof THREE.Sprite
+        ) {
+          object.material = Array.isArray(object.material)
+            ? object.material.map(cloneMaterial)
+            : cloneMaterial(object.material);
+        }
+        if (object instanceof THREE.Light) {
+          lights.push({ light: object, intensity: object.intensity });
+          object.intensity = 0;
+        }
+      });
+      deferredDressingFade = {
+        elapsedSeconds: 0,
+        materials: [...materialState.values()],
+        lights,
+      };
+    };
+    const updateDeferredDressingFade = (delta: number) => {
+      const fade = deferredDressingFade;
+      if (!fade) return;
+      fade.elapsedSeconds += delta;
+      const progress = THREE.MathUtils.clamp(
+        fade.elapsedSeconds / DEFERRED_DRESSING_FADE_SECONDS,
+        0,
+        1,
+      );
+      const eased = progress * progress * (3 - 2 * progress);
+      for (const entry of fade.materials) entry.material.opacity = entry.opacity * eased;
+      for (const entry of fade.lights) entry.light.intensity = entry.intensity * eased;
+      if (progress < 1) return;
+      for (const entry of fade.materials) {
+        entry.material.opacity = entry.opacity;
+        entry.material.transparent = entry.transparent;
+        entry.material.depthWrite = entry.depthWrite;
+        entry.material.needsUpdate = true;
+      }
+      for (const entry of fade.lights) entry.light.intensity = entry.intensity;
+      deferredDressingFade = null;
+    };
 
     const applyRenderQuality = (tier: RenderQualityTier) => {
       renderQualityTier = tier;
@@ -1946,6 +2129,11 @@ export function ChasingGame() {
         0,
         Math.floor(atmosphereParticleCount * renderQualityProfile.atmosphericParticleScale),
       );
+      occlusionRaycastRemaining = Math.min(
+        occlusionRaycastRemaining,
+        renderQualityProfile.occlusionProbeSeconds,
+      );
+      applyNonCriticalShadowPolicy();
       document.documentElement.dataset.chasingQuality = tier;
     };
     applyRenderQuality(renderQualityTier);
@@ -1966,7 +2154,6 @@ export function ChasingGame() {
     const occlusionRayDirection = new THREE.Vector3();
     const occlusionScreenRight = new THREE.Vector3();
     const occlusionSamplePoints = Array.from({ length: 5 }, () => new THREE.Vector3());
-    let occlusionRaycastRemaining = 0;
 
     const patchOccludingMaterial = (
       source: THREE.Material,
@@ -2119,7 +2306,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       cameraOcclusionTargetB.value.copy(readableAnchors[1] ?? primaryAnchor);
       occlusionRaycastRemaining -= delta;
       if (occlusionRaycastRemaining <= 0) {
-        occlusionRaycastRemaining = 0.075;
+        occlusionRaycastRemaining = renderQualityProfile.occlusionProbeSeconds;
         for (const occluder of cameraOccluders) occluder.obscured = false;
         if (occlusionMeshes.length) {
           // One torso ray is not enough for an elevated camera: it can clear a
@@ -2168,9 +2355,22 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     const updatePhasePresentation = (next: GamePhase) => {
       setPhase(next);
       if (next === "won") {
+        const completedSeconds = Math.max(
+          0.01,
+          Math.round(latestState.elapsedSeconds * 100) / 100,
+        );
+        const masteryResult = evaluateRunMastery(
+          completedSeconds,
+          masteryTargetSeconds(campaignLevel, simulation.config),
+          runTelemetry,
+        );
+        const bestDelta = personalBestDelta(
+          campaignProgressRef.current.bestSeconds[campaignLevel.id],
+          completedSeconds,
+        );
+        setLastRunSummary({ ...masteryResult, ...bestDelta });
         setCampaignProgress((current) => {
           const previousBest = current.bestSeconds[campaignLevel.id];
-          const completedSeconds = Math.max(1, Math.floor(latestState.elapsedSeconds));
           const updated: CampaignProgress = {
             unlockedThrough: Math.max(
               current.unlockedThrough,
@@ -2179,6 +2379,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             bestSeconds: {
               ...current.bestSeconds,
               [campaignLevel.id]: previousBest ? Math.min(previousBest, completedSeconds) : completedSeconds,
+            },
+            mastery: {
+              ...current.mastery,
+              [campaignLevel.id]: mergeStoredMastery(current.mastery[campaignLevel.id], masteryResult),
             },
           };
           try {
@@ -2211,9 +2415,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       lastCheckSpot = null;
       guidedLockerId = null;
       guidedLockerRisk = "medium";
+      guidedTargetState = null;
+      guidedBreakSight = false;
       playerKnownChaser = null;
       setHideGuideRisk("medium");
-      setHideGuideSelection("nearest");
+      setHideGuideSelection("survivability");
+      setHideGuideStrategy("hide");
+      runTelemetry = createRunTelemetry();
+      objectiveGuidanceState = createObjectiveGuidanceState();
+      lastObjectiveGuidanceSeconds = state.elapsedSeconds;
+      setLastRunSummary(null);
+      setObjectiveTurnHint(null);
       lastScoreThreat = Number.NaN;
       captureStageRemaining = 0;
       capturePerformanceStarted = false;
@@ -2249,6 +2461,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       resetActor(actors.police, policeGuardPoint(campaignLevel, objectivePaths), nearestExteriorDirection(campaignLevel.exit, campaignLevel));
 
       cameraFocus.copy(world(state.player.position, campaignLevel)).add(new THREE.Vector3(0, 0.92, 0));
+      cameraFollowState = createFixedCameraFollowState(cameraFocus);
       cameraDirection.copy(createFixedCameraDirection());
       cameraDistance = 16.25;
       camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
@@ -2333,6 +2546,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
     const loadAll = async () => {
       let done = 0;
+      const essentialDetailNames = new Set<DetailAssetName>(["locker"]);
       const requiredDetailNames = new Set<DetailAssetName>(["locker", "ceilingLight"]);
       for (const [name] of THEME_SHARED_PROPS[campaignLevel.campaign.theme]) requiredDetailNames.add(name);
       for (const placement of PROP_SET_STANDALONE_PROPS[campaignLevel.campaign.atmosphere.propSet] ?? []) {
@@ -2342,12 +2556,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const contract = MOVEMENT_PROP_CONTRACT[index];
         if (!contract) throw new Error(`${campaignLevel.id} 缺少第 ${index + 1} 个实体障碍美术契约`);
         requiredDetailNames.add(contract[0]);
+        essentialDetailNames.add(contract[0]);
       }
       const structureEntries = Object.entries(STRUCTURE_ASSETS) as [StructureAssetName, string][];
-      const detailEntries = [...requiredDetailNames].map((name) => [name, DETAIL_ASSETS[name]] as const);
+      const essentialDetailEntries = [...essentialDetailNames]
+        .map((name) => [name, DETAIL_ASSETS[name]] as const);
+      const decorativeDetailEntries = [...requiredDetailNames]
+        .filter((name) => !essentialDetailNames.has(name))
+        .map((name) => [name, DETAIL_ASSETS[name]] as const);
       const essentialActorEntries = (Object.entries(ACTOR_SPECS) as [ActorName, (typeof ACTOR_SPECS)[ActorName]][])
         .filter(([name]) => name !== "police");
-      const total = BOOTSTRAP_ASSET_COUNT + structureEntries.length + detailEntries.length;
+      const total = BOOTSTRAP_ASSET_COUNT + structureEntries.length + essentialDetailEntries.length;
       const mark = (message: string) => {
         done += 1;
         if (!disposed) setLoadProgress({ done, total, message: `正在载入首局所需素材：${message} ${done}/${total}` });
@@ -2365,9 +2584,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         });
       }
 
-      // Eliminate the former two-stage waterfall: every visible first-play
-      // asset starts together, while the large exit-only police actor no
-      // longer gates control.
+      // Only assets that affect navigation, hiding or the immediate chase gate
+      // control. Pure dressing starts after ready so slow texture downloads can
+      // never postpone the first playable frame.
       const initialLoads = [
         ...essentialActorEntries.map(async ([name, spec]) => {
           const asset = await loadGlbWithRetry(spec.url);
@@ -2393,7 +2612,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           loadedAssetIds.add(id);
           mark(name === "frontGate" ? "入口建筑模型" : "出口建筑模型");
         }),
-        ...detailEntries.map(async ([name, url]) => {
+        ...essentialDetailEntries.map(async ([name, url]) => {
           const asset = await loadGlbWithRetry(url);
           detailAssets[name] = asset;
           const id = `detail:${name}`;
@@ -2414,36 +2633,122 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       configureAssetTextures(loadedAssets, renderer);
       textureDeduplication = deduplicateAssetTextures(loadedAssets);
       buildCampus(structureAssets, themeKitAsset, campus);
-      buildDetails(detailAssets, themeKitAsset, campus, scene, lockers);
+      buildDetails(detailAssets, themeKitAsset, campus, scene, lockers, "essential");
       placeActors(actorAssets, actors, scene, ["kid", "villain"]);
+
+      let policeLoadPromise: Promise<void> | null = null;
+      let policeRetryAfterMilliseconds = 0;
+      requestPoliceAsset = () => {
+        if (disposed || actors.police) return Promise.resolve();
+        if (policeLoadPromise) return policeLoadPromise;
+        if (performance.now() < policeRetryAfterMilliseconds) return Promise.resolve();
+        policeLoadPromise = (async () => {
+          try {
+            const policeAsset = await loadGlbWithRetry(ACTOR_SPECS.police.url);
+            if (disposed) {
+              disposeObjectResources([policeAsset.scene]);
+              return;
+            }
+            actorAssets.police = policeAsset;
+            const loadedPolice = { id: "actor:police", asset: policeAsset };
+            loadedAssets.push(loadedPolice);
+            loadedAssetIds.add(loadedPolice.id);
+            configureAssetTextures([loadedPolice], renderer);
+            textureDeduplication = deduplicateAssetTextures(loadedAssets);
+            placeActors(actorAssets, actors, scene, ["police"]);
+            if (latestState.phase === "won" && actors.police) {
+              requestAnimation(actors.police, "protect", { fade: 0.08 });
+            }
+          } catch (error) {
+            policeRetryAfterMilliseconds = performance.now() + 5_000;
+            console.warn("Exit resolution actor is unavailable; the kid celebration remains active", error);
+          } finally {
+            policeLoadPromise = null;
+          }
+        })();
+        return policeLoadPromise;
+      };
+
       ready = true;
       setLoading(false);
       setLoadError("");
       document.documentElement.dataset.chasingReady = "true";
+      startScorePrewarm();
       if (new URLSearchParams(location.search).get("autostart") === "1") beginGame();
 
-      // Stream the resolution actor only after control is available. A load
-      // failure cannot invalidate the playable chase; retries happen at asset
-      // level and a later chapter rebuild gets another clean attempt.
+      // Load and build non-collision dressing only after control is available.
+      // The complete group is attached at opacity zero, then eased in together,
+      // avoiding one-prop-at-a-time visual popping on slow connections.
       void (async () => {
+        if (!decorativeDetailEntries.length) {
+          decorativeAssetsReady = true;
+          return;
+        }
+        const idleWindow = window as Window & {
+          requestIdleCallback?: (
+            callback: () => void,
+            options?: { timeout: number },
+          ) => number;
+        };
+        await new Promise<void>((resolve) => {
+          if (idleWindow.requestIdleCallback) {
+            idleWindow.requestIdleCallback(resolve, { timeout: 700 });
+          } else {
+            setTimeout(resolve, 0);
+          }
+        });
+        const settledDecorations = await Promise.allSettled(
+          decorativeDetailEntries.map(async ([name, url]) => ({
+            name,
+            asset: await loadGlbWithRetry(url),
+          })),
+        );
+        const loadedDecorations = settledDecorations
+          .filter((result): result is PromiseFulfilledResult<{
+            name: DetailAssetName;
+            asset: GLTF;
+          }> => result.status === "fulfilled")
+          .map(({ value }) => value);
+        const decorationFailure = settledDecorations.find(
+          (result): result is PromiseRejectedResult => result.status === "rejected",
+        );
+        if (disposed || decorationFailure) {
+          disposeObjectResources(loadedDecorations.map(({ asset }) => asset.scene));
+          if (decorationFailure) {
+            console.warn("Optional scene dressing will retry on the next scene load", decorationFailure.reason);
+          }
+          return;
+        }
+        const deferredDressing = new THREE.Group();
+        deferredDressing.name = `${campaignLevel.id}-deferred-dressing`;
+        const deferredAssets = loadedDecorations.map(({ name, asset }) => ({
+          id: `detail:${name}`,
+          asset,
+        }));
         try {
-          const policeAsset = await loadGlbWithRetry(ACTOR_SPECS.police.url);
-          if (disposed) {
-            disposeObjectResources([policeAsset.scene]);
-            return;
+          for (const { name, asset } of loadedDecorations) {
+            detailAssets[name] = asset;
           }
-          actorAssets.police = policeAsset;
-          const loadedPolice = { id: "actor:police", asset: policeAsset };
-          loadedAssets.push(loadedPolice);
-          loadedAssetIds.add(loadedPolice.id);
-          configureAssetTextures([loadedPolice], renderer);
-          textureDeduplication = deduplicateAssetTextures(loadedAssets);
-          placeActors(actorAssets, actors, scene, ["police"]);
-          if (latestState.phase === "won" && actors.police) {
-            requestAnimation(actors.police, "protect", { fade: 0.08 });
-          }
+          configureAssetTextures(deferredAssets, renderer);
+          buildDetails(
+            detailAssets,
+            themeKitAsset,
+            deferredDressing,
+            deferredDressing,
+            lockers,
+            "decorative",
+          );
+          textureDeduplication = deduplicateAssetTextures([...loadedAssets, ...deferredAssets]);
+          registerNonCriticalShadowCasters(deferredDressing);
+          startDeferredDressingFade(deferredDressing);
+          campus.add(deferredDressing);
+          loadedAssets.push(...deferredAssets);
+          for (const { id } of deferredAssets) loadedAssetIds.add(id);
+          decorativeAssetsReady = true;
         } catch (error) {
-          console.warn("Exit resolution actor will retry on the next scene load", error);
+          for (const { name } of loadedDecorations) delete detailAssets[name];
+          disposeObjectResources([deferredDressing, ...loadedDecorations.map(({ asset }) => asset.scene)]);
+          console.warn("Optional scene dressing failed to assemble; gameplay remains available", error);
         }
       })();
     };
@@ -2927,14 +3232,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       exitLight.position.copy(world(campaignLevel.exit, campaignLevel)).add(new THREE.Vector3(0, 4.8, 0));
       exitLight.target.position.copy(world(campaignLevel.exit, campaignLevel));
       parent.add(exitLight, exitLight.target);
+      registerPerformanceLight(exitLight, 1);
     };
 
     const buildDetails = (
       assets: Partial<Record<DetailAssetName, GLTF>>,
       themeKit: GLTF,
       parent: THREE.Group,
-      targetScene: THREE.Scene,
+      targetScene: THREE.Object3D,
       lockerViews: Map<string, LockerView>,
+      phase: DetailBuildPhase,
     ) => {
       const requireDetail = (name: DetailAssetName) => {
         const asset = assets[name];
@@ -3017,6 +3324,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         return true;
       };
 
+      if (phase === "essential") {
       const lockerSource = requireDetail("locker");
       const clipMap = new Map(lockerSource.animations.map((clip) => [clip.name, clip]));
       const missingLockerClips = LOCKER_CLIPS.filter((name) => !clipMap.has(name));
@@ -3070,6 +3378,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         beaconLight.name = `hide-beacon-light-${spot.id}`;
         beaconLight.position.set(0, 1.85, -0.32);
         root.add(beaconLight);
+        registerPerformanceLight(beaconLight, 3);
         parent.add(root);
         placedAssetIds.add("detail:locker");
         const view: LockerView = {
@@ -3163,6 +3472,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           sightObscurers.push(cloud);
         });
         placedAssetIds.add("runtime:vision-obscurer-vfx");
+      }
+      return;
       }
 
       const occupiedAnchors = [
@@ -3522,6 +3833,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const lamp = new THREE.PointLight(lampColor, artLayout.lightIntensity, 7.6, 2);
         lamp.position.copy(world(point, campaignLevel)).add(new THREE.Vector3(0, 2.2, 0));
         targetScene.add(lamp);
+        registerPerformanceLight(lamp, 0);
       }
     };
 
@@ -3589,6 +3901,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     };
 
     const consumeEvents = (state: GameState) => {
+      runTelemetry = applyRunEvents(runTelemetry, state.events);
       for (const event of state.events) {
         if (event.type === "hide-check-completed") {
           const locker = lockers.get(event.hideSpotId);
@@ -3618,6 +3931,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           } else if (event.to === "won") {
             soundscape.trigger("escaped");
             requestAnimation(actors.kid!, "celebrate", { fade: 0.18 });
+            // The authored kid celebration is the reliable immediate fallback.
+            // Police joins as soon as its on-demand stream completes.
+            void requestPoliceAsset?.();
             if (actors.police) requestAnimation(actors.police, "protect", { fade: 0.14 });
           }
           continue;
@@ -3808,49 +4124,89 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       for (const locker of lockers.values()) {
         updateLocker(locker, delta);
         const distance = distanceBetween(state.player.position, locker.approach);
-        const isNearest = locker.id === (guidedLockerId ?? nearestLockerId);
+        const isSuggested = guidedLockerId
+          ? locker.id === guidedLockerId
+          : !guidedBreakSight && locker.id === nearestLockerId;
         const isInteractable = distance <= simulation.config.hideInteractRange;
-        locker.beacon.visible = hideMarkerAllowed && (isNearest || isInteractable);
+        locker.beacon.visible = hideMarkerAllowed && (isSuggested || isInteractable);
         const beaconMaterial = locker.beacon.material as THREE.SpriteMaterial;
         beaconMaterial.opacity = isInteractable
           ? 0.94
           : urgentHideMarker ? 0.76 + markerPulse * 0.16 : 0.5 + markerPulse * 0.1;
         const markerScale = isInteractable ? 1.12 + markerPulse * 0.06 : 1;
         locker.beacon.scale.set(1.58 * markerScale, 0.79 * markerScale, 1);
-        locker.beaconLight.color.setHex(isNearest ? guidedLightColor : 0x5ae0a0);
+        locker.beaconLight.color.setHex(isSuggested ? guidedLightColor : 0x5ae0a0);
         locker.beaconLight.intensity = locker.beacon.visible
           ? isInteractable ? 2.3 + markerPulse * 0.7 : urgentHideMarker ? 1.35 + markerPulse * 0.4 : 0.72
           : 0;
       }
     };
 
-    const updateHideGuideProjection = (state: GameState) => {
+    const updateHideGuideProjection = (state: GameState, lightStepHeld: boolean) => {
       if (state.phase !== "playing" || state.player.mode !== "free" || lockers.size === 0) {
         setHideGuideProjection(null);
         return;
       }
       const firstClear = !campaignProgressRef.current.bestSeconds[campaignLevel.id];
-      const guidance = recommendHideSpot(campaignLevel, {
+      const guidance = planHideGuidance(campaignLevel, {
         playerPosition: state.player.position,
         nowSeconds: state.elapsedSeconds,
-        playerSpeed: simulation.config.playerSpeed,
+        playerSpeed: simulation.config.playerSpeed * (lightStepHeld ? 0.58 : 1),
         chaserSpeed: simulation.config.chaserSpeed,
         hideEnterExposureSeconds: simulation.config.hideEnterExposureSeconds,
         knownChaser: playerKnownChaser,
         tutorialHideSpotId: firstClear ? hideGuidancePolicy.tutorialHideSpotId : null,
+        searchHideCheckBudget: simulation.config.searchHideCheckBudget,
+        searchHideRadiusCells: simulation.config.searchHideRadiusCells,
       });
-      const guidedLocker = guidance ? lockers.get(guidance.recommended.hideSpotId) : undefined;
-      if (!guidance || !guidedLocker) {
+      const stabilized = stabilizeHideGuidance(
+        guidance,
+        guidedTargetState,
+        state.elapsedSeconds,
+        { playerPosition: state.player.position },
+      );
+      guidedTargetState = stabilized.targetState;
+      const stablePlan = stabilized.plan;
+      if (!stablePlan) {
         guidedLockerId = null;
+        guidedBreakSight = false;
         setHideGuideProjection(null);
         return;
       }
-      guidedLockerId = guidedLocker.id;
-      guidedLockerRisk = guidance.recommended.risk;
-      setHideGuideRisk(guidance.recommended.risk);
-      setHideGuideSelection(guidance.selection);
-      setHideDistance(Math.round(guidance.recommended.routeDistanceCells * CELL));
-      const projected = guidedLocker.beacon.getWorldPosition(new THREE.Vector3()).project(camera);
+      let targetWorld: THREE.Vector3;
+      if (stablePlan.strategy === "hide") {
+        const guidedLocker = lockers.get(stablePlan.recommended.hideSpotId);
+        if (!guidedLocker) {
+          guidedLockerId = null;
+          setHideGuideProjection(null);
+          return;
+        }
+        guidedLockerId = guidedLocker.id;
+        guidedBreakSight = false;
+        guidedLockerRisk = stablePlan.recommended.risk;
+        setHideGuideStrategy("hide");
+        setHideGuideRisk(stablePlan.recommended.risk);
+        setHideGuideSelection(stablePlan.selection);
+        setHideDistance(Math.round(stablePlan.recommended.routeDistanceCells * CELL));
+        targetWorld = guidedLocker.beacon.getWorldPosition(new THREE.Vector3());
+      } else {
+        guidedLockerId = null;
+        guidedBreakSight = true;
+        guidedLockerRisk = "high";
+        setHideGuideStrategy("break-line-of-sight");
+        setHideGuideRisk("high");
+        setHideGuideSelection("held");
+        const waypoint = stablePlan.waypoint;
+        if (!waypoint) {
+          setHideDistance(0);
+          setHideGuideProjection(null);
+          return;
+        }
+        const waypointRoute = objectivePaths.path(state.player.position, waypoint);
+        setHideDistance(Math.round(Math.max(0, waypointRoute.length - 1) * CELL));
+        targetWorld = world(waypoint, campaignLevel).add(new THREE.Vector3(0, 1.15, 0));
+      }
+      const projected = targetWorld.project(camera);
       const viewportX = (projected.x + 1) / 2;
       const viewportY = (1 - projected.y) / 2;
       const inFrustum = Math.abs(projected.x) <= 0.92
@@ -3905,7 +4261,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           * (0.72 + artLayout.warmLightMix * 0.28)
           * (1 + atmospherePulse * atmosphere.pulseDepth);
         const atmosphereAttribute = atmosphereGeometry.getAttribute("position") as THREE.BufferAttribute;
-        for (let index = 0; index < atmosphereParticleCount; index += 1) {
+        const renderedAtmosphereParticles = Math.min(
+          atmosphereParticleCount,
+          Math.max(0, atmosphereGeometry.drawRange.count),
+        );
+        for (let index = 0; index < renderedAtmosphereParticles; index += 1) {
           const base = index * 3;
           const seed = atmosphereSeeds[index];
           if (atmosphere.particleKind === "rain") {
@@ -3925,7 +4285,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             atmospherePositions[base + 1] += Math.cos(now * 0.00027 + seed * 17) * delta * 0.018;
           }
         }
-        atmosphereAttribute.needsUpdate = atmosphereParticleCount > 0;
+        atmosphereAttribute.clearUpdateRanges();
+        if (renderedAtmosphereParticles > 0) {
+          atmosphereAttribute.addUpdateRange(0, renderedAtmosphereParticles * 3);
+          atmosphereAttribute.needsUpdate = true;
+        }
+        updateDeferredDressingFade(delta);
 
         for (const [index, cloud] of sightObscurers.entries()) {
           cloud.rotation.y += delta * (0.12 + index * 0.013);
@@ -3947,6 +4312,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           peekHeld: held("q"),
           sneakHeld: held("q"),
         });
+        if (
+          latestState.phase === "won"
+          || distanceBetween(latestState.player.position, campaignLevel.exit)
+            <= POLICE_PREFETCH_DISTANCE_CELLS
+        ) {
+          void requestPoliceAsset?.();
+        }
         interactPressed.current = false;
         consumeEvents(latestState);
         updateLockerVisionStyle(latestState);
@@ -3957,6 +4329,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           playerKnownChaser = {
             position: { ...latestState.chaser.position },
             observedAtSeconds: latestState.elapsedSeconds,
+            playerPositionAtObservation: { ...latestState.player.position },
           };
         }
         const chaserWorldRendered = shouldRenderChaserModel(latestState.phase, playerActuallyVisible);
@@ -3995,6 +4368,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           playerPresentationPoint(latestState, campaignLevel, simulation.config),
           campaignLevel,
         ).add(new THREE.Vector3(0, 0.92, 0));
+        updatePerformanceLightBudget(playerAnchor);
         const chaserAnchor = world(latestState.chaser.position, campaignLevel).add(new THREE.Vector3(0, 1.05, 0));
         const policeAnchor = actors.police?.root.position.clone().add(new THREE.Vector3(0, 1.05, 0)) ?? playerAnchor;
         const framingThreat = shouldFrameChaser(
@@ -4002,12 +4376,27 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           latestState.chaser.mode,
           chaserKnowledgeObservable,
         );
-        const chaseFocus = framingThreat ? 0.5 : 0;
+        if (latestState.phase === "playing") {
+          cameraFollowState = stepFixedCameraFollow(cameraFollowState, {
+            playerFocus: playerAnchor,
+            observableThreatFocus: framingThreat ? chaserAnchor : null,
+            deltaSeconds: delta,
+            deadZoneRadius: latestState.player.mode === "free" ? 1.15 : 0.42,
+            threatHoldSeconds: 0.55,
+            maximumFocusSpeed: framingThreat ? 22 : 10,
+          });
+        }
+        const followFocus = new THREE.Vector3(
+          cameraFollowState.focus.x,
+          cameraFollowState.focus.y,
+          cameraFollowState.focus.z,
+        );
+        const threatFocusActive = framingThreat || cameraFollowState.heldThreatFocus !== null;
         const baseTargetFocus = latestState.phase === "won"
           ? playerAnchor.clone().lerp(policeAnchor, 0.34)
           : latestState.phase === "lost"
             ? playerAnchor.clone().lerp(chaserAnchor, 0.3)
-            : playerAnchor.clone().lerp(chaserAnchor, chaseFocus);
+            : followFocus;
         const baseDistance = baseCameraDistanceForAspect(camera.aspect);
         const dynamicDistance = baseDistance * cameraDistanceScaleForPlayerMode(latestState.player.mode)
           + threatForMode(latestState.chaser.mode) * 0.9;
@@ -4016,7 +4405,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           11.6,
           MAX_CAMERA_DISTANCE,
         );
-        const edgeFocus = framingThreat
+        const edgeFocus = threatFocusActive
           ? baseTargetFocus
           : cameraFocusForEdgeHide({
               focus: baseTargetFocus,
@@ -4038,7 +4427,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const targetFocus = safeFocus instanceof THREE.Vector3
           ? safeFocus
           : new THREE.Vector3(safeFocus.x, safeFocus.y, safeFocus.z);
-        cameraFocus.lerp(targetFocus, 1 - Math.exp(-(framingThreat ? 12 : 6.5) * delta));
+        cameraFocus.lerp(targetFocus, 1 - Math.exp(-(threatFocusActive ? 12 : 7.5) * delta));
         const compositionActors = [
           { center: playerAnchor, height: ACTOR_SPECS.kid.height },
           ...(latestState.phase === "won" && actors.police
@@ -4096,9 +4485,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setChaserConfirming(latestState.chaser.visualConfirmationSeconds !== null);
           setChaserObservable(chaserKnowledgeObservable);
           setElapsed(Math.floor(latestState.elapsedSeconds));
-          setObjectiveDistance(objectiveDistanceMeters(latestState.player.position, campaignLevel, objectivePaths));
+          const objectiveRoute = objectivePaths.path(latestState.player.position, campaignLevel.exit);
+          const routeGeometry = deriveRouteGuidanceGeometry(objectiveRoute, CELL);
+          setObjectiveDistance(Math.round(routeGeometry.routeDistanceMeters));
+          if (latestState.phase === "playing" && latestState.player.mode === "free") {
+            const guidance = updateObjectiveGuidance(objectiveGuidanceState, {
+              deltaSeconds: Math.max(0, latestState.elapsedSeconds - lastObjectiveGuidanceSeconds),
+              routeDistanceMeters: routeGeometry.routeDistanceMeters,
+              movement: { x: move.x * CELL, y: move.y * CELL },
+              routeDirection: routeGeometry.routeDirection,
+              nextTurn: routeGeometry.nextTurn,
+            });
+            objectiveGuidanceState = guidance.state;
+            setObjectiveTurnHint(guidance.nextTurn ? {
+              arrow: fixedScreenArrowForWorldDirection(guidance.nextTurn.direction),
+              distanceMeters: Math.round(guidance.nextTurn.distanceMeters),
+            } : null);
+          } else {
+            setObjectiveTurnHint(null);
+          }
+          lastObjectiveGuidanceSeconds = latestState.elapsedSeconds;
           setInteraction(simulation.getHideInteraction());
-          updateHideGuideProjection(latestState);
+          updateHideGuideProjection(latestState, held("q"));
           lastHudUpdate = now;
         }
       }
@@ -4199,6 +4607,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             renderedVisionObscurers: sightObscurers.length,
           },
           assets: {
+            decorativeReady: decorativeAssetsReady,
             loadedAssetIds: [...loadedAssetIds].sort(),
             placedAssetIds: [...placedAssetIds].sort(),
             unusedLoadedAssetIds: [...loadedAssetIds].filter((id) => !placedAssetIds.has(id)).sort(),
@@ -4326,6 +4735,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       scorePrewarmAbort.abort();
       disposed = true;
       ready = false;
+      requestPoliceAsset = null;
       commands.current = NOOP_COMMANDS;
       if (resultTimer) clearTimeout(resultTimer);
       cancelAnimationFrame(frame);
@@ -4386,6 +4796,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     ? () => chooseLevel(selectedLevelIndex + 1)
     : begin;
   const hideRiskLabel = hideGuideRisk === "low" ? "低风险" : hideGuideRisk === "medium" ? "风险未知" : "高风险";
+  const hideGuideTitle = hideGuideStrategy === "break-line-of-sight"
+    ? "暂无线安全藏柜"
+    : hideGuideSelection === "tutorial"
+      ? "教学安全藏身柜"
+      : hideGuideSelection === "held"
+        ? "保持当前安全路线"
+        : "生存优先藏身柜";
   const captureFeedback = failureFeedback(lastCaptureReason);
 
   return (
@@ -4442,22 +4859,43 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           </div>
         )}
 
-        {!loading && phase === "playing" && playerMode === "free" && !interaction && (
-          <div
-            className={`hide-guide risk-${hideGuideRisk}${danger >= 0.45 ? " urgent" : ""}`}
-            aria-label={`${hideGuideSelection === "tutorial" ? "教学安全藏身柜" : "最近藏身柜"}距离 ${hideDistance} 米，${hideRiskLabel}`}
-          >
-            <span aria-hidden="true" />
+        {!loading && phase === "playing" && objectiveTurnHint && (
+          <div className="objective-route-guide" role="status" aria-label={`路线提示，${objectiveTurnHint.distanceMeters} 米后转向`}>
+            <span aria-hidden="true">{objectiveTurnHint.arrow}</span>
             <div>
-              <small>{hideGuideSelection === "tutorial" ? "教学安全藏身柜" : `最近藏身柜 · ${hideRiskLabel}`}</small>
-              <strong>{hideDistance}m · {hideGuideRisk === "high" ? "先切断视线再接近" : "按可见标记前进"}</strong>
+              <small>迷路辅助 · 路径转向</small>
+              <strong>{objectiveTurnHint.distanceMeters}m 后按箭头转向</strong>
             </div>
           </div>
         )}
 
-        {!loading && phase === "playing" && playerMode === "free" && !interaction && hideGuideProjection?.offscreen && (
+        {!loading && phase === "playing" && playerMode === "free" && !interaction && (
           <div
-            className={`hide-edge-marker risk-${hideGuideRisk}`}
+            className={`hide-guide risk-${hideGuideRisk}${hideGuideStrategy === "break-line-of-sight" ? " strategy-break" : ""}${danger >= 0.45 ? " urgent" : ""}`}
+            aria-label={`${hideGuideTitle}，距离 ${hideDistance} 米${hideGuideStrategy === "hide" ? `，${hideRiskLabel}` : ""}`}
+          >
+            <span aria-hidden="true" />
+            <div>
+              <small>{hideGuideTitle}{hideGuideStrategy === "hide" ? ` · ${hideRiskLabel}` : ""}</small>
+              <strong>
+                {hideDistance}m · {hideGuideStrategy === "break-line-of-sight"
+                  ? "先到遮挡点，切断视线再找柜"
+                  : hideGuideRisk === "high"
+                    ? "先切断视线再接近"
+                    : "按可见标记前进"}
+              </strong>
+            </div>
+          </div>
+        )}
+
+        {!loading
+          && phase === "playing"
+          && playerMode === "free"
+          && !interaction
+          && hideGuideProjection
+          && (hideGuideProjection.offscreen || hideGuideStrategy === "break-line-of-sight") && (
+          <div
+            className={`hide-edge-marker risk-${hideGuideRisk}${hideGuideProjection.offscreen ? " offscreen" : " onscreen"}${hideGuideStrategy === "break-line-of-sight" ? " cover-waypoint" : ""}`}
             aria-hidden="true"
             style={{
               left: `${hideGuideProjection.xPercent}%`,
@@ -4465,7 +4903,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               "--hide-direction": `${hideGuideProjection.angleDegrees}deg`,
             } as React.CSSProperties}
           >
-            <i /><b>{hideDistance}m</b>
+            <i /><b>{hideGuideStrategy === "break-line-of-sight" ? "遮挡" : `${hideDistance}m`}</b>
           </div>
         )}
 
@@ -4488,6 +4926,45 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                     ? captureFeedback.explanation
                     : "追捕者只会依据真实目击、声音与最后位置追踪。你成功利用遮挡和藏身点完成了逃脱。"}
               </p>
+              {phase === "won" && lastRunSummary && (
+                <>
+                  <div className="run-summary" aria-label="本局成绩">
+                    <span>
+                      <small>本次用时</small>
+                      <strong>{lastRunSummary.completedSeconds.toFixed(2)}s</strong>
+                    </span>
+                    <span>
+                      <small>个人最佳</small>
+                      <strong>
+                        {lastRunSummary.deltaSeconds === null
+                          ? "首次记录"
+                          : lastRunSummary.deltaSeconds === 0
+                            ? "追平最佳"
+                            : lastRunSummary.isPersonalBest
+                              ? `快 ${Math.abs(lastRunSummary.deltaSeconds).toFixed(2)}s`
+                              : `慢 ${lastRunSummary.deltaSeconds.toFixed(2)}s`}
+                      </strong>
+                    </span>
+                    <span className={`mastery-rank rank-${lastRunSummary.rank}`}>
+                      <small>本局评价</small>
+                      <strong>{MASTERY_RANK_LABEL[lastRunSummary.rank]}</strong>
+                    </span>
+                  </div>
+                  <div className="mastery-challenges" aria-label="本局精通目标">
+                    {lastRunSummary.challenges.map((challenge) => (
+                      <span
+                        className={challenge.completed ? "completed" : ""}
+                        key={challenge.id}
+                        title={challenge.description}
+                      >
+                        <i aria-hidden="true">{challenge.completed ? "✓" : "○"}</i>
+                        <b>{challenge.label}</b>
+                        <small>{challenge.description}</small>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
               {phase === "lost" && (
                 <div className="failure-advice"><small>下一次这样做</small><strong>{captureFeedback.hint}</strong></div>
               )}
@@ -4506,9 +4983,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                     const locked = index + 1 > campaignProgress.unlockedThrough;
                     const active = index === selectedLevelIndex;
                     const best = campaignProgress.bestSeconds[level.id];
+                    const mastery = campaignProgress.mastery[level.id];
                     return (
                       <button
-                        className={`level-card${active ? " active" : ""}${locked ? " locked" : ""}`}
+                        className={`level-card${active ? " active" : ""}${locked ? " locked" : ""}${mastery ? ` rank-${mastery.rank}` : ""}`}
                         type="button"
                         key={level.id}
                         disabled={locked || loading}
@@ -4517,7 +4995,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                       >
                         <span>{level.campaign.levelNumber.toString().padStart(2, "0")}</span>
                         <strong>{locked ? "未解锁" : level.campaign.name}</strong>
-                        <small>{locked ? "完成上一关" : best ? `最佳 ${best}s` : level.campaign.themeLabel}</small>
+                        <small>
+                          {locked
+                            ? "完成上一关"
+                            : best
+                              ? `最佳 ${best.toFixed(2)}s${mastery ? ` · ${MASTERY_RANK_LABEL[mastery.rank]}` : ""}`
+                              : level.campaign.themeLabel}
+                        </small>
                       </button>
                     );
                   })}

@@ -11,6 +11,7 @@ import {
   cameraSafeViewportFromInsets,
   canChaserTakeLockerDoor,
   chaserAnimationForMode,
+  createFixedCameraFollowState,
   fixedCameraCompositionConstraints,
   gameplayCameraInsetsForViewport,
   lockerVisionMix,
@@ -21,6 +22,7 @@ import {
   shouldFrameChaser,
   shouldRenderChaserModel,
   smoothOcclusionStrength,
+  stepFixedCameraFollow,
 } from "../app/game/presentation.ts";
 
 test("last-known pursuit and arrival scan use authored locomotion and search performances", () => {
@@ -133,6 +135,46 @@ test("every observable spawned chaser pre-frames first sight and reacquisition",
   assert.equal(shouldFrameChaser("playing", "spawn-delay", true), false);
   assert.equal(shouldFrameChaser("playing", "search", false), false, "walls must not leak pursuer position");
   assert.equal(shouldFrameChaser("won", "chase", true), false);
+});
+
+test("fixed-bearing follow keeps routine movement in a dead zone and holds a legal threat frame", () => {
+  let follow = createFixedCameraFollowState({ x: 0, y: 1, z: 0 });
+  follow = stepFixedCameraFollow(follow, {
+    playerFocus: { x: 0.8, y: 1, z: 0 },
+    deltaSeconds: 1 / 60,
+    deadZoneRadius: 1,
+  });
+  assert.deepEqual(follow.focus, { x: 0, y: 1, z: 0 }, "small movement must not pan the fixed view");
+
+  follow = stepFixedCameraFollow(follow, {
+    playerFocus: { x: 4, y: 1, z: 0 },
+    deltaSeconds: 1 / 60,
+    deadZoneRadius: 1,
+  });
+  assert.deepEqual(follow.focus, { x: 3, y: 1, z: 0 }, "follow only enough to restore the dead-zone edge");
+
+  follow = stepFixedCameraFollow(follow, {
+    playerFocus: { x: 4, y: 1, z: 0 },
+    observableThreatFocus: { x: 10, y: 1, z: 0 },
+    deltaSeconds: 1 / 60,
+    deadZoneRadius: 1,
+    threatHoldSeconds: 0.5,
+  });
+  assert.deepEqual(follow.focus, { x: 6, y: 1, z: 0 }, "an observed threat composes both actors without rotating");
+  assert.equal(follow.threatHoldRemainingSeconds, 0.5);
+
+  follow = stepFixedCameraFollow(follow, {
+    playerFocus: { x: 4, y: 1, z: 0 },
+    deltaSeconds: 0.25,
+    deadZoneRadius: 1,
+  });
+  assert.equal(follow.heldThreatFocus?.x, 10, "last observable threat persists through the bounded hold");
+  follow = stepFixedCameraFollow(follow, {
+    playerFocus: { x: 4, y: 1, z: 0 },
+    deltaSeconds: 0.25,
+    deadZoneRadius: 1,
+  });
+  assert.equal(follow.heldThreatFocus, null);
 });
 
 test("portrait chase framing derives a safe distance from FOV and actor separation", () => {
