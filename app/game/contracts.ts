@@ -33,6 +33,16 @@ export interface SimulationInput {
   peekHeld?: boolean;
   /** Quiet movement modifier while free; the same control peeks in a locker. */
   sneakHeld?: boolean;
+  /**
+   * Broad 0..1 environmental masking supplied by an authored theme event.
+   * This scales newly generated player sound before it enters AI perception.
+   */
+  environmentSoundMasking?: number;
+  /**
+   * Authored environmental visibility multiplier. It affects only the
+   * chaser's legal visual sample and never changes collision or catch range.
+   */
+  visionRangeMultiplier?: number;
 }
 
 export interface HideSpotDefinition {
@@ -120,6 +130,15 @@ export interface ChaserMemory {
   lastSeenAtSeconds: number | null;
   lastHeardAtSeconds: number | null;
   lastKnownEvidence: "visual" | "sound" | null;
+  /**
+   * A secondary, imprecise sound sample remembered while stronger visual
+   * evidence is still being pursued. It never contains hidden player state.
+   */
+  deferredSoundEvidence: {
+    position: Point;
+    strength: number;
+    observedAtSeconds: number;
+  } | null;
   /** Set only when the chaser actually witnesses a hide-entry transition. */
   witnessedHideSpotId: string | null;
 }

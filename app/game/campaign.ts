@@ -1,4 +1,4 @@
-import type { GameConfig, HideSpotDefinition, LevelDefinition, Point } from "./contracts.ts";
+import type { ChaserMode, GameConfig, HideSpotDefinition, LevelDefinition, Point } from "./contracts.ts";
 import { createDefaultLevel, createLevel, DEFAULT_GAME_CONFIG } from "./level.ts";
 
 export type CampaignTheme = "campus" | "hospital" | "fire-station" | "factory";
@@ -328,11 +328,11 @@ const level7 = authoredLevel({
   chaserStartHeading: point(0, 1),
   patrol: [point(9, 14), point(8, 10), point(6, 18), point(18, 18), point(18, 14), point(20, 10), point(18, 6), point(14, 10)],
   hideSpots: [
-    { id: "training-rescue-cage", approach: point(7, 14), concealed: point(7, 14.35), facing: point(0, -1) },
-    { id: "training-mask-locker", approach: point(14, 7), concealed: point(13.65, 7), facing: point(1, 0) },
+    { id: "training-rescue-cage", approach: point(4, 14), concealed: point(4.35, 14), facing: point(-1, 0) },
+    { id: "training-mask-locker", approach: point(6, 7), concealed: point(5.65, 7), facing: point(1, 0) },
     { id: "training-landing-cabinet", approach: point(10, 2), concealed: point(10, 1.65), facing: point(0, 1) },
   ],
-  visionOnlyBlockers: [point(2, 9), point(15, 6), point(18, 15), point(13, 10), point(4, 18), point(8, 10), point(16, 14), point(20, 10)],
+  visionOnlyBlockers: [point(2, 9), point(6, 12), point(15, 6), point(18, 15), point(13, 10), point(4, 18), point(8, 10), point(16, 14), point(20, 10)],
 });
 
 const level8 = authoredLevel({
@@ -364,7 +364,7 @@ const level8 = authoredLevel({
   patrol: [point(14, 9), point(6, 9), point(3, 9), point(7, 15), point(10, 18), point(14, 15), point(16, 12), point(19, 11), point(23, 7), point(18, 9)],
   hideSpots: [
     { id: "assembly-tool-crate", approach: point(3, 15), concealed: point(3, 14.65), facing: point(0, 1) },
-    { id: "assembly-control-cabinet", approach: point(22, 7), concealed: point(22, 6.65), facing: point(0, 1) },
+    { id: "assembly-control-cabinet", approach: point(10, 7), concealed: point(10.35, 7), facing: point(-1, 0) },
     { id: "assembly-parts-locker", approach: point(17, 21), concealed: point(17.35, 21), facing: point(-1, 0) },
   ],
   visionOnlyBlockers: [point(5, 15), point(15, 9), point(20, 15), point(3, 9), point(16, 12), point(10, 18), point(23, 9)],
@@ -404,7 +404,7 @@ const level9 = authoredLevel({
   patrol: [point(17, 5), point(13, 4), point(19, 10), point(16, 12), point(22, 15), point(16, 19), point(7, 20), point(10, 17), point(7, 9), point(4, 12)],
   hideSpots: [
     { id: "turbine-breaker-cabinet", approach: point(1, 9), concealed: point(0.65, 9), facing: point(1, 0) },
-    { id: "turbine-service-locker", approach: point(19, 15), concealed: point(19, 14.65), facing: point(0, 1) },
+    { id: "turbine-service-locker", approach: point(14, 2), concealed: point(14, 1.65), facing: point(0, 1) },
     { id: "turbine-oil-store", approach: point(1, 20), concealed: point(0.65, 20), facing: point(1, 0) },
   ],
   visionOnlyBlockers: [point(13, 2), point(13, 12), point(13, 17), point(19, 19), point(13, 4), point(19, 10), point(7, 9), point(7, 20), point(21, 15)],
@@ -441,14 +441,14 @@ const level10 = authoredLevel({
   ],
   playerStart: point(1, 23),
   exit: point(23, 1),
-  chaserStart: point(6, 14),
+  chaserStart: point(6, 13),
   chaserStartHeading: point(1, 0),
   patrol: [point(6, 14), point(9, 15), point(4, 21), point(6, 18), point(12, 16), point(18, 19), point(21, 16), point(20, 6), point(17, 9), point(8, 7), point(11, 4)],
   hideSpots: [
     { id: "foundry-slag-shield", approach: point(2, 7), concealed: point(1.65, 7), facing: point(1, 0) },
-    { id: "foundry-maintenance-locker", approach: point(15, 19), concealed: point(15, 18.65), facing: point(0, 1) },
-    { id: "foundry-coolant-cabinet", approach: point(23, 12), concealed: point(23.35, 12), facing: point(-1, 0) },
-    { id: "foundry-control-bay", approach: point(14, 6), concealed: point(13.65, 6), facing: point(1, 0) },
+    { id: "foundry-maintenance-locker", approach: point(1, 15), concealed: point(0.65, 15), facing: point(1, 0) },
+    { id: "foundry-coolant-cabinet", approach: point(2, 21), concealed: point(2, 20.65), facing: point(0, 1) },
+    { id: "foundry-control-bay", approach: point(7, 22), concealed: point(7, 21.65), facing: point(0, 1) },
   ],
   visionOnlyBlockers: [point(1, 14), point(9, 13), point(18, 9), point(21, 14), point(23, 8), point(4, 21), point(9, 15), point(8, 7), point(20, 6), point(17, 19)],
 });
@@ -661,5 +661,76 @@ export function getCampaignGameplayConfig(level: CampaignLevelDefinition): Parti
     hearingRange: hearingRanges[index],
     soundUncertaintyCells: soundUncertaintyCells[index],
     visionRange: visionRanges[index],
+  });
+}
+
+export type PublicThreatLevel = "calm" | "caution" | "active";
+
+/**
+ * Player-facing knowledge intentionally contains no pursuer mode, position or
+ * target. It models only the visible warning/audio mix available to a player.
+ */
+export interface PlayerKnowledge {
+  readonly threat: PublicThreatLevel;
+  readonly quietSeconds: number;
+}
+
+export interface PublicThreatObservation {
+  /** Normalized adaptive-score intensity already exposed through the mix. */
+  readonly audioThreat: number;
+  /** A visible pursuer is presenting an alert/chase/search tell. */
+  readonly visibleThreat: boolean;
+}
+
+export const PUBLIC_THREAT_RELEASE_SECONDS = 0.75;
+export const PUBLIC_THREAT_ACTIVE_THRESHOLD = 0.7;
+
+export function createPlayerKnowledge(): PlayerKnowledge {
+  return Object.freeze({
+    threat: "calm",
+    quietSeconds: PUBLIC_THREAT_RELEASE_SECONDS,
+  });
+}
+
+/**
+ * Maps private AI state to the authored, player-facing warning mix. Suspicion is
+ * deliberately an urgent cue: reacting at the first noticed sting is a fair
+ * skill test, whereas the lower scan/search drone is only cautionary evidence.
+ */
+export function publicThreatStrengthForMode(mode: ChaserMode): number {
+  switch (mode) {
+    case "suspicious": return 0.72;
+    case "chase": return 1;
+    case "lost-sight": return 0.9;
+    case "go-to-last-known": return 0.78;
+    case "scan-last-known": return 0.68;
+    case "search": return 0.52;
+    case "check-hide": return 0.82;
+    case "spawn-delay":
+    case "patrol": return 0;
+  }
+}
+
+export function updatePlayerKnowledge(
+  previous: Readonly<PlayerKnowledge>,
+  observation: Readonly<PublicThreatObservation>,
+  deltaSeconds: number,
+): PlayerKnowledge {
+  const validDelta = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
+  const audioThreat = Math.min(1, Math.max(0, observation.audioThreat));
+  const rawThreat = observation.visibleThreat
+    || audioThreat >= PUBLIC_THREAT_ACTIVE_THRESHOLD;
+  if (rawThreat) return Object.freeze({ threat: "active", quietSeconds: 0 });
+  // Low/medium score layers are deliberately public "caution" evidence. They
+  // must not drive an omniscient emergency turn, but they do tell the player
+  // that leaving cover is not safe yet.
+  if (audioThreat > 0) return Object.freeze({ threat: "caution", quietSeconds: 0 });
+  const quietSeconds = Math.min(
+    PUBLIC_THREAT_RELEASE_SECONDS,
+    previous.quietSeconds + validDelta,
+  );
+  return Object.freeze({
+    threat: quietSeconds + 1e-9 >= PUBLIC_THREAT_RELEASE_SECONDS ? "calm" : "caution",
+    quietSeconds,
   });
 }

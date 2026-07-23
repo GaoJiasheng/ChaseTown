@@ -6,6 +6,8 @@ import {
   applyRunEvents,
   createRunTelemetry,
   evaluateRunMastery,
+  getMasteryProfile,
+  LEGACY_MASTERY_PROFILE,
   masteryTargetSeconds,
   mergeStoredMastery,
   personalBestDelta,
@@ -27,6 +29,16 @@ test("telemetry counts authored stealth beats without double-counting lost-sight
     safeHideExits: 1,
     lockerSearches: 1,
   });
+});
+
+test("telemetry preserves optional campaign mastery context through event reduction", () => {
+  const context = { levelId: "school-maze-v1", theme: "campus" };
+  const telemetry = applyRunEvents(createRunTelemetry(context), [
+    { type: "player-mode-changed", from: "exiting-hide", to: "free" },
+  ]);
+  assert.deepEqual(telemetry.masteryContext, context);
+  assert.equal(Object.isFrozen(telemetry.masteryContext), true);
+  assert.equal(telemetry.safeHideExits, 1);
 });
 
 test("every campaign level receives a finite, achievable-looking mastery target", () => {
@@ -60,6 +72,64 @@ test("run evaluation awards readable bronze, silver and gold mastery", () => {
   assert.equal(gold.rank, "gold");
   assert.equal(gold.completedSeconds, 29.99);
   assert.deepEqual(gold.challenges.map(({ completed }) => completed), [true, true, true]);
+  assert.equal(gold.profileId, LEGACY_MASTERY_PROFILE.id);
+});
+
+test("campaign mastery profiles override theme defaults and remain internally achievable", () => {
+  const combinations = new Set();
+  for (const level of CAMPAIGN_LEVELS) {
+    const context = { levelId: level.id, theme: level.campaign.theme };
+    const masteryProfile = getMasteryProfile(context);
+    assert.equal(masteryProfile.id, `level:${level.id}:v2`);
+    assert.equal(masteryProfile.challengeIds.length, 3);
+    assert.equal(new Set(masteryProfile.challengeIds).size, 3);
+    assert.equal(Object.isFrozen(masteryProfile), true);
+    assert.equal(Object.isFrozen(masteryProfile.challengeIds), true);
+    combinations.add(masteryProfile.challengeIds.join("|"));
+
+    const ids = new Set(masteryProfile.challengeIds);
+    const hideCount = ids.has("double-slip") ? 2 : ids.has("hide-and-slip") ? 1 : 0;
+    const result = evaluateRunMastery(1, 90, {
+      ...createRunTelemetry(context),
+      detections: 0,
+      hideEntries: hideCount,
+      safeHideExits: hideCount,
+      lockerSearches: ids.has("decoy-search") ? 1 : 0,
+    });
+    assert.equal(result.rank, "gold", `${level.id} profile cannot be completed`);
+  }
+  assert.ok(combinations.size >= 8, "campaign profiles collapsed to generic theme checklists");
+
+  assert.equal(
+    getMasteryProfile({ levelId: "unknown-campus", theme: "campus" }).id,
+    "theme:campus:v2",
+  );
+  assert.equal(getMasteryProfile({ levelId: "unknown" }).id, LEGACY_MASTERY_PROFILE.id);
+});
+
+test("standard guided telemetry no longer grants automatic Gold across the campaign", () => {
+  const guided = [
+    { seconds: 30.63, detections: 1, hideEntries: 1, safeHideExits: 1, lockerSearches: 0 },
+    { seconds: 28.62, detections: 0, hideEntries: 1, safeHideExits: 1, lockerSearches: 0 },
+    { seconds: 29.08, detections: 0, hideEntries: 1, safeHideExits: 1, lockerSearches: 0 },
+    { seconds: 51.72, detections: 2, hideEntries: 2, safeHideExits: 2, lockerSearches: 1 },
+    { seconds: 29.58, detections: 0, hideEntries: 1, safeHideExits: 1, lockerSearches: 0 },
+    { seconds: 54.93, detections: 1, hideEntries: 2, safeHideExits: 2, lockerSearches: 0 },
+    { seconds: 23.33, detections: 1, hideEntries: 1, safeHideExits: 1, lockerSearches: 0 },
+    { seconds: 29.62, detections: 0, hideEntries: 1, safeHideExits: 1, lockerSearches: 0 },
+    { seconds: 31.22, detections: 1, hideEntries: 1, safeHideExits: 1, lockerSearches: 0 },
+    { seconds: 30.43, detections: 1, hideEntries: 1, safeHideExits: 1, lockerSearches: 0 },
+  ];
+  const ranks = CAMPAIGN_LEVELS.map((level, index) => evaluateRunMastery(
+    guided[index].seconds,
+    masteryTargetSeconds(level, getCampaignGameplayConfig(level)),
+    {
+      ...guided[index],
+      masteryContext: { levelId: level.id, theme: level.campaign.theme },
+    },
+  ).rank);
+  assert.equal(ranks.filter((rank) => rank === "gold").length, 0);
+  assert.deepEqual(new Set(ranks), new Set(["silver"]));
 });
 
 test("stored mastery keeps the best rank and unions objectives across runs", () => {
@@ -84,6 +154,23 @@ test("stored mastery keeps the best rank and unions objectives across runs", () 
     "single-sighting",
     "beat-target",
   ]);
+});
+
+test("a legacy Gold is capped at Silver when the level adopts a new profile", () => {
+  const result = evaluateRunMastery(50, 30, {
+    ...createRunTelemetry({ levelId: "school-maze-v1", theme: "campus" }),
+    detections: 2,
+    hideEntries: 1,
+    safeHideExits: 1,
+    lockerSearches: 0,
+  });
+  const migrated = mergeStoredMastery({
+    rank: "gold",
+    challengeIds: ["hide-and-slip", "single-sighting", "beat-target"],
+  }, result);
+  assert.equal(migrated.rank, "silver");
+  assert.equal(migrated.profileId, "level:school-maze-v1:v2");
+  assert.ok(migrated.challengeIds.includes("hide-and-slip"));
 });
 
 test("personal best feedback preserves hundredths and reports the correct direction", () => {

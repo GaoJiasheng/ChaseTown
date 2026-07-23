@@ -25,7 +25,7 @@ const FEEDBACK: Readonly<Record<CaptureReason, FailureFeedback>> = Object.freeze
   "witnessed-hide-check": Object.freeze({
     title: "追捕者记住了这个柜子",
     explanation: "他亲眼看到你进入，因此直接检查了对应柜门。",
-    hint: "被目击进柜时不要把柜子当成安全点，立刻改走下一处遮挡。",
+    hint: "对齐柜门时可移动取消；开门动作开始后就无法反悔。",
   }),
   "search-hide-check": Object.freeze({
     title: "证据把他带到了柜门前",
@@ -37,4 +37,3 @@ const FEEDBACK: Readonly<Record<CaptureReason, FailureFeedback>> = Object.freeze
 export function failureFeedback(reason: CaptureReason | null): FailureFeedback {
   return reason ? FEEDBACK[reason] : FEEDBACK["direct-contact"];
 }
-

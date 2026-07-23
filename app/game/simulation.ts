@@ -106,6 +106,8 @@ export class GameSimulation {
   private heldMove: MoveIntent = { ...ZERO_INTENT };
   private heldPeek = false;
   private heldSneak = false;
+  private heldEnvironmentSoundMasking = 0;
+  private heldVisionRangeMultiplier = 1;
   private pendingSound: SoundStimulus | null = null;
   private playerSoundCooldownSeconds = 0;
   private readonly initialPlayerPosition: Point;
@@ -147,6 +149,8 @@ export class GameSimulation {
     this.heldMove = { ...ZERO_INTENT };
     this.heldPeek = false;
     this.heldSneak = false;
+    this.heldEnvironmentSoundMasking = 0;
+    this.heldVisionRangeMultiplier = 1;
     this.pendingSound = null;
     this.playerSoundCooldownSeconds = 0;
     this.hideTurnPlan = null;
@@ -167,6 +171,12 @@ export class GameSimulation {
     this.heldMove = copyPoint(input.move ?? ZERO_INTENT);
     this.heldPeek = input.peekHeld ?? false;
     this.heldSneak = input.sneakHeld ?? false;
+    this.heldEnvironmentSoundMasking = Number.isFinite(input.environmentSoundMasking)
+      ? clamp01(input.environmentSoundMasking ?? 0)
+      : 0;
+    this.heldVisionRangeMultiplier = Number.isFinite(input.visionRangeMultiplier)
+      ? Math.min(1, Math.max(0.5, input.visionRangeMultiplier ?? 1))
+      : 1;
     this.pendingInteract ||= input.interactPressed ?? false;
     this.accumulatorSeconds += Math.min(realDeltaSeconds, this.config.maxFrameDeltaSeconds);
     const frameEvents: SimulationEvent[] = [];
@@ -209,6 +219,12 @@ export class GameSimulation {
           ...this.state.chaser.memory,
           lastKnownPosition: this.state.chaser.memory.lastKnownPosition
             ? copyPoint(this.state.chaser.memory.lastKnownPosition)
+            : null,
+          deferredSoundEvidence: this.state.chaser.memory.deferredSoundEvidence
+            ? {
+                ...this.state.chaser.memory.deferredSoundEvidence,
+                position: copyPoint(this.state.chaser.memory.deferredSoundEvidence.position),
+              }
             : null,
         },
       },
@@ -350,6 +366,16 @@ export class GameSimulation {
         break;
       }
       case "aligning-hide": {
+        if (input.interactPressed || Math.hypot(input.move.x, input.move.y) > 0.1) {
+          player.hideSpotId = null;
+          player.transitionRemainingSeconds = 0;
+          player.hideTurnDirection = 0;
+          player.hideTurnCycle = -1;
+          player.hideTurnSegmentDurationSeconds = 0;
+          this.hideTurnPlan = null;
+          setPlayerMode(this.state, "free", events);
+          break;
+        }
         const spot = player.hideSpotId
           ? this.level.hideSpots.find((candidate) => candidate.id === player.hideSpotId)
           : null;
@@ -487,7 +513,10 @@ export class GameSimulation {
   }
 
   private queuePlayerSound(position: Point, strength: number) {
-    const normalized = Math.min(1, Math.max(0, strength));
+    const normalized = Math.min(
+      1,
+      Math.max(0, strength * (1 - this.heldEnvironmentSoundMasking)),
+    );
     if (normalized <= 0) return;
     if (this.pendingSound && this.pendingSound.strength >= normalized) return;
     this.pendingSound = { position: copyPoint(position), strength: normalized };
@@ -574,7 +603,12 @@ export class GameSimulation {
           hideSpotId: this.state.player.hideSpotId,
           transitionRemainingSeconds: this.state.player.transitionRemainingSeconds,
         },
-        this.config,
+        this.heldVisionRangeMultiplier >= 0.999
+          ? this.config
+          : {
+              ...this.config,
+              visionRange: this.config.visionRange * this.heldVisionRangeMultiplier,
+            },
         this.state.elapsedSeconds,
       );
       if (evidence.kind === "none" && this.pendingSound) {

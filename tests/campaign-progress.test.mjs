@@ -25,14 +25,22 @@ test("progress sanitation clamps unlocks and removes corrupt or foreign records"
     bestSeconds: { one: -4, two: Number.NaN, foreign: 12 },
     mastery: {
       one: { rank: "diamond", challengeIds: ["beat-target"] },
-      two: { rank: "gold", challengeIds: ["beat-target", "invented"] },
+      two: {
+        rank: "gold",
+        challengeIds: ["beat-target", "double-slip", "invented"],
+        profileId: "level:two:v2",
+      },
       foreign: { rank: "gold", challengeIds: ["beat-target"] },
     },
   }, levelIds), {
     unlockedThrough: 3,
     bestSeconds: {},
     mastery: {
-      two: { rank: "gold", challengeIds: ["beat-target"] },
+      two: {
+        rank: "gold",
+        challengeIds: ["beat-target", "double-slip"],
+        profileId: "level:two:v2",
+      },
     },
   });
 });

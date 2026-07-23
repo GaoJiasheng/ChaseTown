@@ -23,6 +23,9 @@ async function walk(directory) {
 
 const GLB_JSON_CHUNK = 0x4e4f534a;
 const GLB_BINARY_CHUNK = 0x004e4942;
+const KTX2_SIGNATURE = Buffer.from([
+  0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a,
+]);
 const COMPONENT_BYTES = new Map([
   [5120, 1], [5121, 1], [5122, 2], [5123, 2], [5125, 4], [5126, 4],
 ]);
@@ -170,9 +173,32 @@ function validateGlbStructure({ json: gltf, binary }, filename) {
   for (const [index, image] of (gltf.images ?? []).entries()) {
     assert.ok(image.uri || image.bufferView !== undefined, `${filename} image ${index} has no payload`);
     if (image.bufferView !== undefined) assertIndex(image.bufferView, gltf.bufferViews?.length ?? 0, `${filename} image ${index} has an invalid bufferView`);
+    if (image.mimeType === "image/ktx2") {
+      assert.ok(gltf.extensionsUsed?.includes("KHR_texture_basisu"), `${filename} image ${index} does not declare KHR_texture_basisu`);
+      assert.equal(image.uri, undefined, `${filename} KTX2 image ${index} must remain embedded`);
+    }
   }
   for (const [index, texture] of (gltf.textures ?? []).entries()) {
     if (texture.source !== undefined) assertIndex(texture.source, gltf.images?.length ?? 0, `${filename} texture ${index} has an invalid image source`);
+    const basisSource = texture.extensions?.KHR_texture_basisu?.source;
+    if (basisSource !== undefined) {
+      assertIndex(basisSource, gltf.images?.length ?? 0, `${filename} texture ${index} has an invalid KTX2 source`);
+      assert.ok(gltf.extensionsUsed?.includes("KHR_texture_basisu"), `${filename} texture ${index} does not declare KHR_texture_basisu`);
+      const image = gltf.images[basisSource];
+      assert.ok(
+        image.mimeType === "image/ktx2" || image.uri?.endsWith(".ktx2"),
+        `${filename} texture ${index} does not resolve to a KTX2 image`,
+      );
+    }
+    const webpSource = texture.extensions?.EXT_texture_webp?.source;
+    if (webpSource !== undefined) {
+      assertIndex(webpSource, gltf.images?.length ?? 0, `${filename} texture ${index} has an invalid WebP source`);
+      assert.ok(gltf.extensionsUsed?.includes("EXT_texture_webp"), `${filename} texture ${index} does not declare EXT_texture_webp`);
+    }
+    assert.ok(
+      texture.source !== undefined || basisSource !== undefined || webpSource !== undefined,
+      `${filename} texture ${index} has no image source`,
+    );
     if (texture.sampler !== undefined) assertIndex(texture.sampler, gltf.samplers?.length ?? 0, `${filename} texture ${index} has an invalid sampler`);
   }
 
@@ -390,18 +416,20 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
     }
   }
 
-  const shippedImages = files.filter((filename) => filename.endsWith(".png"));
+  const shippedImages = files.filter(
+    (filename) => filename.endsWith(".png") || filename.endsWith(".ktx2"),
+  );
   assert.deepEqual(
     shippedImages.sort(),
     [...referencedImages].sort(),
-    "public/models must not contain unreferenced texture exports",
+    "public/models must not contain unreferenced PNG or KTX2 texture exports",
   );
 });
 
 const THEME_KIT_CONTRACTS = [
   {
     basename: "campus-kit.glb",
-    maxBytes: 2_850_000,
+    maxBytes: 1_700_000,
     prefixes: ["Campus"],
     heroFamilies: [
       ["CampusTrophyCase"], ["CampusVendingMachine"], ["CampusWaterFountain"],
@@ -433,7 +461,7 @@ const THEME_KIT_CONTRACTS = [
   },
   {
     basename: "hospital-kit.glb",
-    maxBytes: 2_000_000,
+    maxBytes: 1_150_000,
     prefixes: ["Hospital"],
     heroFamilies: [
       ["HospitalBed"], ["HospitalCrashCart"], ["HospitalIVStation"],
@@ -459,7 +487,7 @@ const THEME_KIT_CONTRACTS = [
   },
   {
     basename: "fire-station-kit.glb",
-    maxBytes: 2_500_000,
+    maxBytes: 1_200_000,
     prefixes: ["FireStation", "Fire"],
     heroFamilies: [
       ["FireStationEngine", "FireEngine"], ["FireStationGearRack", "FireGearRack"],
@@ -487,7 +515,7 @@ const THEME_KIT_CONTRACTS = [
   },
   {
     basename: "factory-kit.glb",
-    maxBytes: 2_950_000,
+    maxBytes: 1_700_000,
     prefixes: ["Factory"],
     heroFamilies: [
       ["FactoryPipeAssembly"], ["FactoryStorageTank"], ["FactoryControlConsole"],
@@ -712,17 +740,33 @@ for (const contract of THEME_KIT_CONTRACTS) {
     assert.equal(new Set(gltf.materials.map((material) => material.name)).size, gltf.materials.length, `${basename} material names must be unique`);
     assert.ok((gltf.images?.length ?? 0) >= 8, `${basename} must embed real PBR color/normal surface maps`);
     assert.ok(gltf.images.length <= 24, `${basename} exceeds the image budget`);
-    assert.ok(gltf.images.every((image) => image.mimeType === "image/webp" && image.bufferView !== undefined && !image.uri), `${basename} PBR maps must be embedded WebP payloads`);
-    assert.ok(gltf.extensionsRequired?.includes("EXT_texture_webp"), `${basename} must declare its WebP texture contract`);
+    assert.ok(
+      gltf.images.every(
+        (image) => image.mimeType === undefined
+          && image.bufferView === undefined
+          && /^\.\.\/SharedTexturesKTX2\/[a-f0-9]{64}\.ktx2$/u.test(image.uri ?? ""),
+      ),
+      `${basename} PBR maps must use content-addressed cross-theme KTX2 URLs`,
+    );
+    assert.ok(gltf.extensionsRequired?.includes("KHR_texture_basisu"), `${basename} must declare its KTX2 texture contract`);
+    assert.equal(gltf.extensionsRequired?.includes("EXT_texture_webp"), false, `${basename} must not retain a second WebP fallback payload`);
     assert.ok(buffer.length < contract.maxBytes, `${basename} exceeds its chapter-count-adjusted Web theme-kit budget`);
     for (const [imageIndex, image] of gltf.images.entries()) {
-      const view = gltf.bufferViews[image.bufferView];
-      const start = view.byteOffset ?? 0;
-      const payload = glb.binary.subarray(start, start + view.byteLength);
+      const imagePath = path.resolve(path.dirname(filename), image.uri);
+      const relative = path.relative(MODELS_ROOT, imagePath);
+      assert.equal(relative.startsWith("..") || path.isAbsolute(relative), false, `${basename} image ${imageIndex} escapes public/models`);
+      const payload = await readFile(imagePath);
       assert.ok(payload.length >= 1_024, `${basename} image ${imageIndex} is placeholder-sized`);
-      assert.equal(payload.subarray(0, 4).toString("ascii"), "RIFF", `${basename} image ${imageIndex} is not a real WebP RIFF`);
-      assert.equal(payload.subarray(8, 12).toString("ascii"), "WEBP", `${basename} image ${imageIndex} has an invalid WebP signature`);
-      assert.ok(payload.readUInt32LE(4) + 8 <= payload.length, `${basename} image ${imageIndex} contains a truncated WebP payload`);
+      assert.ok(payload.subarray(0, 12).equals(KTX2_SIGNATURE), `${basename} image ${imageIndex} is not a real KTX2 payload`);
+      assert.equal(payload.readUInt32LE(12), 0, `${basename} image ${imageIndex} must use Basis Universal data`);
+      assert.ok(payload.readUInt32LE(20) >= 256, `${basename} image ${imageIndex} is below the surface-map resolution floor`);
+      assert.ok(payload.readUInt32LE(24) >= 256, `${basename} image ${imageIndex} is below the surface-map resolution floor`);
+      const expectedSupercompression = image.name.includes("_BaseColor_") ? 1 : 2;
+      assert.equal(
+        payload.readUInt32LE(44),
+        expectedSupercompression,
+        `${basename} image ${imageIndex} must use ETC1S for color and UASTC for normal/ORM`,
+      );
     }
 
     for (const [materialIndex, material] of gltf.materials.entries()) {

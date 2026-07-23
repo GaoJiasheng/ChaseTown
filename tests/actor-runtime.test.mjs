@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as THREE from "three";
-import { ActorAnimator } from "../app/game/animation/actor-runtime.ts";
+import { ActorAnimator, isFootstepAnimationMarker } from "../app/game/animation/actor-runtime.ts";
 
 function clip(name, duration = 1) {
   return new THREE.AnimationClip(name, duration, [
@@ -36,6 +36,12 @@ test("ActorAnimator cross-fades approved clips and emits authored markers", () =
   assert.equal(animator.snapshot().state, "run");
   assert.deepEqual(markers, ["footLContact"]);
   animator.dispose();
+});
+
+test("footstep marker helper recognizes only authored contact markers", () => {
+  assert.equal(isFootstepAnimationMarker({ name: "footLContact" }), true);
+  assert.equal(isFootstepAnimationMarker({ name: "FootRightPlant" }), true);
+  assert.equal(isFootstepAnimationMarker({ name: "turnComplete" }), false);
 });
 
 test("ActorAnimator explicitly restarts a finished in-place turn for a 180-degree pivot", () => {

@@ -75,6 +75,7 @@ export function createInitialChaser(
       lastSeenAtSeconds: null,
       lastHeardAtSeconds: null,
       lastKnownEvidence: null,
+      deferredSoundEvidence: null,
       witnessedHideSpotId: null,
     },
   };
@@ -186,6 +187,7 @@ function rememberVisibleTarget(state: ChaserState, evidence: Exclude<PerceptionE
       lastSeenAtSeconds: evidence.observedAtSeconds,
       lastHeardAtSeconds: null,
       lastKnownEvidence: "visual",
+      deferredSoundEvidence: null,
       witnessedHideSpotId: evidence.kind === "hide-entry-visible"
         ? evidence.hideSpotId
         : state.mode === "check-hide"
@@ -210,8 +212,98 @@ function rememberSoundTarget(
       lastKnownPosition: { ...evidence.position },
       lastHeardAtSeconds: evidence.observedAtSeconds,
       lastKnownEvidence: "sound",
+      deferredSoundEvidence: null,
       witnessedHideSpotId: null,
     },
+  };
+}
+
+type SoundEvidence = Extract<PerceptionEvidence, { kind: "sound" }>;
+
+function deferredSoundMaxAge(config: GameConfig): number {
+  // A heard point remains actionable through lost-sight, the planted scan and
+  // two local-search beats. Older samples are too stale to justify abandoning
+  // the stronger visual anchor.
+  return config.lostSightGraceSeconds
+    + config.lastKnownScanSeconds
+    + config.searchWaypointSeconds * 2;
+}
+
+function soundEvidenceUtility(
+  state: Pick<ChaserState, "position">,
+  level: LevelDefinition,
+  config: GameConfig,
+  evidence: Pick<SoundEvidence, "position" | "strength" | "observedAtSeconds">,
+  nowSeconds: number,
+): number {
+  const age = Math.max(0, nowSeconds - evidence.observedAtSeconds);
+  const maxAge = Math.max(config.aiTickSeconds, deferredSoundMaxAge(config));
+  if (age > maxAge + 1e-9) return Number.NEGATIVE_INFINITY;
+  const route = findPath(level, state.position, evidence.position);
+  if (!route.length) return Number.NEGATIVE_INFINITY;
+  const routeDistance = Math.max(0, route.length - 1);
+  const distanceScale = Math.max(1, config.hearingRange + config.soundUncertaintyCells);
+  const freshness = 1 - clamp01(age / maxAge);
+  const proximity = 1 - clamp01(routeDistance / distanceScale);
+  return clamp01(evidence.strength) * 0.6 + freshness * 0.3 + proximity * 0.1;
+}
+
+function deferSoundEvidence(
+  state: ChaserState,
+  level: LevelDefinition,
+  config: GameConfig,
+  evidence: SoundEvidence,
+  nowSeconds: number,
+): ChaserState {
+  const candidateUtility = soundEvidenceUtility(state, level, config, evidence, nowSeconds);
+  if (!Number.isFinite(candidateUtility)) return state;
+  const previous = state.memory.deferredSoundEvidence;
+  const previousUtility = previous
+    ? soundEvidenceUtility(state, level, config, previous, nowSeconds)
+    : Number.NEGATIVE_INFINITY;
+  if (
+    candidateUtility + 1e-9 < previousUtility
+    || (
+      Math.abs(candidateUtility - previousUtility) <= 1e-9
+      && previous
+      && evidence.observedAtSeconds <= previous.observedAtSeconds
+    )
+  ) return state;
+  return {
+    ...state,
+    memory: {
+      ...state.memory,
+      deferredSoundEvidence: {
+        position: { ...evidence.position },
+        strength: clamp01(evidence.strength),
+        observedAtSeconds: evidence.observedAtSeconds,
+      },
+    },
+  };
+}
+
+function promoteDeferredSound(
+  state: ChaserState,
+  level: LevelDefinition,
+  config: GameConfig,
+  nowSeconds: number,
+): { state: ChaserState; promoted: boolean } {
+  const deferred = state.memory.deferredSoundEvidence;
+  const withoutDeferred = deferred
+    ? { ...state, memory: { ...state.memory, deferredSoundEvidence: null } }
+    : state;
+  if (
+    !deferred
+    || soundEvidenceUtility(state, level, config, deferred, nowSeconds) < 0.2
+  ) return { state: withoutDeferred, promoted: false };
+  return {
+    state: enterMode(rememberSoundTarget(withoutDeferred, {
+      kind: "sound",
+      position: deferred.position,
+      strength: deferred.strength,
+      observedAtSeconds: deferred.observedAtSeconds,
+    }), "go-to-last-known"),
+    promoted: true,
   };
 }
 
@@ -273,20 +365,15 @@ export function stepChaserBrain(
     return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
   }
 
-  if (input.evidence.kind === "sound" && state.mode !== "check-hide") {
-    const visualEvidenceAge = state.memory.lastSeenAtSeconds === null
-      ? Number.POSITIVE_INFINITY
-      : input.nowSeconds - state.memory.lastSeenAtSeconds;
-    const committedToFreshVisualSearch = state.memory.lastKnownEvidence === "visual"
-      && visualEvidenceAge <= (
-        config.lostSightGraceSeconds
-        + config.lastKnownScanSeconds
-        + config.searchSeconds
-      );
-    // Footsteps can start a new investigation, but a noisier, less precise
-    // sample must never erase the stronger visual point while its authored
-    // pursuit/scan/search chain is still active.
-    if (!committedToFreshVisualSearch) {
+  if (input.evidence.kind === "sound") {
+    const committedToVisualAnchor = state.memory.lastKnownEvidence === "visual"
+      && ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known"].includes(state.mode);
+    if (committedToVisualAnchor || state.mode === "check-hide") {
+      // Preserve the stronger visual point and the authored locker inspection,
+      // but do not discard the new sound. Only its already-imprecise perceived
+      // point is stored; no player position or locker occupancy enters memory.
+      next = deferSoundEvidence(next, level, config, input.evidence, input.nowSeconds);
+    } else {
       next = enterMode(rememberSoundTarget(next, input.evidence), "go-to-last-known");
       return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
     }
@@ -340,11 +427,16 @@ export function stepChaserBrain(
         heading: lastKnownScanHeading(state.scanOriginHeading, elapsed, config.lastKnownScanSeconds),
       };
       if (elapsed + 1e-9 >= config.lastKnownScanSeconds) {
+        const deferred = promoteDeferredSound(next, level, config, input.nowSeconds);
+        if (deferred.promoted) {
+          next = deferred.state;
+          break;
+        }
         // Search index zero is the exact continuous sighting point. Keep one
         // AI beat planted there so the centred final scan pose is rendered
         // before the first wider-search step can change position or heading.
         next = enterSearch(
-          next,
+          deferred.state,
           level,
           config,
           Math.max(0, config.searchWaypointSeconds - config.aiTickSeconds),
@@ -366,6 +458,7 @@ export function stepChaserBrain(
             lastSeenAtSeconds: null,
             lastHeardAtSeconds: null,
             lastKnownEvidence: null,
+            deferredSoundEvidence: null,
             witnessedHideSpotId: null,
           },
         }, "patrol");
@@ -397,7 +490,7 @@ export function stepChaserBrain(
         const inspectedHideSpotIds = completedHideCheckId
           ? Object.freeze([...new Set([...state.inspectedHideSpotIds, completedHideCheckId])])
           : state.inspectedHideSpotIds;
-        next = enterSearch({
+        const continued = enterSearch({
           ...next,
           searchHideSpotId: null,
           hideCheckSource: null,
@@ -406,6 +499,7 @@ export function stepChaserBrain(
           inspectedHideSpotIds,
           memory: { ...next.memory, witnessedHideSpotId: null },
         }, level, config);
+        next = promoteDeferredSound(continued, level, config, input.nowSeconds).state;
         return { state: next, completedHideCheckId, completedHideCheckSource };
       }
       break;

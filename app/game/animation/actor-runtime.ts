@@ -34,6 +34,11 @@ export type AnimationMarker = {
 
 export type MarkerManifest = Partial<Record<AnimationState, readonly AnimationMarker[]>>;
 
+/** Recognizes the compact contact names used by the authored locomotion clips. */
+export function isFootstepAnimationMarker(marker: Pick<AnimationMarker, "name">): boolean {
+  return /^foot(?:l|r|left|right)(?:contact|plant)?$/i.test(marker.name.trim());
+}
+
 type PlayOptions = {
   fade?: number;
   loop?: boolean;

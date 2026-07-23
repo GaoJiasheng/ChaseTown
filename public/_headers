@@ -1,0 +1,14 @@
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/audio/foley/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/audio/*.m4a
+  Cache-Control: public, max-age=31536000, immutable
+
+/basis/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/chasing-environment-key-art.jpg
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400

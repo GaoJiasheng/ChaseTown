@@ -57,7 +57,14 @@ export function sanitizeCampaignProgress(
           const challengeIds = MASTERY_CHALLENGE_IDS.filter((challengeId) => (
             Array.isArray(rawChallengeIds) && rawChallengeIds.includes(challengeId)
           ));
-          return [[id, { rank: rank as MasteryRank, challengeIds }]];
+          const profileId = (candidate as { profileId?: unknown }).profileId;
+          return [[id, {
+            rank: rank as MasteryRank,
+            challengeIds,
+            ...(typeof profileId === "string" && profileId.length > 0 && profileId.length <= 120
+              ? { profileId }
+              : {}),
+          }]];
         })
       : [],
   ) as Record<string, StoredMastery>;

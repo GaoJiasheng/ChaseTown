@@ -1,5 +1,6 @@
 import type { CampaignTheme } from "../campaign.ts";
 import type { ChaserMode, Point } from "../contracts.ts";
+import { fixedCameraGroundBasis } from "../input.ts";
 
 export type DiegeticSoundEvent =
   | "locker-open"
@@ -22,12 +23,114 @@ export interface ThemeSoundProfile {
 
 export interface SoundscapeFrame {
   readonly elapsedSeconds: number;
+  /** Retained for backwards-compatible diagnostics; never used for hidden-world panning. */
   readonly playerPosition: Point;
+  /** Retained for backwards-compatible diagnostics; never used for hidden-world panning. */
   readonly chaserPosition: Point;
   readonly playerSpeed: number;
   readonly chaserSpeed: number;
   readonly chaserMode: ChaserMode;
+  /** Player-legal, coarse 0..1 threat audibility. Omitted means silent. */
+  readonly chaserAudibility?: number;
+  /** Player-legal screen-relative direction, only when the chaser is observable. */
+  readonly chaserPan?: number;
 }
+
+export type FootstepActor = "player" | "chaser";
+
+/**
+ * A presentation-layer animation marker. Chaser panning and audibility are
+ * deliberately caller-supplied player knowledge rather than a world position:
+ * a hidden chaser must not leak exact distance through its footfalls.
+ */
+export interface AnimationFootstepEvent {
+  readonly actor: FootstepActor;
+  readonly elapsedSeconds: number;
+  readonly worldSpeed: number;
+  /** Chaser-only broad 0..1 audibility cue; omitted means silent. */
+  readonly audibility?: number;
+  /** Chaser-only screen-relative pan derived from legal player knowledge. */
+  readonly pan?: number;
+}
+
+export interface FootstepCue {
+  readonly frequency: number;
+  readonly colorHertz: number;
+  readonly pan: number;
+  readonly peakGain: number;
+}
+
+export type FoleySet =
+  | "step-soft"
+  | "step-hard"
+  | "locker-open"
+  | "locker-close"
+  | "locker-latch"
+  | "cloth"
+  | "caught"
+  | "metal-hit";
+
+export const FOLEY_ASSET_URLS: Readonly<Record<FoleySet, readonly string[]>> = Object.freeze({
+  "step-soft": Object.freeze([
+    "/audio/foley/step-soft-01.ogg",
+    "/audio/foley/step-soft-02.ogg",
+    "/audio/foley/step-soft-03.ogg",
+    "/audio/foley/step-soft-04.ogg",
+    "/audio/foley/step-soft-05.ogg",
+  ]),
+  "step-hard": Object.freeze([
+    "/audio/foley/step-hard-01.ogg",
+    "/audio/foley/step-hard-02.ogg",
+    "/audio/foley/step-hard-03.ogg",
+    "/audio/foley/step-hard-04.ogg",
+    "/audio/foley/step-hard-05.ogg",
+  ]),
+  "locker-open": Object.freeze([
+    "/audio/foley/locker-open-01.ogg",
+    "/audio/foley/locker-open-02.ogg",
+  ]),
+  "locker-close": Object.freeze([
+    "/audio/foley/locker-close-01.ogg",
+    "/audio/foley/locker-close-02.ogg",
+  ]),
+  "locker-latch": Object.freeze(["/audio/foley/locker-latch.ogg"]),
+  cloth: Object.freeze([
+    "/audio/foley/cloth-01.ogg",
+    "/audio/foley/cloth-02.ogg",
+  ]),
+  caught: Object.freeze([
+    "/audio/foley/caught-01.ogg",
+    "/audio/foley/caught-02.ogg",
+  ]),
+  "metal-hit": Object.freeze([
+    "/audio/foley/metal-hit-01.ogg",
+    "/audio/foley/metal-hit-02.ogg",
+  ]),
+});
+
+export interface ThemeMechanicAudioProfile {
+  readonly foleySet: FoleySet;
+  readonly playbackRate: number;
+  readonly peakGain: number;
+  readonly fallbackHertz: number;
+  readonly fallbackDurationSeconds: number;
+}
+
+/** Theme events use the already licensed CC0 Foley pool before synthesis. */
+export const THEME_MECHANIC_AUDIO_PROFILES: Readonly<Record<CampaignTheme, ThemeMechanicAudioProfile>> = Object.freeze({
+  campus: Object.freeze({
+    foleySet: "metal-hit", playbackRate: 1.34, peakGain: 0.12, fallbackHertz: 860, fallbackDurationSeconds: 0.52,
+  }),
+  hospital: Object.freeze({
+    foleySet: "cloth", playbackRate: 0.9, peakGain: 0.075, fallbackHertz: 410, fallbackDurationSeconds: 0.34,
+  }),
+  "fire-station": Object.freeze({
+    foleySet: "cloth", playbackRate: 0.7, peakGain: 0.115, fallbackHertz: 176, fallbackDurationSeconds: 0.48,
+  }),
+  factory: Object.freeze({
+    foleySet: "metal-hit", playbackRate: 0.74, peakGain: 0.16, fallbackHertz: 94, fallbackDurationSeconds: 0.42,
+  }),
+});
 
 const THEME_SOUND_PROFILES: Readonly<Record<CampaignTheme, ThemeSoundProfile>> = Object.freeze({
   campus: Object.freeze({
@@ -78,11 +181,48 @@ export function soundPanForWorldPoints(listener: Point, source: Point): number {
   const dy = source.y - listener.y;
   const distance = Math.hypot(dx, dy);
   if (distance <= 1e-6) return 0;
-  // The fixed camera looks diagonally across the grid. Its screen-right axis
-  // is stable, so audio direction can never contradict WASD.
-  const screenRightX = Math.SQRT1_2;
-  const screenRightY = -Math.SQRT1_2;
-  return Math.max(-0.88, Math.min(0.88, (dx * screenRightX + dy * screenRightY) / distance));
+  const { screenRight } = fixedCameraGroundBasis();
+  return Math.max(-0.88, Math.min(0.88, (dx * screenRight.x + dy * screenRight.y) / distance));
+}
+
+const clampUnit = (value: number | undefined) => (
+  value !== undefined && Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
+);
+
+export function themeMechanicAudioProfile(theme: CampaignTheme): ThemeMechanicAudioProfile {
+  return THEME_MECHANIC_AUDIO_PROFILES[theme];
+}
+
+/**
+ * Maps a marker to a short physical footstep without accepting hidden-world
+ * positions. Chaser audibility is quantized to broad bands, so even a legal
+ * caller cannot turn gain into a distance readout.
+ */
+export function footstepCueForAnimationMarker(
+  profile: ThemeSoundProfile,
+  event: AnimationFootstepEvent,
+): FootstepCue | null {
+  if (!Number.isFinite(event.worldSpeed) || event.worldSpeed <= 0.01) return null;
+  if (event.actor === "player") {
+    return Object.freeze({
+      frequency: profile.playerStepHertz,
+      colorHertz: profile.stepNoiseColorHertz,
+      pan: 0,
+      peakGain: event.worldSpeed > 3 ? 0.055 : 0.038,
+    });
+  }
+  // Four coarse bands preserve a useful near/far feeling without exposing a
+  // continuously decodable distance to an unseen pursuer.
+  const audibility = Math.round(clampUnit(event.audibility) * 3) / 3;
+  if (audibility <= 0) return null;
+  return Object.freeze({
+    frequency: profile.chaserStepHertz,
+    colorHertz: profile.stepNoiseColorHertz * 0.82,
+    pan: event.pan !== undefined && Number.isFinite(event.pan)
+      ? Math.max(-0.88, Math.min(0.88, event.pan))
+      : 0,
+    peakGain: 0.018 + audibility * 0.052,
+  });
 }
 
 function defaultAudioContext(): AudioContext | null {
@@ -94,11 +234,14 @@ function defaultAudioContext(): AudioContext | null {
   return Context ? new Context() : null;
 }
 
+function footstepSetForTheme(theme: CampaignTheme): FoleySet {
+  return theme === "campus" ? "step-soft" : "step-hard";
+}
+
 /**
- * A compact diegetic layer underneath the mastered adaptive score. It uses a
- * deterministic filtered-noise bed and short physical transients, avoiding a
- * large sample download while still providing footsteps, locker mechanics and
- * directional threat information.
+ * A compact diegetic layer underneath the mastered adaptive score. Recorded
+ * CC0 Foley is streamed after the first audio gesture; deterministic physical
+ * transients remain only as a network/decoder fallback.
  */
 export class ImmersiveSoundscapeController {
   private readonly createContext: () => AudioContext | null;
@@ -110,11 +253,19 @@ export class ImmersiveSoundscapeController {
   private machineryGain: GainNode | null = null;
   private machineryOscillator: OscillatorNode | null = null;
   private theme: CampaignTheme;
+  private themeMechanicActivity = 0;
+  private appliedThemeMechanicActivity = Number.NaN;
   private muted = false;
   private disposed = false;
   private lastPlayerStepSeconds = Number.NEGATIVE_INFINITY;
   private lastChaserStepSeconds = Number.NEGATIVE_INFINITY;
+  private lastPlayerMarkerSeconds = Number.NEGATIVE_INFINITY;
+  private lastChaserMarkerSeconds = Number.NEGATIVE_INFINITY;
   private previousChaserMode: ChaserMode = "spawn-delay";
+  private readonly foleyBuffers = new Map<FoleySet, AudioBuffer[]>();
+  private readonly foleyCursor = new Map<FoleySet, number>();
+  private readonly foleyAbort = new AbortController();
+  private foleyLoadPromise: Promise<void> | null = null;
 
   constructor(
     theme: CampaignTheme,
@@ -131,6 +282,7 @@ export class ImmersiveSoundscapeController {
       if (!context) return false;
       this.context = context;
       this.buildGraph(context);
+      this.foleyLoadPromise = this.preloadFoley(context);
     }
     if (this.context.state !== "running") {
       try {
@@ -144,13 +296,8 @@ export class ImmersiveSoundscapeController {
 
   setTheme(theme: CampaignTheme) {
     this.theme = theme;
-    if (!this.context || !this.ambienceGain || !this.ambienceFilter || !this.machineryGain || !this.machineryOscillator) return;
-    const profile = themeSoundProfile(theme);
-    const now = this.context.currentTime;
-    this.ambienceFilter.frequency.setTargetAtTime(profile.noiseFilterHertz, now, 0.35);
-    this.ambienceGain.gain.setTargetAtTime(profile.noiseGain, now, 0.35);
-    this.machineryOscillator.frequency.setTargetAtTime(profile.machineryHertz, now, 0.4);
-    this.machineryGain.gain.setTargetAtTime(profile.machineryGain, now, 0.4);
+    this.appliedThemeMechanicActivity = Number.NaN;
+    this.applyThemeMix(0.35);
   }
 
   setMuted(muted: boolean) {
@@ -161,39 +308,110 @@ export class ImmersiveSoundscapeController {
     this.master.gain.setTargetAtTime(this.muted ? 0 : 0.72, now, 0.012);
   }
 
+  /**
+   * Smoothly mixes a player-facing theme event into the local ambience. This
+   * never touches the master gain, so mute state remains entirely authoritative.
+   */
+  setThemeMechanicActivity(activity: number): number {
+    this.themeMechanicActivity = clampUnit(activity);
+    const reachedBoundary = this.themeMechanicActivity === 0 || this.themeMechanicActivity === 1;
+    if (
+      !Number.isFinite(this.appliedThemeMechanicActivity)
+      || Math.abs(this.themeMechanicActivity - this.appliedThemeMechanicActivity) >= 0.02
+      || (reachedBoundary && this.themeMechanicActivity !== this.appliedThemeMechanicActivity)
+    ) {
+      this.applyThemeMix(0.18);
+    }
+    return this.themeMechanicActivity;
+  }
+
+  getThemeMechanicActivity(): number {
+    return this.themeMechanicActivity;
+  }
+
+  /**
+   * Plays a theme event with no spatial inputs. A CC0 Foley buffer is preferred
+   * whenever decoded; a short synthesized transient is only a load fallback.
+   */
+  triggerThemeMechanic(): boolean {
+    if (!this.context || this.context.state !== "running" || this.disposed) return false;
+    const profile = themeMechanicAudioProfile(this.theme);
+    const activityMix = 0.72 + this.themeMechanicActivity * 0.28;
+    if (this.playSample(profile.foleySet, 0, profile.peakGain * activityMix, profile.playbackRate)) return true;
+    this.playThemeMechanicFallback(profile, activityMix);
+    return true;
+  }
+
+  /**
+   * Plays a footstep at an authored animation contact. The regular speed
+   * cadence is suppressed briefly for this actor, then resumes automatically
+   * if a legacy asset does not provide contact markers.
+   */
+  triggerAnimationFootstep(event: AnimationFootstepEvent): boolean {
+    if (!Number.isFinite(event.elapsedSeconds)) return false;
+    if (event.actor === "player") this.lastPlayerMarkerSeconds = event.elapsedSeconds;
+    else this.lastChaserMarkerSeconds = event.elapsedSeconds;
+    const cue = footstepCueForAnimationMarker(themeSoundProfile(this.theme), event);
+    if (!cue || !this.context || this.context.state !== "running" || this.disposed) return false;
+    this.playFootstep(cue.frequency, cue.colorHertz, cue.pan, cue.peakGain, event.actor);
+    return true;
+  }
+
   update(frame: SoundscapeFrame) {
     if (!this.context || this.context.state !== "running" || this.disposed) return;
-    if (frame.elapsedSeconds < this.lastPlayerStepSeconds) {
+    if (frame.elapsedSeconds < Math.max(
+      this.lastPlayerStepSeconds,
+      this.lastChaserStepSeconds,
+      this.lastPlayerMarkerSeconds,
+      this.lastChaserMarkerSeconds,
+    )) {
       this.lastPlayerStepSeconds = Number.NEGATIVE_INFINITY;
       this.lastChaserStepSeconds = Number.NEGATIVE_INFINITY;
+      this.lastPlayerMarkerSeconds = Number.NEGATIVE_INFINITY;
+      this.lastChaserMarkerSeconds = Number.NEGATIVE_INFINITY;
       this.previousChaserMode = "spawn-delay";
     }
     const profile = themeSoundProfile(this.theme);
+    const playerMarkersFresh = frame.elapsedSeconds - this.lastPlayerMarkerSeconds <= 0.72;
     const playerCadence = frame.playerSpeed > 3 ? 0.31 : 0.43;
     if (
+      !playerMarkersFresh
+      &&
       frame.playerSpeed > 0.35
       && frame.elapsedSeconds - this.lastPlayerStepSeconds >= playerCadence
     ) {
-      this.playFootstep(profile.playerStepHertz, profile.stepNoiseColorHertz, 0, frame.playerSpeed > 3 ? 0.055 : 0.038);
+      this.playFootstep(
+        profile.playerStepHertz,
+        profile.stepNoiseColorHertz,
+        0,
+        frame.playerSpeed > 3 ? 0.055 : 0.038,
+        "player",
+      );
       this.lastPlayerStepSeconds = frame.elapsedSeconds;
     }
     const chaserAudible = frame.chaserMode !== "spawn-delay";
+    const chaserMarkersFresh = frame.elapsedSeconds - this.lastChaserMarkerSeconds <= 0.72;
     const chaserCadence = frame.chaserMode === "chase" ? 0.3 : 0.49;
     if (
+      !chaserMarkersFresh
+      &&
       chaserAudible
       && frame.chaserSpeed > 0.25
       && frame.elapsedSeconds - this.lastChaserStepSeconds >= chaserCadence
     ) {
-      const distance = Math.hypot(
-        frame.chaserPosition.x - frame.playerPosition.x,
-        frame.chaserPosition.y - frame.playerPosition.y,
-      );
-      // Beyond the readable radius the adaptive music communicates danger,
-      // but footsteps cannot leak a precise off-screen position.
-      if (distance <= 10.5) {
-        const pan = soundPanForWorldPoints(frame.playerPosition, frame.chaserPosition);
-        const gain = Math.max(0.018, 0.082 * (1 - distance / 13));
-        this.playFootstep(profile.chaserStepHertz, profile.stepNoiseColorHertz * 0.82, pan, gain);
+      const audibility = Math.round(clampUnit(frame.chaserAudibility) * 3) / 3;
+      if (audibility > 0) {
+        const pan = Number.isFinite(frame.chaserPan)
+          ? Math.max(-0.88, Math.min(0.88, frame.chaserPan ?? 0))
+          : 0;
+        const gain = 0.018 + audibility * 0.052;
+        this.playFootstep(
+          profile.chaserStepHertz,
+          profile.stepNoiseColorHertz * 0.82,
+          pan,
+          gain,
+          "chaser",
+        );
       }
       this.lastChaserStepSeconds = frame.elapsedSeconds;
     }
@@ -206,6 +424,20 @@ export class ImmersiveSoundscapeController {
 
   trigger(event: DiegeticSoundEvent, pan = 0) {
     if (!this.context || this.context.state !== "running" || this.disposed) return;
+    const sampled = event === "locker-open"
+      ? this.playSample("locker-open", pan, 0.19, 1.08)
+      : event === "locker-close"
+        ? this.playSample("locker-close", pan, 0.2, 1.08)
+        : event === "locker-check"
+          ? this.playSample("locker-latch", pan, 0.18, 0.96)
+          : event === "caught"
+            ? this.playSample("caught", pan, 0.24, 0.9)
+            : event === "alert" || event === "escaped"
+              ? this.playSample("metal-hit", pan, event === "alert" ? 0.08 : 0.13, event === "alert" ? 0.82 : 1.18)
+              : event === "sight-lost"
+                ? this.playSample("cloth", pan, 0.08, 0.88)
+                : false;
+    if (sampled) return;
     const context = this.context;
     const now = context.currentTime;
     const output = this.pannedOutput(pan);
@@ -253,6 +485,7 @@ export class ImmersiveSoundscapeController {
 
   async dispose() {
     this.disposed = true;
+    this.foleyAbort.abort();
     this.ambienceSource?.stop();
     this.machineryOscillator?.stop();
     const context = this.context;
@@ -263,6 +496,9 @@ export class ImmersiveSoundscapeController {
     this.ambienceSource = null;
     this.machineryGain = null;
     this.machineryOscillator = null;
+    this.foleyBuffers.clear();
+    this.foleyCursor.clear();
+    this.foleyLoadPromise = null;
     if (context && context.state !== "closed") {
       try {
         await context.close();
@@ -308,6 +544,40 @@ export class ImmersiveSoundscapeController {
     this.machineryOscillator = machinery;
   }
 
+  private applyThemeMix(timeConstantSeconds: number) {
+    if (!this.context || !this.ambienceGain || !this.ambienceFilter || !this.machineryGain || !this.machineryOscillator) return;
+    const profile = themeSoundProfile(this.theme);
+    const activity = this.themeMechanicActivity;
+    const now = this.context.currentTime;
+    const smooth = (parameter: AudioParam, value: number) => {
+      if (typeof parameter.cancelAndHoldAtTime === "function") {
+        parameter.cancelAndHoldAtTime(now);
+      } else {
+        const heldValue = parameter.value;
+        parameter.cancelScheduledValues(now);
+        parameter.setValueAtTime(heldValue, now);
+      }
+      parameter.setTargetAtTime(value, now, timeConstantSeconds);
+    };
+    smooth(
+      this.ambienceFilter.frequency,
+      profile.noiseFilterHertz * (1 - activity * 0.18),
+    );
+    smooth(
+      this.ambienceGain.gain,
+      profile.noiseGain * (1 + activity * 1.1),
+    );
+    smooth(
+      this.machineryOscillator.frequency,
+      profile.machineryHertz * (1 + activity * 0.06),
+    );
+    smooth(
+      this.machineryGain.gain,
+      profile.machineryGain * (1 + activity * 2.4),
+    );
+    this.appliedThemeMechanicActivity = activity;
+  }
+
   private noiseBuffer(context: AudioContext, seconds: number) {
     const length = Math.max(1, Math.floor(context.sampleRate * seconds));
     const buffer = context.createBuffer(1, length, context.sampleRate);
@@ -325,9 +595,95 @@ export class ImmersiveSoundscapeController {
     return buffer;
   }
 
-  private playFootstep(frequency: number, colorHertz: number, pan: number, peakGain: number) {
+  private async preloadFoley(context: AudioContext) {
+    const pending = (Object.entries(FOLEY_ASSET_URLS) as [FoleySet, readonly string[]][])
+      .flatMap(([set, urls]) => urls.map((url) => ({ set, url })));
+    let cursor = 0;
+    const loadNext = async () => {
+      while (!this.disposed && cursor < pending.length) {
+        const asset = pending[cursor];
+        cursor += 1;
+        try {
+          const response = await fetch(asset.url, {
+            cache: "force-cache",
+            signal: this.foleyAbort.signal,
+          });
+          if (!response.ok) continue;
+          const decoded = await context.decodeAudioData(await response.arrayBuffer());
+          if (this.disposed) return;
+          const buffers = this.foleyBuffers.get(asset.set) ?? [];
+          buffers.push(decoded);
+          this.foleyBuffers.set(asset.set, buffers);
+        } catch {
+          if (this.foleyAbort.signal.aborted) return;
+        }
+      }
+    };
+    await Promise.all([loadNext(), loadNext(), loadNext()]);
+  }
+
+  private playSample(
+    set: FoleySet,
+    pan: number,
+    peakGain: number,
+    playbackRate: number,
+  ): boolean {
+    const context = this.context;
+    const buffers = this.foleyBuffers.get(set);
+    if (!context || !buffers?.length) return false;
+    const index = this.foleyCursor.get(set) ?? 0;
+    const buffer = buffers[index % buffers.length];
+    this.foleyCursor.set(set, index + 1);
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = playbackRate;
+    const gain = context.createGain();
+    gain.gain.value = peakGain;
+    source.connect(gain);
+    gain.connect(this.pannedOutput(pan));
+    source.start();
+    return true;
+  }
+
+  private playThemeMechanicFallback(profile: ThemeMechanicAudioProfile, activityMix: number) {
     const context = this.context;
     if (!context) return;
+    const now = context.currentTime;
+    const output = this.pannedOutput(0);
+    const gain = context.createGain();
+    const peakGain = profile.peakGain * activityMix * 0.7;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(peakGain, now + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + profile.fallbackDurationSeconds);
+    gain.connect(output);
+    const oscillator = context.createOscillator();
+    oscillator.type = this.theme === "factory" ? "sawtooth" : this.theme === "campus" ? "triangle" : "sine";
+    oscillator.frequency.setValueAtTime(profile.fallbackHertz, now);
+    oscillator.frequency.exponentialRampToValueAtTime(
+      Math.max(34, profile.fallbackHertz * (this.theme === "campus" ? 1.58 : 0.68)),
+      now + profile.fallbackDurationSeconds,
+    );
+    oscillator.connect(gain);
+    oscillator.start(now);
+    oscillator.stop(now + profile.fallbackDurationSeconds + 0.02);
+  }
+
+  private playFootstep(
+    frequency: number,
+    colorHertz: number,
+    pan: number,
+    peakGain: number,
+    actor: FootstepActor,
+  ) {
+    const context = this.context;
+    if (!context) return;
+    const sampled = this.playSample(
+      footstepSetForTheme(this.theme),
+      pan,
+      peakGain * (actor === "chaser" ? 1.75 : 1.6),
+      actor === "chaser" ? 0.84 : 1.06,
+    );
+    if (sampled) return;
     const now = context.currentTime;
     const output = this.pannedOutput(pan);
     const filter = context.createBiquadFilter();

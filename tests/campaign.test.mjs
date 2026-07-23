@@ -4,11 +4,15 @@ import test from "node:test";
 import {
   CAMPAIGN_LEVEL_COUNT,
   CAMPAIGN_LEVELS,
+  createPlayerKnowledge,
   getCampaignGameplayConfig,
   getCampaignLevelById,
   getCampaignLevelByIndex,
   getCampaignLevelByNumber,
   getCampaignLevelsByTheme,
+  PUBLIC_THREAT_ACTIVE_THRESHOLD,
+  PUBLIC_THREAT_RELEASE_SECONDS,
+  updatePlayerKnowledge,
 } from "../app/game/campaign.ts";
 import { createLevel } from "../app/game/level.ts";
 import { distanceBetween, findPath, isWalkable, neighbors } from "../app/game/navigation.ts";
@@ -188,6 +192,39 @@ test("campaign difficulty scales confirmation, search intensity, hearing and fai
   assert.ok(new Set(configs.map((config) => config.searchSeconds)).size >= 8);
   assert.ok(configs.at(-1).searchSeconds > configs[0].searchSeconds);
   assert.ok(configs.at(-1).suspiciousSeconds < configs[0].suspiciousSeconds);
+});
+
+test("player knowledge exposes a release-smoothed public threat without AI state", () => {
+  const initial = createPlayerKnowledge();
+  assert.deepEqual(initial, {
+    threat: "calm",
+    quietSeconds: PUBLIC_THREAT_RELEASE_SECONDS,
+  });
+  assert.equal(Object.isFrozen(initial), true);
+  assert.equal("mode" in initial, false);
+  assert.equal("position" in initial, false);
+
+  const alerted = updatePlayerKnowledge(initial, {
+    audioThreat: PUBLIC_THREAT_ACTIVE_THRESHOLD,
+    visibleThreat: false,
+  }, 1 / 60);
+  assert.deepEqual(alerted, { threat: "active", quietSeconds: 0 });
+  const caution = updatePlayerKnowledge(alerted, {
+    audioThreat: 0.52,
+    visibleThreat: false,
+  }, 1);
+  assert.deepEqual(caution, { threat: "caution", quietSeconds: 0 });
+  const releasing = updatePlayerKnowledge(alerted, {
+    audioThreat: 0,
+    visibleThreat: false,
+  }, PUBLIC_THREAT_RELEASE_SECONDS - 0.01);
+  assert.equal(releasing.threat, "caution");
+  const calm = updatePlayerKnowledge(releasing, {
+    audioThreat: 0,
+    visibleThreat: false,
+  }, 0.01);
+  assert.equal(calm.threat, "calm");
+  assert.equal(calm.quietSeconds, PUBLIC_THREAT_RELEASE_SECONDS);
 });
 
 test("campaign lookup supports ids, zero-based indexes and player-facing numbers", () => {

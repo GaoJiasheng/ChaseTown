@@ -13,6 +13,13 @@ const REPORT = path.join(
   "reports",
   "character-runtime-meshopt.json",
 );
+const KTX2_REPORT = path.join(
+  ROOT,
+  "docs",
+  "art_production",
+  "reports",
+  "runtime-ktx2.json",
+);
 const EXPECTED_ARGUMENTS = [
   "-c",
   "-kn",
@@ -59,6 +66,12 @@ function glbJson(buffer, filename) {
 
 test("character runtime optimization report and shipped GLBs stay reproducible", async () => {
   const report = JSON.parse(await readFile(REPORT, "utf8"));
+  const ktx2Report = JSON.parse(await readFile(KTX2_REPORT, "utf8"));
+  const ktx2ByRole = new Map(
+    ktx2Report.assets
+      .filter((entry) => entry.path.includes("/models/characters/"))
+      .map((entry) => [path.basename(entry.path, ".glb"), entry]),
+  );
   assert.equal(report.formatVersion, 1);
   assert.deepEqual(report.tool.arguments, EXPECTED_ARGUMENTS);
   assert.deepEqual(report.policy, {
@@ -76,6 +89,7 @@ test("character runtime optimization report and shipped GLBs stay reproducible",
   let sourceBytes = 0;
   let optimizedBytes = 0;
   let savedBytes = 0;
+  let shippedBytes = 0;
   for (const entry of report.characters) {
     const filename = path.join(ROOT, "public", "models", "characters", `${entry.role}.glb`);
     const buffer = await readFile(filename);
@@ -83,11 +97,17 @@ test("character runtime optimization report and shipped GLBs stay reproducible",
     sourceBytes += entry.source.bytes;
     optimizedBytes += entry.optimized.bytes;
     savedBytes += entry.optimized.savedBytes;
+    const ktx2Entry = ktx2ByRole.get(entry.role);
+    assert.ok(ktx2Entry, `${entry.role} has no KTX2 provenance entry`);
+    assert.equal(ktx2Entry.source.bytes, entry.optimized.bytes, `${entry.role} KTX2 source byte count drifted`);
+    assert.equal(ktx2Entry.source.sha256, entry.optimized.sha256, `${entry.role} KTX2 source hash drifted`);
+    shippedBytes += ktx2Entry.output.bytes;
 
-    assert.equal(buffer.length, entry.optimized.bytes, `${entry.role} byte count drifted`);
-    assert.equal(sha256(buffer), entry.optimized.sha256, `${entry.role} hash drifted`);
+    assert.equal(buffer.length, ktx2Entry.output.bytes, `${entry.role} byte count drifted`);
+    assert.equal(sha256(buffer), ktx2Entry.output.sha256, `${entry.role} hash drifted`);
     assert.ok(buffer.length <= ROLE_BUDGETS.get(entry.role), `${entry.role} exceeds its runtime budget`);
     assert.ok(gltf.extensionsRequired?.includes("EXT_meshopt_compression"), `${entry.role} lost Meshopt`);
+    assert.ok(gltf.extensionsRequired?.includes("KHR_texture_basisu"), `${entry.role} lost KTX2`);
     assert.equal(
       gltf.extensionsRequired?.includes("KHR_mesh_quantization"),
       false,
@@ -114,4 +134,5 @@ test("character runtime optimization report and shipped GLBs stay reproducible",
   assert.equal(report.totals.savedBytes, sourceBytes - optimizedBytes);
   assert.ok(report.totals.optimizedBytes <= 18_500_000, "character runtime payload exceeds 18.5 MB");
   assert.ok(report.totals.savedPercent >= 40, "character runtime compression regressed below 40%");
+  assert.ok(shippedBytes <= 15_600_000, "KTX2 character runtime payload exceeds 15.6 MB");
 });

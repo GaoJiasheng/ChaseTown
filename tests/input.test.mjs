@@ -4,6 +4,7 @@ import * as THREE from "three";
 
 import {
   FIXED_CAMERA_GROUND_DIRECTION,
+  fixedCameraGroundBasis,
   screenMoveToWorld,
   shouldIgnoreFocusedControlKey,
 } from "../app/game/input.ts";
@@ -17,12 +18,7 @@ test("focused controls own Space and Enter without duplicate global commands", (
 });
 
 test("fixed-camera controls resolve exactly along the labelled screen axes", () => {
-  const length = Math.hypot(FIXED_CAMERA_GROUND_DIRECTION.x, FIXED_CAMERA_GROUND_DIRECTION.y);
-  const screenDown = {
-    x: FIXED_CAMERA_GROUND_DIRECTION.x / length,
-    y: FIXED_CAMERA_GROUND_DIRECTION.y / length,
-  };
-  const screenRight = { x: screenDown.y, y: -screenDown.x };
+  const { cameraBack: screenDown, screenRight } = fixedCameraGroundBasis();
   const dot = (left, right) => left.x * right.x + left.y * right.y;
 
   const up = screenMoveToWorld({ x: 0, y: -1 });
@@ -36,6 +32,15 @@ test("fixed-camera controls resolve exactly along the labelled screen axes", () 
   assert.ok(Math.abs(dot(right, screenRight) - 1) < 1e-12);
   assert.ok(Math.abs(dot(up, screenRight)) < 1e-12);
   assert.ok(Math.abs(dot(right, screenDown)) < 1e-12);
+});
+
+test("shared fixed-camera basis is immutable and retains the authored non-45-degree azimuth", () => {
+  const basis = fixedCameraGroundBasis();
+  assert.ok(Object.isFrozen(basis));
+  assert.ok(Object.isFrozen(basis.screenRight));
+  assert.ok(Math.abs(basis.screenRight.x - Math.SQRT1_2) > 0.1);
+  assert.ok(Math.abs(Math.hypot(basis.cameraBack.x, basis.cameraBack.y) - 1) < 1e-12);
+  assert.ok(Math.abs(Math.hypot(basis.screenRight.x, basis.screenRight.y) - 1) < 1e-12);
 });
 
 test("screen-space diagonals stay normalized and opposing input stays neutral", () => {

@@ -22,3 +22,9 @@ test("every capture class produces one concise, actionable correction", () => {
 test("legacy states without an explicit reason retain a useful fallback", () => {
   assert.equal(failureFeedback(null).title, "在走廊里被追上");
 });
+
+test("witnessed locker feedback matches the cancellable and committed entry phases", () => {
+  const hint = failureFeedback("witnessed-hide-check").hint;
+  assert.match(hint, /对齐柜门时可移动取消/);
+  assert.match(hint, /开门动作开始后就无法反悔/);
+});

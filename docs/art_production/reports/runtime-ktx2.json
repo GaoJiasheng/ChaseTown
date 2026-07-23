@@ -1,0 +1,1927 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-07-23T09:24:34.173Z",
+  "policy": {
+    "geometryRepacked": false,
+    "semanticHierarchyByteStable": true,
+    "characterTextures": "UASTC quality 10 with Zstandard supercompression",
+    "themeColorTextures": "ETC1S quality 10 with BasisLZ supercompression",
+    "themeNormalAndAttributeTextures": "UASTC quality 10 with Zstandard supercompression",
+    "themeTextureStorage": "External SHA-256-addressed KTX2 payloads shared across all four theme packages.",
+    "lockerTextures": "Retain the existing shared external PNG contract; no duplicate KTX2 payload.",
+    "sourceTextureFallbacks": false,
+    "cumulativeRepacking": false
+  },
+  "tool": {
+    "name": "gltfpack",
+    "version": "gltfpack 1.2",
+    "nativeBinaryCommitted": false,
+    "encoderInput": "Pinned Sharp 0.35.0 converts legacy WebP sources to temporary PNG only."
+  },
+  "totals": {
+    "sourceAssetBytes": 24263340,
+    "outputAssetBytes": 20948296,
+    "sharedTextureBytes": 2572090,
+    "deploymentBytes": 23520386,
+    "uncachedAllThemesBytes": 29543769,
+    "deduplicatedBytes": 6023383,
+    "savedBytes": 742954,
+    "savedPercent": 3.062
+  },
+  "sharedTextures": [
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7.ktx2",
+      "sourceNames": [
+        "Env_RubberBlack_BaseColor_2K"
+      ],
+      "bytes": 44218,
+      "sha256": "01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7",
+      "mode": "ETC1S",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2",
+      "sourceNames": [
+        "Env_PaintedWall_Normal_2K",
+        "Env_Paper_Normal_2K"
+      ],
+      "bytes": 143197,
+      "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c.ktx2",
+      "sourceNames": [
+        "Env_WornMetal_Normal_2K"
+      ],
+      "bytes": 290172,
+      "sha256": "1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2.ktx2",
+      "sourceNames": [
+        "Env_PaintedWall_BaseColor_2K"
+      ],
+      "bytes": 28057,
+      "sha256": "330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2",
+      "mode": "ETC1S",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474.ktx2",
+      "sourceNames": [
+        "Env_BluePaintedMetal_Normal_2K",
+        "Env_RedPaintedMetal_Normal_2K"
+      ],
+      "bytes": 44631,
+      "sha256": "3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e.ktx2",
+      "sourceNames": [
+        "Env_Paper_ORM_512"
+      ],
+      "bytes": 52412,
+      "sha256": "3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76.ktx2",
+      "sourceNames": [
+        "Env_RubberBlack_Normal_2K"
+      ],
+      "bytes": 254990,
+      "sha256": "58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d.ktx2",
+      "sourceNames": [
+        "Env_RedPaintedMetal_ORM_512"
+      ],
+      "bytes": 143633,
+      "sha256": "699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/7baa747e0762d7ea248d99f5a918373cea8e8b8b837a38c6af8b5a5994641b3e.ktx2",
+      "sourceNames": [
+        "Env_BluePaintedMetal_ORM_512"
+      ],
+      "bytes": 136955,
+      "sha256": "7baa747e0762d7ea248d99f5a918373cea8e8b8b837a38c6af8b5a5994641b3e",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/82c43d40b01632a9c7d4b3e40b9c571ca8627aa709f191e7c133fb60312459f8.ktx2",
+      "sourceNames": [
+        "Env_BluePaintedMetal_BaseColor_2K"
+      ],
+      "bytes": 13598,
+      "sha256": "82c43d40b01632a9c7d4b3e40b9c571ca8627aa709f191e7c133fb60312459f8",
+      "mode": "ETC1S",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166.ktx2",
+      "sourceNames": [
+        "Env_PaintedWall_ORM_512"
+      ],
+      "bytes": 71424,
+      "sha256": "874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef.ktx2",
+      "sourceNames": [
+        "Env_Paper_BaseColor_2K"
+      ],
+      "bytes": 17019,
+      "sha256": "918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef",
+      "mode": "ETC1S",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/9e64e1febc7cee93ff759028998d3f19ac5ea166a7e0a5bca6203bf378be8fda.ktx2",
+      "sourceNames": [
+        "Env_WoodTrim_ORM_512"
+      ],
+      "bytes": 157648,
+      "sha256": "9e64e1febc7cee93ff759028998d3f19ac5ea166a7e0a5bca6203bf378be8fda",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/a493282b5c86c9918fbb0f0fa0da898dad7317d1acf1d2a01474cdbd17ab7b7e.ktx2",
+      "sourceNames": [
+        "Env_Grass_BaseColor_2K"
+      ],
+      "bytes": 61349,
+      "sha256": "a493282b5c86c9918fbb0f0fa0da898dad7317d1acf1d2a01474cdbd17ab7b7e",
+      "mode": "ETC1S",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94.ktx2",
+      "sourceNames": [
+        "Env_RedPaintedMetal_BaseColor_2K"
+      ],
+      "bytes": 13614,
+      "sha256": "a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94",
+      "mode": "ETC1S",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4.ktx2",
+      "sourceNames": [
+        "Env_RubberBlack_ORM_512"
+      ],
+      "bytes": 78554,
+      "sha256": "b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/b61a5676ded2dd69788a6c4891fe9f078ba4960c6bee8270c2534df3965ce852.ktx2",
+      "sourceNames": [
+        "Env_Grass_ORM_512"
+      ],
+      "bytes": 240642,
+      "sha256": "b61a5676ded2dd69788a6c4891fe9f078ba4960c6bee8270c2534df3965ce852",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/cb27110682bf28734155c156adbb1650575a0556223e66b7034d62d8e6c58ca1.ktx2",
+      "sourceNames": [
+        "Env_Grass_Normal_2K"
+      ],
+      "bytes": 336796,
+      "sha256": "cb27110682bf28734155c156adbb1650575a0556223e66b7034d62d8e6c58ca1",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21.ktx2",
+      "sourceNames": [
+        "Env_WornMetal_ORM_512"
+      ],
+      "bytes": 215895,
+      "sha256": "d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/d8430a26b1657db2fe515c497dec6030b49377269c0b63631923394cf3a2955b.ktx2",
+      "sourceNames": [
+        "Env_WoodTrim_BaseColor_2K"
+      ],
+      "bytes": 30108,
+      "sha256": "d8430a26b1657db2fe515c497dec6030b49377269c0b63631923394cf3a2955b",
+      "mode": "ETC1S",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/e53737ae27179a278c48be9a604375c555bbdf3a59c5ff9fea6758b09e48764e.ktx2",
+      "sourceNames": [
+        "Env_WoodTrim_Normal_2K"
+      ],
+      "bytes": 144898,
+      "sha256": "e53737ae27179a278c48be9a604375c555bbdf3a59c5ff9fea6758b09e48764e",
+      "mode": "UASTC",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    },
+    {
+      "path": "public/models/environment/SharedTexturesKTX2/fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3.ktx2",
+      "sourceNames": [
+        "Env_WornMetal_BaseColor_2K"
+      ],
+      "bytes": 52280,
+      "sha256": "fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3",
+      "mode": "ETC1S",
+      "width": 512,
+      "height": 512,
+      "levels": 10
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/models/characters/kid.glb",
+      "policy": "uastc",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tu",
+        "-tq",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "source": {
+        "bytes": 4946804,
+        "sha256": "4a63a216f0d55c61ac047f98eff28bafdd3757dcb6de1529a7a3c250c9939186",
+        "embeddedImageBytes": 2554577
+      },
+      "output": {
+        "bytes": 4492164,
+        "sha256": "c278b6475c516d516691d2357e5446ce46fd10f67110ec73d3a71de542aad5c6",
+        "embeddedImageBytes": 2099813,
+        "externalTextureBytes": 0,
+        "uncachedFirstLoadBytes": 4492164,
+        "savedBytes": 454640,
+        "savedPercent": 9.191
+      },
+      "gpuUploadEstimate": {
+        "decodedRgbaBytesBefore": 28661060,
+        "blockCompressedBytesAfter": 7165265,
+        "savedBytes": 21495795,
+        "savedPercent": 75
+      },
+      "structure": {
+        "nodes": {
+          "count": 57,
+          "sha256": "56b3b262068220d763da3532c5e83a975e3b6092481018477d5df064de71578d"
+        },
+        "meshes": {
+          "count": 35,
+          "sha256": "768d8706953b5f3e04d6789a6306baf88477a376859f78b7d0da03d2f86f6e89"
+        },
+        "materials": {
+          "count": 12,
+          "sha256": "71b29c7e613ca99a6885d006b667b49217c663c2ffb86b408ffd61570611fc3c"
+        },
+        "animations": {
+          "count": 12,
+          "sha256": "7e8cebe29664518a4eaff0199793e571a7319969d4dd9d0592ce981337249f2e"
+        },
+        "skinJoints": {
+          "count": 1,
+          "sha256": "d053563dbe1aca8af70c4680cebc7a27ba95f1b44a4912f17638d345457638b0"
+        },
+        "semanticJsonSha256": "cdc36a5329d3a1f6febe08611e8854a1e6142f1b4841908dec95a3af0d1da70b"
+      },
+      "textures": [
+        {
+          "name": "Char_Kid_PrecisionRemodel_v21_Normal_768",
+          "expectedMode": "UASTC",
+          "bytes": 594568,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "78cadafa0b7ed6d0af435ffead2839d7d436704f1151461d60dd14194d399546"
+        },
+        {
+          "name": "Char_Kid_PrecisionRemodel_v21_ORM_768",
+          "expectedMode": "UASTC",
+          "bytes": 565917,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "d2187ed1eaa39c92bdb8542cfb4b2a193969d061631267c54110e6346c31f386"
+        },
+        {
+          "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+          "expectedMode": "UASTC",
+          "bytes": 939328,
+          "width": 2048,
+          "height": 2048,
+          "levels": 12,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "4d3bbeb4d351f9034f3577e8a81d2cb6368b4f8b61f76cc443f7cd65a06ea41a"
+        }
+      ]
+    },
+    {
+      "path": "public/models/characters/villain.glb",
+      "policy": "uastc",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tu",
+        "-tq",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "source": {
+        "bytes": 4669516,
+        "sha256": "06f8e90ed2e34e2dce9d9d1a57b1dd3e88eda8afa275d69d00c70d7a032807d4",
+        "embeddedImageBytes": 2164782
+      },
+      "output": {
+        "bytes": 4225956,
+        "sha256": "5a3244fa2e8a09c3b3476a912f0d4b5f21f21cdc14669a867257baa43e445871",
+        "embeddedImageBytes": 1721100,
+        "externalTextureBytes": 0,
+        "uncachedFirstLoadBytes": 4225956,
+        "savedBytes": 443560,
+        "savedPercent": 9.499
+      },
+      "gpuUploadEstimate": {
+        "decodedRgbaBytesBefore": 28661060,
+        "blockCompressedBytesAfter": 7165265,
+        "savedBytes": 21495795,
+        "savedPercent": 75
+      },
+      "structure": {
+        "nodes": {
+          "count": 34,
+          "sha256": "afaf901d016608a5a0b010fee78c7342b0110c2e01fa5f9e4be738d0b916622e"
+        },
+        "meshes": {
+          "count": 12,
+          "sha256": "e8e67f77c7df82f43ac7fa176356d1fa181fdbf259807be5a382b5858c839821"
+        },
+        "materials": {
+          "count": 6,
+          "sha256": "cb03907b36fcad9c9eabbee8c5fa13f27a5207131e434c1dbabade7390c2ebe5"
+        },
+        "animations": {
+          "count": 8,
+          "sha256": "79fa64c1a2b2d6dfc4fbddd222b0041a85540196088b46672dfed2ea98bc5a42"
+        },
+        "skinJoints": {
+          "count": 1,
+          "sha256": "d053563dbe1aca8af70c4680cebc7a27ba95f1b44a4912f17638d345457638b0"
+        },
+        "semanticJsonSha256": "01ca514f17c0f731485dec6865bdadd8c938ad77569d02f7e7406e13fd0f4887"
+      },
+      "textures": [
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+          "expectedMode": "UASTC",
+          "bytes": 594845,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "ab458195524d518b2acd8b0d37040503c589e1c7952986f10f2b515896820989"
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
+          "expectedMode": "UASTC",
+          "bytes": 565991,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "74437c7125eb0b1d430eb6f556520b2d9491345e28772dda0be2ba416ba3fae0"
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+          "expectedMode": "UASTC",
+          "bytes": 560264,
+          "width": 2048,
+          "height": 2048,
+          "levels": 12,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "65a56bbaedfe76449c909f9bd51c52194557123d20dfadc34257d18aeabb46e6"
+        }
+      ]
+    },
+    {
+      "path": "public/models/characters/police.glb",
+      "policy": "uastc",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tu",
+        "-tq",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "source": {
+        "bytes": 8673828,
+        "sha256": "03791e4f688477ccd1aaafc4cb8adfd6b8fa6dadc1e6cc7d1977469262bae618",
+        "embeddedImageBytes": 8023313
+      },
+      "output": {
+        "bytes": 6873868,
+        "sha256": "768841bb45da54f12805e5593a5c1876f2eb6600422da821b9899a583efe9fa4",
+        "embeddedImageBytes": 6223077,
+        "externalTextureBytes": 0,
+        "uncachedFirstLoadBytes": 6873868,
+        "savedBytes": 1799960,
+        "savedPercent": 20.752
+      },
+      "gpuUploadEstimate": {
+        "decodedRgbaBytesBefore": 43690624,
+        "blockCompressedBytesAfter": 10922656,
+        "savedBytes": 32767968,
+        "savedPercent": 75
+      },
+      "structure": {
+        "nodes": {
+          "count": 60,
+          "sha256": "4014d4e0d1c79b392ad99871248504eafc6ffacf50e375f53cab7aad9f787510"
+        },
+        "meshes": {
+          "count": 38,
+          "sha256": "e560d7f44c0f3077f20184c3a7f59c38559cb3256631050202cfbe4f70c7e543"
+        },
+        "materials": {
+          "count": 14,
+          "sha256": "0709e167400ecc92166aa340d6ad8c55b28659bffdb6c78e3a931ea28eb369d8"
+        },
+        "animations": {
+          "count": 5,
+          "sha256": "098b8a9e486d35a755ae6693059e953769d852da33d9482027361a50b38e96f2"
+        },
+        "skinJoints": {
+          "count": 1,
+          "sha256": "4d3734583ec8333ee864d4e139a4680502785eff172e4a31c1cdfc46977f6d0b"
+        },
+        "semanticJsonSha256": "63558b187246802a011034f16843e81b37dcede29d3dafcffa346c9e002c3d5e"
+      },
+      "textures": [
+        {
+          "name": "Police_v22_Skin_MicroNormal_768",
+          "expectedMode": "UASTC",
+          "bytes": 458512,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "cf7098b403c97f7d8b174f953d25087b6ab448f7a0c06b4a2ed57114835805ed"
+        },
+        {
+          "name": "Police_v22_Skin_ORM_768",
+          "expectedMode": "UASTC",
+          "bytes": 465037,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "1fc5c20ae9bbc33b8fc53d37c50f36761b5252b7c6ceda72fbea50c8b84fabb6"
+        },
+        {
+          "name": "young_lightskinned_male_diffuse2",
+          "expectedMode": "UASTC",
+          "bytes": 3653212,
+          "width": 2048,
+          "height": 2048,
+          "levels": 12,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "25f2c8c9cdfa655066890aec5bd12a0db4a5f74485ecc8436fb7bcdfc7411b47"
+        },
+        {
+          "name": "Police_v22_CasualSuit_Normal_1K",
+          "expectedMode": "UASTC",
+          "bytes": 809547,
+          "width": 1024,
+          "height": 1024,
+          "levels": 11,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "b2fd708c3f52d5645bb0379e48bcd606996ff3ef7a5e31da4ce31af690010947"
+        },
+        {
+          "name": "Police_v22_Uniform_ORM_768",
+          "expectedMode": "UASTC",
+          "bytes": 467348,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "bb29526ed8e9698e02c42f55b5d99e4a18fa5ab740765d883060bc7f4df61f99"
+        },
+        {
+          "name": "Police_v22_Uniform_BaseColor_768",
+          "expectedMode": "UASTC",
+          "bytes": 187396,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3d98e1c22a023bcbc626c135f1d37400db1295cb67d412c06d9ce1018c0453e3"
+        },
+        {
+          "name": "Police_v22_Trouser_BaseColor_768",
+          "expectedMode": "UASTC",
+          "bytes": 182025,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "ac0a3f3fde029645e4c0090f002aaa787f49bfc32d01f859c2cf0aa90912d1a9"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/themes/campus-kit.glb",
+      "policy": "theme-mixed",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tc",
+        "color",
+        "-tu",
+        "normal,attrib",
+        "-tq",
+        "color",
+        "10",
+        "-tq",
+        "normal,attrib",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "source": {
+        "bytes": 1833968,
+        "sha256": "60f8ec57af0782a9ab7d3dff59e4e60160164b5fbee54b81f824f5f085db7c99",
+        "embeddedImageBytes": 247304
+      },
+      "output": {
+        "bytes": 1585960,
+        "sha256": "c5672bda88ab26056c2e02303108c186cdba0b51256ad903ab54a5f3042f9745",
+        "embeddedImageBytes": 0,
+        "externalTextureBytes": 2759918,
+        "uncachedFirstLoadBytes": 4345878,
+        "savedBytes": 248008,
+        "savedPercent": 13.523
+      },
+      "gpuUploadEstimate": {
+        "decodedRgbaBytesBefore": 33554400,
+        "blockCompressedBytesAfter": 8388600,
+        "savedBytes": 25165800,
+        "savedPercent": 75
+      },
+      "structure": {
+        "nodes": {
+          "count": 348,
+          "sha256": "2b4146dd7ceb27f1f672f1827e5ffa1dd168f9b8e9a6c60297f6e2e4c1459b27"
+        },
+        "meshes": {
+          "count": 155,
+          "sha256": "13c281da4dc513c21485554dbd6e25a0a92de4d8b6f672700126dd08dc27ce3f"
+        },
+        "materials": {
+          "count": 26,
+          "sha256": "5aa7d77a798bae687ddf24b71593ff9bbdf2f7337f3195c9685f697aeb0de16c"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "skinJoints": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "semanticJsonSha256": "a2de8a21bcd77e273e378f930324c1b27940f38a8d06e05378ba0e04131f193b"
+      },
+      "textures": [
+        {
+          "name": "Env_WoodTrim_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 144898,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "e53737ae27179a278c48be9a604375c555bbdf3a59c5ff9fea6758b09e48764e",
+          "uri": "../SharedTexturesKTX2/e53737ae27179a278c48be9a604375c555bbdf3a59c5ff9fea6758b09e48764e.ktx2"
+        },
+        {
+          "name": "Env_WoodTrim_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 157648,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "9e64e1febc7cee93ff759028998d3f19ac5ea166a7e0a5bca6203bf378be8fda",
+          "uri": "../SharedTexturesKTX2/9e64e1febc7cee93ff759028998d3f19ac5ea166a7e0a5bca6203bf378be8fda.ktx2"
+        },
+        {
+          "name": "Env_WoodTrim_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 30108,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "d8430a26b1657db2fe515c497dec6030b49377269c0b63631923394cf3a2955b",
+          "uri": "../SharedTexturesKTX2/d8430a26b1657db2fe515c497dec6030b49377269c0b63631923394cf3a2955b.ktx2"
+        },
+        {
+          "name": "Env_BluePaintedMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 44631,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474",
+          "uri": "../SharedTexturesKTX2/3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474.ktx2"
+        },
+        {
+          "name": "Env_BluePaintedMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 136955,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "7baa747e0762d7ea248d99f5a918373cea8e8b8b837a38c6af8b5a5994641b3e",
+          "uri": "../SharedTexturesKTX2/7baa747e0762d7ea248d99f5a918373cea8e8b8b837a38c6af8b5a5994641b3e.ktx2"
+        },
+        {
+          "name": "Env_BluePaintedMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 13598,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "82c43d40b01632a9c7d4b3e40b9c571ca8627aa709f191e7c133fb60312459f8",
+          "uri": "../SharedTexturesKTX2/82c43d40b01632a9c7d4b3e40b9c571ca8627aa709f191e7c133fb60312459f8.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 44631,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474",
+          "uri": "../SharedTexturesKTX2/3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 143633,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d",
+          "uri": "../SharedTexturesKTX2/699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 13614,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94",
+          "uri": "../SharedTexturesKTX2/a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 143197,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+          "uri": "../SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 71424,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166",
+          "uri": "../SharedTexturesKTX2/874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 28057,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2",
+          "uri": "../SharedTexturesKTX2/330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 254990,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76",
+          "uri": "../SharedTexturesKTX2/58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 78554,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4",
+          "uri": "../SharedTexturesKTX2/b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 44218,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7",
+          "uri": "../SharedTexturesKTX2/01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 290172,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c",
+          "uri": "../SharedTexturesKTX2/1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 215895,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21",
+          "uri": "../SharedTexturesKTX2/d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 52280,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3",
+          "uri": "../SharedTexturesKTX2/fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3.ktx2"
+        },
+        {
+          "name": "Env_Paper_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 143197,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+          "uri": "../SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2"
+        },
+        {
+          "name": "Env_Paper_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 52412,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e",
+          "uri": "../SharedTexturesKTX2/3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e.ktx2"
+        },
+        {
+          "name": "Env_Paper_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 17019,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef",
+          "uri": "../SharedTexturesKTX2/918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef.ktx2"
+        },
+        {
+          "name": "Env_Grass_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 336796,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "cb27110682bf28734155c156adbb1650575a0556223e66b7034d62d8e6c58ca1",
+          "uri": "../SharedTexturesKTX2/cb27110682bf28734155c156adbb1650575a0556223e66b7034d62d8e6c58ca1.ktx2"
+        },
+        {
+          "name": "Env_Grass_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 240642,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "b61a5676ded2dd69788a6c4891fe9f078ba4960c6bee8270c2534df3965ce852",
+          "uri": "../SharedTexturesKTX2/b61a5676ded2dd69788a6c4891fe9f078ba4960c6bee8270c2534df3965ce852.ktx2"
+        },
+        {
+          "name": "Env_Grass_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 61349,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "a493282b5c86c9918fbb0f0fa0da898dad7317d1acf1d2a01474cdbd17ab7b7e",
+          "uri": "../SharedTexturesKTX2/a493282b5c86c9918fbb0f0fa0da898dad7317d1acf1d2a01474cdbd17ab7b7e.ktx2"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/themes/hospital-kit.glb",
+      "policy": "theme-mixed",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tc",
+        "color",
+        "-tu",
+        "normal,attrib",
+        "-tq",
+        "color",
+        "10",
+        "-tq",
+        "normal,attrib",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "source": {
+        "bytes": 1177632,
+        "sha256": "d7e6e8b69e2ba562adee85df04bc7ebe5df8b6ad5737b11dd6ccf70802e3a2b4",
+        "embeddedImageBytes": 113274
+      },
+      "output": {
+        "bytes": 1063652,
+        "sha256": "77b9deba829f6e259d867bdba444bc83c8e154ae5baf3b742bcfdd5103428992",
+        "embeddedImageBytes": 0,
+        "externalTextureBytes": 1788477,
+        "uncachedFirstLoadBytes": 2852129,
+        "savedBytes": 113980,
+        "savedPercent": 9.679
+      },
+      "gpuUploadEstimate": {
+        "decodedRgbaBytesBefore": 25165800,
+        "blockCompressedBytesAfter": 6291450,
+        "savedBytes": 18874350,
+        "savedPercent": 75
+      },
+      "structure": {
+        "nodes": {
+          "count": 390,
+          "sha256": "d2e819800cfbfe1cd3ed0c63ee1ef0341c179589056000de7689a447fde3f82a"
+        },
+        "meshes": {
+          "count": 163,
+          "sha256": "6073be8f4350eb4d70b0142012b7ef191e8147791b448b524bff4e3badf2e661"
+        },
+        "materials": {
+          "count": 24,
+          "sha256": "9d7ecbfea82044230d4dfb3ecdd0155289f384208758a29edfc748728b25b4c3"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "skinJoints": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "semanticJsonSha256": "b3b4969463a1eb893f701eaad08b14b2acf7b13818055e667cfaebec422c6205"
+      },
+      "textures": [
+        {
+          "name": "Env_PaintedWall_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 143197,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+          "uri": "../SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 71424,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166",
+          "uri": "../SharedTexturesKTX2/874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 28057,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2",
+          "uri": "../SharedTexturesKTX2/330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2.ktx2"
+        },
+        {
+          "name": "Env_Paper_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 143197,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+          "uri": "../SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2"
+        },
+        {
+          "name": "Env_Paper_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 52412,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e",
+          "uri": "../SharedTexturesKTX2/3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e.ktx2"
+        },
+        {
+          "name": "Env_Paper_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 17019,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef",
+          "uri": "../SharedTexturesKTX2/918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef.ktx2"
+        },
+        {
+          "name": "Env_BluePaintedMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 44631,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474",
+          "uri": "../SharedTexturesKTX2/3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474.ktx2"
+        },
+        {
+          "name": "Env_BluePaintedMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 136955,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "7baa747e0762d7ea248d99f5a918373cea8e8b8b837a38c6af8b5a5994641b3e",
+          "uri": "../SharedTexturesKTX2/7baa747e0762d7ea248d99f5a918373cea8e8b8b837a38c6af8b5a5994641b3e.ktx2"
+        },
+        {
+          "name": "Env_BluePaintedMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 13598,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "82c43d40b01632a9c7d4b3e40b9c571ca8627aa709f191e7c133fb60312459f8",
+          "uri": "../SharedTexturesKTX2/82c43d40b01632a9c7d4b3e40b9c571ca8627aa709f191e7c133fb60312459f8.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 290172,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c",
+          "uri": "../SharedTexturesKTX2/1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 215895,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21",
+          "uri": "../SharedTexturesKTX2/d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 52280,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3",
+          "uri": "../SharedTexturesKTX2/fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 254990,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76",
+          "uri": "../SharedTexturesKTX2/58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 78554,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4",
+          "uri": "../SharedTexturesKTX2/b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 44218,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7",
+          "uri": "../SharedTexturesKTX2/01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 44631,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474",
+          "uri": "../SharedTexturesKTX2/3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 143633,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d",
+          "uri": "../SharedTexturesKTX2/699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 13614,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94",
+          "uri": "../SharedTexturesKTX2/a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94.ktx2"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/themes/fire-station-kit.glb",
+      "policy": "theme-mixed",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tc",
+        "color",
+        "-tu",
+        "normal,attrib",
+        "-tq",
+        "color",
+        "10",
+        "-tq",
+        "normal,attrib",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "source": {
+        "bytes": 1216900,
+        "sha256": "563990af9affde16222e0e07f06998c2fa78f76b9b5a556576506c2c481c5003",
+        "embeddedImageBytes": 123298
+      },
+      "output": {
+        "bytes": 1092952,
+        "sha256": "5c033374387bf951ec274847c9f6f43687dcb5afcbdfc166a04bd0dd914770a4",
+        "embeddedImageBytes": 0,
+        "externalTextureBytes": 1925947,
+        "uncachedFirstLoadBytes": 3018899,
+        "savedBytes": 123948,
+        "savedPercent": 10.186
+      },
+      "gpuUploadEstimate": {
+        "decodedRgbaBytesBefore": 25165800,
+        "blockCompressedBytesAfter": 6291450,
+        "savedBytes": 18874350,
+        "savedPercent": 75
+      },
+      "structure": {
+        "nodes": {
+          "count": 699,
+          "sha256": "79d892c15213dce2d84c089e6b090bcd298736f67e11290ea22fe06820a43a90"
+        },
+        "meshes": {
+          "count": 157,
+          "sha256": "c25cc07f6fd2d325651cd0c4395592cd16b399b4d8f501542a27b619496d95e9"
+        },
+        "materials": {
+          "count": 25,
+          "sha256": "d07c6aa136f96caf818aa360cfccfadc052c1dd9a880f95fa34bd8edaa56c6c7"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "skinJoints": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "semanticJsonSha256": "32fa8ea2ea3037e3d12ccf6ec6cc9a03f137681be26cbcd5996f35f43ab52266"
+      },
+      "textures": [
+        {
+          "name": "Env_WornMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 290172,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c",
+          "uri": "../SharedTexturesKTX2/1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 215895,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21",
+          "uri": "../SharedTexturesKTX2/d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 52280,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3",
+          "uri": "../SharedTexturesKTX2/fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 44631,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474",
+          "uri": "../SharedTexturesKTX2/3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 143633,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d",
+          "uri": "../SharedTexturesKTX2/699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 13614,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94",
+          "uri": "../SharedTexturesKTX2/a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 254990,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76",
+          "uri": "../SharedTexturesKTX2/58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 78554,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4",
+          "uri": "../SharedTexturesKTX2/b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 44218,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7",
+          "uri": "../SharedTexturesKTX2/01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 143197,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+          "uri": "../SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 71424,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166",
+          "uri": "../SharedTexturesKTX2/874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 28057,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2",
+          "uri": "../SharedTexturesKTX2/330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2.ktx2"
+        },
+        {
+          "name": "Env_WoodTrim_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 144898,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "e53737ae27179a278c48be9a604375c555bbdf3a59c5ff9fea6758b09e48764e",
+          "uri": "../SharedTexturesKTX2/e53737ae27179a278c48be9a604375c555bbdf3a59c5ff9fea6758b09e48764e.ktx2"
+        },
+        {
+          "name": "Env_WoodTrim_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 157648,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "9e64e1febc7cee93ff759028998d3f19ac5ea166a7e0a5bca6203bf378be8fda",
+          "uri": "../SharedTexturesKTX2/9e64e1febc7cee93ff759028998d3f19ac5ea166a7e0a5bca6203bf378be8fda.ktx2"
+        },
+        {
+          "name": "Env_WoodTrim_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 30108,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "d8430a26b1657db2fe515c497dec6030b49377269c0b63631923394cf3a2955b",
+          "uri": "../SharedTexturesKTX2/d8430a26b1657db2fe515c497dec6030b49377269c0b63631923394cf3a2955b.ktx2"
+        },
+        {
+          "name": "Env_Paper_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 143197,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+          "uri": "../SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2"
+        },
+        {
+          "name": "Env_Paper_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 52412,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e",
+          "uri": "../SharedTexturesKTX2/3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e.ktx2"
+        },
+        {
+          "name": "Env_Paper_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 17019,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef",
+          "uri": "../SharedTexturesKTX2/918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef.ktx2"
+        }
+      ]
+    },
+    {
+      "path": "public/models/environment/themes/factory-kit.glb",
+      "policy": "theme-mixed",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tc",
+        "color",
+        "-tu",
+        "normal,attrib",
+        "-tq",
+        "color",
+        "10",
+        "-tq",
+        "normal,attrib",
+        "10",
+        "-tj",
+        "4"
+      ],
+      "source": {
+        "bytes": 1744692,
+        "sha256": "d6afe25399b86b71ebb642ff511a49869bc7a4f14ff0c92d6b3d023675871c93",
+        "embeddedImageBytes": 130198
+      },
+      "output": {
+        "bytes": 1613744,
+        "sha256": "8be3fa3986183b7627137f6db1931825d62f3ef975975b77499b4a3532520f23",
+        "embeddedImageBytes": 0,
+        "externalTextureBytes": 2121131,
+        "uncachedFirstLoadBytes": 3734875,
+        "savedBytes": 130948,
+        "savedPercent": 7.506
+      },
+      "gpuUploadEstimate": {
+        "decodedRgbaBytesBefore": 29360100,
+        "blockCompressedBytesAfter": 7340025,
+        "savedBytes": 22020075,
+        "savedPercent": 75
+      },
+      "structure": {
+        "nodes": {
+          "count": 584,
+          "sha256": "82c05350e24fa882c5c0e30fd061828498f4ba1e9bb0f8ff5990861aaead6cb3"
+        },
+        "meshes": {
+          "count": 159,
+          "sha256": "934072d2599b43d03231af35de73b5ba8a63d0df35eab404fb4bc476f861b439"
+        },
+        "materials": {
+          "count": 23,
+          "sha256": "4372ff59baf172dd8c2ffdb07c76ff9ea256577218c5657ca74344f9c1de6210"
+        },
+        "animations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "skinJoints": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "semanticJsonSha256": "2a07c96fb0450a3051bdc3b16260f388e511aac4f09d046a331d4afdc5f72f03"
+      },
+      "textures": [
+        {
+          "name": "Env_BluePaintedMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 44631,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474",
+          "uri": "../SharedTexturesKTX2/3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474.ktx2"
+        },
+        {
+          "name": "Env_BluePaintedMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 136955,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "7baa747e0762d7ea248d99f5a918373cea8e8b8b837a38c6af8b5a5994641b3e",
+          "uri": "../SharedTexturesKTX2/7baa747e0762d7ea248d99f5a918373cea8e8b8b837a38c6af8b5a5994641b3e.ktx2"
+        },
+        {
+          "name": "Env_BluePaintedMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 13598,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "82c43d40b01632a9c7d4b3e40b9c571ca8627aa709f191e7c133fb60312459f8",
+          "uri": "../SharedTexturesKTX2/82c43d40b01632a9c7d4b3e40b9c571ca8627aa709f191e7c133fb60312459f8.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 290172,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c",
+          "uri": "../SharedTexturesKTX2/1b94e61d42820e539dc34b14fae43172a3d1cc6d3aa8747ba50a8a2c160e486c.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 215895,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21",
+          "uri": "../SharedTexturesKTX2/d6bdbc2a5a76e8cb2fcdaeeb115c71841431ac0e9540427a8c268e3e6ad17d21.ktx2"
+        },
+        {
+          "name": "Env_WornMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 52280,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3",
+          "uri": "../SharedTexturesKTX2/fe5bcf9971b140ddbae547870e843fd343b24f05512bdc822237606a952e7cd3.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 44631,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474",
+          "uri": "../SharedTexturesKTX2/3767c5b88bdf679367129f73659f92c20dff19f5c644d96fd39dc14bc1fe0474.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 143633,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d",
+          "uri": "../SharedTexturesKTX2/699c9625070b5ed9789fa17af7f9655111abe7d56623e6db18c936127043971d.ktx2"
+        },
+        {
+          "name": "Env_RedPaintedMetal_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 13614,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94",
+          "uri": "../SharedTexturesKTX2/a6271396d366fde25bae0beeec11995cfa610ec9a08d0e6b4c05ef70ac60db94.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 143197,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+          "uri": "../SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 71424,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166",
+          "uri": "../SharedTexturesKTX2/874c7e47d9edd1dfee4eb291de8834a1f9c509b917c00493382713fe5c2ff166.ktx2"
+        },
+        {
+          "name": "Env_PaintedWall_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 28057,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2",
+          "uri": "../SharedTexturesKTX2/330ed311d67bdfea3f8570e446e56a97290a772b1dde94150cdd7242149f94a2.ktx2"
+        },
+        {
+          "name": "Env_Paper_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 143197,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af",
+          "uri": "../SharedTexturesKTX2/13e246ae66b4009a51ef29b2eba8303c0c308b37a877586564544fd76f75d4af.ktx2"
+        },
+        {
+          "name": "Env_Paper_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 52412,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e",
+          "uri": "../SharedTexturesKTX2/3bb9be2bbee61ed61d99126e159d854b3e51adae4b59a54ad887e966596fb86e.ktx2"
+        },
+        {
+          "name": "Env_Paper_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 17019,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef",
+          "uri": "../SharedTexturesKTX2/918660fa2597f293790c39d999b9d0f50af84716a124dfd6e08dfeaa3c39b5ef.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 254990,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76",
+          "uri": "../SharedTexturesKTX2/58d4c6e57036a662e73c7ed782c189195dbc416f78de85af17677f096fbd0a76.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 78554,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4",
+          "uri": "../SharedTexturesKTX2/b3e51dfe21fb972b210d2633f45e6d95105901d54451038dcf6f4e2b14b00ff4.ktx2"
+        },
+        {
+          "name": "Env_RubberBlack_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 44218,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7",
+          "uri": "../SharedTexturesKTX2/01f5e2e48ae5d4472288036f2cc3d1bf57b93d3e6e0b09da9af41c66e4ceb2a7.ktx2"
+        },
+        {
+          "name": "Env_WoodTrim_Normal_2K",
+          "expectedMode": "UASTC",
+          "bytes": 144898,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "e53737ae27179a278c48be9a604375c555bbdf3a59c5ff9fea6758b09e48764e",
+          "uri": "../SharedTexturesKTX2/e53737ae27179a278c48be9a604375c555bbdf3a59c5ff9fea6758b09e48764e.ktx2"
+        },
+        {
+          "name": "Env_WoodTrim_ORM_512",
+          "expectedMode": "UASTC",
+          "bytes": 157648,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "9e64e1febc7cee93ff759028998d3f19ac5ea166a7e0a5bca6203bf378be8fda",
+          "uri": "../SharedTexturesKTX2/9e64e1febc7cee93ff759028998d3f19ac5ea166a7e0a5bca6203bf378be8fda.ktx2"
+        },
+        {
+          "name": "Env_WoodTrim_BaseColor_2K",
+          "expectedMode": "ETC1S",
+          "bytes": 30108,
+          "width": 512,
+          "height": 512,
+          "levels": 10,
+          "supercompressionScheme": 1,
+          "mode": "ETC1S",
+          "sha256": "d8430a26b1657db2fe515c497dec6030b49377269c0b63631923394cf3a2955b",
+          "uri": "../SharedTexturesKTX2/d8430a26b1657db2fe515c497dec6030b49377269c0b63631923394cf3a2955b.ktx2"
+        }
+      ]
+    }
+  ]
+}

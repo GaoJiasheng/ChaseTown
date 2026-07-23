@@ -111,3 +111,89 @@ UI 使用 `simulation.getHideInteraction()`：
 - 柜体占用只在检查动作完成后由 `GameSimulation` 结算。
 
 接入时不得为了镜头、HUD 或动画方便，把玩家引用、柜体占用或实时坐标重新传入 `chaser-fsm.ts`。
+
+## 7. 场景资源加载基础设施
+
+`createSceneAssetLoader()` 为一次场景生命周期创建独立的请求队列。主组件应在场景 effect 内创建，在 cleanup 的第一步调用 `abort()`；不要建立跨关卡的全局 loader，否则旧关卡仍可能占用新关卡的带宽。
+
+```ts
+import {
+  AssetLoadError,
+  createSceneAssetLoader,
+  externalAssetUrisFromGlb,
+} from "./game/asset-loading.ts";
+
+const sceneAssets = createSceneAssetLoader({
+  maximumConcurrentRequests: coarsePointer ? 2 : 3,
+  timeoutMilliseconds: 20_000,
+  retry: {
+    maximumAttempts: 3,
+    baseDelayMilliseconds: 350,
+    maximumDelayMilliseconds: 4_000,
+    jitterRatio: 0.2,
+  },
+});
+
+async function loadGlb(url: string) {
+  const bytes = await sceneAssets.fetchArrayBuffer(url, {
+    requestInit: {
+      cache: "force-cache",
+      credentials: "same-origin",
+    },
+  });
+  const absoluteUrl = new URL(url, location.href);
+  const baseUrl = new URL(".", absoluteUrl).href;
+  await Promise.all(externalAssetUrisFromGlb(bytes).map(async (uri) => {
+    const dependencyUrl = new URL(uri, baseUrl);
+    const dependency = await sceneAssets.fetchArrayBuffer(dependencyUrl);
+    // 为 dependency 建立 object URL，并用每场景 LoadingManager 的
+    // setURLModifier() 把原 URL 映射到它；cleanup 时统一 revoke。
+    registerControlledDependency(dependencyUrl, dependency);
+  }));
+  return gltfLoader.parseAsync(bytes, baseUrl);
+}
+
+// effect cleanup：先停网络，再清 Three.js / 音频资源。
+sceneAssets.abort(new DOMException("scene disposed", "AbortError"));
+```
+
+- 并行调用 `loadGlb()` 即可；队列只允许指定数量的真实 fetch 同时运行，退避等待不会占住并发槽。
+- `timeoutMilliseconds` 是每次尝试的 deadline。408、425、429、5xx、网络中断、超时与响应体截断可重试；普通 4xx 和外部取消不可重试。
+- 最终错误统一为 `AssetLoadError`。`ASSET_ABORTED` 是正常切关，不显示红色错误；`ASSET_TIMEOUT`、`ASSET_NETWORK` 和可重试的 `ASSET_HTTP` 在耗尽重试后显示“检查网络/重试”；不可重试 HTTP 应显示素材路径与状态码。
+- cleanup 必须调用 `abort()`，即使场景已经加载完成，用于移除父级 signal 监听并拒绝仍在队列中的可选素材。
+- `parseAsync()` 前必须用 `externalAssetUrisFromGlb()` 枚举外链 buffer/贴图，通过同一队列预取，再用本场景 `LoadingManager.setURLModifier()` 映射到 object URL。这样 GLB 与 PNG/KTX2 共享超时、重试、限流和切关取消；object URL 必须在 Three.js 资源释放后 revoke。
+
+## 8. 几何与阴影质量预算
+
+`RENDER_QUALITY_PROFILES` 除了 DPR、粒子和灯光，还定义以下硬预算：
+
+- `maximumVisibleTriangles`：LOD 与距离裁剪后的可见三角面上限。
+- `maximumDrawCalls`：`renderer.info.render.calls` 的整帧提交上限。
+- `maximumShadowTriangles` / `maximumShadowDrawCalls`：主光源阴影 pass 的子预算。
+- `staticEnvironmentShadows`：静态建筑是否进入实时阴影图；关闭时保留烘焙 AO、接触阴影和角色动态投影。
+- `decorativeDistanceMeters`：非碰撞、非任务关键装饰相对玩家的最大显示距离。
+
+接入顺序必须是：
+
+1. 应用装饰距离、LOD、实例批次和静态阴影策略，让实际提交量先满足当前 profile。
+2. 每个采样窗口记录 p95 帧时，以及主 pass / shadow pass 的三角面和 draw calls。
+3. 调用 `renderWorkloadFitsProfile(profile, sample)` 写入 QA 诊断。
+4. 将同一 `sample` 作为第四个参数传给 `nextRenderQuality()`。超载持续 2.5 秒才降一档；帧时有余量、工作量在预算内持续 12 秒才升一档。
+
+```ts
+const workload = {
+  visibleTriangles,
+  drawCalls: renderer.info.render.calls,
+  shadowTriangles,
+  shadowDrawCalls,
+};
+
+const nextTier = nextRenderQuality(
+  currentTier,
+  p95FrameMilliseconds,
+  candidateStableSeconds,
+  workload,
+);
+```
+
+`nextRenderQuality()` 仍兼容原三参数调用，但那种调用只能依据帧时，无法阻止“当前设备帧时暂时正常、场景复杂度已超预算”时的错误升档。每次决策最多变化一档，切档后应清空候选持续时间，避免 high/balanced/mobile 往返抖动。

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "license": "CC0-1.0",
+  "creator": "Kenney",
+  "sourcePages": [
+    "https://kenney.nl/assets/rpg-audio",
+    "https://kenney.nl/assets/impact-sounds"
+  ],
+  "sets": {
+    "stepSoft": [
+      "/audio/foley/step-soft-01.ogg",
+      "/audio/foley/step-soft-02.ogg",
+      "/audio/foley/step-soft-03.ogg",
+      "/audio/foley/step-soft-04.ogg",
+      "/audio/foley/step-soft-05.ogg"
+    ],
+    "stepHard": [
+      "/audio/foley/step-hard-01.ogg",
+      "/audio/foley/step-hard-02.ogg",
+      "/audio/foley/step-hard-03.ogg",
+      "/audio/foley/step-hard-04.ogg",
+      "/audio/foley/step-hard-05.ogg"
+    ],
+    "lockerOpen": [
+      "/audio/foley/locker-open-01.ogg",
+      "/audio/foley/locker-open-02.ogg"
+    ],
+    "lockerClose": [
+      "/audio/foley/locker-close-01.ogg",
+      "/audio/foley/locker-close-02.ogg"
+    ],
+    "lockerLatch": [
+      "/audio/foley/locker-latch.ogg"
+    ],
+    "cloth": [
+      "/audio/foley/cloth-01.ogg",
+      "/audio/foley/cloth-02.ogg"
+    ],
+    "caught": [
+      "/audio/foley/caught-01.ogg",
+      "/audio/foley/caught-02.ogg"
+    ],
+    "metalHit": [
+      "/audio/foley/metal-hit-01.ogg",
+      "/audio/foley/metal-hit-02.ogg"
+    ]
+  }
+}

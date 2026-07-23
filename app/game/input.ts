@@ -12,6 +12,38 @@ export const FIXED_CAMERA_GROUND_DIRECTION: Readonly<Point> = Object.freeze({
   y: -0.58,
 });
 
+export interface FixedCameraGroundBasis {
+  /** Horizontal direction from the focus toward the camera (screen-down). */
+  readonly cameraBack: Readonly<Point>;
+  /** World direction that projects to screen-right. */
+  readonly screenRight: Readonly<Point>;
+}
+
+const fixedCameraGroundLength = Math.hypot(
+  FIXED_CAMERA_GROUND_DIRECTION.x,
+  FIXED_CAMERA_GROUND_DIRECTION.y,
+) || 1;
+
+const FIXED_CAMERA_GROUND_BASIS: FixedCameraGroundBasis = Object.freeze({
+  cameraBack: Object.freeze({
+    x: FIXED_CAMERA_GROUND_DIRECTION.x / fixedCameraGroundLength,
+    y: FIXED_CAMERA_GROUND_DIRECTION.y / fixedCameraGroundLength,
+  }),
+  screenRight: Object.freeze({
+    x: FIXED_CAMERA_GROUND_DIRECTION.y / fixedCameraGroundLength,
+    y: -FIXED_CAMERA_GROUND_DIRECTION.x / fixedCameraGroundLength,
+  }),
+});
+
+/**
+ * Shared immutable screen-space basis for controls, HUD arrows, and audio.
+ * Consumers must not approximate this with a generic diagonal: the authored
+ * camera azimuth is deliberately not 45 degrees.
+ */
+export function fixedCameraGroundBasis(): FixedCameraGroundBasis {
+  return FIXED_CAMERA_GROUND_BASIS;
+}
+
 /**
  * Converts a screen-space stick/keyboard vector into the simulation's world
  * axes. Positive x means screen-right and positive y means screen-down, so the
@@ -19,15 +51,7 @@ export const FIXED_CAMERA_GROUND_DIRECTION: Readonly<Point> = Object.freeze({
  */
 export function screenMoveToWorld(move: MoveIntent): MoveIntent {
   if (Math.abs(move.x) <= 1e-9 && Math.abs(move.y) <= 1e-9) return { x: 0, y: 0 };
-  const cameraLength = Math.hypot(
-    FIXED_CAMERA_GROUND_DIRECTION.x,
-    FIXED_CAMERA_GROUND_DIRECTION.y,
-  ) || 1;
-  const cameraBack = {
-    x: FIXED_CAMERA_GROUND_DIRECTION.x / cameraLength,
-    y: FIXED_CAMERA_GROUND_DIRECTION.y / cameraLength,
-  };
-  const screenRight = { x: cameraBack.y, y: -cameraBack.x };
+  const { cameraBack, screenRight } = fixedCameraGroundBasis();
   const world = {
     x: screenRight.x * move.x + cameraBack.x * move.y,
     y: screenRight.y * move.x + cameraBack.y * move.y,

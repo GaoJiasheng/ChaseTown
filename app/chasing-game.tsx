@@ -3,23 +3,37 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
 import {
   ActorAnimator,
+  isFootstepAnimationMarker,
   type AnimationState,
   type ClipAliases,
+  type MarkerManifest,
 } from "./game/animation/actor-runtime.ts";
 import { AdaptiveScoreController, prewarmAdaptiveScoreAssets } from "./game/audio/adaptive-score.ts";
-import { ImmersiveSoundscapeController } from "./game/audio/immersive-soundscape.ts";
+import {
+  ImmersiveSoundscapeController,
+  soundPanForWorldPoints,
+} from "./game/audio/immersive-soundscape.ts";
+import {
+  createSceneAssetLoader,
+  externalAssetUrisFromGlb,
+} from "./game/asset-loading.ts";
 import { runtimeAtmosphereForLevel } from "./game/atmosphere.ts";
 import {
   CAMPAIGN_LEVELS,
+  createPlayerKnowledge,
   getCampaignGameplayConfig,
   getCampaignHideGuidancePolicy,
+  publicThreatStrengthForMode,
+  updatePlayerKnowledge,
   type CampaignTheme,
+  type PublicThreatLevel,
 } from "./game/campaign.ts";
 import {
   createCampaignProgress,
@@ -92,6 +106,8 @@ import {
   type FixedCameraFollowState,
 } from "./game/presentation.ts";
 import { GameSimulation, type HideInteraction } from "./game/simulation.ts";
+import { sampleThemeMechanic, type ThemeMechanicSample } from "./game/theme-mechanics.ts";
+import { combineScreenMove, sampleVirtualStick } from "./game/virtual-stick.ts";
 
 type ActorName = "kid" | "villain" | "police";
 type StructureAssetName = keyof typeof STRUCTURE_ASSETS;
@@ -112,9 +128,20 @@ const HIDE_PROP_FORWARD_OFFSET_CELLS = 0.18;
 const POLICE_PREFETCH_DISTANCE_CELLS = 7.5;
 const DEFERRED_DRESSING_FADE_SECONDS = 0.48;
 
+const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
+  walk: Object.freeze([
+    Object.freeze({ name: "footLContact", normalizedTime: 0.18 }),
+    Object.freeze({ name: "footRContact", normalizedTime: 0.68 }),
+  ]),
+  run: Object.freeze([
+    Object.freeze({ name: "footLContact", normalizedTime: 0.12 }),
+    Object.freeze({ name: "footRContact", normalizedTime: 0.62 }),
+  ]),
+});
+
 const ACTOR_SPECS = {
   kid: {
-    url: "/models/characters/kid.glb?v=31",
+    url: "/models/characters/kid.glb?v=32",
     height: 1.52,
     aliases: {
       idle: "Idle",
@@ -133,7 +160,7 @@ const ACTOR_SPECS = {
     required: ["idle", "walk", "run", "turnLeft", "turnRight", "enterHide", "hideIdle", "peekLeft", "exitHide", "caught", "celebrate"] as AnimationState[],
   },
   villain: {
-    url: "/models/characters/villain.glb?v=31",
+    url: "/models/characters/villain.glb?v=32",
     height: 1.88,
     aliases: {
       idle: "Idle",
@@ -148,7 +175,7 @@ const ACTOR_SPECS = {
     required: ["idle", "walk", "run", "alert", "loseSight", "search", "checkLocker", "catch"] as AnimationState[],
   },
   police: {
-    url: "/models/characters/police.glb?v=31",
+    url: "/models/characters/police.glb?v=32",
     height: 1.82,
     aliases: {
       idle: "Idle",
@@ -187,10 +214,10 @@ const DETAIL_ASSETS = {
 } as const;
 
 const THEME_KIT_ASSETS: Readonly<Record<CampaignTheme, string>> = {
-  campus: "/models/environment/themes/campus-kit.glb?v=5",
-  hospital: "/models/environment/themes/hospital-kit.glb?v=5",
-  "fire-station": "/models/environment/themes/fire-station-kit.glb?v=5",
-  factory: "/models/environment/themes/factory-kit.glb?v=5",
+  campus: "/models/environment/themes/campus-kit.glb?v=6",
+  hospital: "/models/environment/themes/hospital-kit.glb?v=6",
+  "fire-station": "/models/environment/themes/fire-station-kit.glb?v=6",
+  factory: "/models/environment/themes/factory-kit.glb?v=6",
 };
 
 type ThemePropSpec = { node: string; height: number };
@@ -1126,6 +1153,7 @@ type GameCommands = {
   restart: () => void;
   interact: () => void;
   toggleMute: () => void;
+  togglePause: () => void;
   adjustZoom: (factor: number) => void;
   resetZoom: () => void;
 };
@@ -1147,6 +1175,7 @@ const NOOP_COMMANDS: GameCommands = {
   restart() {},
   interact() {},
   toggleMute() {},
+  togglePause() {},
   adjustZoom() {},
   resetZoom() {},
 };
@@ -1605,7 +1634,13 @@ export function ChasingGame() {
   const mount = useRef<HTMLDivElement>(null);
   const keyboardKeys = useRef(new Set<string>());
   const touchKeys = useRef(new Set<string>());
+  const analogueMove = useRef({ x: 0, y: 0 });
+  const joystickBase = useRef<HTMLDivElement>(null);
+  const joystickPointerId = useRef<number | null>(null);
   const interactPressed = useRef(false);
+  const pausedRef = useRef(false);
+  const resumeButton = useRef<HTMLButtonElement>(null);
+  const pauseReturnFocus = useRef<HTMLElement | null>(null);
   const commands = useRef<GameCommands>(NOOP_COMMANDS);
   const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
   const campaignLevel = CAMPAIGN_LEVELS[selectedLevelIndex];
@@ -1623,6 +1658,7 @@ export function ChasingGame() {
   const [chaserMode, setChaserMode] = useState<ChaserMode>("spawn-delay");
   const [chaserConfirming, setChaserConfirming] = useState(false);
   const [chaserObservable, setChaserObservable] = useState(true);
+  const [publicThreat, setPublicThreat] = useState<PublicThreatLevel>("calm");
   const [elapsed, setElapsed] = useState(0);
   const [objectiveDistance, setObjectiveDistance] = useState(
     objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths),
@@ -1649,6 +1685,9 @@ export function ChasingGame() {
   const [loadProgress, setLoadProgress] = useState({ done: 0, total: BOOTSTRAP_ASSET_COUNT, message: "正在载入项目美术资产：角色、校园与互动道具…" });
   const [resultVisible, setResultVisible] = useState(true);
   const [musicMuted, setMusicMuted] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [joystickThumb, setJoystickThumb] = useState({ x: 0, y: 0, active: false });
+  const [themeMechanic, setThemeMechanic] = useState<ThemeMechanicSample | null>(null);
   const [lastCaptureReason, setLastCaptureReason] = useState<CaptureReason | null>(null);
   const [lastRunSummary, setLastRunSummary] = useState<LastRunSummary | null>(null);
 
@@ -1677,6 +1716,48 @@ export function ChasingGame() {
   const begin = useCallback(() => commands.current.begin(), []);
   const restart = useCallback(() => commands.current.restart(), []);
   const interact = useCallback(() => commands.current.interact(), []);
+  const resetAnalogueMove = useCallback(() => {
+    analogueMove.current = { x: 0, y: 0 };
+    joystickPointerId.current = null;
+    setJoystickThumb({ x: 0, y: 0, active: false });
+  }, []);
+  const sampleJoystickPointer = useCallback((clientX: number, clientY: number) => {
+    const base = joystickBase.current;
+    if (!base) return;
+    const bounds = base.getBoundingClientRect();
+    const radius = Math.max(26, Math.min(bounds.width, bounds.height) * 0.28);
+    const sample = sampleVirtualStick(
+      { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 },
+      { x: clientX, y: clientY },
+      radius,
+    );
+    analogueMove.current = { x: sample.x, y: sample.y };
+    setJoystickThumb({
+      x: sample.thumbX,
+      y: sample.thumbY,
+      active: sample.strength > 0,
+    });
+  }, []);
+  const joystickPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (pausedRef.current) return;
+    if (joystickPointerId.current !== null) return;
+    event.preventDefault();
+    joystickPointerId.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    sampleJoystickPointer(event.clientX, event.clientY);
+  }, [sampleJoystickPointer]);
+  const joystickPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (joystickPointerId.current !== event.pointerId) return;
+    event.preventDefault();
+    sampleJoystickPointer(event.clientX, event.clientY);
+  }, [sampleJoystickPointer]);
+  const joystickPointerEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (joystickPointerId.current !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    resetAnalogueMove();
+  }, [resetAnalogueMove]);
   const chooseLevel = useCallback((index: number) => {
     if (index < 0 || index >= CAMPAIGN_LEVELS.length) return;
     const qaBypass = typeof location !== "undefined" && new URLSearchParams(location.search).has("qa");
@@ -1696,12 +1777,53 @@ export function ChasingGame() {
   }, [chooseLevel]);
 
   useEffect(() => {
+    if (!paused) return;
+    pauseReturnFocus.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const frame = requestAnimationFrame(() => resumeButton.current?.focus());
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const card = resumeButton.current?.closest(".pause-card");
+      if (!card) return;
+      const focusable = [...card.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])",
+      )];
+      if (!focusable.length) return;
+      const currentIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      const nextIndex = event.shiftKey
+        ? currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1
+        : currentIndex < 0 || currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1;
+      event.preventDefault();
+      focusable[nextIndex].focus();
+    };
+    document.addEventListener("keydown", trapFocus);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", trapFocus);
+      const returnFocus = pauseReturnFocus.current;
+      pauseReturnFocus.current = null;
+      if (returnFocus?.isConnected) returnFocus.focus();
+    };
+  }, [paused]);
+
+  useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       const target = event.target instanceof Element ? event.target : null;
       const focusedControl = Boolean(target?.closest("button, input, select, textarea, a[href], [contenteditable='true']"));
       if (shouldIgnoreFocusedControlKey(key, focusedControl)) return;
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
+      if (key === "escape") {
+        event.preventDefault();
+        commands.current.togglePause();
+        return;
+      }
+      if (pausedRef.current) {
+        if (key === "m") commands.current.toggleMute();
+        else if (key === "r") commands.current.restart();
+        return;
+      }
       keyboardKeys.current.add(key);
       if (event.repeat) return;
       if (key === "r") commands.current.restart();
@@ -1720,9 +1842,13 @@ export function ChasingGame() {
       keyboardKeys.current.clear();
       touchKeys.current.clear();
       interactPressed.current = false;
+      resetAnalogueMove();
     };
     const clearHiddenInput = () => {
-      if (document.visibilityState !== "visible") clearInput();
+      if (document.visibilityState !== "visible") {
+        clearInput();
+        if (phase === "playing" && !pausedRef.current) commands.current.togglePause();
+      }
     };
     addEventListener("keydown", keyDown);
     addEventListener("keyup", keyUp);
@@ -1734,7 +1860,7 @@ export function ChasingGame() {
       removeEventListener("blur", clearInput);
       document.removeEventListener("visibilitychange", clearHiddenInput);
     };
-  }, [chooseLevel, phase, selectedLevelIndex]);
+  }, [chooseLevel, phase, resetAnalogueMove, selectedLevelIndex]);
 
   useEffect(() => {
     const host = mount.current;
@@ -1750,6 +1876,11 @@ export function ChasingGame() {
     setPhase("ready");
     setPlayerMode("free");
     setChaserMode("spawn-delay");
+    setPublicThreat("calm");
+    pausedRef.current = false;
+    setPaused(false);
+    resetAnalogueMove();
+    setThemeMechanic(null);
     setElapsed(0);
     setLastCaptureReason(null);
     setLastRunSummary(null);
@@ -1788,6 +1919,7 @@ export function ChasingGame() {
     let guidedBreakSight = false;
     let playerKnownChaser: PlayerKnownChaserEvidence | null = null;
     let lastScoreThreat = Number.NaN;
+    let themeEventWasActive = false;
     let captureStageRemaining = 0;
     let capturePerformanceStarted = false;
     const artLayout = levelArtLayout(
@@ -1796,7 +1928,11 @@ export function ChasingGame() {
     );
     let simulation = new GameSimulation({ level: campaignLevel, config: gameplayConfig });
     let latestState = simulation.getState();
-    let runTelemetry = createRunTelemetry();
+    let runTelemetry = createRunTelemetry({
+      levelId: campaignLevel.id,
+      theme: campaignLevel.campaign.theme,
+    });
+    let playerKnowledge = createPlayerKnowledge();
     let objectiveGuidanceState = createObjectiveGuidanceState();
     let lastObjectiveGuidanceSeconds = latestState.elapsedSeconds;
     const resetFrameClock = () => {
@@ -1807,6 +1943,7 @@ export function ChasingGame() {
     const lockers = new Map<string, LockerView>();
     const sightObscurers: THREE.Points[] = [];
     const loadedAssetIds = new Set<string>();
+    const loadedAssetRoots = new Set<THREE.Object3D>();
     const placedAssetIds = new Set<string>();
     const performanceLights: Array<{ light: THREE.Light; priority: number }> = [];
     const nonCriticalShadowCasters: Array<{ object: THREE.Object3D; castShadow: boolean }> = [];
@@ -1824,19 +1961,19 @@ export function ChasingGame() {
     let renderedMovementBlockers = 0;
     const deviceNavigator = navigator as Navigator & { deviceMemory?: number };
     const initialBounds = host.getBoundingClientRect();
-    const coarsePointer = matchMedia("(pointer: coarse)").matches;
+    const touchLayoutMedia = matchMedia("(max-width: 900px), (pointer: coarse)");
     let cameraViewportWidth = Math.max(1, Math.round(initialBounds.width));
     let cameraViewportHeight = Math.max(1, Math.round(initialBounds.height));
     let cameraSafeViewport = cameraSafeViewportFromInsets(
       cameraViewportWidth,
       cameraViewportHeight,
-      gameplayCameraInsetsForViewport(cameraViewportWidth, cameraViewportHeight, coarsePointer),
+      gameplayCameraInsetsForViewport(cameraViewportWidth, cameraViewportHeight, touchLayoutMedia.matches),
     );
     let renderQualityTier: RenderQualityTier = selectInitialRenderQuality({
       viewportWidth: Math.max(1, initialBounds.width),
       viewportHeight: Math.max(1, initialBounds.height),
       devicePixelRatio,
-      coarsePointer,
+      coarsePointer: touchLayoutMedia.matches,
       deviceMemoryGb: deviceNavigator.deviceMemory,
       hardwareConcurrency: navigator.hardwareConcurrency,
     });
@@ -2026,7 +2163,7 @@ export function ChasingGame() {
       }
     };
     const applyNonCriticalShadowPolicy = () => {
-      const enabled = renderQualityTier !== "mobile";
+      const enabled = renderQualityProfile.staticEnvironmentShadows;
       for (const entry of nonCriticalShadowCasters) {
         entry.object.castShadow = enabled && entry.castShadow;
       }
@@ -2142,8 +2279,22 @@ export function ChasingGame() {
     const campus = new THREE.Group();
     campus.name = "authored-campus";
     scene.add(campus);
-    const loader = new GLTFLoader();
+    const sceneAssets = createSceneAssetLoader({
+      maximumConcurrentRequests: 3,
+      timeoutMilliseconds: 20_000,
+    });
+    const controlledDependencyUrls = new Map<string, string>();
+    const controlledDependencyLoads = new Map<string, Promise<string>>();
+    const loadingManager = new THREE.LoadingManager();
+    loadingManager.setURLModifier((url) => (
+      controlledDependencyUrls.get(new URL(url, location.href).href) ?? url
+    ));
+    const ktx2Loader = new KTX2Loader(loadingManager)
+      .setTranscoderPath("/basis/")
+      .detectSupport(renderer);
+    const loader = new GLTFLoader(loadingManager);
     loader.setMeshoptDecoder(MeshoptDecoder);
+    loader.setKTX2Loader(ktx2Loader);
     const cameraOcclusionOrigin = { value: new THREE.Vector3() };
     const cameraOcclusionTarget = { value: new THREE.Vector3() };
     const cameraOcclusionTargetB = { value: new THREE.Vector3() };
@@ -2412,6 +2563,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       keyboardKeys.current.clear();
       touchKeys.current.clear();
       interactPressed.current = false;
+      resetAnalogueMove();
       lastCheckSpot = null;
       guidedLockerId = null;
       guidedLockerRisk = "medium";
@@ -2421,7 +2573,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       setHideGuideRisk("medium");
       setHideGuideSelection("survivability");
       setHideGuideStrategy("hide");
-      runTelemetry = createRunTelemetry();
+      runTelemetry = createRunTelemetry({
+        levelId: campaignLevel.id,
+        theme: campaignLevel.campaign.theme,
+      });
+      playerKnowledge = createPlayerKnowledge();
+      setPublicThreat("calm");
+      setThemeMechanic(null);
       objectiveGuidanceState = createObjectiveGuidanceState();
       lastObjectiveGuidanceSeconds = state.elapsedSeconds;
       setLastRunSummary(null);
@@ -2490,9 +2648,25 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
     };
 
+    const setPauseState = (nextPaused: boolean) => {
+      if (nextPaused === pausedRef.current) return;
+      pausedRef.current = nextPaused;
+      setPaused(nextPaused);
+      keyboardKeys.current.clear();
+      touchKeys.current.clear();
+      interactPressed.current = false;
+      resetAnalogueMove();
+      last = performance.now();
+      score.setThreat(nextPaused ? 0 : threatForMode(latestState.chaser.mode));
+      lastScoreThreat = nextPaused ? 0 : threatForMode(latestState.chaser.mode);
+    };
+
     const beginGame = () => {
       if (!ready) return;
+      setPauseState(false);
       latestState = simulation.start();
+      themeEventWasActive = false;
+      soundscape.setThemeMechanicActivity(0);
       resetPresentation(latestState);
       void score.unlock().then((result) => {
         if (!result.ok) console.warn("Adaptive score could not start", result.error);
@@ -2521,6 +2695,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           return !current;
         });
       },
+      togglePause() {
+        if (!ready || latestState.phase !== "playing") return;
+        setPauseState(!pausedRef.current);
+      },
       adjustZoom(factor) {
         cameraZoom.value = THREE.MathUtils.clamp(cameraZoom.value * factor, 0.72, 1.65);
       },
@@ -2529,19 +2707,53 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       },
     };
 
+    const fetchControlledDependency = (dependencyUrl: URL): Promise<string> => {
+      const key = dependencyUrl.href;
+      const existingUrl = controlledDependencyUrls.get(key);
+      if (existingUrl) return Promise.resolve(existingUrl);
+      const existingLoad = controlledDependencyLoads.get(key);
+      if (existingLoad) return existingLoad;
+      const load = sceneAssets.fetchArrayBuffer(dependencyUrl, {
+        requestInit: { cache: "force-cache" },
+      }).then((dependencyBytes) => {
+        if (disposed) throw new DOMException("Scene disposed", "AbortError");
+        const extension = dependencyUrl.pathname.split(".").pop()?.toLowerCase();
+        const mimeType = extension === "ktx2"
+          ? "image/ktx2"
+          : extension === "png"
+            ? "image/png"
+            : extension === "webp"
+              ? "image/webp"
+              : "application/octet-stream";
+        const objectUrl = URL.createObjectURL(new Blob([dependencyBytes], { type: mimeType }));
+        controlledDependencyUrls.set(key, objectUrl);
+        return objectUrl;
+      }).catch((error) => {
+        controlledDependencyLoads.delete(key);
+        throw error;
+      });
+      controlledDependencyLoads.set(key, load);
+      return load;
+    };
+
     const loadGlbWithRetry = async (url: string) => {
-      let lastError: unknown = null;
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        try {
-          return await loader.loadAsync(url);
-        } catch (error) {
-          lastError = error;
-          if (attempt < 2) {
-            await new Promise<void>((resolve) => setTimeout(resolve, attempt === 0 ? 280 : 760));
-          }
-        }
+      const absoluteUrl = new URL(url, location.href);
+      const bytes = await sceneAssets.fetchArrayBuffer(absoluteUrl, {
+        requestInit: { cache: "force-cache" },
+      });
+      const assetBaseUrl = new URL(".", absoluteUrl);
+      await Promise.all(
+        externalAssetUrisFromGlb(bytes).map((dependency) => (
+          fetchControlledDependency(new URL(dependency, assetBaseUrl))
+        )),
+      );
+      const asset = await loader.parseAsync(bytes, assetBaseUrl.href);
+      if (disposed) {
+        disposeObjectResources([asset.scene]);
+        throw new DOMException("Scene disposed", "AbortError");
       }
-      throw lastError;
+      loadedAssetRoots.add(asset.scene);
+      return asset;
     };
 
     const loadAll = async () => {
@@ -3849,7 +4061,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const spec = ACTOR_SPECS[name];
         const root = fitActor(asset.scene, spec.height);
         root.name = `actor-${name}`;
-        const animator = new ActorAnimator(root, asset.animations, spec.aliases as ClipAliases);
+        const animator = new ActorAnimator(
+          root,
+          asset.animations,
+          spec.aliases as ClipAliases,
+          LOCOMOTION_MARKERS,
+        );
         animator.require(spec.required);
         const initialPoint = name === "kid"
           ? campaignLevel.playerStart
@@ -3896,6 +4113,36 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           })),
         };
         actorViews[name] = view;
+        animator.setMarkerListener((_state, marker) => {
+          if (!isFootstepAnimationMarker(marker)) return;
+          if (name === "kid") {
+            soundscape.triggerAnimationFootstep({
+              actor: "player",
+              elapsedSeconds: latestState.elapsedSeconds,
+              worldSpeed: view.sampledSpeed,
+            });
+            return;
+          }
+          if (
+            name !== "villain"
+            || latestState.phase !== "playing"
+            || !canPlayerObserveChaser(latestState, campaignLevel, simulation.config)
+          ) return;
+          const visibleDistance = distanceBetween(
+            latestState.player.position,
+            latestState.chaser.position,
+          );
+          soundscape.triggerAnimationFootstep({
+            actor: "chaser",
+            elapsedSeconds: latestState.elapsedSeconds,
+            worldSpeed: view.sampledSpeed,
+            audibility: visibleDistance <= 3 ? 1 : visibleDistance <= 6 ? 2 / 3 : 1 / 3,
+            pan: soundPanForWorldPoints(
+              latestState.player.position,
+              latestState.chaser.position,
+            ),
+          });
+        });
         requestAnimation(view, "idle", { fade: 0 });
       }
     };
@@ -4114,7 +4361,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
       const hideMarkerAllowed = state.phase === "playing"
         && ["free", "aligning-hide"].includes(state.player.mode);
-      const urgentHideMarker = ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known", "search"].includes(state.chaser.mode);
+      const urgentHideMarker = playerKnowledge.threat !== "calm";
       const markerPulse = 0.5 + Math.sin(state.elapsedSeconds * 4.6) * 0.5;
       const guidedLightColor = guidedLockerRisk === "low"
         ? 0x5ae0a0
@@ -4213,9 +4460,31 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         && Math.abs(projected.y) <= 0.86
         && projected.z >= -1
         && projected.z <= 1;
+      const markerMarginX = 2_800 / cameraViewportWidth;
+      const markerMarginY = 2_800 / cameraViewportHeight;
+      const safeLeft = THREE.MathUtils.clamp(
+        ((cameraSafeViewport.minX + 1) / 2) * 100 + markerMarginX,
+        7,
+        46,
+      );
+      const safeRight = THREE.MathUtils.clamp(
+        ((cameraSafeViewport.maxX + 1) / 2) * 100 - markerMarginX,
+        54,
+        93,
+      );
+      const safeTop = THREE.MathUtils.clamp(
+        ((1 - cameraSafeViewport.maxY) / 2) * 100 + markerMarginY,
+        11,
+        46,
+      );
+      const safeBottom = THREE.MathUtils.clamp(
+        ((1 - cameraSafeViewport.minY) / 2) * 100 - markerMarginY,
+        54,
+        86,
+      );
       setHideGuideProjection({
-        xPercent: THREE.MathUtils.clamp(viewportX * 100, 7, 93),
-        yPercent: THREE.MathUtils.clamp(viewportY * 100, 11, 86),
+        xPercent: THREE.MathUtils.clamp(viewportX * 100, safeLeft, safeRight),
+        yPercent: THREE.MathUtils.clamp(viewportY * 100, safeTop, safeBottom),
         angleDegrees: THREE.MathUtils.radToDeg(Math.atan2(viewportY - 0.5, viewportX - 0.5)),
         offscreen: !inFrustum,
       });
@@ -4224,7 +4493,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     const animate = (now: number) => {
       const delta = boundedFrameDeltaSeconds(last, now, simulation.config.maxFrameDeltaSeconds);
       last = now;
-      if (ready) {
+      if (ready && !pausedRef.current) {
         qualitySamples.push(delta * 1_000);
         qualityEvaluationSeconds += delta;
         if (qualityEvaluationSeconds >= 1 && qualitySamples.length >= 20) {
@@ -4233,14 +4502,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             sortedSamples.length - 1,
             Math.floor(sortedSamples.length * 0.95),
           )];
-          const candidate = nextRenderQuality(renderQualityTier, p95, 999);
+          const workload = {
+            visibleTriangles: renderer.info.render.triangles,
+            drawCalls: renderer.info.render.calls,
+          };
+          const candidate = nextRenderQuality(renderQualityTier, p95, 999, workload);
           if (candidate !== renderQualityTier) {
             if (candidate === qualityCandidate) qualityDecisionSeconds += qualityEvaluationSeconds;
             else {
               qualityCandidate = candidate;
               qualityDecisionSeconds = qualityEvaluationSeconds;
             }
-            const resolved = nextRenderQuality(renderQualityTier, p95, qualityDecisionSeconds);
+            const resolved = nextRenderQuality(
+              renderQualityTier,
+              p95,
+              qualityDecisionSeconds,
+              workload,
+            );
             if (resolved !== renderQualityTier) {
               applyRenderQuality(resolved);
               qualityCandidate = resolved;
@@ -4305,12 +4583,31 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         if (held("w") || held("arrowup")) dy -= 1;
         if (held("s") || held("arrowdown")) dy += 1;
         const length = Math.hypot(dx, dy) || 1;
-        const move = screenMoveToWorld({ x: dx / length, y: dy / length });
+        const screenMove = combineScreenMove(
+          { x: dx / length, y: dy / length },
+          analogueMove.current,
+        );
+        const move = screenMoveToWorld(screenMove);
+        const environment = sampleThemeMechanic(
+          campaignLevel.campaign.theme,
+          latestState.elapsedSeconds,
+        );
+        const environmentPlaying = latestState.phase === "playing";
+        const environmentActivity = environmentPlaying && environment.active
+          ? Math.sin(environment.progress * Math.PI)
+          : 0;
+        soundscape.setThemeMechanicActivity(environmentActivity);
+        if (environmentPlaying && environment.active && !themeEventWasActive) {
+          soundscape.triggerThemeMechanic();
+        }
+        themeEventWasActive = environmentPlaying && environment.active;
         latestState = simulation.advance(delta, {
           move,
           interactPressed: interactPressed.current,
           peekHeld: held("q"),
           sneakHeld: held("q"),
+          environmentSoundMasking: environment.soundMasking,
+          visionRangeMultiplier: environment.visionRangeMultiplier,
         });
         if (
           latestState.phase === "won"
@@ -4333,14 +4630,37 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           };
         }
         const chaserWorldRendered = shouldRenderChaserModel(latestState.phase, playerActuallyVisible);
+        const scoreThreat = latestState.phase === "playing"
+          ? publicThreatStrengthForMode(latestState.chaser.mode)
+          : 0;
+        playerKnowledge = updatePlayerKnowledge(playerKnowledge, {
+          audioThreat: scoreThreat,
+          visibleThreat: chaserKnowledgeObservable && scoreThreat >= 0.2,
+        }, delta);
+        if (scoreThreat !== lastScoreThreat) {
+          score.setThreat(scoreThreat);
+          lastScoreThreat = scoreThreat;
+        }
         syncAnimations(latestState, delta);
         soundscape.update({
           elapsedSeconds: latestState.elapsedSeconds,
           playerPosition: latestState.player.position,
-          chaserPosition: latestState.chaser.position,
+          chaserPosition: chaserKnowledgeObservable
+            ? latestState.chaser.position
+            : playerKnownChaser?.position ?? latestState.player.position,
           playerSpeed: actors.kid?.sampledSpeed ?? 0,
           chaserSpeed: actors.villain?.sampledSpeed ?? 0,
           chaserMode: latestState.chaser.mode,
+          chaserAudibility: chaserKnowledgeObservable
+            ? distanceBetween(latestState.player.position, latestState.chaser.position) <= 3
+              ? 1
+              : distanceBetween(latestState.player.position, latestState.chaser.position) <= 6
+                ? 2 / 3
+                : 1 / 3
+            : 0,
+          chaserPan: chaserKnowledgeObservable
+            ? soundPanForWorldPoints(latestState.player.position, latestState.chaser.position)
+            : 0,
         });
         if (actors.kid) {
           updateActorVisibility(
@@ -4357,11 +4677,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             delta,
             true,
           );
-        }
-        const scoreThreat = latestState.phase === "playing" ? threatForMode(latestState.chaser.mode) : 0;
-        if (scoreThreat !== lastScoreThreat) {
-          score.setThreat(scoreThreat);
-          lastScoreThreat = scoreThreat;
         }
 
         const playerAnchor = world(
@@ -4398,8 +4713,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             ? playerAnchor.clone().lerp(chaserAnchor, 0.3)
             : followFocus;
         const baseDistance = baseCameraDistanceForAspect(camera.aspect);
+        const publicCameraThreat = chaserKnowledgeObservable
+          ? threatForMode(latestState.chaser.mode)
+          : playerKnowledge.threat === "active"
+            ? 0.52
+            : playerKnowledge.threat === "caution"
+              ? 0.28
+              : 0;
         const dynamicDistance = baseDistance * cameraDistanceScaleForPlayerMode(latestState.player.mode)
-          + threatForMode(latestState.chaser.mode) * 0.9;
+          + publicCameraThreat * 0.9;
         const preferredDistance = THREE.MathUtils.clamp(
           dynamicDistance * cameraZoom.value,
           11.6,
@@ -4447,9 +4769,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           safeViewport: cameraSafeViewport,
           viewportHeightPixels: cameraViewportHeight,
           minimumActorScreenHeightPixels: THREE.MathUtils.clamp(
-            cameraViewportHeight * (coarsePointer ? 0.066 : 0.055),
-            coarsePointer ? 34 : 30,
-            coarsePointer ? 48 : 44,
+            cameraViewportHeight * (touchLayoutMedia.matches ? 0.066 : 0.055),
+            touchLayoutMedia.matches ? 34 : 30,
+            touchLayoutMedia.matches ? 48 : 44,
           ),
           preferredDistance,
           minimumDistance: 11.6,
@@ -4484,7 +4806,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setChaserMode(latestState.chaser.mode);
           setChaserConfirming(latestState.chaser.visualConfirmationSeconds !== null);
           setChaserObservable(chaserKnowledgeObservable);
+          setPublicThreat(playerKnowledge.threat);
           setElapsed(Math.floor(latestState.elapsedSeconds));
+          setThemeMechanic(environment);
           const objectiveRoute = objectivePaths.path(latestState.player.position, campaignLevel.exit);
           const routeGeometry = deriveRouteGuidanceGeometry(objectiveRoute, CELL);
           setObjectiveDistance(Math.round(routeGeometry.routeDistanceMeters));
@@ -4523,7 +4847,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       cameraSafeViewport = cameraSafeViewportFromInsets(
         width,
         height,
-        gameplayCameraInsetsForViewport(width, height, coarsePointer),
+        gameplayCameraInsetsForViewport(width, height, touchLayoutMedia.matches),
       );
       renderer.setPixelRatio(Math.min(devicePixelRatio, renderQualityProfile.maximumPixelRatio));
       renderer.setSize(width, height, false);
@@ -4533,6 +4857,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(host);
+    touchLayoutMedia.addEventListener("change", resize);
     const wheel = (event: WheelEvent) => {
       event.preventDefault();
       commands.current.adjustZoom(Math.exp(event.deltaY * 0.00065));
@@ -4559,6 +4884,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         getState: () => unknown;
         start: () => void;
         interact: () => void;
+        togglePause: () => void;
         inspectScene: () => unknown;
         setScenario: (positions: { player: Point; chaser: Point }) => void;
         selectLevel: (level: number | string) => void;
@@ -4569,6 +4895,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       qaWindow.__CHASING_QA__ = {
         getState: () => ({
           ready,
+          paused: pausedRef.current,
           campaign: {
             id: campaignLevel.id,
             index: campaignLevel.campaign.levelNumber - 1,
@@ -4599,7 +4926,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               : undefined,
             viewport: projectActorToViewport(view),
           }])),
-          knowledge: { chaserObservable: canPlayerObserveChaser(latestState, campaignLevel, simulation.config) },
+          knowledge: {
+            chaserObservable: canPlayerObserveChaser(latestState, campaignLevel, simulation.config),
+            publicThreat: playerKnowledge,
+          },
+          themeMechanic: sampleThemeMechanic(
+            campaignLevel.campaign.theme,
+            latestState.elapsedSeconds,
+          ),
           sceneIntegrity: {
             expectedMovementBlockers: campaignLevel.movementBlockers?.length ?? 0,
             renderedMovementBlockers,
@@ -4673,6 +5007,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }),
         start: beginGame,
         interact: () => { interactPressed.current = true; },
+        togglePause: () => commands.current.togglePause(),
         inspectScene: () => {
           camera.updateMatrixWorld();
           const objects: Array<Record<string, unknown>> = [];
@@ -4732,6 +5067,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     frame = requestAnimationFrame(animate);
 
     return () => {
+      sceneAssets.abort(new DOMException("Scene disposed", "AbortError"));
       scorePrewarmAbort.abort();
       disposed = true;
       ready = false;
@@ -4740,6 +5076,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (resultTimer) clearTimeout(resultTimer);
       cancelAnimationFrame(frame);
       observer.disconnect();
+      touchLayoutMedia.removeEventListener("change", resize);
       host.removeEventListener("wheel", wheel);
       document.removeEventListener("visibilitychange", resetFrameClock);
       removeEventListener("pageshow", resetFrameClock);
@@ -4752,8 +5089,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       for (const locker of lockers.values()) locker.mixer.stopAllAction();
       void score.dispose();
       void soundscape.dispose();
+      ktx2Loader.dispose();
       environmentTarget.dispose();
-      disposeObjectResources([scene]);
+      disposeObjectResources([scene, ...loadedAssetRoots]);
+      for (const objectUrl of controlledDependencyUrls.values()) URL.revokeObjectURL(objectUrl);
+      controlledDependencyUrls.clear();
+      controlledDependencyLoads.clear();
       renderer.renderLists.dispose();
       renderer.dispose();
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);
@@ -4764,6 +5105,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     gameplayConfig,
     hideGuidancePolicy.tutorialHideSpotId,
     objectivePaths,
+    resetAnalogueMove,
   ]);
 
   const touch = (key: string, active: boolean) => {
@@ -4771,15 +5113,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     else touchKeys.current.delete(key);
   };
   const loadPercent = Math.round((loadProgress.done / loadProgress.total) * 100);
-  const danger = threatForMode(chaserMode);
+  const danger = chaserObservable
+    ? threatForMode(chaserMode)
+    : publicThreat === "active" ? 0.52 : publicThreat === "caution" ? 0.28 : 0;
+  const themeEventActivity = themeMechanic?.active
+    ? Math.sin(themeMechanic.progress * Math.PI)
+    : 0;
   const displayedChaserStatus = chaserObservable
     ? chaserConfirming ? "重新确认目标" : chaserStatus(chaserMode)
-    : "位置未确认";
+    : publicThreat === "active"
+      ? "位置未确认 · 威胁声活跃"
+      : publicThreat === "caution"
+        ? "位置未确认 · 仍在附近搜索"
+        : "位置未确认 · 环境已安静";
   const showResult = phase === "ready" || ((phase === "won" || phase === "lost") && resultVisible);
   const interactionText = interaction?.kind === "enter"
     ? "躲进储物柜"
     : interaction?.kind === "exit"
-      ? "离开储物柜"
+      ? publicThreat === "calm" ? "离开储物柜" : "冒险离开储物柜"
       : playerMode === "entering-hide"
         ? "正在藏好…"
         : playerMode === "aligning-hide"
@@ -4792,6 +5143,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           ? "正在离开…"
           : null;
   const hasNextLevel = selectedLevelIndex < CAMPAIGN_LEVELS.length - 1;
+  const touchInteractAvailable = Boolean(interaction) || playerMode === "aligning-hide";
   const primaryAction = phase === "won" && hasNextLevel
     ? () => chooseLevel(selectedLevelIndex + 1)
     : begin;
@@ -4803,6 +5155,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       : hideGuideSelection === "held"
         ? "保持当前安全路线"
         : "生存优先藏身柜";
+  const showHideGuidance = !campaignProgress.bestSeconds[campaignLevel.id]
+    || danger >= 0.28
+    || hideGuideStrategy === "break-line-of-sight"
+    || hideDistance <= 6;
   const captureFeedback = failureFeedback(lastCaptureReason);
 
   return (
@@ -4818,20 +5174,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           <span className="objective">出口 <b>{objectiveDistance}m</b></span>
           <span className={`status danger-${Math.round(danger * 10)}`}><i />{displayedChaserStatus}</span>
           <button type="button" aria-label={musicMuted ? "打开声音" : "静音"} onClick={() => commands.current.toggleMute()}>{musicMuted ? "声音关" : "声音开"}</button>
+          <button type="button" disabled={loading || phase !== "playing"} onClick={() => commands.current.togglePause()}>暂停</button>
           <button type="button" disabled={loading} onClick={restart}>重新开始</button>
         </div>
       </header>
 
       <section
-        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserMode} mode-${playerMode}`}
+        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${themeMechanic?.active ? " theme-event-active" : ""}`}
         style={{
           "--threat": danger,
+          "--theme-event": themeEventActivity,
           "--theme-accent": campaignLevel.campaign.palette.accent,
           "--theme-glow": campaignLevel.campaign.palette.emissive,
         } as React.CSSProperties}
       >
         <div className="three-mount" ref={mount} />
         <div className="cinematic-vignette" aria-hidden="true" />
+        <div className="theme-event-wash" aria-hidden="true" />
 
         {loading && (
           <div className={`loading-card${loadError ? " error" : ""}`} role="status">
@@ -4853,14 +5212,33 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         )}
 
         {!loading && phase === "playing" && !chaserObservable && (
-          <div className="awareness awareness-unknown" role="status">
+          <div className={`awareness awareness-unknown public-${publicThreat}`} role="status">
             <span />
-            <div><small>追捕者情报</small><strong>位置未确认 · 留意音乐变化</strong></div>
+            <div>
+              <small>追捕者情报</small>
+              <strong>
+                {publicThreat === "active"
+                  ? "位置未确认 · 威胁声仍活跃"
+                  : publicThreat === "caution"
+                    ? "位置未确认 · 搜索声正在减弱"
+                    : "位置未确认 · 已连续安静"}
+              </strong>
+            </div>
+          </div>
+        )}
+
+        {!loading && !paused && phase === "playing" && themeMechanic?.active && (
+          <div className="theme-mechanic" role="status" aria-live="polite">
+            <span aria-hidden="true" />
+            <div>
+              <small>{themeMechanic.label}</small>
+              <strong>{themeMechanic.hudHint}</strong>
+            </div>
           </div>
         )}
 
         {!loading && phase === "playing" && objectiveTurnHint && (
-          <div className="objective-route-guide" role="status" aria-label={`路线提示，${objectiveTurnHint.distanceMeters} 米后转向`}>
+          <div className="objective-route-guide" role="group" aria-label={`路线提示，${objectiveTurnHint.distanceMeters} 米后转向`}>
             <span aria-hidden="true">{objectiveTurnHint.arrow}</span>
             <div>
               <small>迷路辅助 · 路径转向</small>
@@ -4869,7 +5247,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           </div>
         )}
 
-        {!loading && phase === "playing" && playerMode === "free" && !interaction && (
+        {!loading && !paused && phase === "playing" && playerMode === "free" && !interaction && showHideGuidance && (
           <div
             className={`hide-guide risk-${hideGuideRisk}${hideGuideStrategy === "break-line-of-sight" ? " strategy-break" : ""}${danger >= 0.45 ? " urgent" : ""}`}
             aria-label={`${hideGuideTitle}，距离 ${hideDistance} 米${hideGuideStrategy === "hide" ? `，${hideRiskLabel}` : ""}`}
@@ -4890,6 +5268,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
         {!loading
           && phase === "playing"
+          && !paused
           && playerMode === "free"
           && !interaction
           && hideGuideProjection
@@ -4907,10 +5286,45 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           </div>
         )}
 
-        {interactionText && phase === "playing" && (
+        {interactionText && phase === "playing" && !paused && (
           <div className="interaction-prompt">
-            <kbd>E</kbd><strong>{interactionText}</strong>
+            <kbd className="desktop-key">E</kbd>
+            <kbd className="touch-key">互动</kbd>
+            <strong>{interactionText}</strong>
+            {playerMode === "aligning-hide" && <small>移动或再次互动可立即取消</small>}
+            {interaction?.kind === "exit" && publicThreat !== "calm" && (
+              <small>外面仍有威胁声；建议等提示恢复绿色后再离柜</small>
+            )}
             {(playerMode === "hidden" || playerMode === "entering-peek" || playerMode === "peeking" || playerMode === "exiting-peek") && <small>按住 Q 从门缝观察，会重新暴露；松开后再离柜</small>}
+          </div>
+        )}
+
+        {paused && !loading && phase === "playing" && (
+          <div className="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+            <div className="pause-card">
+              <span className="result">游戏已暂停</span>
+              <h2 id="pause-title">先看清路线，再继续逃跑</h2>
+              <p>暂停期间关卡、追捕者、计时与主题事件全部冻结。</p>
+              <div className="pause-settings" aria-label="快速设置">
+                <button type="button" onClick={() => commands.current.toggleMute()}>
+                  {musicMuted ? "打开声音" : "静音"}
+                </button>
+                <button type="button" onClick={() => commands.current.adjustZoom(1.12)}>缩小视野</button>
+                <button type="button" onClick={() => commands.current.adjustZoom(1 / 1.12)}>放大视野</button>
+                <button type="button" onClick={() => commands.current.resetZoom()}>重置视野</button>
+              </div>
+              <div className="pause-actions">
+                <button
+                  className="primary"
+                  type="button"
+                  ref={resumeButton}
+                  onClick={() => commands.current.togglePause()}
+                >
+                  继续游戏 <kbd>Esc</kbd>
+                </button>
+                <button className="secondary" type="button" onClick={restart}>重新开始本关</button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -4973,7 +5387,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 <div className="hide-loop" aria-label="躲柜玩法流程">
                   <span><b>1</b>绕墙切断视线</span>
                   <span><b>2</b>识别藏柜风险标记</span>
-                  <span><b>3</b>按 E 藏好，等搜索结束</span>
+                  <span><b>3</b>按互动键 / E 藏好，等搜索结束</span>
                 </div>
               )}
 
@@ -5025,24 +5439,52 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           <button type="button" onClick={() => commands.current.adjustZoom(1 / 1.12)} aria-label="放大视野">＋</button>
         </div>
 
-        {phase === "playing" && (
+        {phase === "playing" && !paused && (
           <>
-            <div className="controls" aria-label="移动控制">
-              <button type="button" aria-label="向上" onPointerDown={() => touch("w", true)} onPointerUp={() => touch("w", false)} onPointerLeave={() => touch("w", false)} onPointerCancel={() => touch("w", false)}>↑</button>
-              <button type="button" aria-label="向左" onPointerDown={() => touch("a", true)} onPointerUp={() => touch("a", false)} onPointerLeave={() => touch("a", false)} onPointerCancel={() => touch("a", false)}>←</button>
-              <button type="button" aria-label="向下" onPointerDown={() => touch("s", true)} onPointerUp={() => touch("s", false)} onPointerLeave={() => touch("s", false)} onPointerCancel={() => touch("s", false)}>↓</button>
-              <button type="button" aria-label="向右" onPointerDown={() => touch("d", true)} onPointerUp={() => touch("d", false)} onPointerLeave={() => touch("d", false)} onPointerCancel={() => touch("d", false)}>→</button>
+            <div
+              className={`controls virtual-stick${joystickThumb.active ? " active" : ""}`}
+              aria-label="拖动摇杆移动"
+              onPointerDown={joystickPointerDown}
+              onPointerMove={joystickPointerMove}
+              onPointerUp={joystickPointerEnd}
+              onPointerCancel={joystickPointerEnd}
+              onLostPointerCapture={resetAnalogueMove}
+            >
+              <div className="stick-ring" aria-hidden="true" ref={joystickBase}>
+                <span
+                  className="stick-thumb"
+                  style={{ transform: `translate3d(${joystickThumb.x}px, ${joystickThumb.y}px, 0)` }}
+                >
+                  <i />
+                </span>
+              </div>
+              <small>拖动移动</small>
             </div>
             <div className="action-controls">
-              <button type="button" className={interaction ? "available" : ""} disabled={!interaction} onClick={interact}>
-                {interaction?.kind === "enter" ? "躲进藏柜" : interaction?.kind === "exit" ? "离开藏柜" : `藏柜 ${hideDistance}m`}
+              <button type="button" className={touchInteractAvailable ? "available" : ""} disabled={!touchInteractAvailable} onClick={interact}>
+                {playerMode === "aligning-hide"
+                  ? "取消躲藏"
+                  : interaction?.kind === "enter"
+                    ? "躲进藏柜"
+                    : interaction?.kind === "exit"
+                      ? "离开藏柜"
+                      : `藏柜 ${hideDistance}m`}
               </button>
               <button
                 type="button"
-                onPointerDown={() => touch("q", true)}
-                onPointerUp={() => touch("q", false)}
-                onPointerLeave={() => touch("q", false)}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  touch("q", true);
+                }}
+                onPointerUp={(event) => {
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                  }
+                  touch("q", false);
+                }}
                 onPointerCancel={() => touch("q", false)}
+                onLostPointerCapture={() => touch("q", false)}
               >
                 {["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? "按住观察" : "按住轻步"}
               </button>
@@ -5055,7 +5497,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         <span><i className="kid" />玩家</span>
         <span><i className="villain" />追捕者</span>
         <span><i className="safe" />可藏主题柜</span>
-        <small>WASD / 方向键移动 · E 躲藏或离开 · Q 轻步 / 柜内观察 · 滚轮动态调视野 · M 声音 · R 重开</small>
+        <small>WASD / 方向键移动 · E 躲藏或离开 · Q 轻步 / 柜内观察 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开</small>
       </footer>
     </main>
   );
