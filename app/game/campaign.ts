@@ -1,4 +1,8 @@
 import type { ChaserMode, GameConfig, HideSpotDefinition, LevelDefinition, Point } from "./contracts.ts";
+import {
+  auditHideArchetypeLevelSafety,
+  type HideArchetypeAudit,
+} from "./hide-archetypes.ts";
 import { createDefaultLevel, createLevel, DEFAULT_GAME_CONFIG } from "./level.ts";
 
 export type CampaignTheme = "campus" | "hospital" | "fire-station" | "factory";
@@ -113,6 +117,7 @@ function campaignLevel(level: LevelDefinition, metadata: CampaignMetadata): Camp
       approach: freezePoint(spot.approach),
       concealed: freezePoint(spot.concealed),
       facing: freezePoint(spot.facing),
+      alternateExit: spot.alternateExit ? freezePoint(spot.alternateExit) : undefined,
     }))),
     movementBlockers: level.movementBlockers
       ? Object.freeze(level.movementBlockers.map(freezePoint))
@@ -155,9 +160,28 @@ const level2 = authoredLevel({
   chaserStartHeading: point(0, 1),
   patrol: [point(14, 18), point(11, 10), point(11, 4), point(23, 7), point(15, 14), point(18, 18)],
   hideSpots: [
-    { id: "library-archive", approach: point(2, 5), concealed: point(1.65, 5), facing: point(1, 0) },
-    { id: "library-map-case", approach: point(14, 14), concealed: point(14, 13.65), facing: point(0, 1) },
-    { id: "library-return-locker", approach: point(7, 20), concealed: point(6.65, 20), facing: point(1, 0) },
+    {
+      id: "library-archive",
+      approach: point(2, 5),
+      concealed: point(1.65, 5),
+      facing: point(1, 0),
+      archetype: "soft-cover",
+    },
+    {
+      id: "library-map-case",
+      approach: point(14, 14),
+      concealed: point(14, 13.65),
+      facing: point(0, 1),
+      archetype: "hard-locker",
+    },
+    {
+      id: "library-return-locker",
+      approach: point(7, 20),
+      concealed: point(6.65, 20),
+      facing: point(1, 0),
+      archetype: "traversal-hide",
+      alternateExit: point(11, 18),
+    },
   ],
   visionOnlyBlockers: [point(5, 16), point(15, 9), point(20, 12)],
 });
@@ -190,9 +214,27 @@ const level3 = authoredLevel({
   chaserStartHeading: point(0, -1),
   patrol: [point(15, 12), point(19, 6), point(14, 12), point(13, 16), point(21, 12), point(8, 6)],
   hideSpots: [
-    { id: "science-chemical-cabinet", approach: point(4, 12), concealed: point(3.65, 12), facing: point(1, 0) },
-    { id: "science-specimen-store", approach: point(18, 9), concealed: point(18.35, 9), facing: point(-1, 0) },
-    { id: "science-cleaning-locker", approach: point(17, 19), concealed: point(17, 19.35), facing: point(0, -1) },
+    {
+      id: "science-chemical-cabinet",
+      approach: point(4, 12),
+      concealed: point(3.65, 12),
+      facing: point(1, 0),
+      archetype: "hard-locker",
+    },
+    {
+      id: "science-specimen-store",
+      approach: point(18, 9),
+      concealed: point(18.35, 9),
+      facing: point(-1, 0),
+      archetype: "soft-cover",
+    },
+    {
+      id: "science-cleaning-locker",
+      approach: point(17, 19),
+      concealed: point(17, 19.35),
+      facing: point(0, -1),
+      archetype: "hard-locker",
+    },
   ],
   visionOnlyBlockers: [point(8, 8), point(13, 20), point(20, 12), point(13, 3), point(16, 16)],
 });
@@ -217,9 +259,28 @@ const level4 = authoredLevel({
   chaserStartHeading: point(0, 1),
   patrol: [point(17, 10), point(12, 5), point(8, 8), point(19, 10), point(14, 12), point(18, 15), point(23, 18), point(11, 20), point(5, 12)],
   hideSpots: [
-    { id: "hospital-linen-north", approach: point(5, 8), concealed: point(4.65, 8), facing: point(1, 0) },
-    { id: "hospital-pharmacy-store", approach: point(2, 18), concealed: point(1.65, 18), facing: point(1, 0) },
-    { id: "hospital-supply-east", approach: point(21, 15), concealed: point(21.35, 15), facing: point(-1, 0) },
+    {
+      id: "hospital-linen-north",
+      approach: point(5, 8),
+      concealed: point(4.65, 8),
+      facing: point(1, 0),
+      archetype: "soft-cover",
+    },
+    {
+      id: "hospital-pharmacy-store",
+      approach: point(2, 18),
+      concealed: point(1.65, 18),
+      facing: point(1, 0),
+      archetype: "hard-locker",
+    },
+    {
+      id: "hospital-supply-east",
+      approach: point(21, 15),
+      concealed: point(21.35, 15),
+      facing: point(-1, 0),
+      archetype: "traversal-hide",
+      alternateExit: point(18, 18),
+    },
   ],
   visionOnlyBlockers: [point(8, 5), point(16, 10), point(18, 18), point(14, 12)],
 });
@@ -258,9 +319,27 @@ const level5 = authoredLevel({
   chaserStartHeading: point(-1, 0),
   patrol: [point(7, 13), point(4, 5), point(16, 5), point(14, 8), point(22, 11), point(20, 16), point(18, 13), point(10, 16), point(19, 19)],
   hideSpots: [
-    { id: "isolation-decon-cabinet", approach: point(12, 9), concealed: point(12, 9.35), facing: point(0, -1) },
-    { id: "isolation-morgue-locker", approach: point(1, 16), concealed: point(0.65, 16), facing: point(1, 0) },
-    { id: "isolation-oxygen-store", approach: point(19, 8), concealed: point(19.35, 8), facing: point(-1, 0) },
+    {
+      id: "isolation-decon-cabinet",
+      approach: point(12, 9),
+      concealed: point(12, 9.35),
+      facing: point(0, -1),
+      archetype: "hard-locker",
+    },
+    {
+      id: "isolation-morgue-locker",
+      approach: point(1, 16),
+      concealed: point(0.65, 16),
+      facing: point(1, 0),
+      archetype: "soft-cover",
+    },
+    {
+      id: "isolation-oxygen-store",
+      approach: point(19, 8),
+      concealed: point(19.35, 8),
+      facing: point(-1, 0),
+      archetype: "hard-locker",
+    },
   ],
   visionOnlyBlockers: [point(8, 1), point(13, 3), point(18, 13), point(21, 11), point(4, 5), point(14, 8), point(20, 16), point(7, 16)],
 });
@@ -291,9 +370,28 @@ const level6 = authoredLevel({
   chaserStartHeading: point(0, 1),
   patrol: [point(21, 11), point(18, 8), point(14, 12), point(5, 9), point(5, 18), point(12, 20), point(19, 18), point(12, 5)],
   hideSpots: [
-    { id: "fire-turnout-locker", approach: point(10, 3), concealed: point(9.65, 3), facing: point(1, 0) },
-    { id: "fire-hose-cabinet", approach: point(22, 20), concealed: point(22.35, 20), facing: point(-1, 0) },
-    { id: "fire-breathing-gear", approach: point(23, 8), concealed: point(23.35, 8), facing: point(-1, 0) },
+    {
+      id: "fire-turnout-locker",
+      approach: point(10, 3),
+      concealed: point(9.65, 3),
+      facing: point(1, 0),
+      archetype: "traversal-hide",
+      alternateExit: point(10, 8),
+    },
+    {
+      id: "fire-hose-cabinet",
+      approach: point(22, 20),
+      concealed: point(22.35, 20),
+      facing: point(-1, 0),
+      archetype: "hard-locker",
+    },
+    {
+      id: "fire-breathing-gear",
+      approach: point(23, 8),
+      concealed: point(23.35, 8),
+      facing: point(-1, 0),
+      archetype: "soft-cover",
+    },
   ],
   visionOnlyBlockers: [point(8, 9), point(16, 18), point(21, 7), point(12, 12), point(15, 20), point(18, 9)],
 });
@@ -328,9 +426,27 @@ const level7 = authoredLevel({
   chaserStartHeading: point(0, 1),
   patrol: [point(9, 14), point(8, 10), point(6, 18), point(18, 18), point(18, 14), point(20, 10), point(18, 6), point(14, 10)],
   hideSpots: [
-    { id: "training-rescue-cage", approach: point(4, 14), concealed: point(4.35, 14), facing: point(-1, 0) },
-    { id: "training-mask-locker", approach: point(6, 7), concealed: point(5.65, 7), facing: point(1, 0) },
-    { id: "training-landing-cabinet", approach: point(10, 2), concealed: point(10, 1.65), facing: point(0, 1) },
+    {
+      id: "training-rescue-cage",
+      approach: point(4, 14),
+      concealed: point(4.35, 14),
+      facing: point(-1, 0),
+      archetype: "soft-cover",
+    },
+    {
+      id: "training-mask-locker",
+      approach: point(6, 7),
+      concealed: point(5.65, 7),
+      facing: point(1, 0),
+      archetype: "hard-locker",
+    },
+    {
+      id: "training-landing-cabinet",
+      approach: point(10, 2),
+      concealed: point(10, 1.65),
+      facing: point(0, 1),
+      archetype: "hard-locker",
+    },
   ],
   visionOnlyBlockers: [point(2, 9), point(6, 12), point(15, 6), point(18, 15), point(13, 10), point(4, 18), point(8, 10), point(16, 14), point(20, 10)],
 });
@@ -363,9 +479,28 @@ const level8 = authoredLevel({
   chaserStartHeading: point(-1, 0),
   patrol: [point(14, 9), point(6, 9), point(3, 9), point(7, 15), point(10, 18), point(14, 15), point(16, 12), point(19, 11), point(23, 7), point(18, 9)],
   hideSpots: [
-    { id: "assembly-tool-crate", approach: point(3, 15), concealed: point(3, 14.65), facing: point(0, 1) },
-    { id: "assembly-control-cabinet", approach: point(10, 7), concealed: point(10.35, 7), facing: point(-1, 0) },
-    { id: "assembly-parts-locker", approach: point(17, 21), concealed: point(17.35, 21), facing: point(-1, 0) },
+    {
+      id: "assembly-tool-crate",
+      approach: point(3, 15),
+      concealed: point(3, 14.65),
+      facing: point(0, 1),
+      archetype: "hard-locker",
+    },
+    {
+      id: "assembly-control-cabinet",
+      approach: point(10, 7),
+      concealed: point(10.35, 7),
+      facing: point(-1, 0),
+      archetype: "soft-cover",
+    },
+    {
+      id: "assembly-parts-locker",
+      approach: point(17, 21),
+      concealed: point(17.35, 21),
+      facing: point(-1, 0),
+      archetype: "traversal-hide",
+      alternateExit: point(14, 18),
+    },
   ],
   visionOnlyBlockers: [point(5, 15), point(15, 9), point(20, 15), point(3, 9), point(16, 12), point(10, 18), point(23, 9)],
 });
@@ -403,9 +538,27 @@ const level9 = authoredLevel({
   chaserStartHeading: point(-1, 0),
   patrol: [point(17, 5), point(13, 4), point(19, 10), point(16, 12), point(22, 15), point(16, 19), point(7, 20), point(10, 17), point(7, 9), point(4, 12)],
   hideSpots: [
-    { id: "turbine-breaker-cabinet", approach: point(1, 9), concealed: point(0.65, 9), facing: point(1, 0) },
-    { id: "turbine-service-locker", approach: point(14, 2), concealed: point(14, 1.65), facing: point(0, 1) },
-    { id: "turbine-oil-store", approach: point(1, 20), concealed: point(0.65, 20), facing: point(1, 0) },
+    {
+      id: "turbine-breaker-cabinet",
+      approach: point(1, 9),
+      concealed: point(0.65, 9),
+      facing: point(1, 0),
+      archetype: "hard-locker",
+    },
+    {
+      id: "turbine-service-locker",
+      approach: point(14, 2),
+      concealed: point(14, 1.65),
+      facing: point(0, 1),
+      archetype: "soft-cover",
+    },
+    {
+      id: "turbine-oil-store",
+      approach: point(1, 20),
+      concealed: point(0.65, 20),
+      facing: point(1, 0),
+      archetype: "hard-locker",
+    },
   ],
   visionOnlyBlockers: [point(13, 2), point(13, 12), point(13, 17), point(19, 19), point(13, 4), point(19, 10), point(7, 9), point(7, 20), point(21, 15)],
 });
@@ -445,10 +598,35 @@ const level10 = authoredLevel({
   chaserStartHeading: point(1, 0),
   patrol: [point(6, 14), point(9, 15), point(4, 21), point(6, 18), point(12, 16), point(18, 19), point(21, 16), point(20, 6), point(17, 9), point(8, 7), point(11, 4)],
   hideSpots: [
-    { id: "foundry-slag-shield", approach: point(2, 7), concealed: point(1.65, 7), facing: point(1, 0) },
-    { id: "foundry-maintenance-locker", approach: point(1, 15), concealed: point(0.65, 15), facing: point(1, 0) },
-    { id: "foundry-coolant-cabinet", approach: point(2, 21), concealed: point(2, 20.65), facing: point(0, 1) },
-    { id: "foundry-control-bay", approach: point(7, 22), concealed: point(7, 21.65), facing: point(0, 1) },
+    {
+      id: "foundry-slag-shield",
+      approach: point(2, 7),
+      concealed: point(1.65, 7),
+      facing: point(1, 0),
+      archetype: "hard-locker",
+    },
+    {
+      id: "foundry-maintenance-locker",
+      approach: point(1, 15),
+      concealed: point(0.65, 15),
+      facing: point(1, 0),
+      archetype: "soft-cover",
+    },
+    {
+      id: "foundry-coolant-cabinet",
+      approach: point(2, 21),
+      concealed: point(2, 20.65),
+      facing: point(0, 1),
+      archetype: "traversal-hide",
+      alternateExit: point(3, 18),
+    },
+    {
+      id: "foundry-control-bay",
+      approach: point(7, 22),
+      concealed: point(7, 21.65),
+      facing: point(0, 1),
+      archetype: "hard-locker",
+    },
   ],
   visionOnlyBlockers: [point(1, 14), point(9, 13), point(18, 9), point(21, 14), point(23, 8), point(4, 21), point(9, 15), point(8, 7), point(20, 6), point(17, 19)],
 });
@@ -581,6 +759,61 @@ export const CAMPAIGN_LEVELS: readonly CampaignLevelDefinition[] = Object.freeze
 );
 
 export const CAMPAIGN_LEVEL_COUNT = CAMPAIGN_LEVELS.length;
+
+export const CAMPAIGN_HIDE_ARCHETYPE_REPRESENTATIVES: Readonly<Record<CampaignTheme, string>> = Object.freeze({
+  campus: "campus-library-lockdown",
+  hospital: "hospital-outpatient-afterhours",
+  "fire-station": "fire-station-engine-bay",
+  factory: "factory-assembly-nightshift",
+});
+
+export interface CampaignHideArchetypeAudit {
+  readonly passed: boolean;
+  readonly failures: readonly string[];
+  readonly levelAudits: readonly {
+    readonly levelId: string;
+    readonly representative: boolean;
+    readonly audit: HideArchetypeAudit;
+  }[];
+}
+
+/**
+ * Campaign-level authoring guard. Every chapter keeps at least one dependable
+ * hard locker, while one representative chapter per theme must exercise both
+ * the soft-cover and traversal-hide runtime contracts.
+ */
+export function auditCampaignHideArchetypeSafety(
+  levels: readonly CampaignLevelDefinition[] = CAMPAIGN_LEVELS,
+): CampaignHideArchetypeAudit {
+  const failures: string[] = [];
+  if (levels.length !== 10) failures.push(`Campaign hide audit expected 10 levels, received ${levels.length}`);
+  const levelIds = new Set(levels.map((level) => level.id));
+  const representativeIds = new Set(Object.values(CAMPAIGN_HIDE_ARCHETYPE_REPRESENTATIVES));
+  for (const [theme, levelId] of Object.entries(CAMPAIGN_HIDE_ARCHETYPE_REPRESENTATIVES)) {
+    const representative = levels.find((level) => level.id === levelId);
+    if (!representative) {
+      failures.push(`Missing ${theme} representative hide level ${levelId}`);
+    } else if (representative.campaign.theme !== theme) {
+      failures.push(`${levelId} is not a ${theme} campaign level`);
+    }
+  }
+  const levelAudits = levels.map((level) => {
+    const representative = representativeIds.has(level.id);
+    const audit = auditHideArchetypeLevelSafety(level, {
+      requireHardLocker: true,
+      requireSoftCover: representative,
+      requireTraversalHide: representative,
+    });
+    failures.push(...audit.failures);
+    return Object.freeze({ levelId: level.id, representative, audit });
+  });
+  if (levelIds.size !== levels.length) failures.push("Campaign hide audit found duplicate level ids");
+  return Object.freeze({
+    passed: failures.length === 0,
+    failures: Object.freeze(failures),
+    levelAudits: Object.freeze(levelAudits),
+  });
+}
 
 const levelsById = new Map(CAMPAIGN_LEVELS.map((level) => [level.id, level]));
 

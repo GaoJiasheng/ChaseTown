@@ -1651,3 +1651,37 @@ test("chaser movement cadence matches authored locomotion and reaction beats", (
   ];
   for (const rate of rates) assert.ok(rate >= 0.65 && rate <= 1.35, `locomotion rate ${rate} would clamp and foot-slide`);
 });
+
+test("a public mission gate defers the exit without changing movement or AI knowledge", () => {
+  const level = testLevel(["....."], {
+    id: "mission-gated-exit",
+    playerStart: { x: 3, y: 0 },
+    chaserStart: { x: 0, y: 0 },
+    chaserStartHeading: { x: -1, y: 0 },
+    patrol: [{ x: 0, y: 0 }],
+    exit: { x: 4, y: 0 },
+  });
+  const simulation = new GameSimulation({
+    level,
+    autoStart: true,
+    config: config({
+      spawnDelaySeconds: 999,
+      playerSpeed: 3,
+      exitRange: 0.62,
+    }),
+  });
+
+  let state = runFor(simulation, 0.5, 1 / 60, {
+    move: { x: 1, y: 0 },
+    exitEnabled: false,
+  });
+  assert.equal(state.phase, "playing");
+  assert.equal(state.player.mode, "free");
+  assert.ok(distanceBetween(state.player.position, level.exit) <= simulation.config.exitRange);
+
+  state = simulation.advance(simulation.config.fixedStepSeconds, {
+    exitEnabled: true,
+  });
+  assert.equal(state.phase, "won");
+  assert.equal(state.player.mode, "escaped");
+});

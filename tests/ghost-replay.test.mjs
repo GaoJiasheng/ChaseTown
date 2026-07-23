@@ -11,9 +11,14 @@ import {
   measureGhostReplayAccuracy,
   parseGhostRecording,
   sampleGhostInput,
+  savePersonalBestGhost,
   savePersonalGhost,
   serializeGhostRecording,
 } from "../app/game/ghost-replay.ts";
+import {
+  canRacePersonalGhost,
+  GhostRaceTracker,
+} from "../app/game/ghost-race.ts";
 import { createLevel } from "../app/game/level.ts";
 import { GameSimulation } from "../app/game/simulation.ts";
 
@@ -39,16 +44,19 @@ test("ghost input recording is change-compressed while interaction remains a one
     recorder.record(tick, {
       move: tick < 60 ? { x: 1, y: 0 } : { x: 0, y: 1 },
       peekHeld: tick >= 80,
+      hideExitChoice: tick >= 100 ? "alternate" : "origin",
       interactPressed: tick === 30,
     });
   }
   const recording = recorder.finish(120);
   assert.ok(recording);
-  assert.ok(recording.keyframes.length <= 5);
+  assert.ok(recording.keyframes.length <= 6);
   assert.equal(sampleGhostInput(recording, 30).interactPressed, true);
   assert.equal(sampleGhostInput(recording, 31).interactPressed, false);
   assert.equal(sampleGhostInput(recording, 79).peekHeld, false);
   assert.equal(sampleGhostInput(recording, 80).peekHeld, true);
+  assert.equal(sampleGhostInput(recording, 99).hideExitChoice, "origin");
+  assert.equal(sampleGhostInput(recording, 100).hideExitChoice, "alternate");
 
   const cursor = new GhostReplayCursor(recording);
   for (const tick of [0, 30, 31, 60, 80, 119]) {
@@ -134,4 +142,63 @@ test("quantized replay stays deterministic inside the 0.1-cell personal ghost bu
   assert.equal(accuracy.comparedSamples, reference.length);
   assert.ok(accuracy.maximumPositionErrorCells <= GHOST_POSITION_ERROR_BUDGET_CELLS);
   assert.equal(accuracy.withinBudget, true);
+});
+
+test("only a faster Standard run replaces the ranked personal ghost", () => {
+  const storage = new MemoryStorage();
+  const makeRecording = (ticks) => {
+    const recorder = new GhostInputRecorder("campus", 1 / 60);
+    recorder.record(0, { move: { x: 1, y: 0 } });
+    return recorder.finish(ticks);
+  };
+  const first = makeRecording(600);
+  const slower = makeRecording(720);
+  const faster = makeRecording(540);
+  assert.ok(first && slower && faster);
+
+  assert.equal(savePersonalBestGhost(storage, first).status, "saved-first");
+  assert.equal(savePersonalBestGhost(storage, slower).status, "kept-faster");
+  assert.deepEqual(loadPersonalGhost(storage, "campus"), first);
+  assert.equal(savePersonalBestGhost(storage, faster, "assisted").status, "rejected-assisted");
+  assert.deepEqual(loadPersonalGhost(storage, "campus"), first);
+  assert.equal(savePersonalBestGhost(storage, faster).status, "saved-faster");
+  assert.deepEqual(loadPersonalGhost(storage, "campus"), faster);
+});
+
+test("ghost race eligibility and split deltas stay isolated from gameplay", () => {
+  const recorder = new GhostInputRecorder("factory", 1 / 60);
+  recorder.record(0, { move: { x: 1, y: 0 } });
+  const recording = recorder.finish(600);
+  assert.ok(recording);
+  assert.equal(canRacePersonalGhost({
+    recording,
+    levelId: "factory",
+    fixedStepSeconds: 1 / 60,
+    ruleset: "standard",
+  }), true);
+  assert.equal(canRacePersonalGhost({
+    recording,
+    levelId: "factory",
+    fixedStepSeconds: 1 / 60,
+    ruleset: "assisted",
+  }), false);
+
+  const tracker = new GhostRaceTracker(recording, 100);
+  let snapshot = tracker.update({
+    elapsedSeconds: 4,
+    playerRemainingMeters: 74,
+    ghostRemainingMeters: 78,
+  });
+  assert.equal(snapshot.leader, "player");
+  assert.equal(snapshot.playerLeadMeters, 4);
+  assert.equal(snapshot.latestSplit, null);
+
+  snapshot = tracker.update({
+    elapsedSeconds: 5,
+    playerRemainingMeters: 70,
+    ghostRemainingMeters: 74,
+  });
+  assert.equal(snapshot.latestSplit?.id, "opening");
+  assert.equal(snapshot.latestSplit?.deltaSeconds, -1);
+  assert.deepEqual(snapshot.completedSplitIds, ["opening"]);
 });

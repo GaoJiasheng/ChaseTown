@@ -15,6 +15,12 @@ export interface PerceptionTarget {
   mode: PlayerMode;
   hideSpotId: string | null;
   transitionRemainingSeconds: number;
+  /**
+   * Public visual disturbance authored by the active hide archetype. Zero is
+   * fully concealed; partial values reduce legal acquisition range. This is
+   * never a private concealed coordinate or occupancy query.
+   */
+  visualExposureMultiplier?: number;
 }
 
 export interface SoundStimulus {
@@ -77,28 +83,43 @@ export function sampleSoundPerception(
   };
 }
 
+export function playerVisualExposureMultiplier(
+  target: Pick<PerceptionTarget, "mode" | "transitionRemainingSeconds" | "visualExposureMultiplier">,
+  config: Pick<GameConfig, "hideEnterSeconds" | "hideEnterExposureSeconds" | "hideExitSeconds" | "hideExitExposureSeconds">,
+): number {
+  const authoredMultiplier = Number.isFinite(target.visualExposureMultiplier)
+    ? Math.min(1, Math.max(0, target.visualExposureMultiplier ?? 1))
+    : target.mode === "hidden"
+      ? 0
+      : 1;
+  const fullyExposed = (() => {
+    switch (target.mode) {
+      case "free":
+      case "aligning-hide":
+      case "peeking":
+      case "caught":
+      case "escaped": return true;
+      case "exiting-peek":
+        // A tap released before the opening transition advances produces one
+        // logical closing frame with zero remaining open time. The visual mask
+        // is already fully shut, so perception must not see through that frame.
+        return target.transitionRemainingSeconds > 1e-6;
+      case "entering-hide":
+        return config.hideEnterSeconds - target.transitionRemainingSeconds < config.hideEnterExposureSeconds;
+      case "exiting-hide":
+        return config.hideExitSeconds - target.transitionRemainingSeconds >= config.hideExitExposureSeconds;
+      case "entering-peek": return false;
+      case "hidden": return authoredMultiplier > 0;
+    }
+  })();
+  return fullyExposed ? authoredMultiplier : 0;
+}
+
 export function isPlayerVisuallyExposed(
-  target: Pick<PerceptionTarget, "mode" | "transitionRemainingSeconds">,
+  target: Pick<PerceptionTarget, "mode" | "transitionRemainingSeconds" | "visualExposureMultiplier">,
   config: Pick<GameConfig, "hideEnterSeconds" | "hideEnterExposureSeconds" | "hideExitSeconds" | "hideExitExposureSeconds">,
 ): boolean {
-  switch (target.mode) {
-    case "free":
-    case "aligning-hide":
-    case "peeking":
-    case "caught":
-    case "escaped": return true;
-    case "exiting-peek":
-      // A tap released before the opening transition advances produces one
-      // logical closing frame with zero remaining open time. The visual mask
-      // is already fully shut, so perception must not see through that frame.
-      return target.transitionRemainingSeconds > 1e-6;
-    case "entering-hide":
-      return config.hideEnterSeconds - target.transitionRemainingSeconds < config.hideEnterExposureSeconds;
-    case "exiting-hide":
-      return config.hideExitSeconds - target.transitionRemainingSeconds >= config.hideExitExposureSeconds;
-    case "hidden":
-    case "entering-peek": return false;
-  }
+  return playerVisualExposureMultiplier(target, config) > 0;
 }
 
 export function samplePlayerPerception(
@@ -108,11 +129,15 @@ export function samplePlayerPerception(
   config: GameConfig,
   observedAtSeconds: number,
 ): PerceptionEvidence {
-  if (!isPlayerVisuallyExposed(target, config)) return { kind: "none", observedAtSeconds };
+  const exposureMultiplier = playerVisualExposureMultiplier(target, config);
+  if (exposureMultiplier <= 0) return { kind: "none", observedAtSeconds };
 
   const offset = { x: target.position.x - observer.position.x, y: target.position.y - observer.position.y };
   const distance = distanceBetween(observer.position, target.position);
-  if (distance > config.visionRange || !hasLineOfSight(level, observer.position, target.position)) {
+  if (
+    distance > config.visionRange * exposureMultiplier
+    || !hasLineOfSight(level, observer.position, target.position)
+  ) {
     return { kind: "none", observedAtSeconds };
   }
 

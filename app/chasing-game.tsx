@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -20,11 +21,14 @@ import {
   soundPanForWorldPoints,
 } from "./game/audio/immersive-soundscape.ts";
 import {
+  assetLoadRecoveryMessage,
   auditFirstPlayableAssetBudget,
+  createQaAssetFaultInjector,
   createSceneAssetLoader,
   externalAssetUrisFromGlb,
   type AssetBudgetManifestEntry,
   type FirstPlayableAssetCategory,
+  type QaAssetFaultInjector,
 } from "./game/asset-loading.ts";
 import { runtimeAtmosphereForLevel } from "./game/atmosphere.ts";
 import {
@@ -34,16 +38,31 @@ import {
   getCampaignHideGuidancePolicy,
   publicThreatStrengthForMode,
   updatePlayerKnowledge,
+  type CampaignLevelDefinition,
   type CampaignTheme,
   type PublicThreatLevel,
 } from "./game/campaign.ts";
 import {
   createCampaignProgress,
+  getCampaignRunRecord,
+  getCampaignUnlockedThrough,
   recordCampaignCompletion,
   sanitizeCampaignProgress,
   type CampaignProgress,
 } from "./game/campaign-progress.ts";
-import type { CaptureReason, ChaserMode, GameConfig, GamePhase, GameState, HideSpotDefinition, LevelDefinition, PlayerMode, Point } from "./game/contracts.ts";
+import type {
+  CaptureReason,
+  ChaserMode,
+  GameConfig,
+  GamePhase,
+  GameState,
+  HideArchetypeKind,
+  HideExitKind,
+  HideSpotDefinition,
+  LevelDefinition,
+  PlayerMode,
+  Point,
+} from "./game/contracts.ts";
 import { failureFeedback } from "./game/failure-feedback.ts";
 import {
   planHideGuidance,
@@ -60,20 +79,57 @@ import {
   shouldIgnoreFocusedControlKey,
 } from "./game/input.ts";
 import {
+  MASTERY_CHALLENGE_IDS,
   applyRunTelemetryFrame,
   createRunTelemetry,
   evaluateRunMastery,
   masteryTargetSeconds,
+  mergeStoredMastery,
   personalBestDelta,
   previewRunMastery,
   type RunCausalEvent,
   type MasteryRank,
   type RunMasteryResult,
+  type StoredMastery,
 } from "./game/mastery.ts";
 import {
+  GhostReplayCursor,
   GhostInputRecorder,
-  savePersonalGhost,
+  loadPersonalGhost,
+  savePersonalBestGhost,
+  type GhostRecording,
 } from "./game/ghost-replay.ts";
+import {
+  canRacePersonalGhost,
+  GhostRaceTracker,
+  type GhostRaceSnapshot,
+} from "./game/ghost-race.ts";
+import {
+  assistedGameplayConfig,
+  DEFAULT_GAMEPLAY_PREFERENCES,
+  loadGameplayPreferences,
+  playHapticCue,
+  saveGameplayPreferences,
+  type GameplayPreferences,
+} from "./game/gameplay-preferences.ts";
+import {
+  CHASER_ARCHETYPE_PROFILES,
+  type ChaserArchetypeProfile,
+} from "./game/chaser-archetypes.ts";
+import {
+  buildEnvironmentCompositionPlan,
+  compositionMaterialVariantForCell,
+  createCompositionDecalPixels,
+  sampleMechanicWorldFeedback,
+} from "./game/environment-composition.ts";
+import {
+  CERTIFIED_REMIX_MISSION_VERSION,
+  certifiedRemixContractsForLevel,
+  remixRecordStorageKey,
+  remixReplayLevelId,
+  resolveCertifiedRemix,
+  type CertifiedRemixContract,
+} from "./game/remix-contracts.ts";
 import { distanceBetween, GridPathPlanner, hasLineOfSight } from "./game/navigation.ts";
 import {
   createObjectiveGuidanceState,
@@ -121,7 +177,12 @@ import {
   stepFixedCameraFollow,
   type FixedCameraFollowState,
 } from "./game/presentation.ts";
-import { GameSimulation, type HideInteraction } from "./game/simulation.ts";
+import {
+  GameSimulation,
+  type ChaserArchetypeRuntimeView,
+  type HideExitSelection,
+  type HideInteraction,
+} from "./game/simulation.ts";
 import {
   createMechanicInstance,
   createThemeMechanicDefinition,
@@ -130,6 +191,16 @@ import {
   type MechanicInstance,
   type MechanicInstanceSample,
 } from "./game/theme-mechanics.ts";
+import {
+  auditThemeMissionSoftlock,
+  availableThemeObjectiveIds,
+  createInitialThemeMissionState,
+  stepThemeMission,
+  themeMissionDefinition,
+  type MissionObjectivePlacement,
+  type ThemeMissionState,
+  type ThemeObjectiveDefinition,
+} from "./game/theme-objectives.ts";
 import { combineScreenMove, sampleVirtualStick } from "./game/virtual-stick.ts";
 
 type ActorName = "kid" | "villain" | "police";
@@ -164,7 +235,6 @@ const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
 
 const ACTOR_SPECS = {
   kid: {
-    url: "/models/characters/kid.glb?v=32",
     bootstrapUrl: "/models/characters/kid-bootstrap.glb?v=1",
     height: 1.52,
     aliases: {
@@ -184,7 +254,6 @@ const ACTOR_SPECS = {
     required: ["idle", "walk", "run", "turnLeft", "turnRight", "enterHide", "hideIdle", "peekLeft", "exitHide", "caught", "celebrate"] as AnimationState[],
   },
   villain: {
-    url: "/models/characters/villain.glb?v=32",
     bootstrapUrl: "/models/characters/villain-bootstrap.glb?v=1",
     height: 1.88,
     aliases: {
@@ -377,6 +446,65 @@ const THEME_MECHANIC_ART: Readonly<Record<CampaignTheme, ThemeMechanicArtSpec>> 
     node: "FactoryControlConsole",
     height: 1.62,
     label: "设备旁路控制台",
+  },
+};
+
+type HideArchetypeArtSpec = {
+  readonly nodes: readonly string[];
+  readonly height: number;
+  readonly label: string;
+};
+
+const HIDE_ARCHETYPE_ART: Readonly<
+  Record<CampaignTheme, Readonly<Record<Exclude<HideArchetypeKind, "hard-locker">, HideArchetypeArtSpec>>>
+> = {
+  campus: {
+    "soft-cover": {
+      nodes: ["CampusLibraryShelves", "CampusReadingCluster", "CampusTrophyCase"],
+      height: 1.82,
+      label: "书架遮挡",
+    },
+    "traversal-hide": {
+      nodes: ["CampusArchiveCluster", "CampusLibraryHideDressing", "CampusHideDressing"],
+      height: 2.08,
+      label: "档案穿行道",
+    },
+  },
+  hospital: {
+    "soft-cover": {
+      nodes: ["HospitalPrivacyScreen", "HospitalIsolationWardCluster", "HospitalBed"],
+      height: 1.9,
+      label: "医用隔帘",
+    },
+    "traversal-hide": {
+      nodes: ["HospitalAirlockCluster", "HospitalOutpatientHideDressing", "HospitalHideDressing"],
+      height: 2.08,
+      label: "双向隔离舱",
+    },
+  },
+  "fire-station": {
+    "soft-cover": {
+      nodes: ["FireGearRack", "FireStationBreathingGearCluster", "FireStationTurnoutCluster"],
+      height: 2.05,
+      label: "消防服架",
+    },
+    "traversal-hide": {
+      nodes: ["FireStationTurnoutCluster", "FireStationEngineBayHideDressing", "FireStationHideDressing"],
+      height: 2.12,
+      label: "装备穿行架",
+    },
+  },
+  factory: {
+    "soft-cover": {
+      nodes: ["FactorySafetyBarrier", "FactoryCrateStack", "FactoryControlConsole"],
+      height: 1.52,
+      label: "工位遮挡",
+    },
+    "traversal-hide": {
+      nodes: ["FactoryPipeAssembly", "FactoryAssemblyHideDressing", "FactoryHideDressing"],
+      height: 2.12,
+      label: "检修穿行道",
+    },
   },
 };
 
@@ -1436,7 +1564,12 @@ uniform float actorReadabilityRimStrength;`,
 
 type LockerView = {
   id: string;
+  archetype: HideArchetypeKind;
   root: THREE.Group;
+  basePosition: THREE.Vector3;
+  baseRotationY: number;
+  baseScale: THREE.Vector3;
+  alternateExit: Point | null;
   approach: Point;
   cameraAnchor: THREE.Object3D;
   peekAnchor: THREE.Object3D;
@@ -1463,9 +1596,30 @@ type MechanicView = {
   baseScale: THREE.Vector3;
 };
 
+type MissionObjectiveView = {
+  id: string;
+  root: THREE.Group;
+  beacon: THREE.Sprite;
+  light: THREE.PointLight;
+  position: Point;
+  baseScale: THREE.Vector3;
+};
+
 type ThemeMechanicUiState = MechanicInstanceSample & {
   readonly distanceMeters: number;
   readonly activationCostLabel: string;
+};
+
+type ThemeMissionUiState = {
+  readonly state: ThemeMissionState;
+  readonly activeObjective: ThemeObjectiveDefinition | null;
+  readonly activeDistanceMeters: number | null;
+  readonly completedCount: number;
+  readonly totalCount: number;
+};
+
+type GhostRaceUiState = GhostRaceSnapshot & {
+  readonly visible: boolean;
 };
 
 type CameraOccluder = {
@@ -1489,9 +1643,102 @@ type GameCommands = {
 type LastRunSummary = RunMasteryResult & {
   isPersonalBest: boolean;
   deltaSeconds: number | null;
+  ghostSaveStatus?: "saved-first" | "saved-faster" | "kept-faster" | "rejected-assisted" | "storage-error";
 };
 
 const CAMPAIGN_PROGRESS_KEY = "chasing.campaign-progress.v1";
+const CERTIFIED_REMIX_RECORD_VERSION = 1;
+
+type CertifiedRemixBestRecord = {
+  readonly version: typeof CERTIFIED_REMIX_RECORD_VERSION;
+  readonly replayLevelId: string;
+  readonly seed: number;
+  readonly ruleset: GameplayPreferences["ruleset"];
+  readonly missionVersion: typeof CERTIFIED_REMIX_MISSION_VERSION;
+  readonly bestSeconds: number;
+  readonly mastery?: StoredMastery;
+};
+
+function sanitizeCertifiedRemixMastery(value: unknown): StoredMastery | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const candidate = value as Partial<StoredMastery>;
+  if (!["bronze", "silver", "gold"].includes(candidate.rank ?? "")) return undefined;
+  const challengeIds = MASTERY_CHALLENGE_IDS.filter((id) => (
+    Array.isArray(candidate.challengeIds) && candidate.challengeIds.includes(id)
+  ));
+  return Object.freeze({
+    rank: candidate.rank as MasteryRank,
+    challengeIds: Object.freeze(challengeIds),
+    ...(typeof candidate.profileId === "string"
+      && candidate.profileId.length > 0
+      && candidate.profileId.length <= 120
+      ? { profileId: candidate.profileId }
+      : {}),
+  });
+}
+
+function loadCertifiedRemixRecord(
+  storage: Storage,
+  contract: CertifiedRemixContract,
+  ruleset: GameplayPreferences["ruleset"],
+): CertifiedRemixBestRecord | null {
+  try {
+    const value = JSON.parse(
+      storage.getItem(remixRecordStorageKey(contract, ruleset)) ?? "null",
+    ) as Partial<CertifiedRemixBestRecord> | null;
+    const replayLevelId = remixReplayLevelId(contract, ruleset);
+    if (!(value?.version === CERTIFIED_REMIX_RECORD_VERSION
+      && value.replayLevelId === replayLevelId
+      && value.seed === contract.seed
+      && value.ruleset === ruleset
+      && value.missionVersion === CERTIFIED_REMIX_MISSION_VERSION
+      && typeof value.bestSeconds === "number"
+      && Number.isFinite(value.bestSeconds)
+      && value.bestSeconds > 0)) return null;
+    const mastery = sanitizeCertifiedRemixMastery(value.mastery);
+    return Object.freeze({
+      version: CERTIFIED_REMIX_RECORD_VERSION,
+      replayLevelId,
+      seed: contract.seed,
+      ruleset,
+      missionVersion: CERTIFIED_REMIX_MISSION_VERSION,
+      bestSeconds: value.bestSeconds,
+      ...(mastery ? { mastery } : {}),
+    });
+  } catch {
+    return null;
+  }
+}
+
+function saveCertifiedRemixRecord(
+  storage: Storage,
+  contract: CertifiedRemixContract,
+  ruleset: GameplayPreferences["ruleset"],
+  completedSeconds: number,
+  masteryResult: RunMasteryResult,
+): CertifiedRemixBestRecord {
+  const previous = loadCertifiedRemixRecord(storage, contract, ruleset);
+  const bestSeconds = Math.min(
+    previous?.bestSeconds ?? Number.POSITIVE_INFINITY,
+    completedSeconds,
+  );
+  const record: CertifiedRemixBestRecord = Object.freeze({
+    version: CERTIFIED_REMIX_RECORD_VERSION,
+    replayLevelId: remixReplayLevelId(contract, ruleset),
+    seed: contract.seed,
+    ruleset,
+    missionVersion: CERTIFIED_REMIX_MISSION_VERSION,
+    bestSeconds,
+    mastery: mergeStoredMastery(previous?.mastery, masteryResult),
+  });
+  try {
+    storage.setItem(remixRecordStorageKey(contract, ruleset), JSON.stringify(record));
+  } catch {
+    // The completed run remains visible in session when storage is unavailable.
+  }
+  return record;
+}
+
 const MASTERY_RANK_LABEL: Readonly<Record<MasteryRank, string>> = Object.freeze({
   bronze: "铜章",
   silver: "银章",
@@ -1699,13 +1946,15 @@ function sampleActorSpeed(view: ActorView, point: Point, tick: number, fixedStep
   return view.sampledSpeed;
 }
 
-function updateActorVisibility(view: ActorView, visible: boolean, delta: number, immediate = false) {
-  const target = visible ? 1 : 0;
+function updateActorVisibility(view: ActorView, visible: boolean | number, delta: number, immediate = false) {
+  const target = typeof visible === "number"
+    ? THREE.MathUtils.clamp(visible, 0, 1)
+    : visible ? 1 : 0;
   view.visibilityAlpha = immediate
     ? target
     : THREE.MathUtils.damp(view.visibilityAlpha, target, 18, delta);
   if (Math.abs(view.visibilityAlpha - target) < 0.006) view.visibilityAlpha = target;
-  if (visible) view.root.visible = true;
+  if (target > 0) view.root.visible = true;
   const fading = view.visibilityAlpha < 0.999;
   for (const entry of view.visibilityMaterials) {
     const transparent = entry.baseTransparent || fading;
@@ -1717,7 +1966,7 @@ function updateActorVisibility(view: ActorView, visible: boolean, delta: number,
     }
     entry.material.opacity = entry.baseOpacity * view.visibilityAlpha;
   }
-  if (!visible && view.visibilityAlpha === 0) view.root.visible = false;
+  if (target === 0 && view.visibilityAlpha === 0) view.root.visible = false;
 }
 
 type TextureDeduplication = {
@@ -1964,32 +2213,105 @@ function chaserStatus(mode: ChaserMode) {
   }
 }
 
-function playerPresentationPoint(
+function chaserArchetypeActionStatus(
+  action: ChaserArchetypeRuntimeView["action"],
+): string | null {
+  switch (action) {
+    case "scan-public-junction": return "正在逐支路扫描";
+    case "inspect-public-hide-clue": return "正在检查公开藏点线索";
+    case "focus-perceived-sound": return "正在锁定已听见的声源";
+    case "intercept-public-exit-route": return "正在切入出口前方通道";
+    case null: return null;
+  }
+}
+
+interface PlayerPresentationPose {
+  readonly point: Point;
+  readonly heading: Point;
+}
+
+function interpolatePoint(from: Point, to: Point, amount: number): Point {
+  const clamped = Math.min(1, Math.max(0, amount));
+  const eased = clamped * clamped * (3 - 2 * clamped);
+  return {
+    x: from.x + (to.x - from.x) * eased,
+    y: from.y + (to.y - from.y) * eased,
+  };
+}
+
+function headingToward(from: Point, to: Point, fallback: Point): Point {
+  const offset = { x: to.x - from.x, y: to.y - from.y };
+  const magnitude = Math.hypot(offset.x, offset.y);
+  return magnitude > 1e-5
+    ? { x: offset.x / magnitude, y: offset.y / magnitude }
+    : fallback;
+}
+
+function playerPresentationPose(
   state: GameState,
   level: LevelDefinition,
-  config: Pick<GameConfig, "hideEnterSeconds" | "hideExitSeconds">,
-) {
+  simulation: GameSimulation,
+): PlayerPresentationPose {
+  const config = simulation.config;
   const spot = state.player.hideSpotId
     ? level.hideSpots.find((candidate) => candidate.id === state.player.hideSpotId)
     : undefined;
-  if (!spot) return state.player.position;
+  const resolved = simulation.getActiveHideSpotArchetype();
+  if (!spot || !resolved || resolved.hideSpotId !== spot.id) {
+    return { point: state.player.position, heading: state.player.heading };
+  }
+  if (resolved.archetype !== "hard-locker") {
+    if (state.player.mode === "aligning-hide") {
+      return { point: state.player.position, heading: state.player.heading };
+    }
+    const concealed = resolved.concealed;
+    if (state.player.mode === "entering-hide") {
+      const duration = config.hideEnterSeconds * resolved.profile.timing.enterDurationMultiplier;
+      const progress = 1 - state.player.transitionRemainingSeconds / Math.max(duration, 1e-6);
+      return {
+        point: interpolatePoint(resolved.approach, concealed, progress),
+        heading: headingToward(resolved.approach, concealed, state.player.heading),
+      };
+    }
+    if (state.player.mode === "exiting-hide") {
+      const selection = simulation.getHideExitSelection()?.selected ?? "origin";
+      const destination = selection === "alternate" && resolved.alternateExit
+        ? resolved.alternateExit
+        : resolved.approach;
+      const duration = config.hideExitSeconds * resolved.profile.timing.exitDurationMultiplier;
+      const progress = 1 - state.player.transitionRemainingSeconds / Math.max(duration, 1e-6);
+      return {
+        point: interpolatePoint(concealed, destination, progress),
+        heading: headingToward(concealed, destination, state.player.heading),
+      };
+    }
+    if (["hidden", "entering-peek", "peeking", "exiting-peek"].includes(state.player.mode)) {
+      return { point: concealed, heading: state.player.heading };
+    }
+    return { point: state.player.position, heading: state.player.heading };
+  }
   // Simulation keeps its concealed point as the AI/perception contract. The
   // premium locker and the rendered actor sit slightly nearer the threshold,
   // so the closed door remains visible in the corridor instead of sinking
   // into the surrounding wall module after the art-polish pass.
   const lockerAnchor = visualHidePoint(spot);
-  if (state.player.mode === "aligning-hide") return state.player.position;
-  return pairedHidePresentationPoint({
-    mode: state.player.mode,
-    playerPosition: state.player.position,
-    approach: spot.approach,
-    lockerAnchor,
-    facing: spot.facing,
-    transitionRemainingSeconds: state.player.transitionRemainingSeconds,
-    transitionDurationSeconds: state.player.mode === "exiting-hide"
-      ? config.hideExitSeconds
-      : config.hideEnterSeconds,
-  });
+  if (state.player.mode === "aligning-hide") {
+    return { point: state.player.position, heading: state.player.heading };
+  }
+  return {
+    point: pairedHidePresentationPoint({
+      mode: state.player.mode,
+      playerPosition: state.player.position,
+      approach: spot.approach,
+      lockerAnchor,
+      facing: spot.facing,
+      transitionRemainingSeconds: state.player.transitionRemainingSeconds,
+      transitionDurationSeconds: state.player.mode === "exiting-hide"
+        ? config.hideExitSeconds
+        : config.hideEnterSeconds,
+    }),
+    heading: state.player.heading,
+  };
 }
 
 function canPlayerObserveChaser(state: GameState, level: LevelDefinition, config: GameConfig) {
@@ -2008,21 +2330,71 @@ export function ChasingGame() {
   const joystickBase = useRef<HTMLDivElement>(null);
   const joystickPointerId = useRef<number | null>(null);
   const interactPressed = useRef(false);
+  const preferredHideExit = useRef<HideExitKind>("origin");
   const pausedRef = useRef(false);
   const resumeButton = useRef<HTMLButtonElement>(null);
   const pauseReturnFocus = useRef<HTMLElement | null>(null);
   const commands = useRef<GameCommands>(NOOP_COMMANDS);
+  const qaAssetFaultInjector = useRef<QaAssetFaultInjector | null>(null);
   const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
-  const campaignLevel = CAMPAIGN_LEVELS[selectedLevelIndex];
+  const [selectedRemixVariant, setSelectedRemixVariant] = useState<0 | 1 | 2 | null>(null);
+  const [sceneRevision, setSceneRevision] = useState(0);
+  const [preferences, setPreferences] = useState<GameplayPreferences>(
+    () => DEFAULT_GAMEPLAY_PREFERENCES,
+  );
+  const preferencesRef = useRef(preferences);
+  const sourceCampaignLevel = CAMPAIGN_LEVELS[selectedLevelIndex];
+  const remixContracts = useMemo(
+    () => certifiedRemixContractsForLevel(sourceCampaignLevel),
+    [sourceCampaignLevel],
+  );
+  const selectedRemixContract = selectedRemixVariant === null
+    ? null
+    : remixContracts[selectedRemixVariant];
+  const resolvedRemix = useMemo(
+    () => resolveCertifiedRemix(
+      sourceCampaignLevel,
+      selectedRemixContract,
+      preferences.ruleset,
+    ),
+    [preferences.ruleset, selectedRemixContract, sourceCampaignLevel],
+  );
+  // Certified remixes clone only LevelDefinition fields; campaign art and
+  // briefing metadata are retained by the spread and remain immutable.
+  const campaignLevel = resolvedRemix.level as CampaignLevelDefinition;
+  const chaserArchetypeProfile: ChaserArchetypeProfile =
+    CHASER_ARCHETYPE_PROFILES[campaignLevel.campaign.theme];
+  const runReplayLevelId = selectedRemixContract
+    ? remixReplayLevelId(selectedRemixContract, preferences.ruleset)
+    : `${campaignLevel.id}#${CERTIFIED_REMIX_MISSION_VERSION}`;
+  const runRecordLevelId = selectedRemixContract
+    ? runReplayLevelId
+    : campaignLevel.id;
+  const remixRecord = selectedRemixContract && typeof window !== "undefined"
+    ? loadCertifiedRemixRecord(localStorage, selectedRemixContract, preferences.ruleset)
+    : null;
   const objectivePaths = useMemo(() => new GridPathPlanner(campaignLevel), [campaignLevel]);
-  const gameplayConfig = useMemo(() => getCampaignGameplayConfig(campaignLevel), [campaignLevel]);
+  const baseGameplayConfig = useMemo(
+    () => getCampaignGameplayConfig(campaignLevel),
+    [campaignLevel],
+  );
+  const gameplayConfig = useMemo(
+    () => preferences.ruleset === "assisted"
+      ? { ...baseGameplayConfig, ...assistedGameplayConfig(baseGameplayConfig) }
+      : baseGameplayConfig,
+    [baseGameplayConfig, preferences.ruleset],
+  );
   const hideGuidancePolicy = useMemo(() => getCampaignHideGuidancePolicy(campaignLevel), [campaignLevel]);
   const atmosphere = useMemo(() => runtimeAtmosphereForLevel(campaignLevel), [campaignLevel]);
   const masteryPreview = useMemo(() => previewRunMastery(
     campaignLevel,
     gameplayConfig,
-    { levelId: campaignLevel.id, theme: campaignLevel.campaign.theme },
-  ), [campaignLevel, gameplayConfig]);
+    {
+      levelId: campaignLevel.id,
+      theme: campaignLevel.campaign.theme,
+      ruleset: preferences.ruleset,
+    },
+  ), [campaignLevel, gameplayConfig, preferences.ruleset]);
   const [campaignProgress, setCampaignProgress] = useState<CampaignProgress>(
     createCampaignProgress,
   );
@@ -2033,6 +2405,8 @@ export function ChasingGame() {
   const [chaserMode, setChaserMode] = useState<ChaserMode>("spawn-delay");
   const [chaserConfirming, setChaserConfirming] = useState(false);
   const [chaserObservable, setChaserObservable] = useState(true);
+  const [chaserArchetypeRuntime, setChaserArchetypeRuntime] =
+    useState<ChaserArchetypeRuntimeView | null>(null);
   const [publicThreat, setPublicThreat] = useState<PublicThreatLevel>("calm");
   const [elapsed, setElapsed] = useState(0);
   const [objectiveDistance, setObjectiveDistance] = useState(
@@ -2055,6 +2429,8 @@ export function ChasingGame() {
   const [hideGuideSelection, setHideGuideSelection] = useState<HideGuidanceSelection>("survivability");
   const [hideGuideStrategy, setHideGuideStrategy] = useState<"hide" | "break-line-of-sight">("hide");
   const [interaction, setInteraction] = useState<HideInteraction | null>(null);
+  const [activeHideArchetype, setActiveHideArchetype] = useState<HideArchetypeKind | null>(null);
+  const [hideExitSelection, setHideExitSelection] = useState<HideExitSelection | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [loadProgress, setLoadProgress] = useState({ done: 0, total: BOOTSTRAP_ASSET_COUNT, message: "正在载入项目美术资产：角色、校园与互动道具…" });
@@ -2063,8 +2439,24 @@ export function ChasingGame() {
   const [paused, setPaused] = useState(false);
   const [joystickThumb, setJoystickThumb] = useState({ x: 0, y: 0, active: false });
   const [themeMechanic, setThemeMechanic] = useState<ThemeMechanicUiState | null>(null);
+  const [themeMission, setThemeMission] = useState<ThemeMissionUiState | null>(null);
+  const [ghostRace, setGhostRace] = useState<GhostRaceUiState | null>(null);
   const [lastCaptureReason, setLastCaptureReason] = useState<CaptureReason | null>(null);
   const [lastRunSummary, setLastRunSummary] = useState<LastRunSummary | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loaded = loadGameplayPreferences(localStorage);
+    queueMicrotask(() => {
+      if (active) setPreferences(loaded);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    preferencesRef.current = preferences;
+    saveGameplayPreferences(localStorage, preferences);
+  }, [preferences]);
 
   useEffect(() => {
     let active = true;
@@ -2088,9 +2480,29 @@ export function ChasingGame() {
     campaignProgressRef.current = campaignProgress;
   }, [campaignProgress]);
 
+  const updatePreferences = useCallback((
+    patch: Partial<Omit<GameplayPreferences, "version">>,
+  ) => {
+    setPreferences((current) => ({
+      ...current,
+      ...patch,
+      version: current.version,
+    }));
+  }, []);
+
   const begin = useCallback(() => commands.current.begin(), []);
   const restart = useCallback(() => commands.current.restart(), []);
   const interact = useCallback(() => commands.current.interact(), []);
+  const retryScene = useCallback(() => {
+    setLoading(true);
+    setLoadError("");
+    setLoadProgress({
+      done: 0,
+      total: BOOTSTRAP_ASSET_COUNT,
+      message: "正在原地重建 3D 场景并恢复素材…",
+    });
+    setSceneRevision((revision) => revision + 1);
+  }, []);
   const resetAnalogueMove = useCallback(() => {
     analogueMove.current = { x: 0, y: 0 };
     joystickPointerId.current = null;
@@ -2136,7 +2548,10 @@ export function ChasingGame() {
   const chooseLevel = useCallback((index: number) => {
     if (index < 0 || index >= CAMPAIGN_LEVELS.length) return;
     const qaBypass = typeof location !== "undefined" && new URLSearchParams(location.search).has("qa");
-    if (!qaBypass && index + 1 > campaignProgress.unlockedThrough) return;
+    if (
+      !qaBypass
+      && index + 1 > getCampaignUnlockedThrough(campaignProgress, preferences.ruleset)
+    ) return;
     // Re-selecting the active chapter must be a no-op. Setting loading here
     // without changing selectedLevelIndex would leave the overlay stuck,
     // because the scene effect correctly has nothing to rebuild.
@@ -2144,8 +2559,23 @@ export function ChasingGame() {
     setLoading(true);
     setLoadError("");
     setLoadProgress({ done: 0, total: BOOTSTRAP_ASSET_COUNT, message: "正在切换主题关卡与高精度环境…" });
+    setSelectedRemixVariant(null);
     setSelectedLevelIndex(index);
-  }, [campaignProgress.unlockedThrough, selectedLevelIndex]);
+  }, [campaignProgress, preferences.ruleset, selectedLevelIndex]);
+
+  const chooseRemixVariant = useCallback((variant: 0 | 1 | 2 | null) => {
+    if (variant === selectedRemixVariant) return;
+    setLoading(true);
+    setLoadError("");
+    setLoadProgress({
+      done: 0,
+      total: BOOTSTRAP_ASSET_COUNT,
+      message: variant === null
+        ? "正在恢复本关原版布局…"
+        : `正在装配认证布局 ${(variant + 1).toString().padStart(2, "0")}…`,
+    });
+    setSelectedRemixVariant(variant);
+  }, [selectedRemixVariant]);
 
   useEffect(() => {
     chooseLevelRef.current = chooseLevel;
@@ -2206,6 +2636,18 @@ export function ChasingGame() {
       else if (key === "0") commands.current.resetZoom();
       else if (key === "-" || key === "_") commands.current.adjustZoom(1.12);
       else if (key === "+" || key === "=") commands.current.adjustZoom(1 / 1.12);
+      else if (
+        key === "x"
+        && hideExitSelection?.options.some((option) => option.kind === "alternate")
+      ) {
+        const nextHideExit = preferredHideExit.current === "alternate"
+          ? "origin"
+          : "alternate";
+        preferredHideExit.current = nextHideExit;
+        setHideExitSelection((current) => current
+          ? { ...current, selected: nextHideExit }
+          : current);
+      }
       else if ((key === "enter" || key === " ") && phase !== "playing") {
         if (phase === "won" && selectedLevelIndex < CAMPAIGN_LEVELS.length - 1) chooseLevel(selectedLevelIndex + 1);
         else commands.current.begin();
@@ -2217,6 +2659,7 @@ export function ChasingGame() {
       keyboardKeys.current.clear();
       touchKeys.current.clear();
       interactPressed.current = false;
+      preferredHideExit.current = "origin";
       resetAnalogueMove();
     };
     const qaRun = new URLSearchParams(location.search).has("qa");
@@ -2246,7 +2689,7 @@ export function ChasingGame() {
       removeEventListener("blur", clearBlurInput);
       document.removeEventListener("visibilitychange", clearHiddenInput);
     };
-  }, [chooseLevel, phase, resetAnalogueMove, selectedLevelIndex]);
+  }, [chooseLevel, hideExitSelection, phase, resetAnalogueMove, selectedLevelIndex]);
 
   useEffect(() => {
     const host = mount.current;
@@ -2262,11 +2705,14 @@ export function ChasingGame() {
     setPhase("ready");
     setPlayerMode("free");
     setChaserMode("spawn-delay");
+    setChaserArchetypeRuntime(null);
     setPublicThreat("calm");
     pausedRef.current = false;
     setPaused(false);
     resetAnalogueMove();
     setThemeMechanic(null);
+    setThemeMission(null);
+    setGhostRace(null);
     setElapsed(0);
     setLastCaptureReason(null);
     setLastRunSummary(null);
@@ -2277,6 +2723,9 @@ export function ChasingGame() {
     setHideGuideRisk("medium");
     setHideGuideSelection("survivability");
     setHideGuideStrategy("hide");
+    setActiveHideArchetype(null);
+    setHideExitSelection(null);
+    preferredHideExit.current = "origin";
 
     const scorePrewarmAbort = new AbortController();
     let scorePrewarmStarted = false;
@@ -2316,6 +2765,33 @@ export function ChasingGame() {
       campaignLevel.campaign.theme,
       campaignLevel.campaign.atmosphere.propSet,
     );
+    const environmentComposition = buildEnvironmentCompositionPlan(campaignLevel);
+    const missionDefinition = themeMissionDefinition(campaignLevel.campaign.theme);
+    const missionPlacements: readonly MissionObjectivePlacement[] = Object.freeze(
+      missionDefinition.objectives.map((objective, index) => Object.freeze({
+        objectiveId: objective.id,
+        position: Object.freeze({
+          ...(resolvedRemix.mechanicPlacementGroup[index]
+            ?? environmentComposition.landmarkBeats[
+              Math.min(index, environmentComposition.landmarkBeats.length - 1)
+            ].focusCell),
+        }),
+      })),
+    );
+    const missionAudit = auditThemeMissionSoftlock(
+      campaignLevel,
+      missionDefinition,
+      missionPlacements,
+    );
+    if (!missionAudit.passed) {
+      throw new Error(`主题任务链未通过软锁审计：${missionAudit.failures.join("；")}`);
+    }
+    const missionPlacementById = new Map(
+      missionPlacements.map((placement) => [placement.objectiveId, placement.position]),
+    );
+    let missionState = createInitialThemeMissionState(missionDefinition);
+    const missionViews = new Map<string, MissionObjectiveView>();
+    const ghostRunLevelId = runReplayLevelId;
     const mechanicPosition = themeMechanicPlacement(campaignLevel);
     const mechanicDefinition = createThemeMechanicDefinition(
       campaignLevel.campaign.theme,
@@ -2325,17 +2801,53 @@ export function ChasingGame() {
     );
     let mechanicInstance: MechanicInstance = createMechanicInstance(mechanicDefinition);
     let mechanicView: MechanicView | null = null;
-    let simulation = new GameSimulation({ level: campaignLevel, config: gameplayConfig });
+    let simulation = new GameSimulation({
+      level: campaignLevel,
+      config: gameplayConfig,
+      chaserArchetypeProfile,
+    });
     let latestState = simulation.getState();
     let runTelemetry = createRunTelemetry({
       levelId: campaignLevel.id,
       theme: campaignLevel.campaign.theme,
+      ruleset: preferences.ruleset,
     });
     let ghostRecorder = new GhostInputRecorder(
-      campaignLevel.id,
+      ghostRunLevelId,
       simulation.config.fixedStepSeconds,
     );
     let ghostLastRecordedTick = -1;
+    const storedGhost = preferences.personalGhostEnabled
+      ? loadPersonalGhost(localStorage, ghostRunLevelId)
+      : null;
+    const ghostEligible = canRacePersonalGhost({
+      recording: storedGhost,
+      levelId: ghostRunLevelId,
+      fixedStepSeconds: simulation.config.fixedStepSeconds,
+      ruleset: preferences.ruleset,
+    });
+    const ghostRecording: GhostRecording | null = ghostEligible ? storedGhost : null;
+    let ghostSimulation: GameSimulation | null = ghostRecording
+      ? new GameSimulation({
+          level: campaignLevel,
+          autoStart: true,
+          config: {
+            ...gameplayConfig,
+            spawnDelaySeconds: 999,
+          },
+        })
+      : null;
+    let ghostState = ghostSimulation?.getState() ?? null;
+    let ghostCursor = ghostRecording ? new GhostReplayCursor(ghostRecording) : null;
+    let ghostActor: ActorView | null = null;
+    let ghostAccumulatorSeconds = 0;
+    let ghostRaceTracker = ghostRecording
+      ? new GhostRaceTracker(
+          ghostRecording,
+          objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths),
+        )
+      : null;
+    let latestGhostRace: GhostRaceSnapshot | null = null;
     let playerKnowledge = createPlayerKnowledge();
     let objectiveGuidanceState = createObjectiveGuidanceState();
     let lastObjectiveGuidanceSeconds = latestState.elapsedSeconds;
@@ -2350,6 +2862,7 @@ export function ChasingGame() {
     const loadedAssetRoots = new Set<THREE.Object3D>();
     const placedAssetIds = new Set<string>();
     const performanceLights: Array<{ light: THREE.Light; priority: number }> = [];
+    let exitMissionLight: THREE.SpotLight | null = null;
     const nonCriticalShadowCasters: Array<{ object: THREE.Object3D; castShadow: boolean }> = [];
     let requestPoliceAsset: (() => Promise<void>) | null = null;
     let deferredDressingFade: {
@@ -2451,6 +2964,14 @@ export function ChasingGame() {
     host.appendChild(renderer.domElement);
     document.addEventListener("visibilitychange", resetFrameClock);
     addEventListener("pageshow", resetFrameClock);
+    let sceneRecoveryRequested = false;
+    const requestSceneRecovery = () => {
+      if (disposed || sceneRecoveryRequested) return;
+      sceneRecoveryRequested = true;
+      queueMicrotask(() => {
+        if (!disposed) setSceneRevision((revision) => revision + 1);
+      });
+    };
     const handleContextLost = (event: Event) => {
       event.preventDefault();
       ready = false;
@@ -2458,24 +2979,55 @@ export function ChasingGame() {
       keyboardKeys.current.clear();
       touchKeys.current.clear();
       interactPressed.current = false;
+      preferredHideExit.current = "origin";
       if (!disposed) {
         setLoading(true);
-        setLoadError("3D 渲染上下文已中断；恢复后将自动重新载入游戏。");
+        setLoadError("3D 渲染上下文已中断；恢复后将在当前关卡原地重建。");
       }
     };
     const handleContextRestored = () => {
-      if (!disposed) location.reload();
+      requestSceneRecovery();
     };
     renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
     renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored);
 
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const roomEnvironment = new RoomEnvironment();
-    const environmentTarget = pmrem.fromScene(roomEnvironment, 0.04);
-    scene.environment = environmentTarget.texture;
+    let environmentTarget: THREE.WebGLRenderTarget | null = null;
+    let environmentScheduleHandle: number | null = null;
+    let environmentScheduledWithIdleCallback = false;
     scene.environmentIntensity = atmosphere.environmentIntensity;
-    roomEnvironment.dispose();
-    pmrem.dispose();
+    const scheduleEnvironmentLighting = () => {
+      if (disposed || environmentTarget || environmentScheduleHandle !== null) return;
+      const installEnvironment = () => {
+        environmentScheduleHandle = null;
+        if (disposed || environmentTarget) return;
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        const roomEnvironment = new RoomEnvironment();
+        try {
+          environmentTarget = pmrem.fromScene(roomEnvironment, 0.04);
+          scene.environment = environmentTarget.texture;
+        } catch (error) {
+          console.warn("Deferred reflection environment is unavailable; authored lights remain active", error);
+        } finally {
+          roomEnvironment.dispose();
+          pmrem.dispose();
+        }
+      };
+      const idleWindow = window as Window & {
+        requestIdleCallback?: (
+          callback: () => void,
+          options?: { timeout: number },
+        ) => number;
+      };
+      if (idleWindow.requestIdleCallback) {
+        environmentScheduledWithIdleCallback = true;
+        environmentScheduleHandle = idleWindow.requestIdleCallback(
+          installEnvironment,
+          { timeout: 1_200 },
+        );
+      } else {
+        environmentScheduleHandle = window.setTimeout(installEnvironment, 900);
+      }
+    };
 
     const hemisphere = new THREE.HemisphereLight(
       new THREE.Color(campaignLevel.campaign.palette.sky).offsetHSL(0, 0, 0.25),
@@ -2639,6 +3191,134 @@ export function ChasingGame() {
       mechanicView = view;
       return view;
     };
+    const buildThemeMissionViews = (themeKit: GLTF) => {
+      for (const [index, objective] of missionDefinition.objectives.entries()) {
+        const beat = environmentComposition.landmarkBeats[
+          Math.min(index, environmentComposition.landmarkBeats.length - 1)
+        ];
+        const position = missionPlacementById.get(objective.id);
+        if (!position) throw new Error(`主题任务 ${objective.id} 缺少运行态位置`);
+        const candidates = objective.unlocksExit
+          ? [
+              ...environmentComposition.profile.exitNodeCandidates,
+              ...beat.nodeCandidates,
+            ]
+          : beat.nodeCandidates;
+        const source = resolveThemeNode(
+          themeKit.scene,
+          campaignLevel.campaign.theme,
+          candidates,
+        );
+        if (!source) {
+          throw new Error(
+            `${campaignLevel.campaign.themeLabel}主题模型缺少任务地标 ${candidates.join("/")}`,
+          );
+        }
+        const root = fitProp(source, objective.unlocksExit ? 1.95 : 1.68, true);
+        root.name = `mission-objective-${objective.id}`;
+        const blockedDirection = [
+          { x: -1, y: 0 },
+          { x: 1, y: 0 },
+          { x: 0, y: -1 },
+          { x: 0, y: 1 },
+        ].find((direction) => (
+          !campaignLevel.walkable[position.y + direction.y]?.[position.x + direction.x]
+        ));
+        const routeSide = blockedDirection ?? {
+          x: beat.routeTangent.y * beat.lateralBias,
+          y: -beat.routeTangent.x * beat.lateralBias,
+        };
+        root.position.copy(world(position, campaignLevel)).add(new THREE.Vector3(
+          routeSide.x * CELL * 0.72,
+          0,
+          routeSide.y * CELL * 0.72,
+        ));
+        root.rotation.y = Math.atan2(-routeSide.x, -routeSide.y);
+        applyThemeSurface(root, campaignLevel.campaign.palette.accent, {
+          blend: objective.unlocksExit ? 0.14 : 0.07,
+          emissive: campaignLevel.campaign.palette.emissive,
+          emissiveIntensity: objective.unlocksExit ? 0.16 : 0.08,
+          roughnessShift: -0.035,
+        });
+        const beacon = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: createMechanicBeaconTexture(
+            campaignLevel.campaign.palette.emissive,
+            objective.label,
+          ),
+          transparent: true,
+          opacity: 0,
+          depthTest: false,
+          depthWrite: false,
+          toneMapped: false,
+        }));
+        beacon.name = `mission-beacon-${objective.id}`;
+        beacon.center.set(0.5, 0);
+        beacon.position.set(0, objective.unlocksExit ? 2.2 : 1.95, 0);
+        beacon.scale.set(2.9, 1.08, 1);
+        beacon.renderOrder = 20;
+        root.add(beacon);
+        const light = new THREE.PointLight(
+          campaignLevel.campaign.palette.emissive,
+          0,
+          objective.unlocksExit ? 6.8 : 5.6,
+          2,
+        );
+        light.name = `mission-light-${objective.id}`;
+        light.position.set(0, objective.unlocksExit ? 1.42 : 1.16, 0);
+        root.add(light);
+        registerPerformanceLight(light, objective.unlocksExit ? 4 : 3);
+        campus.add(root);
+        placedAssetIds.add(`theme-node:${source.name || candidates[0]}`);
+        placedAssetIds.add(`gameplay:mission-objective:${objective.id}`);
+        missionViews.set(objective.id, {
+          id: objective.id,
+          root,
+          beacon,
+          light,
+          position,
+          baseScale: root.scale.clone(),
+        });
+      }
+    };
+    const updateThemeMissionViews = (nowMilliseconds: number) => {
+      const available = new Set(
+        availableThemeObjectiveIds(missionDefinition, missionState),
+      );
+      const completed = new Set(missionState.completedObjectiveIds);
+      for (const [id, view] of missionViews) {
+        const isAvailable = available.has(id);
+        const isCompleted = completed.has(id);
+        const distance = distanceBetween(latestState.player.position, view.position);
+        const nearby = distance <= 5.5;
+        const pulse = 0.5 + Math.sin(nowMilliseconds * 0.006 + id.length) * 0.5;
+        view.beacon.visible = latestState.phase === "playing"
+          && isAvailable
+          && nearby;
+        const beaconMaterial = view.beacon.material as THREE.SpriteMaterial;
+        beaconMaterial.opacity = view.beacon.visible
+          ? distance <= 1.35 ? 0.98 : 0.58 + pulse * 0.22
+          : 0;
+        view.light.color.set(
+          isCompleted
+            ? 0x5ae0a0
+            : isAvailable
+              ? campaignLevel.campaign.palette.emissive
+              : 0x51606a,
+        );
+        view.light.intensity = isCompleted
+          ? 0.22
+          : isAvailable && nearby
+            ? distance <= 1.35 ? 3.4 + pulse * 0.6 : 1.1 + pulse * 0.35
+            : 0.08;
+        const scale = isAvailable && distance <= 1.35 ? 1 + pulse * 0.015 : 1;
+        view.root.scale.copy(view.baseScale).multiplyScalar(scale);
+      }
+      if (exitMissionLight) {
+        exitMissionLight.color.set(missionState.exitUnlocked ? 0x64f0a7 : 0xff5b62);
+        exitMissionLight.intensity = missionState.exitUnlocked ? 18 : 6.5;
+        exitMissionLight.angle = missionState.exitUnlocked ? Math.PI / 5.4 : Math.PI / 7.2;
+      }
+    };
     const updateThemeMechanicView = (
       view: MechanicView,
       sample: MechanicInstanceSample,
@@ -2646,19 +3326,23 @@ export function ChasingGame() {
     ) => {
       const beaconMaterial = view.beacon.material as THREE.SpriteMaterial;
       const promptVisible = sample.phase === "ready" && sample.canActivate;
+      const worldFeedback = sampleMechanicWorldFeedback(
+        campaignLevel.campaign.theme,
+        {
+          phase: sample.phase,
+          progress: sample.progress,
+          qualityTier: renderQualityTier,
+          reducedMotion: preferencesRef.current.reducedMotion,
+        },
+      );
       view.beacon.visible = promptVisible || sample.phase === "warning";
       beaconMaterial.opacity = sample.phase === "warning"
         ? 0.72 + Math.sin(nowMilliseconds * 0.018) * 0.18
         : promptVisible ? 0.88 : 0;
-      const phaseIntensity = sample.phase === "active"
-        ? 5.2
-        : sample.phase === "warning"
-          ? 2.8 + Math.sin(nowMilliseconds * 0.022) * 0.8
-          : promptVisible
-            ? 1.5
-            : sample.phase === "cooldown"
-              ? 0.28
-              : 0.58;
+      const phaseIntensity = Math.max(
+        worldFeedback.lightIntensity,
+        promptVisible ? 1.5 : sample.phase === "cooldown" ? 0.28 : 0.58,
+      );
       view.light.intensity = Math.max(0, phaseIntensity);
       view.light.color.set(
         sample.phase === "warning"
@@ -2669,34 +3353,30 @@ export function ChasingGame() {
               ? 0x5ae0a0
               : campaignLevel.campaign.palette.accent,
       );
-      const pulse = sample.phase === "active"
-        ? 1 + Math.sin(nowMilliseconds * 0.014) * 0.018
-        : 1;
-      view.root.scale.copy(view.baseScale).multiplyScalar(pulse);
+      view.light.distance = worldFeedback.lightRangeMeters;
+      view.root.scale.copy(view.baseScale).multiplyScalar(
+        worldFeedback.stage ? worldFeedback.scaleMultiplier : 1,
+      );
     };
     let performanceLightingBuilt = false;
     const buildPerformanceLighting = () => {
       if (performanceLightingBuilt) return;
       performanceLightingBuilt = true;
-      const escapeRoute = objectivePaths.path(
-        campaignLevel.playerStart,
-        campaignLevel.exit,
-      );
-      const lightPoints = [
-        campaignLevel.playerStart,
-        escapeRoute[Math.floor(escapeRoute.length * 0.28)],
-        escapeRoute[Math.floor(escapeRoute.length * 0.58)],
-        campaignLevel.exit,
-      ].filter((point): point is Point => Boolean(point));
-      for (const point of lightPoints) {
-        const lampColor = new THREE.Color(campaignLevel.campaign.palette.emissive).lerp(
-          new THREE.Color(campaignLevel.campaign.palette.accent),
-          artLayout.warmLightMix * 0.22,
+      for (const pool of environmentComposition.activeLightPools) {
+        const lamp = new THREE.PointLight(
+          pool.color,
+          pool.intensity,
+          pool.rangeMeters,
+          2,
         );
-        const lamp = new THREE.PointLight(lampColor, artLayout.lightIntensity, 7.6, 2);
-        lamp.position.copy(world(point, campaignLevel)).add(new THREE.Vector3(0, 2.2, 0));
+        lamp.name = `composition-light-${pool.id}`;
+        lamp.position.copy(world(pool.position, campaignLevel)).add(
+          new THREE.Vector3(0, pool.heightMeters, 0),
+        );
+        lamp.castShadow = false;
         scene.add(lamp);
-        registerPerformanceLight(lamp, 0);
+        registerPerformanceLight(lamp, pool.priority);
+        placedAssetIds.add(`runtime:composition-light:${pool.id}`);
       }
     };
     const lightWorldPosition = new THREE.Vector3();
@@ -2883,9 +3563,12 @@ export function ChasingGame() {
     const campus = new THREE.Group();
     campus.name = "authored-campus";
     scene.add(campus);
+    qaAssetFaultInjector.current ??= createQaAssetFaultInjector(location.search);
+    const assetFaultInjector = qaAssetFaultInjector.current;
     const sceneAssets = createSceneAssetLoader({
       maximumConcurrentRequests: 3,
-      timeoutMilliseconds: 20_000,
+      timeoutMilliseconds: assetFaultInjector.plan.timeoutMilliseconds ?? 20_000,
+      fetcher: assetFaultInjector.fetcher,
     });
     const controlledDependencyUrls = new Map<string, string>();
     const controlledDependencyLoads = new Map<string, Promise<string>>();
@@ -2893,12 +3576,12 @@ export function ChasingGame() {
     loadingManager.setURLModifier((url) => (
       controlledDependencyUrls.get(new URL(url, location.href).href) ?? url
     ));
-    let ktx2Loader: import("three/examples/jsm/loaders/KTX2Loader.js").KTX2Loader | null = null;
+    let ktx2Loader: KTX2Loader | null = null;
     let gltfLoaderPromise: Promise<GLTFLoader> | null = null;
     const getGlbLoader = () => {
       if (gltfLoaderPromise) return gltfLoaderPromise;
-      gltfLoaderPromise = import("three/examples/jsm/loaders/KTX2Loader.js")
-        .then(({ KTX2Loader }) => {
+      gltfLoaderPromise = Promise.resolve()
+        .then(() => {
           if (disposed) throw new DOMException("Scene disposed", "AbortError");
           ktx2Loader = new KTX2Loader(loadingManager)
             .setTranscoderPath("/basis/")
@@ -3130,21 +3813,50 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           masteryTargetSeconds(campaignLevel, simulation.config),
           runTelemetry,
         );
+        const previousRunRecord = getCampaignRunRecord(
+          campaignProgressRef.current,
+          runRecordLevelId,
+          preferences.ruleset,
+        );
         const bestDelta = personalBestDelta(
-          campaignProgressRef.current.bestSeconds[campaignLevel.id],
+          selectedRemixContract
+            ? (
+                loadCertifiedRemixRecord(
+                  localStorage,
+                  selectedRemixContract,
+                  preferences.ruleset,
+                )?.bestSeconds
+                ?? previousRunRecord.bestSeconds
+              )
+            : previousRunRecord.bestSeconds,
           completedSeconds,
         );
-        setLastRunSummary({ ...masteryResult, ...bestDelta });
         const completedTick = Math.max(
           0,
           Math.floor(latestState.elapsedSeconds / simulation.config.fixedStepSeconds),
         );
         const ghost = ghostRecorder.finish(completedTick);
-        if (ghost) savePersonalGhost(localStorage, ghost);
+        const ghostSave = ghost
+          ? savePersonalBestGhost(localStorage, ghost, preferences.ruleset)
+          : null;
+        if (selectedRemixContract) {
+          saveCertifiedRemixRecord(
+            localStorage,
+            selectedRemixContract,
+            preferences.ruleset,
+            completedSeconds,
+            masteryResult,
+          );
+        }
+        setLastRunSummary({
+          ...masteryResult,
+          ...bestDelta,
+          ...(ghostSave ? { ghostSaveStatus: ghostSave.status } : {}),
+        });
         setCampaignProgress((current) => {
           const updated = recordCampaignCompletion(
             current,
-            campaignLevel.id,
+            runRecordLevelId,
             completedSeconds,
             masteryResult,
             Math.min(
@@ -3179,6 +3891,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       keyboardKeys.current.clear();
       touchKeys.current.clear();
       interactPressed.current = false;
+      preferredHideExit.current = "origin";
       resetAnalogueMove();
       lastCheckSpot = null;
       guidedLockerId = null;
@@ -3192,12 +3905,48 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       runTelemetry = createRunTelemetry({
         levelId: campaignLevel.id,
         theme: campaignLevel.campaign.theme,
+        ruleset: preferences.ruleset,
       });
       ghostRecorder = new GhostInputRecorder(
-        campaignLevel.id,
+        ghostRunLevelId,
         simulation.config.fixedStepSeconds,
       );
       ghostLastRecordedTick = -1;
+      missionState = createInitialThemeMissionState(missionDefinition);
+      setThemeMission({
+        state: missionState,
+        activeObjective: missionDefinition.objectives[0] ?? null,
+        activeDistanceMeters: missionDefinition.objectives[0]
+          ? Math.round(
+              distanceBetween(
+                state.player.position,
+                missionPlacementById.get(missionDefinition.objectives[0].id)
+                  ?? campaignLevel.exit,
+              ) * CELL,
+            )
+          : null,
+        completedCount: 0,
+        totalCount: missionDefinition.objectives.length,
+      });
+      if (ghostRecording) {
+        ghostSimulation = new GameSimulation({
+          level: campaignLevel,
+          autoStart: true,
+          config: {
+            ...gameplayConfig,
+            spawnDelaySeconds: 999,
+          },
+        });
+        ghostState = ghostSimulation.getState();
+        ghostCursor = new GhostReplayCursor(ghostRecording);
+        ghostAccumulatorSeconds = 0;
+        ghostRaceTracker = new GhostRaceTracker(
+          ghostRecording,
+          objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths),
+        );
+        latestGhostRace = null;
+        setGhostRace(null);
+      }
       mechanicInstance = createMechanicInstance(mechanicDefinition);
       if (mechanicView) {
         updateThemeMechanicView(
@@ -3227,11 +3976,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       setChaserMode(state.chaser.mode);
       setChaserConfirming(state.chaser.visualConfirmationSeconds !== null);
       setChaserObservable(canPlayerObserveChaser(state, campaignLevel, simulation.config));
+      setChaserArchetypeRuntime(simulation.getChaserArchetypeRuntime());
       setElapsed(Math.floor(state.elapsedSeconds));
       setLastCaptureReason(state.captureReason);
       setObjectiveDistance(objectiveDistanceMeters(state.player.position, campaignLevel, objectivePaths));
       setHideDistance(nearestHideDistanceMeters(state.player.position, campaignLevel, objectivePaths));
       setInteraction(simulation.getHideInteraction());
+      setActiveHideArchetype(
+        simulation.getActiveHideSpotArchetype()?.archetype ?? null,
+      );
+      setHideExitSelection(simulation.getHideExitSelection());
       updateLockerVisionStyle(state);
 
       const resetActor = (view: ActorView | undefined, point: Point, heading: Point) => {
@@ -3249,6 +4003,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       resetActor(actors.kid, state.player.position, state.player.heading);
       resetActor(actors.villain, state.chaser.position, state.chaser.heading);
       resetActor(actors.police, policeGuardPoint(campaignLevel, objectivePaths), nearestExteriorDirection(campaignLevel.exit, campaignLevel));
+      resetActor(ghostActor ?? undefined, campaignLevel.playerStart, { x: 0, y: 1 });
+      if (ghostActor) {
+        ghostActor.root.visible = Boolean(ghostRecording);
+        ghostActor.visibilityAlpha = ghostRecording ? 0.58 : 0;
+      }
 
       cameraFocus.copy(world(state.player.position, campaignLevel)).add(new THREE.Vector3(0, 0.92, 0));
       cameraFollowState = createFixedCameraFollowState(cameraFocus);
@@ -3274,6 +4033,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         locker.delayRemaining = 0;
         locker.playbackRate = LOCKER_PLAYBACK_RATE;
         locker.owner = "idle";
+        locker.root.position.copy(locker.basePosition);
+        locker.root.rotation.set(0, locker.baseRotationY, 0);
+        locker.root.scale.copy(locker.baseScale);
         locker.beacon.visible = false;
         locker.beaconLight.intensity = 0;
         locker.root.getObjectByName("DoorPivot")?.quaternion.identity();
@@ -3518,8 +4280,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       buildCampus(structureAssets, themeKitAsset, campus);
       buildPerformanceLighting();
       buildThemeMechanicView(themeKitAsset);
+      buildThemeMissionViews(themeKitAsset);
       buildDetails(detailAssets, themeKitAsset, campus, lockers, "essential");
       placeActors(actorAssets, actors, scene, ["kid", "villain"]);
+      placePersonalGhost(actorAssets.kid, scene);
 
       let policeLoadPromise: Promise<void> | null = null;
       let policeRetryAfterMilliseconds = 0;
@@ -3558,6 +4322,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       setLoading(false);
       setLoadError("");
       document.documentElement.dataset.chasingReady = "true";
+      scheduleEnvironmentLighting();
       startScorePrewarm();
       if (new URLSearchParams(location.search).get("autostart") === "1") beginGame();
 
@@ -3594,14 +4359,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             asset: GLTF;
           }> => result.status === "fulfilled")
           .map(({ value }) => value);
-        const decorationFailure = settledDecorations.find(
+        const decorationFailures = settledDecorations.filter(
           (result): result is PromiseRejectedResult => result.status === "rejected",
         );
-        if (disposed || decorationFailure) {
+        if (disposed) {
           disposeObjectResources(loadedDecorations.map(({ asset }) => asset.scene));
-          if (decorationFailure) {
-            console.warn("Optional scene dressing will retry on the next scene load", decorationFailure.reason);
-          }
+          return;
+        }
+        for (const failure of decorationFailures) {
+          console.warn("One optional scene dressing asset is unavailable; keeping successful decorations", failure.reason);
+        }
+        if (!loadedDecorations.length) {
+          decorativeAssetsReady = true;
           return;
         }
         const deferredDressing = new THREE.Group();
@@ -3645,6 +4414,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             [deferredDressing, ...loadedDecorations.map(({ asset }) => asset.scene)],
             playableTextures,
           );
+          decorativeAssetsReady = true;
           console.warn("Optional scene dressing failed to assemble; gameplay remains available", error);
         }
       })();
@@ -4062,12 +4832,87 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const position = world(patch.point, campaignLevel);
         position.y = -0.125;
         ground.setMatrixAt(index, new THREE.Matrix4().compose(position, groundRotation, new THREE.Vector3(1, 1, 1)));
+        const variation = compositionMaterialVariantForCell(
+          campaignLevel,
+          "floor",
+          patch.point,
+        );
+        const instanceColor = groundMaterial!.color.clone().lerp(
+          new THREE.Color(campaignLevel.campaign.palette[variation.tintToken]),
+          variation.colorMix,
+        );
+        ground.setColorAt(index, instanceColor);
       });
       ground.instanceMatrix.needsUpdate = true;
+      if (ground.instanceColor) ground.instanceColor.needsUpdate = true;
       ground.receiveShadow = true;
       ground.computeBoundingBox();
       ground.computeBoundingSphere();
       parent.add(ground);
+
+      const decalPixels = createCompositionDecalPixels(
+        campaignLevel.campaign.theme,
+        campaignLevel.campaign.palette,
+      );
+      const decalTexture = new THREE.DataTexture(
+        decalPixels.data,
+        decalPixels.width,
+        decalPixels.height,
+        THREE.RGBAFormat,
+      );
+      decalTexture.colorSpace = THREE.SRGBColorSpace;
+      decalTexture.magFilter = THREE.LinearFilter;
+      decalTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      decalTexture.generateMipmaps = true;
+      decalTexture.needsUpdate = true;
+      const markingMaterial = new THREE.MeshBasicMaterial({
+        map: decalTexture,
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.92,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -3,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+      });
+      const markingRoute = environmentComposition.criticalRoute;
+      const markingStride = Math.max(
+        1,
+        Math.ceil(markingRoute.length / environmentComposition.decalInstanceLimit),
+      );
+      const markingCells = markingRoute.filter((_, index) => (
+        index > 0
+        && index < markingRoute.length - 1
+        && index % markingStride === 0
+      )).slice(0, environmentComposition.decalInstanceLimit);
+      const markingGeometry = new THREE.PlaneGeometry(CELL * 0.82, CELL * 0.42);
+      markingGeometry.rotateX(-Math.PI / 2);
+      const markings = new THREE.InstancedMesh(
+        markingGeometry,
+        markingMaterial,
+        markingCells.length,
+      );
+      markingCells.forEach((cell, index) => {
+        const next = markingRoute[Math.min(markingRoute.length - 1, markingRoute.indexOf(cell) + 1)]
+          ?? cell;
+        const heading = { x: next.x - cell.x, y: next.y - cell.y };
+        const position = world(cell, campaignLevel);
+        position.y = 0.072;
+        const rotation = new THREE.Quaternion().setFromAxisAngle(
+          new THREE.Vector3(0, 1, 0),
+          Math.atan2(heading.x, heading.y),
+        );
+        markings.setMatrixAt(
+          index,
+          new THREE.Matrix4().compose(position, rotation, new THREE.Vector3(1, 1, 1)),
+        );
+      });
+      markings.instanceMatrix.needsUpdate = true;
+      markings.name = environmentComposition.materialVariation.decal.batchKey;
+      markings.renderOrder = 2;
+      parent.add(markings);
+      placedAssetIds.add(`runtime:${environmentComposition.materialVariation.decal.id}`);
 
       // The local tile patch supplies readable courtyard/service detail. A
       // separate, very dark repeated ground field continues beneath the fog so
@@ -4111,6 +4956,44 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       horizonGround.position.y = -0.16;
       horizonGround.receiveShadow = true;
       parent.add(horizonGround);
+
+      const edgePlan = environmentComposition.edgeClosure;
+      const edgeGeometry = new THREE.BoxGeometry(1, 1, 1);
+      const edgeMaterial = new THREE.MeshBasicMaterial({
+        color: edgePlan.fogColor,
+        transparent: true,
+        opacity: edgePlan.fogOpacity,
+        depthWrite: false,
+        fog: true,
+      });
+      const edgeSkirt = new THREE.InstancedMesh(
+        edgeGeometry,
+        edgeMaterial,
+        edgePlan.segments.length,
+      );
+      edgePlan.segments.forEach((segment, index) => {
+        const position = world(segment.center, campaignLevel);
+        position.y = -edgePlan.skirtDepthMeters * 0.5 - 0.08;
+        const horizontal = segment.side === "north" || segment.side === "south";
+        const scale = new THREE.Vector3(
+          horizontal ? segment.lengthCells * CELL : 0.42,
+          edgePlan.skirtDepthMeters,
+          horizontal ? 0.42 : segment.lengthCells * CELL,
+        );
+        edgeSkirt.setMatrixAt(
+          index,
+          new THREE.Matrix4().compose(
+            position,
+            new THREE.Quaternion(),
+            scale,
+          ),
+        );
+      });
+      edgeSkirt.instanceMatrix.needsUpdate = true;
+      edgeSkirt.name = `${theme}-composition-edge-skirt`;
+      edgeSkirt.frustumCulled = false;
+      parent.add(edgeSkirt);
+      placedAssetIds.add("runtime:composition-edge-closure");
 
       const authoredGate = resolveThemeNode(
         themeKit.scene,
@@ -4163,6 +5046,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       exitLight.target.position.copy(world(campaignLevel.exit, campaignLevel));
       parent.add(exitLight, exitLight.target);
       registerPerformanceLight(exitLight, 1);
+      exitMissionLight = exitLight;
+      exitLight.color.set(0xff5b62);
+      exitLight.intensity = 6.5;
     };
 
     const buildDetails = (
@@ -4206,6 +5092,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         "station",
       ]);
       const addProp = (name: DetailAssetName, point: Point, height: number, rotation = 0, offset = new THREE.Vector3()) => {
+        if (!assets[name] && phase === "decorative") {
+          console.warn(`Optional scene dressing detail:${name} is unavailable; keeping the remaining authored props`);
+          return null;
+        }
         const key = `${name}:${height}`;
         const template = propTemplates.get(key) ?? fitProp(requireDetail(name).scene, height);
         propTemplates.set(key, template);
@@ -4266,28 +5156,88 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const hideDressingPlacements: ModulePlacement[] = [];
       const hideBeaconTexture = createHideBeaconTexture("#5ae0a0");
       for (const spot of campaignLevel.hideSpots) {
+        const archetype = spot.archetype ?? "hard-locker";
         const visualPoint = visualHidePoint(spot);
-        const root = fitInteractiveProp(lockerSource.scene, 2.12);
-        applyThemeSurface(root, campaignLevel.campaign.palette.accent, {
-          blend: 0.08,
-          emissive: campaignLevel.campaign.palette.emissive,
-          emissiveIntensity: 0.035,
-        });
-        root.name = `hero-locker-${spot.id}`;
-        root.rotation.y = Math.atan2(spot.facing.x, spot.facing.y);
-        root.position.copy(world(visualPoint, campaignLevel));
-        root.updateMatrixWorld(true);
-        const anchor = root.getObjectByName("HideAnchor");
-        const cameraAnchor = root.getObjectByName("CameraAnchor");
-        const peekAnchor = root.getObjectByName("PeekAnchor");
-        const pivot = root.getObjectByName("DoorPivot");
-        if (!anchor || !cameraAnchor || !peekAnchor || !pivot) {
-          throw new Error("Hero locker is missing HideAnchor, CameraAnchor, PeekAnchor or DoorPivot; refusing an art fallback");
+        let root: THREE.Group;
+        let cameraAnchor: THREE.Object3D;
+        let peekAnchor: THREE.Object3D;
+        let viewClips: ReadonlyMap<string, THREE.AnimationClip> = clipMap;
+        if (archetype === "hard-locker") {
+          root = fitInteractiveProp(lockerSource.scene, 2.12);
+          root.name = `hero-locker-${spot.id}`;
+          root.rotation.y = Math.atan2(spot.facing.x, spot.facing.y);
+          root.position.copy(world(visualPoint, campaignLevel));
+          root.updateMatrixWorld(true);
+          const anchor = root.getObjectByName("HideAnchor");
+          const authoredCameraAnchor = root.getObjectByName("CameraAnchor");
+          const authoredPeekAnchor = root.getObjectByName("PeekAnchor");
+          const pivot = root.getObjectByName("DoorPivot");
+          if (!anchor || !authoredCameraAnchor || !authoredPeekAnchor || !pivot) {
+            throw new Error("Hero locker is missing HideAnchor, CameraAnchor, PeekAnchor or DoorPivot; refusing an art fallback");
+          }
+          const anchorWorld = anchor.getWorldPosition(new THREE.Vector3());
+          root.position.add(world(visualPoint, campaignLevel).sub(anchorWorld));
+          cameraAnchor = authoredCameraAnchor;
+          peekAnchor = authoredPeekAnchor;
+          placedAssetIds.add("detail:locker");
+        } else {
+          const art = HIDE_ARCHETYPE_ART[campaignLevel.campaign.theme][archetype];
+          const source = resolveThemeNode(
+            themeKit.scene,
+            campaignLevel.campaign.theme,
+            [...art.nodes, ...artLayout.hideDressingNodes],
+          );
+          if (!source) {
+            throw new Error(
+              `${campaignLevel.campaign.themeLabel}主题模型缺少${art.label}原型，拒绝几何占位降级`,
+            );
+          }
+          root = new THREE.Group();
+          root.name = `hero-${archetype}-${spot.id}`;
+          const authoredVisual = fitProp(source, art.height, true);
+          authoredVisual.name = `${archetype}-authored-visual`;
+          root.add(authoredVisual);
+          root.rotation.y = Math.atan2(spot.facing.x, spot.facing.y);
+          root.position.copy(world(visualPoint, campaignLevel));
+          cameraAnchor = new THREE.Object3D();
+          cameraAnchor.name = "CameraAnchor";
+          cameraAnchor.position.set(0, Math.max(1.18, art.height * 0.68), 0.28);
+          peekAnchor = new THREE.Object3D();
+          peekAnchor.name = "PeekAnchor";
+          peekAnchor.position.set(0, Math.max(1.22, art.height * 0.7), 0.62);
+          root.add(cameraAnchor, peekAnchor);
+          viewClips = new Map();
+          placedAssetIds.add(`theme-node:${source.name || art.nodes[0]}`);
+          placedAssetIds.add(`gameplay:hide-archetype:${archetype}`);
+          if (archetype === "traversal-hide" && spot.alternateExit) {
+            const companion = new THREE.Group();
+            companion.name = `traversal-hide-exit-${spot.id}`;
+            const companionVisual = fitProp(source, art.height, true);
+            companionVisual.rotation.y = Math.PI;
+            companion.add(companionVisual);
+            companion.position.copy(world(spot.alternateExit, campaignLevel)).add(
+              new THREE.Vector3(
+                -spot.facing.y * CELL * 0.54,
+                0,
+                spot.facing.x * CELL * 0.54,
+              ),
+            );
+            companion.rotation.y = Math.atan2(-spot.facing.x, -spot.facing.y);
+            parent.add(companion);
+          }
         }
-        const anchorWorld = anchor.getWorldPosition(new THREE.Vector3());
-        root.position.add(world(visualPoint, campaignLevel).sub(anchorWorld));
+        applyThemeSurface(root, campaignLevel.campaign.palette.accent, {
+          blend: archetype === "hard-locker" ? 0.08 : 0.045,
+          emissive: campaignLevel.campaign.palette.emissive,
+          emissiveIntensity: archetype === "hard-locker" ? 0.035 : 0.075,
+        });
         const beaconMaterial = new THREE.SpriteMaterial({
-          map: hideBeaconTexture,
+          map: archetype === "hard-locker"
+            ? hideBeaconTexture
+            : createMechanicBeaconTexture(
+                archetype === "soft-cover" ? "#e8bd68" : "#77d6ff",
+                HIDE_ARCHETYPE_ART[campaignLevel.campaign.theme][archetype].label,
+              ),
           transparent: true,
           opacity: 0.72,
           depthTest: false,
@@ -4297,8 +5247,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const beacon = new THREE.Sprite(beaconMaterial);
         beacon.name = `hide-beacon-${spot.id}`;
         beacon.center.set(0.5, 0);
-        beacon.position.set(0, 2.43, 0);
-        beacon.scale.set(1.58, 0.79, 1);
+        beacon.position.set(0, archetype === "hard-locker" ? 2.43 : 2.2, 0);
+        beacon.scale.set(archetype === "hard-locker" ? 1.58 : 2.35, archetype === "hard-locker" ? 0.79 : 0.88, 1);
         beacon.renderOrder = 18;
         beacon.visible = false;
         root.add(beacon);
@@ -4309,21 +5259,25 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           2.25,
         );
         beaconLight.name = `hide-beacon-light-${spot.id}`;
-        beaconLight.position.set(0, 1.85, -0.32);
+        beaconLight.position.set(0, archetype === "hard-locker" ? 1.85 : 1.48, -0.32);
         root.add(beaconLight);
         registerPerformanceLight(beaconLight, 3);
         parent.add(root);
-        placedAssetIds.add("detail:locker");
         const view: LockerView = {
           id: spot.id,
+          archetype,
           root,
+          basePosition: root.position.clone(),
+          baseRotationY: root.rotation.y,
+          baseScale: root.scale.clone(),
+          alternateExit: spot.alternateExit ? { ...spot.alternateExit } : null,
           approach: spot.approach,
           cameraAnchor,
           peekAnchor,
           beacon,
           beaconLight,
           mixer: new THREE.AnimationMixer(root),
-          clips: clipMap,
+          clips: viewClips,
           queue: [],
           action: null,
           actionName: null,
@@ -4335,7 +5289,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           owner: "idle",
         };
         lockerViews.set(spot.id, view);
-        if (hideDressingSource) {
+        if (hideDressingSource && archetype === "hard-locker") {
           hideDressingPlacements.push({
             position: world(visualPoint, campaignLevel),
             rotation: Math.atan2(spot.facing.x, spot.facing.y),
@@ -4359,6 +5313,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const spec = MOVEMENT_PROP_CONTRACT[index];
         if (!spec) throw new Error(`${campaignLevel.id} 缺少第 ${index + 1} 个实体障碍美术契约`);
         const object = addProp(spec[0], point, spec[1], spec[2]);
+        if (!object) throw new Error(`实体障碍 detail:${spec[0]} 不允许降级`);
         object.name = `movement-blocker-${index + 1}-${spec[0]}`;
         renderedMovementBlockers += 1;
       }
@@ -4684,7 +5639,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           anchor.rotation + (placement.rotationOffset ?? 0),
           new THREE.Vector3(0, placement.elevation ?? 0, 0),
         );
-        object.name = `semantic-${campaignLevel.campaign.atmosphere.propSet}-${placement.asset}`;
+        if (object) {
+          object.name = `semantic-${campaignLevel.campaign.atmosphere.propSet}-${placement.asset}`;
+        }
       }
 
       if (campaignLevel.campaign.atmosphere.propSet === "campus-classic") {
@@ -4714,6 +5671,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               1.05,
               anchor.rotation + (roomIndex % 2 === 0 ? 0 : Math.PI),
             );
+            if (!desk) return;
             desk.name = `classroom-desk-${roomIndex + 1}-${deskIndex + 1}`;
             if (deskIndex % 2 === 0) {
               const books = addProp(
@@ -4723,7 +5681,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 anchor.rotation + (deskIndex === 0 ? 0.08 : -0.12),
                 new THREE.Vector3(0, 0.74, 0),
               );
-              books.name = `classroom-desk-books-${roomIndex + 1}-${deskIndex + 1}`;
+              if (books) {
+                books.name = `classroom-desk-books-${roomIndex + 1}-${deskIndex + 1}`;
+              }
             }
           });
         });
@@ -4917,6 +5877,81 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
     };
 
+    const placePersonalGhost = (asset: GLTF | undefined, targetScene: THREE.Scene) => {
+      if (!ghostRecording || !asset || ghostActor) return;
+      const spec = ACTOR_SPECS.kid;
+      const root = fitActor(asset.scene, spec.height);
+      root.name = "actor-personal-best-ghost";
+      const uniqueMaterials = new Map<string, THREE.Material>();
+      root.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        object.castShadow = false;
+        object.receiveShadow = false;
+        const tuneGhostMaterial = (material: THREE.Material) => {
+          const existing = uniqueMaterials.get(material.uuid);
+          if (existing) return existing;
+          const ghostMaterial = material.clone();
+          ghostMaterial.transparent = true;
+          ghostMaterial.opacity = Math.min(0.42, Math.max(0.24, material.opacity * 0.42));
+          ghostMaterial.depthWrite = false;
+          ghostMaterial.blending = THREE.AdditiveBlending;
+          if (ghostMaterial instanceof THREE.MeshStandardMaterial) {
+            ghostMaterial.color.lerp(new THREE.Color(0x5ee7ff), 0.58);
+            ghostMaterial.emissive.set(0x159fc6);
+            ghostMaterial.emissiveIntensity = 0.72;
+            ghostMaterial.roughness = Math.max(0.28, ghostMaterial.roughness);
+          }
+          ghostMaterial.needsUpdate = true;
+          uniqueMaterials.set(material.uuid, ghostMaterial);
+          return ghostMaterial;
+        };
+        object.material = Array.isArray(object.material)
+          ? object.material.map(tuneGhostMaterial)
+          : tuneGhostMaterial(object.material);
+      });
+      const animator = new ActorAnimator(
+        root,
+        asset.animations,
+        spec.aliases as ClipAliases,
+        LOCOMOTION_MARKERS,
+      );
+      animator.require(["idle", "walk", "run"]);
+      const durationByState: Partial<Record<AnimationState, number>> = {};
+      const clipsByName = new Map(asset.animations.map((clip) => [clip.name.toLowerCase(), clip]));
+      for (const [state, alias] of Object.entries(spec.aliases) as [AnimationState, string | readonly string[]][]) {
+        const candidates = typeof alias === "string" ? [alias] : alias;
+        const clip = candidates.map((candidate) => clipsByName.get(candidate.toLowerCase())).find(Boolean);
+        if (clip) durationByState[state] = clip.duration;
+      }
+      root.position.copy(world(campaignLevel.playerStart, campaignLevel));
+      root.renderOrder = 4;
+      root.visible = false;
+      root.traverse((object) => object.layers.enable(1));
+      targetScene.add(root);
+      const readabilityRim = installActorReadabilityRim(root, 0x84f4ff);
+      readabilityRim.value = 0.48;
+      ghostActor = {
+        root,
+        animator,
+        readabilityRim,
+        durationByState,
+        lastPoint: { ...campaignLevel.playerStart },
+        lastTick: 0,
+        sampledSpeed: 0,
+        lastRequested: null,
+        lastTurnCycle: -1,
+        visibilityAlpha: 0.42,
+        visibilityMaterials: [...uniqueMaterials.values()].map((material) => ({
+          material,
+          baseOpacity: material.opacity,
+          baseTransparent: true,
+          baseDepthWrite: false,
+        })),
+      };
+      requestAnimation(ghostActor, "idle", { fade: 0 });
+      placedAssetIds.add("runtime:personal-best-ghost");
+    };
+
     const consumeEvents = (
       state: GameState,
       deltaSeconds: number,
@@ -4959,8 +5994,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         if (event.type === "hide-check-completed") {
           const locker = lockers.get(event.hideSpotId);
           if (locker) {
-            if (event.occupied) locker.holdFinal = true;
-            else closeCheckedLocker(locker);
+            if (locker.archetype === "hard-locker") {
+              if (event.occupied) locker.holdFinal = true;
+              else closeCheckedLocker(locker);
+            } else {
+              locker.owner = event.occupied ? "chaser" : "idle";
+              locker.holdFinal = event.occupied;
+            }
           }
           if (!event.occupied) soundscape.trigger("locker-close");
           continue;
@@ -4969,20 +6009,74 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setLastCaptureReason(event.reason);
           continue;
         }
+        if (event.type === "chaser-archetype-telegraph-started") {
+          soundscape.trigger("alert");
+          playHapticCue(
+            "theme-warning",
+            preferencesRef.current.hapticsEnabled,
+            navigator.vibrate?.bind(navigator),
+          );
+          if (actors.villain) {
+            requestAnimation(actors.villain, "alert", {
+              fade: 0.1,
+              duration: event.warningSeconds,
+              loop: false,
+              restart: true,
+            });
+          }
+          continue;
+        }
+        if (event.type === "chaser-archetype-action-started") {
+          if (actors.villain) {
+            const performance: AnimationState = event.action === "inspect-public-hide-clue"
+              ? "checkLocker"
+              : event.action === "intercept-public-exit-route"
+                ? "run"
+                : event.action === "scan-public-junction"
+                  ? "search"
+                  : "alert";
+            requestAnimation(actors.villain, performance, {
+              fade: 0.12,
+              restart: true,
+            });
+          }
+          continue;
+        }
+        if (event.type === "chaser-archetype-action-finished") {
+          setChaserArchetypeRuntime(simulation.getChaserArchetypeRuntime());
+          continue;
+        }
         if (event.type === "chaser-mode-changed") {
           if (event.to === "check-hide") soundscape.trigger("locker-check");
+          if (event.to === "chase" && event.from !== "lost-sight") {
+            playHapticCue(
+              "detected",
+              preferencesRef.current.hapticsEnabled,
+              navigator.vibrate?.bind(navigator),
+            );
+          }
           continue;
         }
         if (event.type === "phase-changed") {
           updatePhasePresentation(event.to);
           if (event.to === "lost") {
             soundscape.trigger("caught");
+            playHapticCue(
+              "captured",
+              preferencesRef.current.hapticsEnabled,
+              navigator.vibrate?.bind(navigator),
+            );
             captureStageRemaining = CAPTURE_STAGING_SECONDS;
             capturePerformanceStarted = false;
             requestAnimation(actors.kid!, "idle", { fade: 0.08 });
             requestAnimation(actors.villain!, "alert", { fade: 0.08 });
           } else if (event.to === "won") {
             soundscape.trigger("escaped");
+            playHapticCue(
+              "escaped",
+              preferencesRef.current.hapticsEnabled,
+              navigator.vibrate?.bind(navigator),
+            );
             requestAnimation(actors.kid!, "celebrate", { fade: 0.18 });
             // The authored kid celebration is the reliable immediate fallback.
             // Police joins as soon as its on-demand stream completes.
@@ -4996,10 +6090,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         setInteraction(simulation.getHideInteraction());
         const spotId = state.player.hideSpotId;
         const locker = spotId ? lockers.get(spotId) : undefined;
+        const resolvedHide = simulation.getActiveHideSpotArchetype();
         if (event.to === "entering-hide" && locker) {
           soundscape.trigger("locker-open");
-          playLockerSequence(locker, ["Locker_Door_Open_Enter", "Locker_Door_Close_Enter"]);
-          requestAnimation(actors.kid!, "enterHide", { fade: 0.1, duration: simulation.config.hideEnterSeconds });
+          if (locker.archetype === "hard-locker") {
+            playLockerSequence(locker, ["Locker_Door_Open_Enter", "Locker_Door_Close_Enter"]);
+          } else {
+            locker.owner = "player";
+          }
+          requestAnimation(actors.kid!, "enterHide", {
+            fade: 0.1,
+            duration: simulation.config.hideEnterSeconds
+              * (resolvedHide?.profile.timing.enterDurationMultiplier ?? 1),
+          });
         } else if (event.to === "aligning-hide") {
           requestAnimation(actors.kid!, "walk", { fade: 0.12 });
         } else if (event.to === "entering-peek" && locker) {
@@ -5011,12 +6114,25 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           requestAnimation(actors.kid!, "hideIdle", { fade: 0.15 });
         } else if (event.to === "hidden") {
           soundscape.trigger("locker-close");
+          playHapticCue(
+            "hide-latched",
+            preferencesRef.current.hapticsEnabled,
+            navigator.vibrate?.bind(navigator),
+          );
           requestAnimation(actors.kid!, "hideIdle", { fade: 0.18 });
         } else if (event.to === "exiting-hide" && locker) {
           soundscape.trigger("locker-open");
-          setLockerPeek(locker, false);
-          playLockerSequence(locker, ["Locker_Door_Open_Exit", "Locker_Door_Close_Exit"]);
-          requestAnimation(actors.kid!, "exitHide", { fade: 0.1, duration: simulation.config.hideExitSeconds });
+          if (locker.archetype === "hard-locker") {
+            setLockerPeek(locker, false);
+            playLockerSequence(locker, ["Locker_Door_Open_Exit", "Locker_Door_Close_Exit"]);
+          } else {
+            locker.owner = "player";
+          }
+          requestAnimation(actors.kid!, "exitHide", {
+            fade: 0.1,
+            duration: simulation.config.hideExitSeconds
+              * (resolvedHide?.profile.timing.exitDurationMultiplier ?? 1),
+          });
         } else if (event.from === "exiting-hide" && event.to === "free") {
           soundscape.trigger("locker-close");
         }
@@ -5051,14 +6167,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const villain = actors.villain;
       const police = actors.police;
       if (!kid || !villain) return;
-      const kidPoint = playerPresentationPoint(state, campaignLevel, simulation.config);
+      const kidPose = playerPresentationPose(state, campaignLevel, simulation);
       const kidSpeed = sampleActorSpeed(kid, state.player.position, state.tick, simulation.config.fixedStepSeconds);
       const villainSpeed = sampleActorSpeed(villain, state.chaser.position, state.tick, simulation.config.fixedStepSeconds);
       const captureStaging = state.phase === "lost" && !capturePerformanceStarted;
       syncActorTransform(
         kid,
-        kidPoint,
-        state.player.heading,
+        kidPose.point,
+        kidPose.heading,
         delta,
         captureStaging ? 34 : 18,
         captureStaging ? 15 : 9.5,
@@ -5096,15 +6212,31 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const checkId = state.chaser.searchHideSpotId ?? state.chaser.memory.witnessedHideSpotId;
         const checkSpot = checkId ? campaignLevel.hideSpots.find((spot) => spot.id === checkId) : undefined;
         const atCheckSpot = Boolean(checkSpot && distanceBetween(checkSpot.approach, state.chaser.position) < 0.18);
-        const villainAnimation = chaserAnimationForMode(state.chaser.mode, villainSpeed, atCheckSpot);
+        const archetypeRuntime = simulation.getChaserArchetypeRuntime();
+        const villainAnimation: AnimationState = archetypeRuntime.phase === "telegraph"
+          ? "alert"
+          : archetypeRuntime.phase === "acting"
+            ? archetypeRuntime.action === "inspect-public-hide-clue"
+              ? "checkLocker"
+              : archetypeRuntime.action === "intercept-public-exit-route"
+                ? "run"
+                : archetypeRuntime.action === "scan-public-junction"
+                  ? "search"
+                  : "alert"
+            : chaserAnimationForMode(state.chaser.mode, villainSpeed, atCheckSpot);
         requestAnimation(villain, villainAnimation, {
           fade: 0.17,
           duration: villainAnimation === "checkLocker"
             ? simulation.config.checkHideSeconds
+            : archetypeRuntime.phase === "telegraph"
+              ? archetypeRuntime.warningSeconds
             : state.chaser.mode === "scan-last-known"
               ? simulation.config.lastKnownScanSeconds
               : undefined,
-          loop: state.chaser.mode === "scan-last-known" ? false : undefined,
+          loop: state.chaser.mode === "scan-last-known"
+            || archetypeRuntime.phase === "telegraph"
+            ? false
+            : undefined,
         });
         villain.animator.setLocomotionRate(villainSpeed, villainAnimation === "run" ? 3.7 : 1.65);
         const checkingLocker = checkId ? lockers.get(checkId) : undefined;
@@ -5116,16 +6248,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ) {
           const locker = lockers.get(checkId);
           if (locker) {
-            const openDuration = locker.clips.get("Locker_Door_Check_Open")?.duration ?? 0;
-            const remainingCheck = Math.max(0, simulation.config.checkHideSeconds - state.chaser.modeElapsedSeconds);
-            if (holdLockerAction(locker, "Locker_Door_Check_Open", Math.max(0, remainingCheck - openDuration))) {
+            if (locker.archetype !== "hard-locker") {
+              locker.owner = "chaser";
               lastCheckSpot = checkId;
+            } else {
+              const openDuration = locker.clips.get("Locker_Door_Check_Open")?.duration ?? 0;
+              const remainingCheck = Math.max(0, simulation.config.checkHideSeconds - state.chaser.modeElapsedSeconds);
+              if (holdLockerAction(locker, "Locker_Door_Check_Open", Math.max(0, remainingCheck - openDuration))) {
+                lastCheckSpot = checkId;
+              }
             }
           }
         } else if (state.chaser.mode !== "check-hide") {
           if (state.phase === "playing" && lastCheckSpot) {
             const interrupted = lockers.get(lastCheckSpot);
-            if (interrupted?.holdFinal && interrupted.delayRemaining > 0) {
+            if (interrupted && interrupted.archetype !== "hard-locker") {
+              interrupted.owner = "idle";
+              interrupted.holdFinal = false;
+            } else if (interrupted?.holdFinal && interrupted.delayRemaining > 0) {
               interrupted.queue = [];
               interrupted.delayRemaining = 0;
               interrupted.holdFinal = false;
@@ -5146,7 +6286,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         if (captureStageRemaining <= 1e-9) {
           // Paired performances start only from exact authored anchors. This
           // absorbs render interpolation even when capture happens from behind.
-          snapActorTransform(kid, kidPoint, state.player.heading);
+          snapActorTransform(kid, kidPose.point, kidPose.heading);
           snapActorTransform(villain, state.chaser.position, state.chaser.heading);
           requestAnimation(kid, "caught", { fade: 0.08 });
           requestAnimation(villain, "catch", { fade: 0.08 });
@@ -5174,8 +6314,57 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         : guidedLockerRisk === "medium"
           ? 0xe8bd68
           : 0xff6b72;
+      const hideExitSelection = simulation.getHideExitSelection();
       for (const locker of lockers.values()) {
         updateLocker(locker, delta);
+        if (locker.archetype !== "hard-locker") {
+          const active = state.player.hideSpotId === locker.id;
+          const playerOccupying = active && !["free", "escaped", "caught"].includes(state.player.mode);
+          const chaserInspecting = locker.owner === "chaser";
+          const motionGain = playerOccupying ? 1 : chaserInspecting ? 0.72 : 0;
+          const pulse = preferencesRef.current.reducedMotion
+            ? 0
+            : Math.sin(state.elapsedSeconds * (locker.archetype === "soft-cover" ? 2.1 : 3.4));
+          const targetScale = locker.baseScale.clone();
+          if (locker.archetype === "soft-cover") {
+            targetScale.multiply(new THREE.Vector3(
+              1 + motionGain * 0.012,
+              1 - motionGain * 0.022,
+              1 + motionGain * 0.008,
+            ));
+          } else {
+            targetScale.multiplyScalar(1 + motionGain * 0.009);
+          }
+          locker.root.scale.lerp(
+            targetScale,
+            1 - Math.exp(-10 * delta),
+          );
+          const exitSide = hideExitSelection?.hideSpotId === locker.id
+            && hideExitSelection.selected === "alternate"
+            ? -1
+            : 1;
+          const motionOffset = locker.archetype === "traversal-hide"
+            ? new THREE.Vector3(
+                -Math.cos(locker.baseRotationY) * motionGain * 0.055 * exitSide,
+                0,
+                Math.sin(locker.baseRotationY) * motionGain * 0.055 * exitSide,
+              )
+            : new THREE.Vector3(0, 0, 0);
+          locker.root.position.lerp(
+            locker.basePosition.clone().add(motionOffset),
+            1 - Math.exp(-11 * delta),
+          );
+          const checkShake = chaserInspecting ? pulse * 0.024 : 0;
+          const coverSway = locker.archetype === "soft-cover"
+            ? pulse * motionGain * 0.008
+            : 0;
+          locker.root.rotation.y = THREE.MathUtils.damp(
+            locker.root.rotation.y,
+            locker.baseRotationY + checkShake + coverSway,
+            13,
+            delta,
+          );
+        }
         const distance = distanceBetween(state.player.position, locker.approach);
         const isSuggested = guidedLockerId
           ? locker.id === guidedLockerId
@@ -5187,12 +6376,112 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           ? 0.94
           : urgentHideMarker ? 0.76 + markerPulse * 0.16 : 0.5 + markerPulse * 0.1;
         const markerScale = isInteractable ? 1.12 + markerPulse * 0.06 : 1;
-        locker.beacon.scale.set(1.58 * markerScale, 0.79 * markerScale, 1);
+        const baseBeaconWidth = locker.archetype === "hard-locker" ? 1.58 : 2.35;
+        const baseBeaconHeight = locker.archetype === "hard-locker" ? 0.79 : 0.88;
+        locker.beacon.scale.set(
+          baseBeaconWidth * markerScale,
+          baseBeaconHeight * markerScale,
+          1,
+        );
         locker.beaconLight.color.setHex(isSuggested ? guidedLightColor : 0x5ae0a0);
         locker.beaconLight.intensity = locker.beacon.visible
           ? isInteractable ? 2.3 + markerPulse * 0.7 : urgentHideMarker ? 1.35 + markerPulse * 0.4 : 0.72
           : 0;
       }
+    };
+
+    const advanceAndSyncGhost = (delta: number) => {
+      if (!ghostSimulation || !ghostCursor || !ghostState || !ghostActor || !ghostRecording) {
+        if (ghostActor) ghostActor.root.visible = false;
+        return;
+      }
+      ghostActor.root.visible = latestState.phase === "playing";
+      if (latestState.phase !== "playing") {
+        ghostActor.animator.update(delta);
+        return;
+      }
+      ghostAccumulatorSeconds += delta;
+      const fixedStep = ghostRecording.fixedStepSeconds;
+      while (
+        ghostAccumulatorSeconds + 1e-9 >= fixedStep
+        && ghostState.tick < ghostRecording.durationTicks
+        && ghostState.phase === "playing"
+      ) {
+        ghostState = ghostSimulation.advance(
+          fixedStep,
+          {
+            ...ghostCursor.sample(ghostState.tick),
+            exitEnabled: true,
+          },
+        );
+        ghostAccumulatorSeconds -= fixedStep;
+      }
+      const ghostSpeed = sampleActorSpeed(
+        ghostActor,
+        ghostState.player.position,
+        ghostState.tick,
+        ghostRecording.fixedStepSeconds,
+      );
+      const ghostPose = playerPresentationPose(ghostState, campaignLevel, ghostSimulation);
+      syncActorTransform(
+        ghostActor,
+        ghostPose.point,
+        ghostPose.heading,
+        delta,
+        22,
+        11,
+      );
+      const ghostAnimation: AnimationState = ghostState.player.mode === "free"
+        ? ghostSpeed > 2.35 ? "run" : ghostSpeed > 0.12 ? "walk" : "idle"
+        : ghostState.player.mode === "aligning-hide"
+          ? "walk"
+          : "idle";
+      requestAnimation(ghostActor, ghostAnimation, { fade: 0.13 });
+      ghostActor.animator.setLocomotionRate(
+        ghostSpeed,
+        ghostAnimation === "run" ? 4.4 : 2,
+      );
+      ghostActor.animator.update(delta);
+
+      if (ghostRaceTracker) {
+        const playerRemaining = objectivePaths.path(
+          latestState.player.position,
+          campaignLevel.exit,
+        );
+        const ghostRemaining = objectivePaths.path(
+          ghostState.player.position,
+          campaignLevel.exit,
+        );
+        latestGhostRace = ghostRaceTracker.update({
+          elapsedSeconds: latestState.elapsedSeconds,
+          playerRemainingMeters: Math.max(0, playerRemaining.length - 1) * CELL,
+          ghostRemainingMeters: Math.max(0, ghostRemaining.length - 1) * CELL,
+        });
+      }
+    };
+
+    const missionObjectiveForPlayer = (
+      position: Point,
+    ): { objective: ThemeObjectiveDefinition; position: Point; routeCells: number } | null => {
+      const available = new Set(
+        availableThemeObjectiveIds(missionDefinition, missionState),
+      );
+      const candidates = missionDefinition.objectives.flatMap((objective) => {
+        if (!available.has(objective.id)) return [];
+        const objectivePosition = missionPlacementById.get(objective.id);
+        if (!objectivePosition) return [];
+        const route = objectivePaths.path(position, objectivePosition);
+        if (!route.length) return [];
+        return [{
+          objective,
+          position: objectivePosition,
+          routeCells: Math.max(0, route.length - 1),
+        }];
+      });
+      return candidates.sort((left, right) => (
+        left.routeCells - right.routeCells
+        || left.objective.id.localeCompare(right.objective.id)
+      ))[0] ?? null;
     };
 
     const updateHideGuideProjection = (state: GameState, lightStepHeld: boolean) => {
@@ -5417,12 +6706,56 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           latestState.player.position,
         );
         const hideInteractionBeforeStep = simulation.getHideInteraction();
+        const activeMissionObjective = missionObjectiveForPlayer(
+          latestState.player.position,
+        );
+        const missionCanActivate = Boolean(
+          activeMissionObjective
+          && latestState.phase === "playing"
+          && distanceBetween(
+            latestState.player.position,
+            activeMissionObjective.position,
+          ) <= 1.35,
+        );
         const mechanicConsumesInteraction = beforeMechanic.canActivate
-          && hideInteractionBeforeStep === null;
+          && hideInteractionBeforeStep === null
+          && !missionCanActivate;
+        const missionConsumesInteraction = interactionEdge
+          && hideInteractionBeforeStep === null
+          && missionCanActivate;
+        if (missionConsumesInteraction && activeMissionObjective) {
+          const missionStep = stepThemeMission(
+            missionDefinition,
+            missionState,
+            activeMissionObjective.objective.id,
+          );
+          missionState = missionStep.state;
+          playHapticCue(
+            missionState.exitUnlocked ? "escaped" : "hide-latched",
+            preferencesRef.current.hapticsEnabled,
+            navigator.vibrate?.bind(navigator),
+          );
+          soundscape.triggerWorldSound({
+            listenerPosition: latestState.player.position,
+            sourcePosition: activeMissionObjective.position,
+            kind: "theme-event",
+            maxDistance: 12,
+            baseGain: missionState.exitUnlocked ? 0.5 : 0.34,
+            occlusion: 0,
+            foleySet: campaignLevel.campaign.theme === "factory"
+              ? "metal-hit"
+              : campaignLevel.campaign.theme === "fire-station"
+                ? "cloth"
+                : "locker-latch",
+            playbackRate: missionState.exitUnlocked ? 1.12 : 0.94,
+          });
+        }
         const mechanicStep = stepMechanicInstance(mechanicInstance, {
           deltaSeconds: delta,
           nowSeconds: latestState.elapsedSeconds,
-          activationRequested: interactionEdge && mechanicConsumesInteraction,
+          activationRequested: interactionEdge
+            && mechanicConsumesInteraction
+            && !missionConsumesInteraction,
           actorPosition: latestState.player.position,
         });
         mechanicInstance = mechanicStep.instance;
@@ -5438,6 +6771,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             type: "theme-mechanic-used",
             mechanicId: mechanicDefinition.id,
           });
+          playHapticCue(
+            "theme-warning",
+            preferencesRef.current.hapticsEnabled,
+            navigator.vibrate?.bind(navigator),
+          );
         }
         const emittedMechanicSound = mechanicStep.emittedSoundStimulus;
         if (
@@ -5472,11 +6810,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }
         const simulationInput = {
           move,
-          interactPressed: interactionEdge && !mechanicConsumesInteraction,
+          interactPressed: interactionEdge
+            && !mechanicConsumesInteraction
+            && !missionConsumesInteraction,
           peekHeld: held("q"),
           sneakHeld: held("q"),
           environmentSoundMasking: environment.soundMasking,
           visionRangeMultiplier: environment.visionRangeMultiplier,
+          exitEnabled: missionState.exitUnlocked,
+          hideExitChoice: preferredHideExit.current,
         };
         latestState = simulation.advance(delta, simulationInput);
         const currentGhostTick = Math.max(
@@ -5497,9 +6839,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         interactPressed.current = false;
         consumeEvents(latestState, delta, causalEvents);
         if (mechanicView) updateThemeMechanicView(mechanicView, environment, now);
+        updateThemeMissionViews(now);
         updateLockerVisionStyle(latestState);
-        const playerActuallyVisible = latestState.phase !== "playing"
+        const activeHideArchetype = simulation.getActiveHideSpotArchetype();
+        const playerBaseExposed = latestState.phase !== "playing"
           || isPlayerVisuallyExposed(latestState.player, simulation.config);
+        const playerPresentationAlpha = playerBaseExposed
+          ? 1
+          : activeHideArchetype?.archetype === "soft-cover"
+            && latestState.player.mode === "hidden"
+            ? Math.max(
+                0.34,
+                activeHideArchetype.profile.evidence.occupiedVisualDisturbance,
+              )
+            : 0;
+        const playerActuallyVisible = playerPresentationAlpha > 0.01;
         const chaserKnowledgeObservable = canPlayerObserveChaser(latestState, campaignLevel, simulation.config);
         if (latestState.phase === "playing" && chaserKnowledgeObservable) {
           playerKnownChaser = {
@@ -5521,10 +6875,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           lastScoreThreat = scoreThreat;
         }
         syncAnimations(latestState, delta);
+        advanceAndSyncGhost(delta);
         const lockerListening = lockerVisionMix(latestState.player, simulation.config);
-        const insideHideSpot = !["free", "aligning-hide", "exiting-hide"].includes(
-          latestState.player.mode,
-        );
+        const insideHideSpot = activeHideArchetype?.archetype === "hard-locker"
+          && !["free", "aligning-hide", "exiting-hide"].includes(
+            latestState.player.mode,
+          );
         soundscape.update({
           elapsedSeconds: latestState.elapsedSeconds,
           playerPosition: latestState.player.position,
@@ -5562,7 +6918,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         if (actors.kid) {
           updateActorVisibility(
             actors.kid,
-            playerActuallyVisible && lockerCameraBlend < 0.65,
+            lockerCameraBlend >= 0.65 ? 0 : playerPresentationAlpha,
             delta,
             latestState.phase !== "playing",
           );
@@ -5594,7 +6950,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }
 
         const playerAnchor = world(
-          playerPresentationPoint(latestState, campaignLevel, simulation.config),
+          playerPresentationPose(latestState, campaignLevel, simulation).point,
           campaignLevel,
         ).add(new THREE.Vector3(0, 0.92, 0));
         moon.target.position.copy(playerAnchor).setY(0);
@@ -5721,7 +7077,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const activeLocker = latestState.player.hideSpotId
           ? lockers.get(latestState.player.hideSpotId)
           : undefined;
-        const desiredLockerCameraBlend = activeLocker
+        const desiredLockerCameraBlend = activeLocker?.archetype === "hard-locker"
           ? THREE.MathUtils.clamp(
             Math.max(lockerListening.cover, lockerListening.peek),
             0,
@@ -5734,7 +7090,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           desiredLockerCameraBlend > lockerCameraBlend ? 7.8 : 9.5,
           delta,
         );
-        if (activeLocker && lockerCameraBlend > 0.002) {
+        if (activeLocker?.archetype === "hard-locker" && lockerCameraBlend > 0.002) {
           activeLocker.cameraAnchor.getWorldPosition(lockerCameraPosition);
           activeLocker.peekAnchor.getWorldPosition(lockerPeekPosition);
           const hideSpot = campaignLevel.hideSpots.find(
@@ -5818,6 +7174,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setChaserMode(latestState.chaser.mode);
           setChaserConfirming(latestState.chaser.visualConfirmationSeconds !== null);
           setChaserObservable(chaserKnowledgeObservable);
+          setChaserArchetypeRuntime(simulation.getChaserArchetypeRuntime());
           setPublicThreat(playerKnowledge.threat);
           setElapsed(Math.floor(latestState.elapsedSeconds));
           setThemeMechanic({
@@ -5827,9 +7184,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             ),
             activationCostLabel: mechanicDefinition.activationCost.label,
           });
-          const objectiveRoute = objectivePaths.path(latestState.player.position, campaignLevel.exit);
+          const hudMissionObjective = missionObjectiveForPlayer(
+            latestState.player.position,
+          );
+          const objectiveTarget = hudMissionObjective?.position ?? campaignLevel.exit;
+          const objectiveRoute = objectivePaths.path(
+            latestState.player.position,
+            objectiveTarget,
+          );
           const routeGeometry = deriveRouteGuidanceGeometry(objectiveRoute, CELL);
           setObjectiveDistance(Math.round(routeGeometry.routeDistanceMeters));
+          setThemeMission({
+            state: missionState,
+            activeObjective: hudMissionObjective?.objective ?? null,
+            activeDistanceMeters: hudMissionObjective
+              ? Math.round(hudMissionObjective.routeCells * CELL)
+              : null,
+            completedCount: missionState.completedObjectiveIds.length,
+            totalCount: missionDefinition.objectives.length,
+          });
+          setGhostRace(latestGhostRace
+            ? { ...latestGhostRace, visible: Boolean(ghostActor?.root.visible) }
+            : null);
           if (latestState.phase === "playing" && latestState.player.mode === "free") {
             const guidance = updateObjectiveGuidance(objectiveGuidanceState, {
               deltaSeconds: Math.max(0, latestState.elapsedSeconds - lastObjectiveGuidanceSeconds),
@@ -5848,6 +7224,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           }
           lastObjectiveGuidanceSeconds = latestState.elapsedSeconds;
           setInteraction(simulation.getHideInteraction());
+          setActiveHideArchetype(
+            simulation.getActiveHideSpotArchetype()?.archetype ?? null,
+          );
+          setHideExitSelection(simulation.getHideExitSelection());
           updateHideGuideProjection(latestState, held("q"));
           lastHudUpdate = now;
         }
@@ -5921,7 +7301,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         togglePause: () => void;
         inspectScene: () => unknown;
         setScenario: (positions: { player: Point; chaser: Point }) => void;
+        completeMission: () => void;
         selectLevel: (level: number | string) => void;
+        selectLayout: (layoutNumber: number | null) => void;
         setUnlockedThrough: (levelNumber: number) => void;
       };
     };
@@ -5945,8 +7327,31 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             chaserStart: campaignLevel.chaserStart,
             hideSpots: campaignLevel.hideSpots,
           },
+          certifiedRemix: {
+            selected: Boolean(selectedRemixContract),
+            layoutNumber: selectedRemixContract
+              ? selectedRemixContract.variantIndex + 1
+              : null,
+            missionVersion: CERTIFIED_REMIX_MISSION_VERSION,
+            seed: selectedRemixContract?.seed ?? null,
+            contract: selectedRemixContract,
+            runIdentity: resolvedRemix.runIdentity,
+            replayLevelId: runReplayLevelId,
+            recordStorageKey: selectedRemixContract
+              ? remixRecordStorageKey(selectedRemixContract, preferences.ruleset)
+              : null,
+            record: selectedRemixContract
+              ? loadCertifiedRemixRecord(
+                  localStorage,
+                  selectedRemixContract,
+                  preferences.ruleset,
+                )
+              : null,
+          },
           game: latestState,
           interaction: simulation.getHideInteraction(),
+          activeHideArchetype: simulation.getActiveHideSpotArchetype(),
+          hideExitSelection: simulation.getHideExitSelection(),
           animations: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, view?.animator.snapshot()])),
           visibility: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, {
             rootVisible: view?.root.visible ?? false,
@@ -5964,6 +7369,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             chaserObservable: canPlayerObserveChaser(latestState, campaignLevel, simulation.config),
             publicThreat: playerKnowledge,
           },
+          chaserArchetype: {
+            profile: chaserArchetypeProfile,
+            runtime: simulation.getChaserArchetypeRuntime(),
+          },
           themeMechanic: {
             definition: mechanicDefinition,
             state: mechanicInstance,
@@ -5972,6 +7381,31 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               latestState.player.position,
             ),
           },
+          themeMission: {
+            definition: missionDefinition,
+            state: missionState,
+            placements: missionPlacements,
+            availableObjectiveIds: availableThemeObjectiveIds(
+              missionDefinition,
+              missionState,
+            ),
+            audit: missionAudit,
+          },
+          ghost: {
+            eligible: ghostEligible,
+            recording: ghostRecording
+              ? {
+                  levelId: ghostRecording.levelId,
+                  durationTicks: ghostRecording.durationTicks,
+                  fixedStepSeconds: ghostRecording.fixedStepSeconds,
+                }
+              : null,
+            state: ghostState,
+            race: latestGhostRace,
+            viewport: projectActorToViewport(ghostActor ?? undefined),
+          },
+          preferences: preferencesRef.current,
+          environmentComposition,
           telemetry: runTelemetry,
           sceneIntegrity: {
             expectedMovementBlockers: campaignLevel.movementBlockers?.length ?? 0,
@@ -5986,6 +7420,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             unusedLoadedAssetIds: [...loadedAssetIds].filter((id) => !placedAssetIds.has(id)).sort(),
           },
           lockers: Object.fromEntries([...lockers].map(([id, view]) => [id, {
+            archetype: view.archetype,
+            alternateExit: view.alternateExit,
             approach: view.approach,
             rootPosition: { x: view.root.position.x, y: view.root.position.y, z: view.root.position.z },
             beaconVisible: view.beacon.visible,
@@ -6080,11 +7516,37 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : CAMPAIGN_LEVELS.findIndex((level) => level.id === requested);
           chooseLevelRef.current(index);
         },
+        selectLayout: (layoutNumber) => {
+          if (layoutNumber === null) {
+            chooseRemixVariant(null);
+            return;
+          }
+          if (!Number.isInteger(layoutNumber) || layoutNumber < 1 || layoutNumber > 3) {
+            throw new Error("QA layout number must be 1, 2, 3, or null for original");
+          }
+          chooseRemixVariant((layoutNumber - 1) as 0 | 1 | 2);
+        },
         setUnlockedThrough: (levelNumber) => {
           setCampaignProgress((current) => ({
             ...current,
             unlockedThrough: THREE.MathUtils.clamp(Math.floor(levelNumber), 1, CAMPAIGN_LEVELS.length),
+            assistedUnlockedThrough: THREE.MathUtils.clamp(
+              Math.floor(levelNumber),
+              1,
+              CAMPAIGN_LEVELS.length,
+            ),
           }));
+        },
+        completeMission: () => {
+          for (const objective of missionDefinition.objectives) {
+            if (missionState.completedObjectiveIds.includes(objective.id)) continue;
+            missionState = stepThemeMission(
+              missionDefinition,
+              missionState,
+              objective.id,
+            ).state;
+          }
+          updateThemeMissionViews(performance.now());
         },
         setScenario: ({ player, chaser }) => {
           simulation = new GameSimulation({
@@ -6093,6 +7555,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             initialPlayerPosition: player,
             initialChaserPosition: chaser,
             config: { ...gameplayConfig, spawnDelaySeconds: 0 },
+            chaserArchetypeProfile,
           });
           latestState = simulation.getState();
           resetPresentation(latestState);
@@ -6103,8 +7566,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     void loadAll().catch((error: unknown) => {
       console.error("Production asset load failed", error);
       if (!disposed) {
-        const message = error instanceof Error ? error.message : String(error);
-        setLoadError(`正式素材载入失败：${message}`);
+        setLoadError(assetLoadRecoveryMessage(error, navigator.onLine));
       }
     });
     frame = requestAnimationFrame(animate);
@@ -6130,11 +7592,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       delete document.documentElement.dataset.chasingEmergency;
       if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
       for (const actor of Object.values(actors)) actor?.animator.dispose();
+      ghostActor?.animator.dispose();
       for (const locker of lockers.values()) locker.mixer.stopAllAction();
       void score.dispose();
       void soundscape.dispose();
       ktx2Loader?.dispose();
-      environmentTarget.dispose();
+      if (environmentScheduleHandle !== null) {
+        if (environmentScheduledWithIdleCallback) {
+          (window as Window & { cancelIdleCallback?: (handle: number) => void })
+            .cancelIdleCallback?.(environmentScheduleHandle);
+        } else {
+          clearTimeout(environmentScheduleHandle);
+        }
+        environmentScheduleHandle = null;
+      }
+      environmentTarget?.dispose();
       disposeObjectResources([scene, ...loadedAssetRoots]);
       for (const objectUrl of controlledDependencyUrls.values()) URL.revokeObjectURL(objectUrl);
       controlledDependencyUrls.clear();
@@ -6146,10 +7618,20 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
   }, [
     atmosphere,
     campaignLevel,
+    chaserArchetypeProfile,
+    chooseRemixVariant,
     gameplayConfig,
     hideGuidancePolicy.tutorialHideSpotId,
     objectivePaths,
+    preferences.personalGhostEnabled,
+    preferences.ruleset,
     resetAnalogueMove,
+    resolvedRemix.mechanicPlacementGroup,
+    resolvedRemix.runIdentity,
+    runRecordLevelId,
+    runReplayLevelId,
+    sceneRevision,
+    selectedRemixContract,
   ]);
 
   const touch = (key: string, active: boolean) => {
@@ -6171,18 +7653,68 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       || themeMechanic.distanceMeters <= 10
     ),
   );
+  const activeMissionObjective = themeMission?.activeObjective ?? null;
+  const missionCanInteract = Boolean(
+    activeMissionObjective
+    && themeMission?.activeDistanceMeters !== null
+    && (themeMission?.activeDistanceMeters ?? Number.POSITIVE_INFINITY) <= 3,
+  );
+  const storedCurrentRunRecord = getCampaignRunRecord(
+    campaignProgress,
+    runRecordLevelId,
+    preferences.ruleset,
+  );
+  const currentRunRecord = selectedRemixContract
+    ? {
+        ...storedCurrentRunRecord,
+        bestSeconds: remixRecord?.bestSeconds ?? storedCurrentRunRecord.bestSeconds,
+        mastery: remixRecord?.mastery ?? storedCurrentRunRecord.mastery,
+      }
+    : storedCurrentRunRecord;
+  const unlockedThrough = getCampaignUnlockedThrough(
+    campaignProgress,
+    preferences.ruleset,
+  );
+  const layoutLabel = selectedRemixVariant === null
+    ? "原版布局"
+    : `认证布局 ${(selectedRemixVariant + 1).toString().padStart(2, "0")}`;
+  const observableArchetypeStatus = chaserObservable
+    ? chaserArchetypeRuntime?.phase === "telegraph"
+      ? chaserArchetypeRuntime.cueLabel
+      : chaserArchetypeRuntime?.phase === "acting"
+        ? chaserArchetypeActionStatus(chaserArchetypeRuntime.action)
+        : null
+    : null;
   const displayedChaserStatus = chaserObservable
-    ? chaserConfirming ? "重新确认目标" : chaserStatus(chaserMode)
+    ? observableArchetypeStatus
+      ?? (chaserConfirming ? "重新确认目标" : chaserStatus(chaserMode))
     : publicThreat === "active"
       ? "位置未确认 · 威胁声活跃"
       : publicThreat === "caution"
         ? "位置未确认 · 仍在附近搜索"
         : "位置未确认 · 环境已安静";
+  const readyCampaignBriefing = selectedRemixContract
+    ? `${campaignLevel.campaign.briefing} ${layoutLabel}已按固定认证方案重编路线连通、巡逻顺序、任务位置与藏点组合；它不是临场随机生成，每次挑战都可学习、可复盘。`
+    : campaignLevel.campaign.briefing;
+  const readyBriefing = `${readyCampaignBriefing} 本关追捕者为「${chaserArchetypeProfile.label}」：${chaserArchetypeProfile.readableRule}`;
   const showResult = phase === "ready" || ((phase === "won" || phase === "lost") && resultVisible);
+  const interactionSpot = interaction
+    ? campaignLevel.hideSpots.find((spot) => spot.id === interaction.hideSpotId)
+    : null;
+  const interactionArchetype = interactionSpot?.archetype ?? "hard-locker";
+  const hideArchetypeLabel = interactionArchetype === "soft-cover"
+    ? "软质遮挡"
+    : interactionArchetype === "traversal-hide"
+      ? "穿行藏点"
+      : "硬质藏柜";
   const interactionText = interaction?.kind === "enter"
-    ? "躲进储物柜"
+    ? `进入${hideArchetypeLabel}`
     : interaction?.kind === "exit"
-      ? publicThreat === "calm" ? "离开储物柜" : "冒险离开储物柜"
+      ? interactionArchetype === "traversal-hide"
+        ? `${hideExitSelection?.selected === "alternate" ? "从另一侧" : "从原入口"}离开`
+        : publicThreat === "calm" ? `离开${hideArchetypeLabel}` : `冒险离开${hideArchetypeLabel}`
+      : missionCanInteract && activeMissionObjective
+        ? activeMissionObjective.interactionPrompt
       : themeMechanic?.canActivate
         ? `启动${themeMechanic.label}`
       : playerMode === "entering-hide"
@@ -6198,6 +7730,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           : null;
   const hasNextLevel = selectedLevelIndex < CAMPAIGN_LEVELS.length - 1;
   const touchInteractAvailable = Boolean(interaction)
+    || missionCanInteract
     || Boolean(themeMechanic?.canActivate)
     || playerMode === "aligning-hide";
   const primaryAction = phase === "won" && hasNextLevel
@@ -6211,23 +7744,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       : hideGuideSelection === "held"
         ? "保持当前安全路线"
         : "生存优先藏身柜";
-  const showHideGuidance = !campaignProgress.bestSeconds[campaignLevel.id]
+  const showHideGuidance = !currentRunRecord.bestSeconds
     || danger >= 0.28
     || hideGuideStrategy === "break-line-of-sight"
     || hideDistance <= 6;
   const captureFeedback = failureFeedback(lastCaptureReason);
 
   return (
-    <main className="game-shell">
+    <main
+      className={`game-shell hud-${preferences.hudDensity}${preferences.highContrast ? " high-contrast" : ""}${preferences.reducedMotion ? " reduced-motion" : ""}`}
+      data-ruleset={preferences.ruleset}
+    >
       <header className="hud">
         <div className="title-lockup">
-          <span className="eyebrow">CHASING · 3D 追逐模式 · 第 {campaignLevel.campaign.levelNumber.toString().padStart(2, "0")} 关 · {campaignLevel.campaign.themeLabel}</span>
+          <span className="eyebrow">CHASING · 3D 追逐模式 · 第 {campaignLevel.campaign.levelNumber.toString().padStart(2, "0")} 关 · {campaignLevel.campaign.themeLabel} · {layoutLabel}</span>
           <h1>{campaignLevel.campaign.name}</h1>
         </div>
         <div className="stats">
           <span className="chapter">关卡 <b>{campaignLevel.campaign.levelNumber}/10</b></span>
           <span>用时 <b>{elapsed}s</b></span>
-          <span className="objective">出口 <b>{objectiveDistance}m</b></span>
+          <span className="objective">
+            {themeMission?.state.exitUnlocked ? "出口" : "当前任务"} <b>{objectiveDistance}m</b>
+          </span>
           <span className={`status danger-${Math.round(danger * 10)}`}><i />{displayedChaserStatus}</span>
           <button type="button" aria-label={musicMuted ? "打开声音" : "静音"} onClick={() => commands.current.toggleMute()}>{musicMuted ? "声音关" : "声音开"}</button>
           <button type="button" disabled={loading || phase !== "playing"} onClick={() => commands.current.togglePause()}>暂停</button>
@@ -6236,7 +7774,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       </header>
 
       <section
-        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${themeMechanic?.phase === "active" ? " theme-event-active" : ""}${["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? " locker-interior" : ""}`}
+        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${activeHideArchetype ? ` hide-${activeHideArchetype}` : ""}${themeMechanic?.phase === "active" ? " theme-event-active" : ""}${activeHideArchetype === "hard-locker" && ["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? " locker-interior" : ""}${ghostRace?.visible ? " ghost-race-active" : ""}`}
         style={{
           "--threat": danger,
           "--theme-event": themeEventActivity,
@@ -6255,7 +7793,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <strong>{loadError || loadProgress.message}</strong>
               {!loadError && <div className="load-bar"><i style={{ width: `${loadPercent}%` }} /></div>}
               {!loadError && <small>{campaignLevel.campaign.themeLabel}主题高模、角色动作、动态灯光与互动资产 · {loadPercent}%</small>}
-              {loadError && <button type="button" onClick={() => location.reload()}>刷新重试</button>}
+              {loadError && <button type="button" onClick={retryScene}>原地重试</button>}
             </div>
           </div>
         )}
@@ -6279,6 +7817,56 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                     ? "位置未确认 · 搜索声正在减弱"
                     : "位置未确认 · 已连续安静"}
               </strong>
+            </div>
+          </div>
+        )}
+
+        {!loading && !paused && phase === "playing" && themeMission && (
+          <div
+            className={`mission-status stage-${themeMission.state.stage}`}
+            role="group"
+            aria-label={`主题任务，已完成 ${themeMission.completedCount} 项，共 ${themeMission.totalCount} 项`}
+          >
+            <span aria-hidden="true" />
+            <div>
+              <small>
+                {themeMissionDefinition(campaignLevel.campaign.theme).title} · {themeMission.completedCount}/{themeMission.totalCount}
+              </small>
+              <strong>
+                {themeMission.state.exitUnlocked
+                  ? "出口已解锁 · 立即撤离"
+                  : themeMission.activeObjective?.label ?? "确认撤离路线"}
+              </strong>
+              {!themeMission.state.exitUnlocked && themeMission.activeDistanceMeters !== null && (
+                <em>{themeMission.activeDistanceMeters}m · 可按任意顺序完成准备目标</em>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!loading && !paused && phase === "playing" && ghostRace?.visible && (
+          <div
+            className={`ghost-race leader-${ghostRace.leader}`}
+            role="group"
+            aria-label="个人最佳幽灵竞速"
+          >
+            <span aria-hidden="true" />
+            <div>
+              <small>PERSONAL GHOST · 参考 {ghostRace.referenceSeconds.toFixed(2)}s</small>
+              <strong>
+                {ghostRace.leader === "tied"
+                  ? "与最佳路线并行"
+                  : ghostRace.leader === "player"
+                    ? `领先 ${Math.abs(ghostRace.playerLeadMeters).toFixed(1)}m`
+                    : `落后 ${Math.abs(ghostRace.playerLeadMeters).toFixed(1)}m`}
+              </strong>
+              {ghostRace.latestSplit && (
+                <em>
+                  {ghostRace.latestSplit.label} {
+                    ghostRace.latestSplit.deltaSeconds <= 0 ? "快" : "慢"
+                  } {Math.abs(ghostRace.latestSplit.deltaSeconds).toFixed(2)}s
+                </em>
+              )}
             </div>
           </div>
         )}
@@ -6358,16 +7946,60 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             <kbd className="desktop-key">E</kbd>
             <kbd className="touch-key">互动</kbd>
             <strong>{interactionText}</strong>
-            {themeMechanic?.canActivate && !interaction && (
+            {missionCanInteract && activeMissionObjective && (
+              <small>{activeMissionObjective.completionHint}</small>
+            )}
+            {themeMechanic?.canActivate && !interaction && !missionCanInteract && (
               <small>{themeMechanic.activationCostLabel}；预警结束后效果才会生效</small>
             )}
             {playerMode === "aligning-hide" && <small>移动或再次互动可立即取消</small>}
             {interaction?.kind === "exit" && publicThreat !== "calm" && (
               <small>外面仍有威胁声；建议等提示恢复绿色后再离柜</small>
             )}
-            {(playerMode === "hidden" || playerMode === "entering-peek" || playerMode === "peeking" || playerMode === "exiting-peek") && <small>按住 Q 从门缝观察，会重新暴露；松开后再离柜</small>}
+            {activeHideArchetype === "hard-locker"
+              && (playerMode === "hidden" || playerMode === "entering-peek" || playerMode === "peeking" || playerMode === "exiting-peek")
+              && <small>按住 Q 从门缝观察，会重新暴露；松开后再离柜</small>}
+            {activeHideArchetype === "soft-cover" && playerMode === "hidden" && (
+              <small>遮挡并不完全；追捕者靠近并正面观察时仍可能发现你</small>
+            )}
+            {activeHideArchetype === "traversal-hide" && playerMode === "hidden" && (
+              <small>可先切换出口，再互动离开；另一侧更快改线，但会制造更明显动静</small>
+            )}
           </div>
         )}
+
+        {phase === "playing"
+          && !paused
+          && activeHideArchetype === "traversal-hide"
+          && hideExitSelection?.options.some((option) => option.kind === "alternate")
+          && (
+            <div className="hide-exit-selector" role="group" aria-label="选择穿行藏点出口">
+              <button
+                type="button"
+                aria-pressed={hideExitSelection.selected === "origin"}
+                onClick={() => {
+                  preferredHideExit.current = "origin";
+                  setHideExitSelection((current) => current
+                    ? { ...current, selected: "origin" }
+                    : current);
+                }}
+              >
+                原入口
+              </button>
+              <button
+                type="button"
+                aria-pressed={hideExitSelection.selected === "alternate"}
+                onClick={() => {
+                  preferredHideExit.current = "alternate";
+                  setHideExitSelection((current) => current
+                    ? { ...current, selected: "alternate" }
+                    : current);
+                }}
+              >
+                另一侧 <kbd>X</kbd>
+              </button>
+            </div>
+          )}
 
         {paused && !loading && phase === "playing" && (
           <div className="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
@@ -6382,6 +8014,29 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 <button type="button" onClick={() => commands.current.adjustZoom(1.12)}>缩小视野</button>
                 <button type="button" onClick={() => commands.current.adjustZoom(1 / 1.12)}>放大视野</button>
                 <button type="button" onClick={() => commands.current.resetZoom()}>重置视野</button>
+                <button
+                  type="button"
+                  aria-pressed={preferences.hudDensity === "full"}
+                  onClick={() => updatePreferences({
+                    hudDensity: preferences.hudDensity === "full" ? "cinematic" : "full",
+                  })}
+                >
+                  {preferences.hudDensity === "full" ? "切到电影 HUD" : "切到完整 HUD"}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={preferences.highContrast}
+                  onClick={() => updatePreferences({ highContrast: !preferences.highContrast })}
+                >
+                  {preferences.highContrast ? "关闭高对比" : "开启高对比"}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={preferences.reducedMotion}
+                  onClick={() => updatePreferences({ reducedMotion: !preferences.reducedMotion })}
+                >
+                  {preferences.reducedMotion ? "恢复动态" : "减少动态"}
+                </button>
               </div>
               <div className="pause-actions">
                 <button
@@ -6405,7 +8060,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <h2>{phase === "won" ? `你完成了「${campaignLevel.campaign.name}」` : phase === "lost" ? captureFeedback.title : campaignLevel.campaign.subtitle}</h2>
               <p>
                 {phase === "ready"
-                  ? campaignLevel.campaign.briefing
+                  ? readyBriefing
                   : phase === "lost"
                     ? captureFeedback.explanation
                     : "追捕者只会依据真实目击、声音与最后位置追踪。你成功利用遮挡和藏身点完成了逃脱。"}
@@ -6447,6 +8102,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                       </span>
                     ))}
                   </div>
+                  <div className="ghost-save-note" role="status">
+                    <small>
+                      {lastRunSummary.ruleset === "assisted"
+                        ? selectedRemixContract
+                          ? `${layoutLabel}辅助成绩已写入该认证种子的独立记录；不会覆盖原版或标准个人幽灵。`
+                          : "辅助模式成绩已写入独立进度；不会覆盖标准个人幽灵。"
+                        : lastRunSummary.ghostSaveStatus === "saved-faster"
+                          ? `新的${selectedRemixContract ? `${layoutLabel}专属` : ""}个人最佳幽灵已保存，下局将与你同场竞速。`
+                          : lastRunSummary.ghostSaveStatus === "saved-first"
+                            ? `首个${selectedRemixContract ? `${layoutLabel}专属` : "标准"}个人幽灵已保存。`
+                            : lastRunSummary.ghostSaveStatus === "kept-faster"
+                              ? `保留了更快的${selectedRemixContract ? `${layoutLabel}专属` : ""}个人最佳幽灵。`
+                              : `${selectedRemixContract ? `${layoutLabel}标准` : "标准"}成绩已记录。`}
+                    </small>
+                  </div>
                 </>
               )}
               {phase === "lost" && (
@@ -6454,17 +8124,124 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               )}
 
               {phase === "ready" && (
+                <div className="preference-settings" aria-label="游戏模式与辅助设置">
+                  <div className="preference-group">
+                    <small>规则模式</small>
+                    <button
+                      type="button"
+                      aria-pressed={preferences.ruleset === "standard"}
+                      onClick={() => updatePreferences({ ruleset: "standard" })}
+                    >
+                      标准 · 排名
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={preferences.ruleset === "assisted"}
+                      onClick={() => updatePreferences({ ruleset: "assisted" })}
+                    >
+                      辅助 · 独立进度
+                    </button>
+                  </div>
+                  <div className="preference-group compact" aria-label="选择固定认证布局">
+                    <small>关卡布局 · 固定认证（非随机）</small>
+                    <button
+                      type="button"
+                      aria-pressed={selectedRemixVariant === null}
+                      onClick={() => chooseRemixVariant(null)}
+                    >
+                      原版
+                    </button>
+                    {remixContracts.map((contract) => (
+                      <button
+                        type="button"
+                        key={contract.id}
+                        aria-pressed={selectedRemixVariant === contract.variantIndex}
+                        onClick={() => chooseRemixVariant(contract.variantIndex)}
+                      >
+                        布局 {(contract.variantIndex + 1).toString().padStart(2, "0")}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="preference-group compact">
+                    <button
+                      type="button"
+                      aria-pressed={preferences.personalGhostEnabled}
+                      onClick={() => updatePreferences({
+                        personalGhostEnabled: !preferences.personalGhostEnabled,
+                      })}
+                    >
+                      个人幽灵
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={preferences.hudDensity === "full"}
+                      onClick={() => updatePreferences({
+                        hudDensity: preferences.hudDensity === "full" ? "cinematic" : "full",
+                      })}
+                    >
+                      {preferences.hudDensity === "full" ? "完整 HUD" : "电影 HUD"}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={preferences.highContrast}
+                      onClick={() => updatePreferences({ highContrast: !preferences.highContrast })}
+                    >
+                      高对比
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={preferences.reducedMotion}
+                      onClick={() => updatePreferences({ reducedMotion: !preferences.reducedMotion })}
+                    >
+                      减少动态
+                    </button>
+                  </div>
+                  <p>
+                    {(preferences.ruleset === "standard"
+                      ? "标准规则记录排行榜资格与个人最佳幽灵。"
+                      : "辅助规则降低追捕压力、扩大互动范围，并使用独立进度，不覆盖标准成绩。")
+                    + (selectedRemixContract
+                      ? ` ${layoutLabel}使用固定种子，成绩与幽灵均按布局、规则模式和任务版本独立保存。`
+                      : "")}
+                  </p>
+                </div>
+              )}
+
+              {phase === "ready" && (
+                <div className="mission-briefing" aria-label="本关主题任务">
+                  <div>
+                    <small>本关任务链 · {layoutLabel}</small>
+                    <strong>{themeMissionDefinition(campaignLevel.campaign.theme).title}</strong>
+                  </div>
+                  {selectedRemixContract && (
+                    <span>
+                      <i aria-hidden="true">↻</i>
+                      <b>认证重编挑战</b>
+                      <small>通路、巡逻、任务锚点与藏点供应均已重编；布局编号固定，可重复练习。</small>
+                    </span>
+                  )}
+                  {themeMissionDefinition(campaignLevel.campaign.theme).objectives.map((objective, index) => (
+                    <span key={objective.id}>
+                      <i aria-hidden="true">{index + 1}</i>
+                      <b>{objective.label}</b>
+                      <small>{objective.interactionPrompt}</small>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {phase === "ready" && (
                 <div className="hide-loop" aria-label="躲柜玩法流程">
                   <span><b>1</b>绕墙切断视线</span>
-                  <span><b>2</b>识别藏柜风险标记</span>
-                  <span><b>3</b>用主题机关制造假线索，或藏好等待搜索结束</span>
+                  <span><b>2</b>按风险选择硬柜、软遮挡或穿行藏点</span>
+                  <span><b>3</b>用机关制造假线索，完成任务后解锁出口</span>
                 </div>
               )}
 
               {phase === "ready" && (
                 <div className="mastery-preview" aria-label="本关精通目标">
                   <div>
-                    <small>STANDARD · 本关精通</small>
+                    <small>{preferences.ruleset === "standard" ? "STANDARD · 排名精通" : "ASSISTED · 独立精通"}</small>
                     <strong>目标时间 {masteryPreview.targetSeconds.toFixed(1)}s</strong>
                   </div>
                   {masteryPreview.objectives.map((objective) => (
@@ -6480,10 +8257,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               {phase === "ready" && (
                 <div className="level-grid" aria-label="选择关卡">
                   {CAMPAIGN_LEVELS.map((level, index) => {
-                    const locked = index + 1 > campaignProgress.unlockedThrough;
+                    const locked = index + 1 > unlockedThrough;
                     const active = index === selectedLevelIndex;
-                    const best = campaignProgress.bestSeconds[level.id];
-                    const mastery = campaignProgress.mastery[level.id];
+                    const runRecord = getCampaignRunRecord(
+                      campaignProgress,
+                      level.id,
+                      preferences.ruleset,
+                    );
+                    const best = runRecord.bestSeconds;
+                    const mastery = runRecord.mastery;
                     return (
                       <button
                         className={`level-card${active ? " active" : ""}${locked ? " locked" : ""}${mastery ? ` rank-${mastery.rank}` : ""}`}
@@ -6510,7 +8292,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
               <div className="overlay-actions">
                 <button className="primary" type="button" onClick={primaryAction}>
-                  {phase === "ready" ? `开始第 ${campaignLevel.campaign.levelNumber} 关` : phase === "won" && hasNextLevel ? "进入下一关" : "再来一次"}
+                  {phase === "ready"
+                    ? `开始第 ${campaignLevel.campaign.levelNumber} 关 · ${layoutLabel}`
+                    : phase === "won" && hasNextLevel ? "进入下一关" : "再来一次"}
                   <kbd>Enter</kbd>
                 </button>
                 {phase === "won" && <button className="secondary" type="button" onClick={begin}>重玩本关</button>}
@@ -6529,7 +8313,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           <>
             <div
               className={`controls virtual-stick${joystickThumb.active ? " active" : ""}`}
-              aria-label="拖动摇杆移动"
+              role="group"
+              aria-label="移动控制，拖动摇杆；也可使用方向键或 WASD"
+              tabIndex={0}
               onPointerDown={joystickPointerDown}
               onPointerMove={joystickPointerMove}
               onPointerUp={joystickPointerEnd}
@@ -6550,13 +8336,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <button type="button" className={touchInteractAvailable ? "available" : ""} disabled={!touchInteractAvailable} onClick={interact}>
                 {playerMode === "aligning-hide"
                   ? "取消躲藏"
+                  : missionCanInteract && activeMissionObjective
+                    ? activeMissionObjective.label
                   : themeMechanic?.canActivate && !interaction
                     ? "启动机关"
                   : interaction?.kind === "enter"
-                    ? "躲进藏柜"
+                    ? `进入${hideArchetypeLabel}`
                     : interaction?.kind === "exit"
-                      ? "离开藏柜"
-                      : `藏柜 ${hideDistance}m`}
+                      ? interactionText ?? `离开${hideArchetypeLabel}`
+                      : `藏点 ${hideDistance}m`}
               </button>
               <button
                 type="button"
@@ -6584,8 +8372,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       <footer>
         <span><i className="kid" />玩家</span>
         <span><i className="villain" />追捕者</span>
-        <span><i className="safe" />可藏主题柜</span>
-        <small>WASD / 方向键移动 · E 躲藏或离开 · Q 轻步 / 柜内观察 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开</small>
+        <span><i className="safe" />主题藏点</span>
+        <small>WASD / 方向键移动 · E 躲藏或离开 · Q 轻步 / 柜内观察 · X 切换穿行出口 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开</small>
       </footer>
     </main>
   );

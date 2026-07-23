@@ -107,8 +107,20 @@ export function createDefaultLevel(): LevelDefinition {
       { x: 21, y: 10 },
     ],
     hideSpots: [
-      { id: "locker-north", approach: { x: 9, y: 5 }, concealed: { x: 9, y: 4.65 }, facing: { x: 0, y: 1 } },
-      { id: "locker-south", approach: { x: 13, y: 19 }, concealed: { x: 12.65, y: 19 }, facing: { x: 1, y: 0 } },
+      {
+        id: "locker-north",
+        approach: { x: 9, y: 5 },
+        concealed: { x: 9, y: 4.65 },
+        facing: { x: 0, y: 1 },
+        archetype: "hard-locker",
+      },
+      {
+        id: "locker-south",
+        approach: { x: 13, y: 19 },
+        concealed: { x: 12.65, y: 19 },
+        facing: { x: 1, y: 0 },
+        archetype: "soft-cover",
+      },
     ],
     // These cells contain large authored scene props. They retain their floor
     // module but are excluded from movement/pathing and block perception, so
@@ -134,7 +146,15 @@ export function createLevel(level: LevelDefinition): LevelDefinition {
   if (level.walkable.length !== level.height || level.walkable.some((row) => row.length !== level.width)) {
     throw new Error("Level walkable grid dimensions do not match width/height");
   }
-  const requiredPoints = [level.playerStart, level.exit, level.chaserStart, ...level.patrol, ...level.hideSpots.map((spot) => spot.approach)];
+  const requiredPoints = [
+    level.playerStart,
+    level.exit,
+    level.chaserStart,
+    ...level.patrol,
+    ...level.hideSpots.flatMap((spot) => (
+      spot.alternateExit ? [spot.approach, spot.alternateExit] : [spot.approach]
+    )),
+  ];
   for (const point of requiredPoints) {
     if (!level.walkable[Math.round(point.y)]?.[Math.round(point.x)]) {
       throw new Error(`Required level point (${point.x}, ${point.y}) is not walkable`);
@@ -144,6 +164,23 @@ export function createLevel(level: LevelDefinition): LevelDefinition {
   for (const spot of level.hideSpots) {
     if (ids.has(spot.id)) throw new Error(`Duplicate hide spot id: ${spot.id}`);
     ids.add(spot.id);
+    const archetype = spot.archetype ?? "hard-locker";
+    if (!["hard-locker", "soft-cover", "traversal-hide"].includes(archetype)) {
+      throw new Error(`Unknown hide archetype: ${String(archetype)}`);
+    }
+    if (archetype === "traversal-hide" && !spot.alternateExit) {
+      throw new Error(`Traversal hide ${spot.id} requires an alternate exit`);
+    }
+    if (archetype !== "traversal-hide" && spot.alternateExit) {
+      throw new Error(`${archetype} ${spot.id} cannot declare an alternate exit`);
+    }
+    if (
+      spot.alternateExit
+      && Math.round(spot.alternateExit.x) === Math.round(spot.approach.x)
+      && Math.round(spot.alternateExit.y) === Math.round(spot.approach.y)
+    ) {
+      throw new Error(`Alternate exit for ${spot.id} must be a distinct walkable cell`);
+    }
   }
   const blockerKeys = new Set<string>();
   for (const blocker of level.movementBlockers ?? []) {

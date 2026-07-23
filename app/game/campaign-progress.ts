@@ -7,9 +7,10 @@ import {
   type StoredMastery,
 } from "./mastery.ts";
 
-export const CAMPAIGN_PROGRESS_VERSION = 2;
+export const CAMPAIGN_PROGRESS_VERSION = 3;
 
 export interface CampaignProgress {
+  /** Furthest chapter available in the ranked Standard lane. */
   unlockedThrough: number;
   /** Standard-only records retained at their legacy keys for UI compatibility. */
   bestSeconds: Record<string, number>;
@@ -17,6 +18,8 @@ export interface CampaignProgress {
   /** Assisted records never overwrite or unlock Standard records. */
   assistedBestSeconds?: Record<string, number>;
   assistedMastery?: Record<string, StoredMastery>;
+  /** Assisted players can still finish the campaign in their own lane. */
+  assistedUnlockedThrough?: number;
   progressVersion?: typeof CAMPAIGN_PROGRESS_VERSION;
 }
 
@@ -34,6 +37,7 @@ export function createCampaignProgress(): CampaignProgress {
     mastery: {},
     assistedBestSeconds: {},
     assistedMastery: {},
+    assistedUnlockedThrough: 1,
     progressVersion: CAMPAIGN_PROGRESS_VERSION,
   };
 }
@@ -94,20 +98,37 @@ export function sanitizeCampaignProgress(
     mastery?: unknown;
     assistedBestSeconds?: unknown;
     assistedMastery?: unknown;
+    assistedUnlockedThrough?: unknown;
   };
   const unlockedCandidate = Number.isInteger(stored.unlockedThrough)
     ? Number(stored.unlockedThrough)
     : 1;
   const unlockedThrough = Math.min(levelIds.length, Math.max(1, unlockedCandidate));
   const knownIds = new Set(levelIds);
+  const assistedUnlockedCandidate = Number.isInteger(stored.assistedUnlockedThrough)
+    ? Number(stored.assistedUnlockedThrough)
+    : 1;
   return {
     unlockedThrough,
     bestSeconds: sanitizeBestSeconds(stored.bestSeconds, knownIds),
     mastery: sanitizeMastery(stored.mastery, knownIds),
     assistedBestSeconds: sanitizeBestSeconds(stored.assistedBestSeconds, knownIds),
     assistedMastery: sanitizeMastery(stored.assistedMastery, knownIds),
+    assistedUnlockedThrough: Math.min(
+      levelIds.length,
+      Math.max(1, assistedUnlockedCandidate),
+    ),
     progressVersion: CAMPAIGN_PROGRESS_VERSION,
   };
+}
+
+export function getCampaignUnlockedThrough(
+  progress: Readonly<CampaignProgress>,
+  ruleset: RunRuleset = "standard",
+): number {
+  return ruleset === "assisted"
+    ? Math.max(1, progress.assistedUnlockedThrough ?? 1)
+    : Math.max(1, progress.unlockedThrough);
 }
 
 export function getCampaignRunRecord(
@@ -128,8 +149,8 @@ export function getCampaignRunRecord(
 }
 
 /**
- * Records a completed run in its own ruleset lane. Only Standard clears may
- * advance campaign unlocks; assisted progress remains a valid personal record.
+ * Records a completed run in its own lane. Assisted clears advance only the
+ * Assisted campaign and can never unlock, overwrite or rank Standard data.
  */
 export function recordCampaignCompletion(
   progress: Readonly<CampaignProgress>,
@@ -144,6 +165,7 @@ export function recordCampaignCompletion(
 
   const assistedBestSeconds = { ...(progress.assistedBestSeconds ?? {}) };
   const assistedMastery = { ...(progress.assistedMastery ?? {}) };
+  let assistedUnlockedThrough = progress.assistedUnlockedThrough ?? 1;
   const bestSeconds = { ...progress.bestSeconds };
   const mastery = { ...progress.mastery };
 
@@ -155,6 +177,10 @@ export function recordCampaignCompletion(
     assistedMastery[levelId] = mergeStoredMastery(
       assistedMastery[levelId],
       masteryResult,
+    );
+    assistedUnlockedThrough = Math.max(
+      assistedUnlockedThrough,
+      unlockThroughOnStandardClear,
     );
   } else {
     const previousBest = bestSeconds[levelId];
@@ -172,6 +198,7 @@ export function recordCampaignCompletion(
     mastery,
     assistedBestSeconds,
     assistedMastery,
+    assistedUnlockedThrough,
     progressVersion: CAMPAIGN_PROGRESS_VERSION,
   };
 }

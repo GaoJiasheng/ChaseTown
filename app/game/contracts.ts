@@ -1,3 +1,9 @@
+import type {
+  ChaserArchetypeAction,
+  ChaserArchetypeKind,
+  ChaserArchetypeRule,
+} from "./chaser-archetypes.ts";
+
 export type Point = { x: number; y: number };
 
 export type GamePhase = "ready" | "playing" | "won" | "lost";
@@ -27,6 +33,9 @@ export type ChaserMode =
 
 export type MoveIntent = { x: number; y: number };
 
+export type HideArchetypeKind = "hard-locker" | "soft-cover" | "traversal-hide";
+export type HideExitKind = "origin" | "alternate";
+
 export interface SimulationInput {
   move?: MoveIntent;
   interactPressed?: boolean;
@@ -43,6 +52,18 @@ export interface SimulationInput {
    * chaser's legal visual sample and never changes collision or catch range.
    */
   visionRangeMultiplier?: number;
+  /**
+   * Public objective gate supplied by the mission layer. It defaults to true
+   * for legacy and sandbox levels, changes no collision or AI knowledge, and
+   * only prevents the exit trigger from resolving before authored objectives.
+   */
+  exitEnabled?: boolean;
+  /**
+   * Player-selected side for a traversal hide. The selection persists while
+   * the player remains in the active hide spot and defaults to the origin.
+   * Unsupported alternate requests safely resolve to the origin exit.
+   */
+  hideExitChoice?: HideExitKind;
 }
 
 export interface HideSpotDefinition {
@@ -52,6 +73,14 @@ export interface HideSpotDefinition {
   /** Logical point occupied while hidden. It is never exposed to ChaserBrain. */
   concealed: Point;
   facing: Point;
+  /**
+   * Omitted spots retain the original hard-locker behavior. The declaration
+   * is public authored geometry; runtime occupancy and the player's selected
+   * traversal exit remain private simulation state.
+   */
+  archetype?: HideArchetypeKind;
+  /** Public, walkable destination available only to traversal hides. */
+  alternateExit?: Point;
 }
 
 export interface LevelDefinition {
@@ -236,6 +265,28 @@ export interface PublicEvidenceMemory {
 export type SimulationEvent =
   | { type: "player-mode-changed"; from: PlayerMode; to: PlayerMode }
   | { type: "chaser-mode-changed"; from: ChaserMode; to: ChaserMode }
+  | {
+      type: "chaser-archetype-telegraph-started";
+      archetype: ChaserArchetypeKind;
+      rule: ChaserArchetypeRule;
+      warningSeconds: number;
+      cueLabel: string;
+      cueAudioToken: string;
+      cueAnimationToken: string;
+    }
+  | {
+      type: "chaser-archetype-action-started";
+      archetype: ChaserArchetypeKind;
+      rule: ChaserArchetypeRule;
+      action: ChaserArchetypeAction["type"];
+    }
+  | {
+      type: "chaser-archetype-action-finished";
+      archetype: ChaserArchetypeKind;
+      rule: ChaserArchetypeRule;
+      action: ChaserArchetypeAction["type"];
+      outcome: "completed" | "interrupted";
+    }
   | {
       type: "evidence-investigation-completed";
       evidenceId: string;

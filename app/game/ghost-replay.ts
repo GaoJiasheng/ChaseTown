@@ -9,7 +9,8 @@ export const GHOST_POSITION_ERROR_BUDGET_CELLS = 0.1;
 const FLAG_PEEK = 1;
 const FLAG_SNEAK = 2;
 const FLAG_INTERACT = 4;
-const HELD_FLAGS = FLAG_PEEK | FLAG_SNEAK;
+const FLAG_ALTERNATE_EXIT = 8;
+const HELD_FLAGS = FLAG_PEEK | FLAG_SNEAK | FLAG_ALTERNATE_EXIT;
 
 /** [tick, signed move x, signed move y, input flags]. */
 export type GhostKeyframe = readonly [
@@ -43,6 +44,20 @@ export interface GhostReplayAccuracy {
   readonly withinBudget: boolean;
 }
 
+export type PersonalBestGhostSaveStatus =
+  | "saved-first"
+  | "saved-faster"
+  | "kept-faster"
+  | "rejected-assisted"
+  | "storage-error";
+
+export interface PersonalBestGhostSaveResult {
+  readonly status: PersonalBestGhostSaveStatus;
+  readonly saved: boolean;
+  readonly candidateSeconds: number;
+  readonly previousSeconds: number | null;
+}
+
 export interface GhostRecorderOptions {
   readonly maximumBytes?: number;
 }
@@ -66,6 +81,7 @@ const decodeMove = (value: number) => value / GHOST_MOVE_QUANTIZATION;
 function inputFlags(input: Readonly<SimulationInput>): number {
   return (input.peekHeld ? FLAG_PEEK : 0)
     | (input.sneakHeld ? FLAG_SNEAK : 0)
+    | (input.hideExitChoice === "alternate" ? FLAG_ALTERNATE_EXIT : 0)
     | (input.interactPressed ? FLAG_INTERACT : 0);
 }
 
@@ -259,6 +275,7 @@ function decodeFrame(frame: GhostKeyframe, requestedTick: number): SimulationInp
     },
     peekHeld: Boolean(frame[3] & FLAG_PEEK),
     sneakHeld: Boolean(frame[3] & FLAG_SNEAK),
+    hideExitChoice: frame[3] & FLAG_ALTERNATE_EXIT ? "alternate" : "origin",
     interactPressed: frame[0] === requestedTick && Boolean(frame[3] & FLAG_INTERACT),
   };
 }
@@ -354,6 +371,10 @@ export function estimateGhostStorageBytes(recording: Readonly<GhostRecording>): 
   return utf8Bytes(JSON.stringify(recording));
 }
 
+export function ghostDurationSeconds(recording: Readonly<GhostRecording>): number {
+  return recording.durationTicks * recording.fixedStepSeconds;
+}
+
 export function ghostStorageKey(levelId: string): string {
   return `chasing.personal-ghost.v1:${encodeURIComponent(levelId)}`;
 }
@@ -370,6 +391,51 @@ export function savePersonalGhost(
   } catch {
     return false;
   }
+}
+
+/**
+ * Persists only a faster Standard run. Assisted runs remain useful as local
+ * practice records, but they cannot replace the reference used by the ranked
+ * personal-ghost race.
+ *
+ * The payload remains the original v1 recording, so existing local ghosts
+ * migrate without a second storage key or a destructive rewrite.
+ */
+export function savePersonalBestGhost(
+  storage: KeyValueStorage,
+  recording: Readonly<GhostRecording>,
+  ruleset: "standard" | "assisted" = "standard",
+): PersonalBestGhostSaveResult {
+  const candidateSeconds = ghostDurationSeconds(recording);
+  if (ruleset !== "standard") {
+    return Object.freeze({
+      status: "rejected-assisted",
+      saved: false,
+      candidateSeconds,
+      previousSeconds: null,
+    });
+  }
+
+  const previous = loadPersonalGhost(storage, recording.levelId);
+  const previousSeconds = previous ? ghostDurationSeconds(previous) : null;
+  if (previousSeconds !== null && previousSeconds <= candidateSeconds + 1e-9) {
+    return Object.freeze({
+      status: "kept-faster",
+      saved: false,
+      candidateSeconds,
+      previousSeconds,
+    });
+  }
+
+  const saved = savePersonalGhost(storage, recording);
+  return Object.freeze({
+    status: saved
+      ? previousSeconds === null ? "saved-first" : "saved-faster"
+      : "storage-error",
+    saved,
+    candidateSeconds,
+    previousSeconds,
+  });
 }
 
 export function loadPersonalGhost(

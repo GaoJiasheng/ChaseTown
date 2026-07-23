@@ -3,9 +3,11 @@ import test from "node:test";
 
 import {
   AssetLoadError,
+  assetLoadRecoveryMessage,
   auditFirstPlayableAssetBudget,
   assetRetryDelayMilliseconds,
   classifyAssetHttpStatus,
+  createQaAssetFaultInjector,
   createSceneAssetLoader,
   externalAssetUrisFromGlb,
   FIRST_PLAYABLE_BUDGET_TARGET,
@@ -53,6 +55,102 @@ test("HTTP retry classification is explicit and conservative", () => {
   assert.deepEqual(classifyAssetHttpStatus(503), { retryable: true, category: "server" });
   assert.deepEqual(classifyAssetHttpStatus(404), { retryable: false, category: "client" });
   assert.deepEqual(classifyAssetHttpStatus(302), { retryable: false, category: "redirect" });
+});
+
+test("QA fault injection is inert without the explicit qa flag", async () => {
+  let requests = 0;
+  const injector = createQaAssetFaultInjector(
+    "?asset-fault=http&asset-fault-count=3",
+    async () => {
+      requests += 1;
+      return ok(7);
+    },
+  );
+  assert.equal(injector.plan.enabled, false);
+  const response = await injector.fetcher("/models/characters/kid-bootstrap.glb");
+  assert.deepEqual([...new Uint8Array(await response.arrayBuffer())], [7]);
+  assert.equal(requests, 1);
+  assert.equal(injector.remainingFailures(), 0);
+});
+
+test("QA HTTP fault budget is retained and then permits an in-place retry", async () => {
+  let realRequests = 0;
+  const injector = createQaAssetFaultInjector(
+    "?qa=1&asset-fault=http&asset-fault-count=3&asset-fault-status=503",
+    async () => {
+      realRequests += 1;
+      return ok(9);
+    },
+  );
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const response = await injector.fetcher("/models/characters/kid-bootstrap.glb?v=1");
+    assert.equal(response.status, 503);
+  }
+  assert.equal(injector.remainingFailures(), 0);
+  const recovered = await injector.fetcher("/models/characters/kid-bootstrap.glb?v=1");
+  assert.deepEqual([...new Uint8Array(await recovered.arrayBuffer())], [9]);
+  assert.equal(realRequests, 1);
+});
+
+test("QA offline fault uses the same recoverable network classification", async () => {
+  const injector = createQaAssetFaultInjector(
+    "?qa=1&asset-fault=offline&asset-fault-count=1",
+    async () => ok(1),
+  );
+  const loader = createSceneAssetLoader({
+    fetcher: injector.fetcher,
+    retry: { maximumAttempts: 1 },
+  });
+  await assert.rejects(
+    loader.fetchArrayBuffer("/models/characters/kid-bootstrap.glb?v=1"),
+    (error) => {
+      assert.ok(error instanceof AssetLoadError);
+      assert.equal(error.code, "ASSET_NETWORK");
+      assert.equal(error.retryable, true);
+      return true;
+    },
+  );
+  loader.abort();
+});
+
+test("QA timeout fault reaches the normal loader timeout classification", async () => {
+  const injector = createQaAssetFaultInjector(
+    "?qa=1&asset-fault=timeout&asset-fault-count=1&asset-fault-timeout-ms=10",
+    async () => ok(1),
+  );
+  const loader = createSceneAssetLoader({
+    fetcher: injector.fetcher,
+    timeoutMilliseconds: injector.plan.timeoutMilliseconds,
+    retry: { maximumAttempts: 1 },
+  });
+  await assert.rejects(
+    loader.fetchArrayBuffer("/models/characters/kid-bootstrap.glb?v=1"),
+    (error) => {
+      assert.ok(error instanceof AssetLoadError);
+      assert.equal(error.code, "ASSET_TIMEOUT");
+      return true;
+    },
+  );
+  loader.abort();
+});
+
+test("recovery copy distinguishes offline, timeout and HTTP failures", () => {
+  const timeout = new AssetLoadError("timeout", {
+    code: "ASSET_TIMEOUT",
+    url: "/slow.glb",
+    attempt: 3,
+    retryable: true,
+  });
+  const unavailable = new AssetLoadError("unavailable", {
+    code: "ASSET_HTTP",
+    url: "/down.glb",
+    attempt: 3,
+    retryable: true,
+    status: 503,
+  });
+  assert.match(assetLoadRecoveryMessage(timeout), /超时.*原地重试/u);
+  assert.match(assetLoadRecoveryMessage(unavailable), /HTTP 503.*原地重试/u);
+  assert.match(assetLoadRecoveryMessage(timeout, false), /网络已断开.*原地重试/u);
 });
 
 test("exponential retry delay is capped and symmetrically jittered", () => {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { FIRST_CAMPAIGN_PRELOAD_ASSETS } from "./game/runtime-assets";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chasing-school-escape.gavingao.chatgpt.site"),
@@ -32,6 +33,17 @@ export default function RootLayout({
     <html lang="zh-CN">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        {FIRST_CAMPAIGN_PRELOAD_ASSETS.map((asset) => (
+          <link
+            key={asset.href}
+            rel="preload"
+            href={asset.href}
+            as="fetch"
+            type={asset.type}
+            crossOrigin="anonymous"
+            fetchPriority={asset.fetchPriority}
+          />
+        ))}
       </head>
       <body>{children}</body>
     </html>

@@ -54,6 +54,7 @@ async function connect() {
     send("Network.enable"),
     send("Log.enable"),
     send("Emulation.setDeviceMetricsOverride", VIEWPORT),
+    send("Page.bringToFront"),
   ];
   if (VIEWPORT.mobile) {
     setup.push(send("Emulation.setTouchEmulationEnabled", {
@@ -72,12 +73,17 @@ async function connect() {
     if (response.exceptionDetails) throw new Error(response.exceptionDetails.exception?.description ?? response.exceptionDetails.text);
     return response.result.value;
   }
-  async function waitFor(expression, timeout = 30_000, interval = 35) {
+  async function waitFor(expression, timeout = 30_000, interval = 100) {
     const started = Date.now();
+    let lastForegroundAt = 0;
     let value;
     let lastError;
     while (Date.now() - started <= timeout) {
       try {
+        if (Date.now() - lastForegroundAt >= 750) {
+          await send("Page.bringToFront");
+          lastForegroundAt = Date.now();
+        }
         value = await evaluate(expression);
         lastError = undefined;
       } catch (error) {
@@ -128,14 +134,20 @@ const browser = await connect();
 try {
   await browser.send("Page.navigate", { url: `${BASE_URL}?qa=locker-maze-regression` });
   await browser.waitFor("document.readyState === 'complete'", 20_000);
-  await browser.waitFor("window.__CHASING_QA__?.getState()?.ready", 30_000);
+  await browser.waitFor(
+    "window.__CHASING_QA__?.getState()?.ready && !document.querySelector('.loading-card')",
+    60_000,
+  );
   await browser.evaluate("window.__CHASING_QA__.setUnlockedThrough(10)");
 
   const report = [];
   for (let index = 0; index < 10; index += 1) {
     if (index > 0) {
       await browser.evaluate(`window.__CHASING_QA__.selectLevel(${index})`);
-      await browser.waitFor(`window.__CHASING_QA__?.getState()?.campaign?.number === ${index + 1} && window.__CHASING_QA__?.getState()?.ready`, 30_000);
+      await browser.waitFor(
+        `window.__CHASING_QA__?.getState()?.campaign?.number === ${index + 1} && window.__CHASING_QA__?.getState()?.ready && !document.querySelector('.loading-card')`,
+        60_000,
+      );
     }
     await browser.evaluate("window.__CHASING_QA__.start()");
     await browser.waitFor("window.__CHASING_QA__?.getState()?.game?.phase === 'playing'", 10_000);
@@ -176,7 +188,9 @@ try {
     }
     const lockerEntries = Object.entries(opening.lockers);
     assert.equal(lockerEntries.length, opening.campaign.hideSpots.length, `${opening.campaign.id} locker count drifted`);
-    const visibleEntry = lockerEntries.find(([, locker]) => locker.beaconVisible) ?? lockerEntries[0];
+    const visibleEntry = lockerEntries.find(([, locker]) => (
+      locker.archetype === "hard-locker" && locker.beaconVisible
+    )) ?? lockerEntries.find(([, locker]) => locker.archetype === "hard-locker");
     assert.ok(visibleEntry, `${opening.campaign.id} has no locker presentation`);
     const [lockerId, visibleLocker] = visibleEntry;
     assert.equal(visibleLocker.beaconVisible, true, `${opening.campaign.id} has no active in-world hide marker`);
@@ -188,7 +202,7 @@ try {
     const chaser = fartherAnchor(visibleLocker.approach, opening.campaign.playerStart, opening.campaign.exit);
     await browser.evaluate(`window.__CHASING_QA__.setScenario(${JSON.stringify({ player: visibleLocker.approach, chaser })})`);
     await browser.waitFor(`window.__CHASING_QA__?.getState()?.interaction?.kind === 'enter' && window.__CHASING_QA__?.getState()?.interaction?.hideSpotId === ${JSON.stringify(lockerId)}`, 8_000);
-    await browser.waitFor("document.querySelector('.interaction-prompt')?.textContent.includes('躲进储物柜')", 5_000);
+    await browser.waitFor("document.querySelector('.interaction-prompt')?.textContent.includes('进入硬质藏柜')", 5_000);
     await sleep(260);
     const screenshotBytes = await browser.screenshot(path.join(OUTPUT, `level-${String(index + 1).padStart(2, "0")}-locker-ready.png`));
 
@@ -282,8 +296,8 @@ try {
         );
       }
       await browser.waitFor(
-        "window.__CHASING_QA__?.getState()?.game?.player?.mode === 'peeking' && window.__CHASING_QA__?.getState()?.camera?.occlusion?.maxStrength < 0.01",
-        3_000,
+        "(() => { const state = window.__CHASING_QA__?.getState(); return state?.game?.player?.mode === 'peeking' && state?.camera?.occlusion?.maxStrength < 0.01; })()",
+        12_000,
       );
       await sleep(120);
       await browser.screenshot(path.join(OUTPUT, `level-${String(index + 1).padStart(2, "0")}-peek.png`));

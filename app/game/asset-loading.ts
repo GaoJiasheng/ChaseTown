@@ -355,9 +355,125 @@ export function assetRetryDelayMilliseconds(
   return Math.round(Math.min(policy.maximumDelayMilliseconds, Math.max(0, capped + jitter)));
 }
 
-type AssetFetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export type AssetFetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 type AssetSleeper = (milliseconds: number, signal: AbortSignal) => Promise<void>;
 type TimeoutHandle = unknown;
+
+export type QaAssetFaultMode = "http" | "offline" | "timeout";
+
+export interface QaAssetFaultPlan {
+  readonly enabled: boolean;
+  readonly mode: QaAssetFaultMode | null;
+  readonly match: string;
+  readonly configuredFailures: number;
+  readonly status: number;
+  readonly timeoutMilliseconds?: number;
+}
+
+export interface QaAssetFaultInjector {
+  readonly plan: QaAssetFaultPlan;
+  readonly fetcher: AssetFetcher;
+  remainingFailures(): number;
+}
+
+function clampedInteger(
+  value: string | null,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+): number {
+  const parsed = value === null ? Number.NaN : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(maximum, Math.max(minimum, Math.floor(parsed)));
+}
+
+/**
+ * Deterministic, QA-only failure injection for browser recovery tests.
+ *
+ * Example:
+ *   ?qa=1&asset-fault=http&asset-fault-count=3
+ *
+ * Three failures exhaust the production retry policy. Because the injector is
+ * retained across scene revisions, pressing "原地重试" then succeeds instead
+ * of injecting the same failure forever.
+ */
+export function createQaAssetFaultInjector(
+  search: string,
+  delegate: AssetFetcher = (input, init) => globalThis.fetch(input, init),
+): QaAssetFaultInjector {
+  const parameters = new URLSearchParams(search);
+  const requestedMode = parameters.get("asset-fault");
+  const mode: QaAssetFaultMode | null = requestedMode === "http"
+    || requestedMode === "offline"
+    || requestedMode === "timeout"
+    ? requestedMode
+    : null;
+  const enabled = parameters.has("qa") && mode !== null;
+  const configuredFailures = enabled
+    ? clampedInteger(parameters.get("asset-fault-count"), 3, 1, 12)
+    : 0;
+  const match = parameters.get("asset-fault-match")?.trim() || "kid-bootstrap.glb";
+  const status = clampedInteger(parameters.get("asset-fault-status"), 503, 400, 599);
+  const timeoutMilliseconds = mode === "timeout"
+    ? clampedInteger(parameters.get("asset-fault-timeout-ms"), 60, 10, 2_000)
+    : undefined;
+  const plan: QaAssetFaultPlan = Object.freeze({
+    enabled,
+    mode,
+    match,
+    configuredFailures,
+    status,
+    timeoutMilliseconds,
+  });
+  let remaining = configuredFailures;
+
+  const fetcher: AssetFetcher = async (input, init) => {
+    const url = String(input);
+    if (!enabled || remaining <= 0 || !url.includes(match)) {
+      return delegate(input, init);
+    }
+    remaining -= 1;
+    if (mode === "http") return new Response(null, { status });
+    if (mode === "offline") throw new TypeError("QA injected offline asset request");
+
+    return new Promise<Response>((_resolve, reject) => {
+      const signal = init?.signal;
+      const abort = () => {
+        reject(signal?.reason ?? new DOMException("QA timeout request aborted", "AbortError"));
+      };
+      if (signal?.aborted) {
+        abort();
+        return;
+      }
+      signal?.addEventListener("abort", abort, { once: true });
+    });
+  };
+
+  return {
+    plan,
+    fetcher,
+    remainingFailures: () => remaining,
+  };
+}
+
+export function assetLoadRecoveryMessage(error: unknown, online = true): string {
+  if (!online) return "网络已断开。恢复网络后可在当前关卡原地重试。";
+  if (!(error instanceof AssetLoadError)) {
+    return "3D 场景暂时无法完成初始化，可在当前关卡原地重试。";
+  }
+  if (error.code === "ASSET_TIMEOUT") {
+    return "素材载入超时，可在当前关卡原地重试。";
+  }
+  if (error.code === "ASSET_NETWORK" || error.code === "ASSET_RESPONSE") {
+    return "素材网络传输中断，可在当前关卡原地重试。";
+  }
+  if (error.code === "ASSET_HTTP") {
+    return error.status
+      ? `素材服务暂时返回 HTTP ${error.status}，可在当前关卡原地重试。`
+      : "素材服务暂时不可用，可在当前关卡原地重试。";
+  }
+  return "素材载入已中止，可在当前关卡原地重试。";
+}
 
 export interface SceneAssetLoaderOptions {
   readonly signal?: AbortSignal;

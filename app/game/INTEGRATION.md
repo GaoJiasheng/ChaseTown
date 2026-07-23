@@ -67,6 +67,66 @@ simulation.advance(deltaSeconds, {
 - 同一稳定环境声源被连续滥用会降低置信度；视觉以及目击进柜证据始终优先。
 - 环境声源驱动的后续搜索从真实导航岔路生成 3–5 条可达假设；原有十关视觉/脚步搜索继续使用已经认证的局部搜索顺序。
 
+### 两阶段主题任务
+
+`theme-objectives.ts` 提供校园、医院、消防站、工厂四套不同动词的任务定义。每套任务都有两个可任意排序的准备目标，以及一个第二阶段出口释放目标：
+
+```ts
+import {
+  auditThemeMissionSoftlock,
+  createInitialThemeMissionState,
+  stepThemeMission,
+  themeMissionDefinition,
+} from "./game/theme-objectives.ts";
+
+const mission = themeMissionDefinition(level.campaign.theme);
+const audit = auditThemeMissionSoftlock(level, mission, objectivePlacements);
+if (!audit.passed) throw new Error(audit.failures.join("; "));
+
+let missionState = createInitialThemeMissionState(mission);
+missionState = stepThemeMission(mission, missionState, interactedObjectiveId).state;
+```
+
+- 只有 `missionState.exitUnlocked` 为 `true` 时，出口接触才能结算胜利。
+- 准备阶段的两个目标必须都能从出生点抵达，并能以两种顺序继续到最终控制器和出口；场景加载时必须执行 `auditThemeMissionSoftlock()`。
+- 所有必做目标都满足 retryable、不提前消耗唯一资源、不关闭剩余必经路线的合同。表现层可以播放失败动画，但不能制造一次性失败窗口。
+- `availableThemeObjectiveIds()` 是交互提示和目标高亮的唯一任务可用性来源；渲染层不得自行跳过前置条件。
+
+### 多藏身类型
+
+`hide-archetypes.ts` 在不改变旧关卡数据的前提下提供硬柜、软质遮挡和穿越式藏点：
+
+```ts
+import {
+  auditHideArchetypeLevelSafety,
+  queryLegalHideCandidates,
+} from "./game/hide-archetypes.ts";
+
+const audit = auditHideArchetypeLevelSafety(level);
+if (!audit.passed) throw new Error(audit.failures.join("; "));
+
+const activeSpot = simulation.getActiveHideSpotArchetype();
+const exitSelection = simulation.getHideExitSelection();
+simulation.advance(deltaSeconds, {
+  interactPressed,
+  hideExitChoice: chooseAlternate ? "alternate" : "origin",
+});
+
+const legalChecks = queryLegalHideCandidates(
+  level,
+  [],
+  publicPerceptionEvidence,
+  { maximumRouteDistance: simulation.config.searchHideRadiusCells },
+);
+```
+
+- 未配置 archetype/binding 的现有 `HideSpotDefinition` 自动解析为 `hard-locker`；不能迁移的旧关卡也可通过 `GameSimulationOptions.hideArchetypeBindings` 适配。
+- `GameSimulation` 已按 profile 驱动三类藏点的进出时长、窥视能力和交互声音；软质遮挡的 `occupiedVisualDisturbance` 已进入合法视觉采样。
+- 穿越式藏点必须提供可达的 `alternateExit`；玩家通过 `hideExitChoice` 选择，完成退出后逻辑位置才切到对应出口。
+- UI/render 通过 `getHideSpotArchetype()`、`getActiveHideSpotArchetype()` 和 `getHideExitSelection()` 读取公开 profile、出口列表与当前选择。
+- `queryLegalHideCandidates()` 的签名没有占用状态、`concealed` 或玩家位置。只有 `hide-entry-visible` 可返回 exact 检查；普通声音和最后目击只能按公开几何排序候选。
+- 三类藏点的正式动画/美术仍需分别接表现合同，禁止用同一柜体简单换色。
+
 ## 3. 快照、事件与渲染
 
 每帧按以下顺序接线：
@@ -93,8 +153,8 @@ simulation.advance(deltaSeconds, {
 
 UI 使用 `simulation.getHideInteraction()`：
 
-- `{ kind: "enter", hideSpotId }`：显示“躲进储物柜”。
-- `{ kind: "exit", hideSpotId }`：显示“离开储物柜”。
+- `{ kind: "enter", hideSpotId }`：结合 `getHideSpotArchetype()` 显示对应藏点动作。
+- `{ kind: "exit", hideSpotId }`：结合 `getHideExitSelection()` 显示可选出口。
 - `null`：隐藏交互提示。
 
 场景中的正式 `HideSpotView` 必须与 `level.hideSpots[].id` 一一对应。`approach` 是导航/规则位置，`concealed` 是柜内视觉锚点：
@@ -235,3 +295,77 @@ const nextTier = nextRenderQuality(
 ```
 
 `nextRenderQuality()` 仍兼容原三参数调用，但那种调用只能依据帧时，无法阻止“当前设备帧时暂时正常、场景复杂度已超预算”时的错误升档。每次决策最多变化一档，切档后应清空候选持续时间，避免 high/balanced/mobile 往返抖动。
+
+## 9. 认证重混与主题追捕者接线
+
+认证重混不是任意程序化关卡。每关只接受 `CERTIFIED_REMIX_SEEDS` 中三个经过可达性审计的 seed；未知 seed、跨关卡契约会直接拒绝。传入 `null` 时返回原始关卡对象，旧存档与默认玩法不受影响。
+
+```ts
+import {
+  certifiedRemixContractsForLevel,
+  remixGhostStorageKey,
+  remixRecordStorageKey,
+  remixReplayLevelId,
+  resolveCertifiedRemix,
+} from "./remix-contracts.ts";
+
+const contract = certifiedRemixContractsForLevel(level)[variantIndex];
+const remix = resolveCertifiedRemix(level, contract, rulesetLane);
+
+// 用 remix.level 创建模拟；任务表现优先读取已认证的落点组。
+const simulationLevel = remix.level;
+const mechanicPlacementGroup = remix.mechanicPlacementGroup;
+
+// 回放、幽灵和成绩使用含 seed + ruleset + mission-v1 的独立身份。
+const replayLevelId = remixReplayLevelId(contract, rulesetLane);
+const ghostKey = remixGhostStorageKey(contract, rulesetLane);
+const recordKey = remixRecordStorageKey(contract, rulesetLane);
+```
+
+- `remix.level` 是碰撞、寻路、巡逻、藏点、美术布局和任务软锁审计的共同关卡对象，不能只在 UI 上改布局编号。
+- `mechanicPlacementGroup` 是前两个认证任务锚点；其余任务锚点从同一重混关卡的环境构图计划选取，并再次执行 `auditThemeMissionSoftlock()`。
+- 每个布局固定改变可选通路、巡逻顺序、任务锚点与藏点供应，UI 必须明示布局编号和“非随机”，让玩家能够重复学习。
+- `remixReplayLevelId()` 与记录键同时包含关卡、固定 seed、规则模式和 `mission-v1`，不会覆盖原版、另一布局或 Assisted 记录。
+- 不要从 `seed` 临时随机新组合，也不要自行删改 `closedPassageCells`、`hideSupplyIds`。新增变体前必须加入固定白名单并通过 `auditCertifiedRemixContract()`。
+
+主题追捕者规则同样默认关闭；`GameSimulation` 只有收到显式
+`chaserArchetypeProfile` 才会启用，省略或传 `null` 会走原 FSM 的完全兼容路径：
+
+```ts
+import {
+  enabledChaserArchetype,
+} from "./chaser-archetypes.ts";
+import { GameSimulation } from "./simulation.ts";
+
+const profile = enabledChaserArchetype(level.theme, featureEnabled);
+const simulation = new GameSimulation({
+  level,
+  chaserArchetypeProfile: profile,
+});
+
+// 渲染层只读公开 cue / 行动，不向模拟回传玩家真值。
+const cue = simulation.getChaserArchetypeRuntime();
+```
+
+- `chaser-archetype-telegraph-started` 事件提供 `cueAnimationToken`、
+  `cueAudioToken` 和可读提示；整个 `warningSeconds`（下限 0.5 秒）内追捕者
+  停止平移。`getChaserArchetypeRuntime()` 同步提供 `cueProgress`，避免表现层
+  自己推算时序。
+- `chaser-archetype-action-started` 之后才会改变行为：
+  - 校园：公开巡逻点确实到达且为三向以上岔路时，原地依次扫过公开支路，
+    扫视完成再推进巡逻索引。
+  - 医院：仅把同一采样证据交给 `queryLegalHideCandidates()`，导航到返回的
+    `approach` 并执行普通检查；选点不读占用，检查完成后的命中结算仍复用
+    既有公平检查流程。
+  - 消防：只锁定已采样的、不精确声音点，以 `1.16x` 追踪移动形成明确的
+    听觉专长；不会用真实声源覆盖采样点，也不会把同一声音重复写入证据账本。
+  - 工厂：只从最后目击点到公开出口的合法路径选择前方节点，以 `1.08x`
+    切入；玩家改变路线即可反制。
+- `chaser-archetype-action-finished` 的 `outcome` 区分完成和被更强公开证据打断。
+  UI 不应读取未公开目标；所有合法目标已经由
+  `getChaserArchetypeRuntime().navigationTarget` 提供。
+- 接线输入严格限于已采样 `PerceptionEvidence`、公开巡逻到达、公开关卡几何
+  与 `queryLegalHideCandidates()`。玩家状态、隐藏位置、藏点占用和穿越藏点
+  出口选择不会进入主题控制器；占用只在既有检查动作完成后用于命中结算。
+- 四种规则的集成测试同时跑 30 / 60 / 120 Hz 渲染步进；决策、事件、位置和
+  查询态必须完全一致。新增规则不得以渲染帧率作为随机源或计时源。

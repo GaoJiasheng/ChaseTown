@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   createCampaignProgress,
+  getCampaignUnlockedThrough,
   getCampaignRunRecord,
   recordCampaignCompletion,
   sanitizeCampaignProgress,
@@ -21,7 +22,8 @@ test("legacy time-only progress migrates without losing precise best times", () 
     mastery: {},
     assistedBestSeconds: {},
     assistedMastery: {},
-    progressVersion: 2,
+    assistedUnlockedThrough: 1,
+    progressVersion: 3,
   });
 });
 
@@ -50,7 +52,8 @@ test("progress sanitation clamps unlocks and removes corrupt or foreign records"
     },
     assistedBestSeconds: {},
     assistedMastery: {},
-    progressVersion: 2,
+    assistedUnlockedThrough: 1,
+    progressVersion: 3,
   });
 });
 
@@ -75,6 +78,9 @@ test("Standard and assisted results retain separate best times, mastery, and unl
     2,
   );
   assert.equal(afterAssisted.unlockedThrough, 1);
+  assert.equal(afterAssisted.assistedUnlockedThrough, 2);
+  assert.equal(getCampaignUnlockedThrough(afterAssisted), 1);
+  assert.equal(getCampaignUnlockedThrough(afterAssisted, "assisted"), 2);
   assert.equal(getCampaignRunRecord(afterAssisted, "one").bestSeconds, undefined);
   assert.equal(getCampaignRunRecord(afterAssisted, "one", "assisted").bestSeconds, 22);
 
@@ -92,6 +98,7 @@ test("Standard and assisted results retain separate best times, mastery, and unl
     2,
   );
   assert.equal(afterStandard.unlockedThrough, 2);
+  assert.equal(afterStandard.assistedUnlockedThrough, 2);
   assert.equal(getCampaignRunRecord(afterStandard, "one").bestSeconds, 25);
   assert.equal(getCampaignRunRecord(afterStandard, "one", "assisted").bestSeconds, 22);
 

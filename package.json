@@ -20,6 +20,7 @@
     "art:runtime-ktx2:check": "node tools/art_pipeline/optimize_runtime_ktx2.mjs --check",
     "qa:active-mechanic": "node scripts/active-mechanic-qa.mjs",
     "qa:character-bootstrap": "node scripts/character-bootstrap-visual-qa.mjs",
+    "qa:deep-gameplay": "node scripts/deep-gameplay-visual-qa.mjs",
     "qa:locker-maze": "node scripts/locker-maze-qa.mjs",
     "qa:theme-bootstrap": "node scripts/theme-bootstrap-visual-qa.mjs",
     "test": "npm run build && node --experimental-strip-types --test tests/*.test.mjs",

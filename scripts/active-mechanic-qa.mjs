@@ -13,7 +13,10 @@ const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, mil
 
 async function connect() {
   const targets = await (await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/list`)).json();
-  const target = targets.find((entry) => entry.type === "page");
+  const target = targets.find((entry) => (
+    entry.type === "page"
+    && (entry.url === "about:blank" || entry.url.startsWith(BASE_URL))
+  )) ?? targets.find((entry) => entry.type === "page" && !entry.url.startsWith("chrome://"));
   assert.ok(target, "Chrome has no inspectable page target");
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
@@ -47,6 +50,7 @@ async function connect() {
     send("Network.enable"),
     send("Log.enable"),
     send("Emulation.setDeviceMetricsOverride", VIEWPORT),
+    send("Page.bringToFront"),
   ]);
   const evaluate = async (expression) => {
     const response = await send("Runtime.evaluate", {
@@ -62,9 +66,14 @@ async function connect() {
   };
   const waitFor = async (expression, timeout = 30_000, interval = 40) => {
     const started = Date.now();
+    let lastForegroundAt = 0;
     let last = false;
     while (Date.now() - started <= timeout) {
       try {
+        if (Date.now() - lastForegroundAt >= 750) {
+          await send("Page.bringToFront");
+          lastForegroundAt = Date.now();
+        }
         last = await evaluate(expression);
       } catch {
         last = false;
@@ -98,7 +107,10 @@ const browser = await connect();
 try {
   await browser.send("Page.navigate", { url: `${BASE_URL}?qa=active-mechanic-regression` });
   await browser.waitFor("document.readyState === 'complete'", 20_000);
-  await browser.waitFor("window.__CHASING_QA__?.getState()?.ready", 30_000);
+  await browser.waitFor(
+    "window.__CHASING_QA__?.getState()?.ready && !document.querySelector('.loading-card')",
+    60_000,
+  );
   await browser.evaluate("window.__CHASING_QA__.setUnlockedThrough(10)");
 
   const report = [];
@@ -106,8 +118,8 @@ try {
     if (levelIndex > 0) {
       await browser.evaluate(`window.__CHASING_QA__.selectLevel(${levelIndex})`);
       await browser.waitFor(
-        `window.__CHASING_QA__?.getState()?.campaign?.number === ${levelIndex + 1} && window.__CHASING_QA__?.getState()?.ready`,
-        30_000,
+        `window.__CHASING_QA__?.getState()?.campaign?.number === ${levelIndex + 1} && window.__CHASING_QA__?.getState()?.ready && !document.querySelector('.loading-card')`,
+        60_000,
       );
     }
     await browser.evaluate("window.__CHASING_QA__.start()");
@@ -125,6 +137,10 @@ try {
         chaser,
       })})`,
     );
+    // setScenario deliberately reconstructs all run state, including the
+    // mission. Clear it afterwards so this focused regression measures the
+    // reusable mechanic rather than mission interaction priority.
+    await browser.evaluate("window.__CHASING_QA__.completeMission()");
     await browser.waitFor("window.__CHASING_QA__?.getState()?.themeMechanic?.sample?.canActivate", 8_000);
     await browser.waitFor("document.querySelector('.interaction-prompt')?.textContent.includes('启动')", 5_000);
     await sleep(260);
