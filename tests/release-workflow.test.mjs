@@ -39,6 +39,9 @@ test("CI runs quality, deterministic build, tests and both audit policies", () =
   }
   assert.match(WORKFLOW, /lfs: true/u);
   assert.match(WORKFLOW, /permissions:\s*\n\s+contents: read/u);
+  assert.match(WORKFLOW, /uses: actions\/checkout@v7/u);
+  assert.match(WORKFLOW, /uses: actions\/setup-node@v6/u);
+  assert.doesNotMatch(WORKFLOW, /actions\/(?:checkout|setup-node)@v4/u);
 });
 
 test("every temporary high-severity tooling exception is justified and expires", async () => {
