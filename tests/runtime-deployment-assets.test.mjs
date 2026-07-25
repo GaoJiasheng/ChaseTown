@@ -10,6 +10,12 @@ import {
   MAX_DEPLOYED_CLIENT_BYTES,
   RUNTIME_ASSET_MANIFEST_VERSION,
 } from "../app/game/runtime-assets.ts";
+import {
+  assertFirstPlayableBudget,
+  MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES,
+  MAX_EAGER_FIRST_CAMPAIGN_TRANSFER_BYTES,
+  SERVER_RENDERED_HTML_TRANSFER_RESERVE_BYTES,
+} from "../build/release-integrity.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC = path.join(ROOT, "public");
@@ -65,8 +71,29 @@ test("built runtime manifest and deployment size match the release contract", as
     await readFile(path.join(CLIENT_OUTPUT, "runtime-asset-manifest.json"), "utf8"),
   );
   assert.equal(manifest.formatVersion, RUNTIME_ASSET_MANIFEST_VERSION);
+  assert.equal(manifest.releaseIntegrityVersion, 1);
   assert.equal(manifest.maximumClientBytes, MAX_DEPLOYED_CLIENT_BYTES);
   assert.deepEqual(manifest.firstCampaignPreloads, FIRST_CAMPAIGN_PRELOAD_ASSETS);
+  assert.equal(
+    manifest.firstPlayableBudget.maximumCriticalBytes,
+    MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES,
+  );
+  assert.equal(
+    manifest.firstPlayableBudget.maximumEagerBytes,
+    MAX_EAGER_FIRST_CAMPAIGN_TRANSFER_BYTES,
+  );
+  assert.equal(
+    manifest.firstPlayableBudget.dynamicHtmlReserveBytes,
+    SERVER_RENDERED_HTML_TRANSFER_RESERVE_BYTES,
+  );
+  assertFirstPlayableBudget(manifest.firstPlayableBudget);
+  assert.deepEqual(manifest.basisTranscoder, {
+    canonicalAssets: [
+      "/basis/basis_transcoder.js",
+      "/basis/basis_transcoder.wasm",
+    ],
+    duplicateBundlerOutputs: 0,
+  });
   assert.deepEqual(
     manifest.sourceAssetsExcludedFromDeployment,
     DEPLOYMENT_SOURCE_ASSET_EXCLUDES,
@@ -75,4 +102,61 @@ test("built runtime manifest and deployment size match the release contract", as
     await treeBytes(CLIENT_OUTPUT) <= MAX_DEPLOYED_CLIENT_BYTES,
     "dist/client exceeds the 22 MiB release budget",
   );
+});
+
+test("first-playable accounting includes every preload plus HTML, JS, CSS, WASM and models", async () => {
+  const manifest = JSON.parse(
+    await readFile(path.join(CLIENT_OUTPUT, "runtime-asset-manifest.json"), "utf8"),
+  );
+  const records = manifest.firstPlayableBudget.assets;
+  const recordByPath = new Map(records.map((asset) => [asset.path, asset]));
+  for (const preload of FIRST_CAMPAIGN_PRELOAD_ASSETS) {
+    const pathname = new URL(preload.href, "https://runtime.invalid").pathname;
+    const record = recordByPath.get(pathname);
+    assert.ok(record, `${pathname} is absent from the transfer budget`);
+    assert.equal(
+      record.rawBytes,
+      (await stat(path.join(CLIENT_OUTPUT, pathname.replace(/^\/+/u, "")))).size,
+    );
+    assert.equal(
+      record.phase,
+      preload.fetchPriority === "high" ? "critical" : "eager",
+    );
+  }
+  for (const kind of ["html", "javascript", "css", "wasm", "model"]) {
+    assert.ok(records.some((asset) => asset.kind === kind), `${kind} is unaccounted`);
+  }
+  assert.equal(
+    records.filter((asset) => asset.kind === "html").length,
+    1,
+    "the dynamic document must have one explicit transfer reserve",
+  );
+});
+
+test("the built artifact ships one canonical Basis transcoder without stale preload references", async () => {
+  const assets = await readdir(path.join(CLIENT_OUTPUT, "assets"));
+  assert.deepEqual(
+    assets.filter((filename) => /^basis_transcoder-.+\.(?:js|wasm)$/u.test(filename)),
+    [],
+  );
+  for (const basename of ["basis_transcoder.js", "basis_transcoder.wasm"]) {
+    await access(path.join(CLIENT_OUTPUT, "basis", basename));
+  }
+
+  const viteManifest = await readFile(
+    path.join(CLIENT_OUTPUT, ".vite", "manifest.json"),
+    "utf8",
+  );
+  const serverEntry = await readFile(path.join(ROOT, "dist", "server", "index.js"), "utf8");
+  assert.doesNotMatch(viteManifest, /assets\/basis_transcoder-[^"]+/u);
+  assert.doesNotMatch(
+    serverEntry.match(/globalThis\.__VINEXT_LAZY_CHUNKS__\s*=\s*\[[^;]*\]/u)?.[0] ?? "",
+    /assets\/basis_transcoder-/u,
+  );
+
+  const gameChunk = assets.find((filename) => /^chasing-game-.+\.js$/u.test(filename));
+  assert.ok(gameChunk, "the production game chunk is missing");
+  const gameSource = await readFile(path.join(CLIENT_OUTPUT, "assets", gameChunk), "utf8");
+  assert.match(gameSource, /\/basis\/basis_transcoder\.wasm/u);
+  assert.match(gameSource, /\/basis\/basis_transcoder\.js/u);
 });

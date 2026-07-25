@@ -7,6 +7,13 @@ import type {
 } from "./contracts.ts";
 import { DEFAULT_GAME_CONFIG } from "./level.ts";
 import { findPath } from "./navigation.ts";
+import {
+  auditThemeMissionSoftlock,
+  planThemeMissionPlacements,
+  themeMissionDefinition,
+  type MissionObjectivePlacement,
+  type ThemeMissionDefinition,
+} from "./theme-objectives.ts";
 
 export const MASTERY_CHALLENGE_IDS = [
   "hide-and-slip",
@@ -26,6 +33,8 @@ export type TelemetryThreat = "calm" | "caution" | "active";
 
 export const SAFE_HIDE_EXIT_SECONDS = 2.5;
 export const RUN_TELEMETRY_VERSION = 2;
+export const STANDARD_MASTERY_EXECUTION_MARGIN = 0.18;
+export const ASSISTED_MASTERY_EXECUTION_MARGIN = 0.28;
 
 export interface MasteryContext {
   readonly levelId: string;
@@ -103,6 +112,37 @@ export interface RunMasteryResult {
   /** Assisted results are valid personal records but never overwrite Standard. */
   ranked: boolean;
   challenges: readonly MasteryChallenge[];
+}
+
+export interface MasteryMissionRoute {
+  readonly definition: ThemeMissionDefinition;
+  readonly placements: readonly MissionObjectivePlacement[];
+}
+
+export interface MasteryTargetOptions {
+  readonly context?: Readonly<MasteryContext>;
+  /**
+   * Runtime-authored placements take priority (notably certified Remix
+   * variants). Campaign originals otherwise receive the deterministic route
+   * plan from theme-objectives.
+   */
+  readonly mission?: Readonly<MasteryMissionRoute> | null;
+  readonly challengeIds?: readonly MasteryChallengeId[];
+  readonly executionMarginRatio?: number;
+}
+
+export interface MasteryTargetPlan {
+  readonly targetSeconds: number;
+  readonly ruleset: RunRuleset;
+  readonly directRouteDistanceCells: number;
+  readonly missionRouteDistanceCells: number;
+  readonly missionObjectiveSeconds: number;
+  /** Time during which a mastery-required transition prevents movement. */
+  readonly challengeForcedSeconds: number;
+  readonly theoreticalMinimumSeconds: number;
+  readonly executionMarginRatio: number;
+  readonly executionMarginSeconds: number;
+  readonly mission: MasteryMissionRoute | null;
 }
 
 export interface StoredMastery {
@@ -391,14 +431,143 @@ export function applyRunTelemetryFrame(
   return next;
 }
 
-export function masteryTargetSeconds(level: LevelDefinition, config: Partial<GameConfig>): number {
-  const shortestPathCells = Math.max(1, findPath(level, level.playerStart, level.exit).length - 1);
-  const playerSpeed = config.playerSpeed ?? DEFAULT_GAME_CONFIG.playerSpeed;
-  const hideEnterSeconds = config.hideEnterSeconds ?? DEFAULT_GAME_CONFIG.hideEnterSeconds;
-  const hideExitSeconds = config.hideExitSeconds ?? DEFAULT_GAME_CONFIG.hideExitSeconds;
-  const directTravelSeconds = shortestPathCells / Math.max(0.1, playerSpeed);
-  const authoredHideBeatSeconds = hideEnterSeconds + hideExitSeconds + 5;
-  return Math.max(20, Math.round(directTravelSeconds * 1.85 + authoredHideBeatSeconds));
+function campaignThemeFor(
+  level: LevelDefinition,
+  context?: Readonly<MasteryContext>,
+): MasteryContext["theme"] | undefined {
+  if (context?.theme) return context.theme;
+  const candidate = level as LevelDefinition & {
+    readonly campaign?: { readonly theme?: unknown };
+  };
+  const theme = candidate.campaign?.theme;
+  return theme === "campus"
+    || theme === "hospital"
+    || theme === "fire-station"
+    || theme === "factory"
+    ? theme
+    : undefined;
+}
+
+function finitePositive(value: number | undefined, fallback: number): number {
+  return Number.isFinite(value) && Number(value) > 0 ? Number(value) : fallback;
+}
+
+/**
+ * Produces an auditable lower-bound plan instead of guessing from the direct
+ * exit route. Mission topology, non-movement interactions, profile-specific
+ * hide transitions, the active layout and the Standard/Assisted lane all
+ * contribute before a human execution margin is added.
+ */
+export function masteryTargetPlan(
+  level: LevelDefinition,
+  config: Partial<GameConfig>,
+  options: Readonly<MasteryTargetOptions> = {},
+): MasteryTargetPlan {
+  const directRouteDistanceCells = Math.max(
+    1,
+    findPath(level, level.playerStart, level.exit).length - 1,
+  );
+  const inferredContext: MasteryContext = {
+    levelId: level.id,
+    theme: campaignThemeFor(level, options.context),
+    ruleset: options.context?.ruleset,
+  };
+  const context = options.context ?? inferredContext;
+  const ruleset: RunRuleset = context.ruleset === "assisted" ? "assisted" : "standard";
+  const theme = campaignThemeFor(level, context);
+  let mission: MasteryMissionRoute | null = options.mission
+    ? Object.freeze({
+        definition: options.mission.definition,
+        placements: Object.freeze([...options.mission.placements]),
+      })
+    : null;
+  if (options.mission === undefined && theme) {
+    const definition = themeMissionDefinition(theme);
+    const planned = planThemeMissionPlacements(level, definition);
+    mission = Object.freeze({
+      definition,
+      placements: planned.placements,
+    });
+  }
+
+  let missionRouteDistanceCells = directRouteDistanceCells;
+  let missionObjectiveSeconds = 0;
+  if (mission) {
+    const audit = auditThemeMissionSoftlock(
+      level,
+      mission.definition,
+      mission.placements,
+    );
+    if (!audit.passed || audit.shortestOrderDistanceCells === null) {
+      throw new Error(`Mastery mission route is invalid: ${audit.failures.join("; ")}`);
+    }
+    missionRouteDistanceCells = Math.max(
+      directRouteDistanceCells,
+      audit.shortestOrderDistanceCells,
+    );
+    missionObjectiveSeconds = mission.definition.objectives.reduce(
+      (sum, objective) => sum + objective.commitmentSeconds,
+      0,
+    );
+  }
+
+  const challengeIds = options.challengeIds
+    ?? getMasteryProfile(context).challengeIds;
+  const requiredHideCount = challengeIds.includes("double-slip")
+    ? 2
+    : challengeIds.includes("hide-and-slip") ? 1 : 0;
+  const hideEnterSeconds = finitePositive(
+    config.hideEnterSeconds,
+    DEFAULT_GAME_CONFIG.hideEnterSeconds,
+  );
+  const hideExitSeconds = finitePositive(
+    config.hideExitSeconds,
+    DEFAULT_GAME_CONFIG.hideExitSeconds,
+  );
+  const challengeForcedSeconds = requiredHideCount
+    * (hideEnterSeconds + hideExitSeconds);
+  const playerSpeed = finitePositive(
+    config.playerSpeed,
+    DEFAULT_GAME_CONFIG.playerSpeed,
+  );
+  const travelSeconds = missionRouteDistanceCells / playerSpeed;
+  const theoreticalMinimumSeconds = travelSeconds
+    + missionObjectiveSeconds
+    + challengeForcedSeconds;
+  const defaultMargin = ruleset === "assisted"
+    ? ASSISTED_MASTERY_EXECUTION_MARGIN
+    : STANDARD_MASTERY_EXECUTION_MARGIN;
+  const executionMarginRatio = Number.isFinite(options.executionMarginRatio)
+    ? Math.min(0.75, Math.max(0.1, Number(options.executionMarginRatio)))
+    : defaultMargin;
+  // A fixed sub-second allowance covers input sampling and the final exit
+  // trigger without making short layouts disproportionately strict.
+  const executionMarginSeconds = theoreticalMinimumSeconds * executionMarginRatio + 1;
+  const targetSeconds = Math.max(
+    20,
+    Math.ceil(theoreticalMinimumSeconds + executionMarginSeconds),
+  );
+
+  return Object.freeze({
+    targetSeconds,
+    ruleset,
+    directRouteDistanceCells,
+    missionRouteDistanceCells,
+    missionObjectiveSeconds,
+    challengeForcedSeconds,
+    theoreticalMinimumSeconds,
+    executionMarginRatio,
+    executionMarginSeconds,
+    mission,
+  });
+}
+
+export function masteryTargetSeconds(
+  level: LevelDefinition,
+  config: Partial<GameConfig>,
+  options: Readonly<MasteryTargetOptions> = {},
+): number {
+  return masteryTargetPlan(level, config, options).targetSeconds;
 }
 
 function objectiveFor(id: MasteryChallengeId, targetSeconds: number): MasteryObjective {
@@ -460,7 +629,7 @@ export function previewRunMastery(
   context?: Readonly<MasteryContext>,
 ): RunMasteryPreview {
   const profile = getMasteryProfile(context);
-  const targetSeconds = masteryTargetSeconds(level, config);
+  const targetSeconds = masteryTargetSeconds(level, config, { context });
   const ruleset = context?.ruleset === "assisted" ? "assisted" : "standard";
   return Object.freeze({
     targetSeconds,

@@ -17,8 +17,10 @@ import { createLevel } from "../app/game/level.ts";
 import { findPath, isWalkable, pointKey } from "../app/game/navigation.ts";
 import {
   ALL_CERTIFIED_REMIX_CONTRACTS,
+  CERTIFIED_REMIX_DEPTH_CONTRACT,
   CERTIFIED_REMIX_MISSION_VERSION,
   auditCertifiedRemixContract,
+  auditCertifiedRemixContractSet,
   certifiedRemixContract,
   certifiedRemixContractsForLevel,
   remixGhostStorageKey,
@@ -43,18 +45,43 @@ test("every campaign level exposes exactly three deterministic certified seed co
     assert.equal(first.length, 3);
     assert.equal(new Set(first.map((contract) => contract.seed)).size, 3);
     assert.equal(new Set(first.map((contract) => pointKey(contract.closedPassageCells[0]))).size, 3);
-    assert.ok(new Set(first.map((contract) => contract.hideSupplyIds.join("|"))).size >= 2);
+    assert.equal(new Set(first.map((contract) => (
+      [...contract.hideSupplyIds].sort().join("|")
+    ))).size, 3);
     assert.ok(first.every((contract) => (
-      contract.hideSupplyIds.length === Math.max(1, level.hideSpots.length - 1)
-    )), "every certified layout should reduce the original hide supply");
-    assert.ok(new Set(first.map((contract) => (
+      contract.hideSupplyIds.length >= 1
+      && contract.hideSupplyIds.length <= level.hideSpots.length
+    )), "every certified layout should retain a valid authored hide supply");
+    assert.equal(new Set(first.map((contract) => (
       contract.mechanicPlacementGroup.map(pointKey).join("|")
-    ))).size >= 2);
+    ))).size, 3);
+    assert.equal(new Set(first.map((contract) => pointKey(contract.patrolGroup[0]))).size, 3);
+    const setAudit = auditCertifiedRemixContractSet(level, first);
+    assert.equal(setAudit.passed, true, setAudit.failures.join("; "));
+    assert.equal(setAudit.novelRouteCount, 3);
+    assert.equal(setAudit.distinctRouteCount, 3);
+    assert.equal(setAudit.distinctFirstEncounterCount, 3);
+    assert.equal(setAudit.distinctMissionPlacementCount, 3);
+    assert.equal(setAudit.distinctHideSupplyCount, 3);
     for (const contract of first) {
+      const audit = auditCertifiedRemixContract(level, contract);
       assert.equal(Object.isFrozen(contract), true);
       assert.equal(contract.levelId, level.id);
       assert.equal(certifiedRemixContract(level.id, contract.seed), contract);
-      assert.equal(auditCertifiedRemixContract(level, contract).passed, true);
+      assert.equal(audit.passed, true, audit.failures.join("; "));
+      assert.ok(
+        audit.toggledPassageCount >= CERTIFIED_REMIX_DEPTH_CONTRACT.minimumToggledPassages
+        && audit.toggledPassageCount <= CERTIFIED_REMIX_DEPTH_CONTRACT.maximumToggledPassages,
+      );
+      assert.ok(
+        audit.sourceRouteEdgeOverlap
+        <= CERTIFIED_REMIX_DEPTH_CONTRACT.maximumSourceRouteEdgeOverlap,
+        `${contract.id} retained ${(audit.sourceRouteEdgeOverlap * 100).toFixed(1)}% of the source route`,
+      );
+      assert.ok(
+        audit.routeLengthRatio >= CERTIFIED_REMIX_DEPTH_CONTRACT.minimumRouteLengthRatio
+        && audit.routeLengthRatio <= CERTIFIED_REMIX_DEPTH_CONTRACT.maximumRouteLengthRatio,
+      );
       assert.equal(allIds.has(contract.id), false);
       assert.equal(allLevelSeeds.has(`${contract.levelId}:${contract.seed}`), false);
       allIds.add(contract.id);
@@ -119,6 +146,41 @@ test("all thirty certified layouts keep the runtime mission placement chain soft
   }
 });
 
+test("remix depth audits reject cosmetic toggles and duplicated variant identities", () => {
+  const sourceLevel = CAMPAIGN_LEVELS[0];
+  const [first, second, third] = certifiedRemixContractsForLevel(sourceLevel);
+  const oneToggle = {
+    ...first,
+    openPassageCells: [],
+  };
+  const oneToggleAudit = auditCertifiedRemixContract(sourceLevel, oneToggle);
+  assert.equal(oneToggleAudit.passed, false);
+  assert.ok(oneToggleAudit.failures.some((failure) => failure.includes("Topology must toggle")));
+
+  const alreadyOpen = {
+    ...first,
+    openPassageCells: [sourceLevel.playerStart],
+  };
+  const alreadyOpenAudit = auditCertifiedRemixContract(sourceLevel, alreadyOpen);
+  assert.equal(alreadyOpenAudit.passed, false);
+  assert.ok(alreadyOpenAudit.failures.some((failure) => failure.includes("already open")));
+
+  const duplicatedSetAudit = auditCertifiedRemixContractSet(
+    sourceLevel,
+    [first, first, second],
+  );
+  assert.equal(duplicatedSetAudit.passed, false);
+  assert.ok(duplicatedSetAudit.failures.some((failure) => (
+    failure.includes("reuse") || failure.includes("not distinct")
+  )));
+
+  const validSetAudit = auditCertifiedRemixContractSet(
+    sourceLevel,
+    [first, second, third],
+  );
+  assert.equal(validSetAudit.passed, true);
+});
+
 test("arbitrary seeds and cross-level contracts are rejected", () => {
   const firstLevel = CAMPAIGN_LEVELS[0];
   const secondLevel = CAMPAIGN_LEVELS[1];
@@ -131,6 +193,7 @@ test("arbitrary seeds and cross-level contracts are rejected", () => {
 });
 
 test("record, ghost, replay level, seed, and ruleset identities cannot collide", () => {
+  assert.equal(CERTIFIED_REMIX_MISSION_VERSION, "mission-v2");
   const keys = new Set();
   for (const contract of ALL_CERTIFIED_REMIX_CONTRACTS) {
     for (const lane of ["standard", "assisted"]) {
@@ -155,6 +218,12 @@ test("record, ghost, replay level, seed, and ruleset identities cannot collide",
 
   const [first, second] = certifiedRemixContractsForLevel(CAMPAIGN_LEVELS[0]);
   const replayId = remixReplayLevelId(first, "standard");
+  const legacyReplayId = remixReplayLevelId(first, "standard", "mission-v1");
+  assert.notEqual(
+    legacyReplayId,
+    replayId,
+    "mission-v1 ghosts must not race against the v2 objective rules",
+  );
   const recorder = new GhostInputRecorder(replayId, 1 / 60);
   recorder.record(0, { move: { x: 1, y: 0 } });
   const recording = recorder.finish(30);
@@ -164,6 +233,19 @@ test("record, ghost, replay level, seed, and ruleset identities cannot collide",
     parseGhostRecording(serialized, new Set([remixReplayLevelId(second, "standard")])),
     null,
     "ghost from one certified seed loaded into another",
+  );
+
+  const legacyRecorder = new GhostInputRecorder(legacyReplayId, 1 / 60);
+  legacyRecorder.record(0, { move: { x: 0, y: 1 } });
+  const legacySerialized = serializeGhostRecording(legacyRecorder.finish(30));
+  assert.ok(
+    parseGhostRecording(legacySerialized, new Set([legacyReplayId])),
+    "legacy mission-v1 payloads must remain readable for migration tooling",
+  );
+  assert.equal(
+    parseGhostRecording(legacySerialized, new Set([replayId])),
+    null,
+    "legacy mission-v1 payload leaked into the v2 replay lane",
   );
   assert.throws(
     () => remixRunIdentity(first, "standard", "unversioned-mission"),

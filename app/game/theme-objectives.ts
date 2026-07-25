@@ -1,6 +1,11 @@
 import type { CampaignTheme } from "./campaign.ts";
 import type { LevelDefinition, Point } from "./contracts.ts";
-import { findPath, isWalkable } from "./navigation.ts";
+import {
+  findPath,
+  isWalkable,
+  neighbors,
+  pointKey,
+} from "./navigation.ts";
 
 export type ThemeObjectiveStage = "preparation" | "escape-unlock" | "complete";
 
@@ -38,6 +43,12 @@ export interface ThemeObjectiveDefinition {
   readonly label: string;
   readonly interactionPrompt: string;
   readonly completionHint: string;
+  /**
+   * Authored, non-movement commitment used by the mission clock and mastery
+   * lower-bound solver. The interaction may be interrupted and retried, but a
+   * successful completion must spend at least this long at the control.
+   */
+  readonly commitmentSeconds: number;
   readonly prerequisites: readonly string[];
   readonly unlocksExit: boolean;
   readonly safety: ObjectiveSoftlockSafety;
@@ -96,18 +107,55 @@ export interface MissionOrderAudit {
   readonly objectiveIds: readonly string[];
   readonly reachable: boolean;
   readonly failedLeg: string | null;
+  /** Exact navigable cell distance for this legal order, including the exit. */
+  readonly routeDistanceCells: number | null;
 }
 
 export interface MissionSoftlockAudit {
   readonly passed: boolean;
   readonly failures: readonly string[];
   readonly orders: readonly MissionOrderAudit[];
+  readonly directRouteDistanceCells: number;
+  readonly shortestOrderDistanceCells: number | null;
+  readonly longestOrderDistanceCells: number | null;
+  readonly shortestDetourRatio: number | null;
+  readonly orderImbalanceRatio: number | null;
+}
+
+export interface ThemeMissionPlacementOptions {
+  /** Shortest legal preparation order relative to the direct spawn→exit path. */
+  readonly minimumDetourRatio?: number;
+  /** Prevents objectives from turning a chapter into accidental backtracking. */
+  readonly maximumDetourRatio?: number;
+  /** Difference between the two legal orders, relative to the shorter order. */
+  readonly maximumOrderImbalanceRatio?: number;
+}
+
+export interface ThemeMissionPlacementPlan {
+  readonly placements: readonly MissionObjectivePlacement[];
+  readonly audit: MissionSoftlockAudit;
+  readonly targetDetourRatio: number;
 }
 
 const SOFTLOCK_SAFE: ObjectiveSoftlockSafety = Object.freeze({
   retryable: true,
   consumesRequiredResource: false,
   closesRequiredRoute: false,
+});
+
+const OBJECTIVE_COMMITMENT_SECONDS: Readonly<Record<ThemeObjectiveVerb, number>> = Object.freeze({
+  "restore-bell-power": 0.9,
+  "authorize-campus-gate": 1.1,
+  "release-campus-gate": 1,
+  "engage-backup-generator": 1.2,
+  "equalize-isolation-pressure": 1.1,
+  "release-isolation-lock": 0.9,
+  "prime-smoke-extractor": 1.15,
+  "release-hydraulic-brake": 0.95,
+  "raise-apparatus-shutter": 1.25,
+  "bleed-steam-pressure": 1.2,
+  "reset-safety-interlock": 1,
+  "release-line-gate": 1.15,
 });
 
 const objective = (
@@ -128,6 +176,7 @@ const objective = (
   label,
   interactionPrompt,
   completionHint,
+  commitmentSeconds: OBJECTIVE_COMMITMENT_SECONDS[verb],
   prerequisites: Object.freeze([...prerequisites]),
   unlocksExit,
   safety: SOFTLOCK_SAFE,
@@ -326,6 +375,11 @@ export function validateThemeMissionDefinition(definition: ThemeMissionDefinitio
     if (item.theme !== definition.theme) throw new Error(`Objective ${item.id} has the wrong theme`);
     if (byId.has(item.id)) throw new Error(`Duplicate objective id: ${item.id}`);
     if (
+      !Number.isFinite(item.commitmentSeconds)
+      || item.commitmentSeconds < 0.4
+      || item.commitmentSeconds > 2.5
+    ) throw new Error(`Objective ${item.id} has an invalid commitment time`);
+    if (
       item.safety.retryable !== true
       || item.safety.consumesRequiredResource !== false
       || item.safety.closesRequiredRoute !== false
@@ -487,29 +541,320 @@ export function auditThemeMissionSoftlock(
     const objectiveIds = [...preparationOrder, definition.exitObjectiveId];
     let from = level.playerStart;
     let failedLeg: string | null = null;
+    let routeDistanceCells = 0;
     for (const objectiveId of objectiveIds) {
       const to = placementById.get(objectiveId);
-      if (!to || findPath(level, from, to).length === 0) {
+      const route = to ? findPath(level, from, to) : [];
+      if (!to || route.length === 0) {
         failedLeg = `${from.x},${from.y}->${objectiveId}`;
         break;
       }
+      routeDistanceCells += Math.max(0, route.length - 1);
       from = to;
     }
-    if (!failedLeg && findPath(level, from, level.exit).length === 0) {
-      failedLeg = `${definition.exitObjectiveId}->exit`;
+    if (!failedLeg) {
+      const exitRoute = findPath(level, from, level.exit);
+      if (exitRoute.length === 0) {
+        failedLeg = `${definition.exitObjectiveId}->exit`;
+      } else {
+        routeDistanceCells += Math.max(0, exitRoute.length - 1);
+      }
     }
     return Object.freeze({
       objectiveIds: Object.freeze(objectiveIds),
       reachable: failedLeg === null,
       failedLeg,
+      routeDistanceCells: failedLeg === null ? routeDistanceCells : null,
     });
   });
   for (const order of orders) {
     if (!order.reachable) failures.push(`Unreachable legal order: ${order.objectiveIds.join(" > ")} (${order.failedLeg})`);
   }
+  const directRouteDistanceCells = Math.max(
+    0,
+    findPath(level, level.playerStart, level.exit).length - 1,
+  );
+  const legalDistances = orders
+    .map((order) => order.routeDistanceCells)
+    .filter((distance): distance is number => distance !== null);
+  const shortestOrderDistanceCells = legalDistances.length > 0
+    ? Math.min(...legalDistances)
+    : null;
+  const longestOrderDistanceCells = legalDistances.length > 0
+    ? Math.max(...legalDistances)
+    : null;
+  const shortestDetourRatio = shortestOrderDistanceCells !== null
+    && directRouteDistanceCells > 0
+    ? shortestOrderDistanceCells / directRouteDistanceCells
+    : null;
+  const orderImbalanceRatio = shortestOrderDistanceCells !== null
+    && longestOrderDistanceCells !== null
+    && shortestOrderDistanceCells > 0
+    ? (longestOrderDistanceCells - shortestOrderDistanceCells) / shortestOrderDistanceCells
+    : null;
   return Object.freeze({
     passed: failures.length === 0,
     failures: Object.freeze(failures),
     orders: Object.freeze(orders),
+    directRouteDistanceCells,
+    shortestOrderDistanceCells,
+    longestOrderDistanceCells,
+    shortestDetourRatio,
+    orderImbalanceRatio,
   });
+}
+
+const finiteOr = (value: number | undefined, fallback: number) => (
+  Number.isFinite(value) ? Number(value) : fallback
+);
+
+const defaultPlacementPlanCache = new WeakMap<
+  LevelDefinition,
+  Map<string, ThemeMissionPlacementPlan>
+>();
+
+function campaignDifficulty(level: LevelDefinition): number {
+  const candidate = level as LevelDefinition & {
+    readonly campaign?: { readonly difficulty?: unknown };
+  };
+  const difficulty = Number(candidate.campaign?.difficulty);
+  return Number.isFinite(difficulty)
+    ? Math.min(5, Math.max(1, difficulty))
+    : 3;
+}
+
+/**
+ * Selects objective anchors from the existing navigation graph; it never
+ * opens/closes a passage or moves a gameplay anchor. The two preparation
+ * controls deliberately sit on different route branches, while the final
+ * control remains in the exit approach. This turns the mission into a real
+ * routing choice without risking a ten-level layout rewrite.
+ */
+export function planThemeMissionPlacements(
+  level: LevelDefinition,
+  definition: ThemeMissionDefinition,
+  options: Readonly<ThemeMissionPlacementOptions> = {},
+): ThemeMissionPlacementPlan {
+  validateThemeMissionDefinition(definition);
+  const preparationObjectives = definition.objectives
+    .filter((item) => item.stage === "preparation");
+  if (preparationObjectives.length !== 2) {
+    throw new Error("Theme mission placement currently requires exactly two preparation objectives");
+  }
+  const cacheable = Object.isFrozen(level) && Object.keys(options).length === 0;
+  const cached = cacheable
+    ? defaultPlacementPlanCache.get(level)?.get(definition.id)
+    : undefined;
+  if (cached) return cached;
+  const directRoute = findPath(level, level.playerStart, level.exit);
+  const directDistance = directRoute.length - 1;
+  if (directDistance <= 0) throw new Error(`${level.id} has no navigable mission route`);
+
+  const difficulty = campaignDifficulty(level);
+  const minimumDetourRatio = Math.max(
+    1,
+    finiteOr(options.minimumDetourRatio, 1.12 + difficulty * 0.03),
+  );
+  const maximumDetourRatio = Math.max(
+    minimumDetourRatio,
+    finiteOr(options.maximumDetourRatio, 1.85),
+  );
+  const maximumOrderImbalanceRatio = Math.max(
+    0,
+    finiteOr(options.maximumOrderImbalanceRatio, 0.32),
+  );
+  const targetDetourRatio = Math.min(
+    maximumDetourRatio,
+    minimumDetourRatio + 0.12,
+  );
+
+  const walkable: Point[] = [];
+  for (let y = 0; y < level.height; y += 1) {
+    for (let x = 0; x < level.width; x += 1) {
+      const point = { x, y };
+      if (isWalkable(level, point)) walkable.push(point);
+    }
+  }
+  const routeDistanceMaps = new Map<string, Int32Array>();
+  const distanceMapFor = (origin: Point) => {
+    const originKey = pointKey(origin);
+    const cached = routeDistanceMaps.get(originKey);
+    if (cached) return cached;
+    const size = level.width * level.height;
+    const distances = new Int32Array(size);
+    distances.fill(-1);
+    const queue = new Int32Array(size);
+    const start = { x: Math.round(origin.x), y: Math.round(origin.y) };
+    const startIndex = start.y * level.width + start.x;
+    let head = 0;
+    let tail = 0;
+    if (isWalkable(level, start)) {
+      distances[startIndex] = 0;
+      queue[tail++] = startIndex;
+    }
+    while (head < tail) {
+      const currentIndex = queue[head++];
+      const current = {
+        x: currentIndex % level.width,
+        y: Math.floor(currentIndex / level.width),
+      };
+      for (const next of neighbors(level, current)) {
+        const nextIndex = next.y * level.width + next.x;
+        if (distances[nextIndex] >= 0) continue;
+        distances[nextIndex] = distances[currentIndex] + 1;
+        queue[tail++] = nextIndex;
+      }
+    }
+    routeDistanceMaps.set(originKey, distances);
+    return distances;
+  };
+  const routeDistance = (from: Point, to: Point) => {
+    const targetX = Math.round(to.x);
+    const targetY = Math.round(to.y);
+    if (
+      targetX < 0
+      || targetY < 0
+      || targetX >= level.width
+      || targetY >= level.height
+    ) return Number.POSITIVE_INFINITY;
+    const distance = distanceMapFor(from)[targetY * level.width + targetX];
+    return distance >= 0 ? distance : Number.POSITIVE_INFINITY;
+  };
+  const startDistance = new Map(walkable.map((point) => [pointKey(point), routeDistance(level.playerStart, point)]));
+  const exitDistance = new Map(walkable.map((point) => [pointKey(point), routeDistance(point, level.exit)]));
+  const minimumAnchorClearance = Math.max(2, Math.floor(directDistance * 0.06));
+
+  const preparationCandidates = walkable.filter((point) => {
+    const fromStart = startDistance.get(pointKey(point)) ?? Number.POSITIVE_INFINITY;
+    const toExit = exitDistance.get(pointKey(point)) ?? Number.POSITIVE_INFINITY;
+    return Number.isFinite(fromStart)
+      && fromStart >= minimumAnchorClearance
+      && toExit >= minimumAnchorClearance
+      && pointKey(point) !== pointKey(level.chaserStart);
+  });
+  const finalCandidates = walkable
+    .filter((point) => {
+      const fromStart = startDistance.get(pointKey(point)) ?? 0;
+      const toExit = exitDistance.get(pointKey(point)) ?? Number.POSITIVE_INFINITY;
+      return fromStart >= directDistance * 0.58
+        && toExit >= 2
+        && toExit <= Math.max(4, directDistance * 0.24);
+    })
+    .sort((left, right) => {
+      const leftDistance = exitDistance.get(pointKey(left)) ?? 0;
+      const rightDistance = exitDistance.get(pointKey(right)) ?? 0;
+      const target = directDistance * 0.14;
+      return Math.abs(leftDistance - target) - Math.abs(rightDistance - target)
+        || neighbors(level, right).length - neighbors(level, left).length
+        || pointKey(left).localeCompare(pointKey(right));
+    })
+    .slice(0, 18);
+
+  if (preparationCandidates.length < 2 || finalCandidates.length === 0) {
+    throw new Error(`${level.id} has too few safe mission anchors`);
+  }
+
+  let selected: {
+    readonly first: Point;
+    readonly second: Point;
+    readonly final: Point;
+    readonly score: number;
+  } | null = null;
+  const minimumPreparationSeparation = Math.max(4, directDistance * 0.12);
+
+  for (const final of finalCandidates) {
+    const finalToExit = routeDistance(final, level.exit);
+    for (let firstIndex = 0; firstIndex < preparationCandidates.length; firstIndex += 1) {
+      const first = preparationCandidates[firstIndex];
+      if (pointKey(first) === pointKey(final)) continue;
+      for (let secondIndex = firstIndex + 1; secondIndex < preparationCandidates.length; secondIndex += 1) {
+        const second = preparationCandidates[secondIndex];
+        if (
+          pointKey(second) === pointKey(final)
+          || routeDistance(first, second) < minimumPreparationSeparation
+        ) continue;
+        const forward = routeDistance(level.playerStart, first)
+          + routeDistance(first, second)
+          + routeDistance(second, final)
+          + finalToExit;
+        const reverse = routeDistance(level.playerStart, second)
+          + routeDistance(second, first)
+          + routeDistance(first, final)
+          + finalToExit;
+        if (!Number.isFinite(forward) || !Number.isFinite(reverse)) continue;
+        const shorter = Math.min(forward, reverse);
+        const longer = Math.max(forward, reverse);
+        const detourRatio = shorter / directDistance;
+        const imbalanceRatio = (longer - shorter) / Math.max(1, shorter);
+        const detourPenalty = Math.abs(detourRatio - targetDetourRatio);
+        const lowerBoundPenalty = detourRatio < minimumDetourRatio
+          ? (minimumDetourRatio - detourRatio) * 12
+          : 0;
+        const upperBoundPenalty = detourRatio > maximumDetourRatio
+          ? (detourRatio - maximumDetourRatio) * 8
+          : 0;
+        const imbalancePenalty = imbalanceRatio > maximumOrderImbalanceRatio
+          ? (imbalanceRatio - maximumOrderImbalanceRatio) * 10
+          : imbalanceRatio * 0.25;
+        const branchReward = (
+          Math.min(
+            routeDistance(level.playerStart, first) + routeDistance(first, level.exit) - directDistance,
+            directDistance * 0.4,
+          )
+          + Math.min(
+            routeDistance(level.playerStart, second) + routeDistance(second, level.exit) - directDistance,
+            directDistance * 0.4,
+          )
+        ) / Math.max(1, directDistance) * 0.08;
+        const score = lowerBoundPenalty
+          + upperBoundPenalty
+          + detourPenalty
+          + imbalancePenalty
+          - branchReward;
+        if (
+          !selected
+          || score < selected.score - 1e-9
+          || (
+            Math.abs(score - selected.score) <= 1e-9
+            && `${pointKey(first)}|${pointKey(second)}|${pointKey(final)}`
+              < `${pointKey(selected.first)}|${pointKey(selected.second)}|${pointKey(selected.final)}`
+          )
+        ) {
+          selected = { first, second, final, score };
+        }
+      }
+    }
+  }
+  if (!selected) throw new Error(`${level.id} has no valid optional-order mission placement`);
+
+  const placements = Object.freeze([
+    Object.freeze({ objectiveId: preparationObjectives[0].id, position: Object.freeze({ ...selected.first }) }),
+    Object.freeze({ objectiveId: preparationObjectives[1].id, position: Object.freeze({ ...selected.second }) }),
+    Object.freeze({ objectiveId: definition.exitObjectiveId, position: Object.freeze({ ...selected.final }) }),
+  ]);
+  const audit = auditThemeMissionSoftlock(level, definition, placements);
+  if (
+    !audit.passed
+    || audit.shortestDetourRatio === null
+    || audit.shortestDetourRatio + 1e-9 < minimumDetourRatio
+    || audit.shortestDetourRatio - 1e-9 > maximumDetourRatio
+    || audit.orderImbalanceRatio === null
+    || audit.orderImbalanceRatio - 1e-9 > maximumOrderImbalanceRatio
+  ) {
+    throw new Error(
+      `${level.id} mission placement missed route contract `
+      + `(detour=${audit.shortestDetourRatio?.toFixed(3)}, imbalance=${audit.orderImbalanceRatio?.toFixed(3)})`,
+    );
+  }
+  const plan = Object.freeze({
+    placements,
+    audit,
+    targetDetourRatio,
+  });
+  if (cacheable) {
+    const byDefinition = defaultPlacementPlanCache.get(level) ?? new Map();
+    byDefinition.set(definition.id, plan);
+    defaultPlacementPlanCache.set(level, byDefinition);
+  }
+  return plan;
 }

@@ -15,6 +15,8 @@ import { GameSimulation } from "../app/game/simulation.ts";
 import {
   createMechanicInstance,
   createThemeMechanicDefinition,
+  mechanicActivationNoiseStimulus,
+  mechanicRequiresMovementCommitment,
   sampleMechanicInstance,
   sampleThemeMechanic,
   stepMechanicInstance,
@@ -131,6 +133,34 @@ test("placed theme mechanic warns, applies cost, emits once, falls off spatially
 
   // Legacy automatic windows remain deterministic for existing callers.
   assert.deepEqual(sampleThemeMechanic("campus", 5), sampleThemeMechanic("campus", 27));
+});
+
+test("mechanic activation costs have a real commitment or an immediate public sound", () => {
+  const campus = createThemeMechanicDefinition("campus", "bell-cost", { x: 3, y: 4 });
+  const campusWarning = stepMechanicInstance(createMechanicInstance(campus), {
+    activationRequested: true,
+    actorPosition: { x: 3, y: 4 },
+    deltaSeconds: 0,
+    nowSeconds: 0,
+  }).instance;
+  const campusNoise = mechanicActivationNoiseStimulus(campus);
+  assert.equal(mechanicRequiresMovementCommitment(campusWarning), false);
+  assert.equal(campusNoise?.sourceType, "player-movement");
+  assert.deepEqual(campusNoise?.position, campus.position);
+  assert.ok((campusNoise?.confidence ?? 0) >= 0.82);
+
+  for (const theme of ["hospital", "fire-station"]) {
+    const definition = createThemeMechanicDefinition(theme, `${theme}-cost`, { x: 3, y: 4 });
+    const warning = stepMechanicInstance(createMechanicInstance(definition), {
+      activationRequested: true,
+      actorPosition: { x: 3, y: 4 },
+      deltaSeconds: 0,
+      nowSeconds: 0,
+    }).instance;
+    assert.equal(mechanicRequiresMovementCommitment(warning), true);
+    assert.equal(mechanicActivationNoiseStimulus(definition), null);
+    assert.match(definition.warningHint, /保持位置/);
+  }
 });
 
 test("same public evidence produces exactly the same decision and a decoy creates a legal detour", () => {

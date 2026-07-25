@@ -18,6 +18,7 @@ import {
   gameplayCameraInsetsForViewport,
   lockerObservationExposureMultiplier,
   lockerVisionMix,
+  minimumActorScreenHeightPixelsForViewport,
   maximumCameraDistanceForActorReadability,
   projectPointToFixedCameraNdc,
   projectedActorScreenHeightPixels,
@@ -246,6 +247,14 @@ test("portrait baseline keeps actors readable without weakening safe framing", (
   assert.equal(baseCameraDistanceForAspect(Number.NaN), 14.8);
 });
 
+test("screen-space character readability is stricter on touch layouts", () => {
+  assert.equal(minimumActorScreenHeightPixelsForViewport(800, true), 64);
+  assert.equal(minimumActorScreenHeightPixelsForViewport(800, false), 48);
+  assert.equal(minimumActorScreenHeightPixelsForViewport(390, true), 42);
+  assert.equal(minimumActorScreenHeightPixelsForViewport(2000, true), 68);
+  assert.equal(minimumActorScreenHeightPixelsForViewport(Number.NaN, false), 34);
+});
+
 test("mobile UI insets produce a bounded asymmetric camera-safe viewport", () => {
   const insets = gameplayCameraInsetsForViewport(390, 746, true);
   assert.ok(insets.top >= 70);
@@ -430,7 +439,7 @@ test("outer-lane traversal receives a restrained projection-safe inward composit
   };
   const edge = { x: -22, y: 0.92, z: 12 };
   const landscape = cameraFocusForTraversalEdge({ ...common, focus: edge, aspect: 16 / 9 });
-  assert.ok(landscape.x > edge.x + 3.9 && landscape.x <= edge.x + 4 + 1e-9);
+  assert.ok(landscape.x > edge.x + 5.1 && landscape.x <= edge.x + 5.2 + 1e-9);
   assert.equal(landscape.y, edge.y);
   assert.equal(landscape.z, edge.z);
 

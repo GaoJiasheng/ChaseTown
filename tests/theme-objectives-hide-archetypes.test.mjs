@@ -12,9 +12,13 @@ import {
 } from "../app/game/hide-archetypes.ts";
 import { createLevel } from "../app/game/level.ts";
 import {
+  CAMPAIGN_LEVELS,
+} from "../app/game/campaign.ts";
+import {
   auditThemeMissionSoftlock,
   availableThemeObjectiveIds,
   createInitialThemeMissionState,
+  planThemeMissionPlacements,
   stepThemeMission,
   THEME_MISSION_DEFINITIONS,
   validateThemeMissionDefinition,
@@ -77,6 +81,7 @@ test("four themes expose distinct two-stage objective verbs under the softlock-s
         closesRequiredRoute: false,
       });
       assert.ok(item.label && item.interactionPrompt && item.completionHint);
+      assert.ok(item.commitmentSeconds >= 0.4 && item.commitmentSeconds <= 2.5);
       allVerbs.push(item.verb);
     }
   }
@@ -134,6 +139,32 @@ test("mission placement audit proves every legal order reaches the final control
   const failed = auditThemeMissionSoftlock(blockedLevel, definition, placements);
   assert.equal(failed.passed, false);
   assert.ok(failed.failures.some((failure) => failure.includes("not on a walkable cell")));
+});
+
+test("campaign mission planner creates a real, fair detour without changing maze topology", () => {
+  for (const level of CAMPAIGN_LEVELS) {
+    const originalWalkable = level.walkable.map((row) => [...row]);
+    const definition = THEME_MISSION_DEFINITIONS[level.campaign.theme];
+    const plan = planThemeMissionPlacements(level, definition);
+    const minimumDetour = 1.12 + level.campaign.difficulty * 0.03;
+
+    assert.equal(plan.audit.passed, true, level.id);
+    assert.equal(plan.audit.orders.length, 2, level.id);
+    assert.ok(
+      plan.audit.shortestDetourRatio >= minimumDetour - 1e-9,
+      `${level.id} did not create a meaningful mission detour`,
+    );
+    assert.ok(
+      plan.audit.shortestDetourRatio <= 1.85 + 1e-9,
+      `${level.id} created excessive backtracking`,
+    );
+    assert.ok(
+      plan.audit.orderImbalanceRatio <= 0.32 + 1e-9,
+      `${level.id} made one preparation order a trap choice`,
+    );
+    assert.deepEqual(level.walkable, originalWalkable, `${level.id} topology was mutated`);
+    assert.equal(new Set(plan.placements.map(({ position }) => `${position.x},${position.y}`)).size, 3);
+  }
 });
 
 test("mission definitions reject one-shot resources, route-closing objectives, and cycles", () => {

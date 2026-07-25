@@ -312,20 +312,20 @@ import {
 const contract = certifiedRemixContractsForLevel(level)[variantIndex];
 const remix = resolveCertifiedRemix(level, contract, rulesetLane);
 
-// 用 remix.level 创建模拟；任务表现优先读取已认证的落点组。
+// 用 remix.level 创建模拟；任务落点由当前拓扑的可达性规划器生成。
 const simulationLevel = remix.level;
 const mechanicPlacementGroup = remix.mechanicPlacementGroup;
 
-// 回放、幽灵和成绩使用含 seed + ruleset + mission-v1 的独立身份。
+// 回放、幽灵和成绩使用含 seed + ruleset + mission-v2 的独立身份。
 const replayLevelId = remixReplayLevelId(contract, rulesetLane);
 const ghostKey = remixGhostStorageKey(contract, rulesetLane);
 const recordKey = remixRecordStorageKey(contract, rulesetLane);
 ```
 
 - `remix.level` 是碰撞、寻路、巡逻、藏点、美术布局和任务软锁审计的共同关卡对象，不能只在 UI 上改布局编号。
-- `mechanicPlacementGroup` 是前两个认证任务锚点；其余任务锚点从同一重混关卡的环境构图计划选取，并再次执行 `auditThemeMissionSoftlock()`。
+- `mechanicPlacementGroup` 继续承载认证变体的机关布置差异；任务锚点由 `planThemeMissionPlacements()` 针对同一重混拓扑生成，并再次执行 `auditThemeMissionSoftlock()`。
 - 每个布局固定改变可选通路、巡逻顺序、任务锚点与藏点供应，UI 必须明示布局编号和“非随机”，让玩家能够重复学习。
-- `remixReplayLevelId()` 与记录键同时包含关卡、固定 seed、规则模式和 `mission-v1`，不会覆盖原版、另一布局或 Assisted 记录。
+- `remixReplayLevelId()` 与记录键同时包含关卡、固定 seed、规则模式和 `mission-v2`，不会覆盖原版、另一布局、旧任务规则或 Assisted 记录。
 - 不要从 `seed` 临时随机新组合，也不要自行删改 `closedPassageCells`、`hideSupplyIds`。新增变体前必须加入固定白名单并通过 `auditCertifiedRemixContract()`。
 
 主题追捕者规则同样默认关闭；`GameSimulation` 只有收到显式

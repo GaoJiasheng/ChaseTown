@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+  SERVER_RENDERED_HTML_TRANSFER_RESERVE_BYTES,
+} from "../build/release-integrity.ts";
+
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
@@ -14,8 +18,17 @@ test("renders the Chasing game shell", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   const html = await response.text();
+  assert.ok(
+    Buffer.byteLength(html) <= SERVER_RENDERED_HTML_TRANSFER_RESERVE_BYTES,
+    "server-rendered HTML exceeds the release manifest's transfer reserve",
+  );
   assert.match(html, /<title>Chasing · 3D 主题逃生战役<\/title>/i);
   assert.match(html, /10 关电影化 3D 潜逃战役/);
+  assert.match(html, /chasing-social-card-v2\.jpg/);
+  assert.match(
+    html,
+    /玩家穿过精细建模的校园迷宫，利用打开的储物柜避开正在搜索的追捕者/,
+  );
   assert.match(html, /3D 追逐模式/);
   assert.match(html, /正在载入项目美术资产/);
   assert.match(html, /WASD/);

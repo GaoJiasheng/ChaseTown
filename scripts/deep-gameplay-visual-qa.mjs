@@ -21,6 +21,12 @@ const MOBILE = Object.freeze({
   deviceScaleFactor: 1,
   mobile: true,
 });
+const MOBILE_COMPACT = Object.freeze({
+  width: 360,
+  height: 800,
+  deviceScaleFactor: 1,
+  mobile: true,
+});
 const REPRESENTATIVE_LEVELS = Object.freeze([
   { index: 0, theme: "campus" },
   { index: 3, theme: "hospital" },
@@ -365,6 +371,50 @@ async function resumeIfPaused(browser) {
   );
 }
 
+async function auditHideTreatment(browser, archetype) {
+  const treatment = await browser.evaluate(`(() => {
+    const playfield = document.querySelector('.playfield');
+    const vignette = document.querySelector('.cinematic-vignette');
+    if (!(playfield instanceof HTMLElement) || !(vignette instanceof HTMLElement)) return null;
+    const playfieldStyle = getComputedStyle(playfield);
+    const before = getComputedStyle(vignette, '::before');
+    const after = getComputedStyle(vignette, '::after');
+    const number = (value) => Number.parseFloat(value) || 0;
+    return {
+      classes: [...playfield.classList],
+      cover: number(playfieldStyle.getPropertyValue('--locker-cover')),
+      peek: number(playfieldStyle.getPropertyValue('--locker-peek')),
+      hardCover: number(playfieldStyle.getPropertyValue('--hard-locker-cover')),
+      hardPeek: number(playfieldStyle.getPropertyValue('--hard-locker-peek')),
+      beforeOpacity: number(before.opacity),
+      afterOpacity: number(after.opacity),
+      beforeBackground: before.backgroundImage,
+    };
+  })()`);
+  assert.ok(treatment, `${archetype} has no computed hide treatment`);
+  assert.ok(
+    treatment.classes.includes(`hide-${archetype}`),
+    `${archetype} playfield class is missing: ${treatment.classes.join(" ")}`,
+  );
+  if (archetype === "hard-locker") {
+    assert.ok(
+      treatment.hardCover >= 0.5 && treatment.beforeOpacity >= 0.5,
+      `hard locker is missing its authored door mask: ${JSON.stringify(treatment)}`,
+    );
+  } else {
+    assert.ok(
+      treatment.hardCover <= 0.01 && treatment.hardPeek <= 0.01,
+      `${archetype} leaked hard-locker occlusion: ${JSON.stringify(treatment)}`,
+    );
+    const maximumCoverOpacity = archetype === "soft-cover" ? 0.45 : 0.55;
+    assert.ok(
+      treatment.beforeOpacity <= maximumCoverOpacity,
+      `${archetype} cover is too opaque: ${JSON.stringify(treatment)}`,
+    );
+  }
+  return treatment;
+}
+
 async function exerciseHardLocker(browser, viewport, screenshotEvidence) {
   const opening = await selectReadyLevel(browser, 0, null);
   const hardSpot = opening.campaign.hideSpots.find(
@@ -407,6 +457,7 @@ async function exerciseHardLocker(browser, viewport, screenshotEvidence) {
   const hidden = await browser.evaluate("window.__CHASING_QA__.getState()");
   assert.equal(hidden.interaction?.kind, "exit", "hard locker cannot be exited");
   assert.equal(hidden.visibility.kid.rootVisible, false, "hard locker must fully conceal the player");
+  const hiddenTreatment = await auditHideTreatment(browser, "hard-locker");
   const hiddenFile = path.join(OUTPUT, "desktop-level-01-hard-locker-hidden.png");
   screenshotEvidence.push({
     file: path.basename(hiddenFile),
@@ -457,6 +508,7 @@ async function exerciseHardLocker(browser, viewport, screenshotEvidence) {
     modes: ["entering-hide", "hidden", "peeking", "hidden", "exiting-hide", "free"],
     finalPosition: exited.game.player.position,
     approach: hardSpot.approach,
+    hiddenTreatment,
     passed: true,
   };
 }
@@ -528,6 +580,7 @@ async function exerciseAlternativeHide(
       "soft cover should visibly attenuate, not erase, the player",
     );
   }
+  const hiddenTreatment = await auditHideTreatment(browser, archetype);
 
   const hiddenFile = path.join(
     OUTPUT,
@@ -596,6 +649,7 @@ async function exerciseAlternativeHide(
     selectedExit,
     expectedExit,
     finalPosition: exited.game.player.position,
+    hiddenTreatment,
     passed: true,
   };
 }
@@ -641,32 +695,154 @@ async function completeMissionInOrder(browser, viewport, screenshotEvidence) {
 
 async function auditMobileLayout(browser, stage) {
   const audit = await browser.evaluate(`(() => {
+    const viewport = {
+      left: 0,
+      top: 0,
+      right: innerWidth,
+      bottom: innerHeight,
+      width: innerWidth,
+      height: innerHeight,
+    };
+    const intersection = (first, second) => {
+      const left = Math.max(first.left, second.left);
+      const top = Math.max(first.top, second.top);
+      const right = Math.min(first.right, second.right);
+      const bottom = Math.min(first.bottom, second.bottom);
+      const width = Math.max(0, right - left);
+      const height = Math.max(0, bottom - top);
+      return { left, top, right, bottom, width, height, area: width * height };
+    };
+    const clippedRect = (element) => {
+      let visible = intersection(element.getBoundingClientRect(), viewport);
+      let ancestor = element.parentElement;
+      while (ancestor && visible.area > 0 && ancestor !== document.body) {
+        const style = getComputedStyle(ancestor);
+        if (['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowX)
+          || ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowY)) {
+          visible = intersection(visible, ancestor.getBoundingClientRect());
+        }
+        ancestor = ancestor.parentElement;
+      }
+      return visible;
+    };
     const isVisible = (element) => {
       if (!(element instanceof HTMLElement)) return false;
       const style = getComputedStyle(element);
       const rect = element.getBoundingClientRect();
+      const visible = clippedRect(element);
       return style.display !== 'none'
         && style.visibility !== 'hidden'
         && Number(style.opacity) > 0
         && rect.width > 0
-        && rect.height > 0;
+        && rect.height > 0
+        && visible.width > 0
+        && visible.height > 0;
     };
     const targets = [...document.querySelectorAll('button, .virtual-stick')]
       .filter(isVisible)
       .map((element) => {
         const rect = element.getBoundingClientRect();
+        const visible = clippedRect(element);
         return {
           label: element.getAttribute('aria-label')
             || element.textContent?.replace(/\\s+/g, ' ').trim().slice(0, 80)
             || element.className,
           width: rect.width,
           height: rect.height,
+          visibleWidth: visible.width,
+          visibleHeight: visible.height,
+          viewportCoverage: visible.area / Math.max(1, rect.width * rect.height),
         };
       });
-    const playfield = document.querySelector('.playfield')?.getBoundingClientRect();
+    const playfieldElement = document.querySelector('.playfield');
+    const playfield = playfieldElement?.getBoundingClientRect();
     const canvas = document.querySelector('.playfield canvas')?.getBoundingClientRect();
+    const readyOverlay = document.querySelector('.overlay.ready');
+    const readyCtaElement = readyOverlay?.querySelector('.overlay-actions .primary');
+    const readyCta = readyCtaElement instanceof HTMLElement
+      ? (() => {
+        const rect = readyCtaElement.getBoundingClientRect();
+        const visible = clippedRect(readyCtaElement);
+        const hit = document.elementFromPoint(
+          Math.min(innerWidth - 1, Math.max(0, rect.left + rect.width / 2)),
+          Math.min(innerHeight - 1, Math.max(0, rect.top + rect.height / 2)),
+        );
+        return {
+          top: rect.top,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+          visibleWidth: visible.width,
+          visibleHeight: visible.height,
+          viewportCoverage: visible.area / Math.max(1, rect.width * rect.height),
+          hitTestable: Boolean(hit && readyCtaElement.contains(hit)),
+        };
+      })()
+      : null;
+
+    const hudSelector = [
+      '.awareness',
+      '.mission-status',
+      '.ghost-race',
+      '.theme-mechanic',
+      '.hide-guide',
+      '.objective-route-guide',
+      '.hide-edge-marker',
+      '.interaction-prompt',
+      '.hide-exit-selector',
+      '.view-controls',
+    ].join(',');
+    const hudElements = [...document.querySelectorAll(hudSelector)].filter(isVisible);
+    const playfieldVisible = playfield ? intersection(playfield, viewport) : null;
+    const hudRects = playfieldVisible
+      ? hudElements.map((element) => {
+        const overlap = intersection(clippedRect(element), playfieldVisible);
+        return {
+          label: element.getAttribute('aria-label')
+            || element.className,
+          area: overlap.area,
+        };
+      }).filter((entry) => entry.area > 0)
+      : [];
+    const hudCoverageRatio = playfieldVisible
+      ? hudRects.reduce((total, entry) => total + entry.area, 0)
+        / Math.max(1, playfieldVisible.area)
+      : 0;
+
+    const qaState = window.__CHASING_QA__?.getState();
+    const playerViewport = qaState?.game?.phase === 'playing'
+      && qaState?.visibility?.kid?.rootVisible
+      ? qaState.visibility.kid.viewport
+      : null;
+    const playerCore = playfieldVisible && playerViewport?.centerInFrustum
+      ? (() => {
+        const centerX = playfield.left + playerViewport.x * playfield.width;
+        const centerY = playfield.top + playerViewport.y * playfield.height;
+        const core = intersection({
+          left: centerX - Math.min(52, playfield.width * .14),
+          right: centerX + Math.min(52, playfield.width * .14),
+          top: centerY - Math.min(78, playfield.height * .11),
+          bottom: centerY + Math.min(58, playfield.height * .085),
+        }, playfieldVisible);
+        const occluders = hudElements.map((element) => {
+          const overlap = intersection(clippedRect(element), core);
+          return {
+            label: element.getAttribute('aria-label') || element.className,
+            overlapArea: overlap.area,
+          };
+        }).filter((entry) => entry.overlapArea > 0);
+        return {
+          area: core.area,
+          occlusionRatio: occluders.reduce((total, entry) => total + entry.overlapArea, 0)
+            / Math.max(1, core.area),
+          occluders,
+        };
+      })()
+      : null;
+
     return {
       innerWidth,
+      innerHeight,
       scrollWidth: document.documentElement.scrollWidth,
       bodyScrollWidth: document.body.scrollWidth,
       playfield: playfield
@@ -680,6 +856,12 @@ async function auditMobileLayout(browser, stage) {
       // target as 43.996px. Keep a half-pixel tolerance while still catching
       // materially undersized controls (the former Pause button was 36px).
       undersized: targets.filter((target) => target.width < 43.5 || target.height < 43.5),
+      readyOverlayPresent: Boolean(readyOverlay),
+      readyCta,
+      readyOverlayScrollTop: readyOverlay?.querySelector('.overlay-card')?.scrollTop ?? null,
+      hudRects,
+      hudCoverageRatio,
+      playerCore,
       loadingVisible: Boolean(document.querySelector('.loading-card, .loading-shell')),
     };
   })()`);
@@ -703,6 +885,38 @@ async function auditMobileLayout(browser, stage) {
     [],
     `${stage} has touch targets smaller than 44x44`,
   );
+  if (audit.readyOverlayPresent) {
+    assert.ok(audit.readyCta, `${stage} ready overlay has no primary CTA`);
+  }
+  if (audit.readyCta) {
+    assert.ok(
+      audit.readyCta.viewportCoverage >= 0.99,
+      `${stage} primary CTA is not fully visible without scrolling`,
+    );
+    assert.ok(
+      audit.readyCta.visibleWidth >= 43.5 && audit.readyCta.visibleHeight >= 43.5,
+      `${stage} primary CTA is smaller than the 44px touch contract`,
+    );
+    assert.equal(audit.readyCta.hitTestable, true, `${stage} primary CTA is visually covered`);
+    assert.ok(
+      audit.readyCta.top >= -0.5 && audit.readyCta.bottom <= audit.innerHeight + 0.5,
+      `${stage} primary CTA falls outside the viewport`,
+    );
+    assert.ok(
+      audit.readyOverlayScrollTop <= 0.5,
+      `${stage} primary CTA only became visible after scrolling`,
+    );
+  }
+  assert.ok(
+    audit.hudCoverageRatio <= 0.18,
+    `${stage} HUD covers ${(audit.hudCoverageRatio * 100).toFixed(1)}% of the playfield`,
+  );
+  if (audit.playerCore) {
+    assert.ok(
+      audit.playerCore.occlusionRatio <= 0.12,
+      `${stage} labels cover ${(audit.playerCore.occlusionRatio * 100).toFixed(1)}% of the player core: ${JSON.stringify(audit.playerCore.occluders)}`,
+    );
+  }
   assert.equal(audit.loadingVisible, false);
   return audit;
 }
@@ -832,6 +1046,15 @@ try {
   );
   const mission = await completeMissionInOrder(browser, DESKTOP, screenshotEvidence);
 
+  await navigateFresh(browser, MOBILE_COMPACT, "mobile-compact");
+  const mobileCompactReadyAudit = await auditMobileLayout(browser, "mobile-compact-ready");
+  const mobileCompactReadyFile = path.join(OUTPUT, "mobile-compact-level-01-ready.png");
+  screenshotEvidence.push({
+    file: path.basename(mobileCompactReadyFile),
+    bytes: await browser.screenshot(mobileCompactReadyFile, MOBILE_COMPACT),
+    stage: "mobile-compact-ready",
+  });
+
   await navigateFresh(browser, MOBILE, "mobile");
   const mobileReadyAudit = await auditMobileLayout(browser, "mobile-ready");
   const mobileReadyFile = path.join(OUTPUT, "mobile-level-01-ready.png");
@@ -920,6 +1143,7 @@ try {
     viewports: {
       desktop: DESKTOP,
       mobile: MOBILE,
+      mobileCompact: MOBILE_COMPACT,
     },
     readyLayouts: {
       original: {
@@ -958,6 +1182,7 @@ try {
       )),
     },
     mobile: {
+      compactReady: mobileCompactReadyAudit,
       ready: mobileReadyAudit,
       playing: mobilePlayingAudit,
       hidden: mobileHiddenAudit,

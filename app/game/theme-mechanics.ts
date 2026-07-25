@@ -120,6 +120,33 @@ export interface MechanicInstanceStep {
   readonly emittedSoundStimulus: SoundStimulus | null;
 }
 
+/**
+ * Time and exposure costs are physical commitments: the player must finish
+ * the authored warning/operation beat before moving again. Noise costs remain
+ * mobile but immediately publish a legal sound stimulus.
+ */
+export function mechanicRequiresMovementCommitment(
+  instance: Pick<MechanicInstance, "phase" | "definition">,
+): boolean {
+  return instance.phase === "warning"
+    && ["time", "exposure"].includes(instance.definition.activationCost.kind);
+}
+
+export function mechanicActivationNoiseStimulus(
+  definition: Pick<MechanicInstanceDefinition, "id" | "position" | "activationCost">,
+): SoundStimulus | null {
+  if (definition.activationCost.kind !== "noise") return null;
+  const amount = clamp01(definition.activationCost.amount);
+  return Object.freeze({
+    position: Object.freeze({ ...definition.position }),
+    strength: 0.48 + amount * 0.44,
+    sourceType: "player-movement",
+    sourceId: `${definition.id}:operator`,
+    confidence: 0.82 + amount * 0.16,
+    decayPerSecond: 0.2,
+  });
+}
+
 const profile = (value: ThemeMechanicProfile) => Object.freeze(value);
 
 export const THEME_MECHANIC_PROFILES: Readonly<Record<CampaignTheme, ThemeMechanicProfile>> = Object.freeze({
@@ -423,6 +450,7 @@ export function createThemeMechanicDefinition(
   overrides: Partial<MechanicInstanceDefinition> = {},
 ): MechanicInstanceDefinition {
   const selected = themeMechanicProfile(theme);
+  const activationCost = DEFAULT_INSTANCE_COSTS[theme];
   const base: MechanicInstanceDefinition = {
     id,
     theme,
@@ -434,7 +462,11 @@ export function createThemeMechanicDefinition(
     effectRadius: theme === "factory" ? 8 : 6,
     cooldownSeconds: Math.max(6, selected.cycleSeconds - selected.activeDurationSeconds),
     label: selected.label,
-    warningHint: `${selected.label}即将启动，离开操作点`,
+    warningHint: activationCost.kind === "noise"
+      ? `${selected.label}启动声已暴露控制点，立即转移`
+      : activationCost.kind === "exposure"
+        ? `正在操作${selected.label}，完成前保持位置`
+        : `${selected.label}正在预热，完成前保持位置`,
     activeHint: selected.hudHint,
     maximumSoundMasking: selected.maximumSoundMasking,
     minimumVisionRangeMultiplier: selected.minimumVisionRangeMultiplier,
@@ -445,7 +477,7 @@ export function createThemeMechanicDefinition(
       confidence: theme === "hospital" ? 0.62 : 0.78,
       decayPerSecond: 0.12,
     },
-    activationCost: DEFAULT_INSTANCE_COSTS[theme],
+    activationCost,
   };
   return {
     ...base,

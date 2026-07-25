@@ -600,6 +600,25 @@ export function baseCameraDistanceForAspect(aspect: number): number {
 }
 
 /**
+ * Character readability is a screen-space contract, not merely a frustum
+ * test. Portrait play needs a slightly larger silhouette because the player
+ * competes with touch controls and stacked status cards.
+ */
+export function minimumActorScreenHeightPixelsForViewport(
+  viewportHeightPixels: number,
+  coarsePointer: boolean,
+): number {
+  const height = Number.isFinite(viewportHeightPixels)
+    ? Math.max(1, viewportHeightPixels)
+    : 1;
+  const ratio = coarsePointer ? 0.08 : 0.06;
+  return Math.min(
+    coarsePointer ? 68 : 58,
+    Math.max(coarsePointer ? 42 : 34, height * ratio),
+  );
+}
+
+/**
  * Preserve the player's wide exploration view, then move in only for authored
  * character performances that would otherwise be unreadable at maze scale.
  * Threat framing can still push the camera back when both actors must fit.
@@ -757,8 +776,8 @@ export function cameraFocusForTraversalEdge(
   return cameraFocusForEdgeHide({
     ...request,
     mode: "hidden",
-    edgeInset: request.edgeInset ?? 6.4,
-    maximumShift: request.maximumShift ?? 4,
+    edgeInset: request.edgeInset ?? 7.4,
+    maximumShift: request.maximumShift ?? 5.2,
     safeHorizontalNdc: request.safeHorizontalNdc ?? 0.44,
     safeVerticalNdc: request.safeVerticalNdc ?? 0.34,
   });
@@ -779,17 +798,17 @@ export function actorReadabilityRimStrength(
   rendered = true,
 ): number {
   if (!rendered) return 0;
-  if (role === "player") return 0.28;
-  if (role === "ally") return 0.24;
+  if (role === "player") return 0.36;
+  if (role === "ally") return 0.28;
   switch (chaserMode) {
-    case "chase": return 0.68;
+    case "chase": return 0.74;
     case "suspicious":
     case "lost-sight":
-    case "go-to-last-known": return 0.5;
+    case "go-to-last-known": return 0.56;
     case "scan-last-known":
     case "search":
-    case "check-hide": return 0.42;
-    case "patrol": return 0.34;
+    case "check-hide": return 0.46;
+    case "patrol": return 0.38;
     case "spawn-delay": return 0.22;
   }
 }

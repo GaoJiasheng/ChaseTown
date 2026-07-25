@@ -1,0 +1,55 @@
+{
+  "formatVersion": 1,
+  "exceptions": [
+    {
+      "package": "@cloudflare/vite-plugin",
+      "expiresOn": "2026-09-01",
+      "reason": "Build-only Cloudflare adapter; upgrade with wrangler/miniflare after a compatibility build and deployment smoke test."
+    },
+    {
+      "package": "brace-expansion",
+      "expiresOn": "2026-09-01",
+      "reason": "Build/test glob parser only; no untrusted pattern input reaches it in the production worker."
+    },
+    {
+      "package": "fast-uri",
+      "expiresOn": "2026-09-01",
+      "reason": "Schema-validation tooling dependency; production requests do not pass attacker-controlled URI values to this package."
+    },
+    {
+      "package": "js-yaml",
+      "expiresOn": "2026-09-01",
+      "reason": "Lint/build configuration parser only; CI processes repository-owned YAML and no runtime user input."
+    },
+    {
+      "package": "miniflare",
+      "expiresOn": "2026-09-01",
+      "reason": "Local Cloudflare emulator only; coordinated adapter upgrade is required before changing its pinned dependency graph."
+    },
+    {
+      "package": "react-server-dom-webpack",
+      "expiresOn": "2026-09-01",
+      "reason": "Vinext build bridge only; upgrade must remain protocol-matched with React and React DOM and is scheduled as one patch set."
+    },
+    {
+      "package": "undici",
+      "expiresOn": "2026-09-01",
+      "reason": "Transitive local-emulator transport; production runtime dependency audit is clean and the Cloudflare stack owns the upgrade."
+    },
+    {
+      "package": "vite",
+      "expiresOn": "2026-09-01",
+      "reason": "Build/dev server only; production serves compiled artifacts and the next minor requires vinext/RSC compatibility verification."
+    },
+    {
+      "package": "wrangler",
+      "expiresOn": "2026-09-01",
+      "reason": "Deployment and local-emulation CLI only; update together with the Cloudflare Vite adapter after release smoke testing."
+    },
+    {
+      "package": "ws",
+      "expiresOn": "2026-09-01",
+      "reason": "Transitive development WebSocket dependency; the shipped game worker does not expose this development server."
+    }
+  ]
+}

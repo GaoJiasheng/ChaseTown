@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { CAMPAIGN_LEVELS, getCampaignGameplayConfig } from "../app/game/campaign.ts";
+import { assistedGameplayConfig } from "../app/game/gameplay-preferences.ts";
 import {
   applyRunEvents,
   applyRunTelemetryFrame,
@@ -9,12 +10,18 @@ import {
   evaluateRunMastery,
   getMasteryProfile,
   LEGACY_MASTERY_PROFILE,
+  masteryTargetPlan,
   masteryTargetSeconds,
   mergeStoredMastery,
   personalBestDelta,
   previewRunMastery,
   SAFE_HIDE_EXIT_SECONDS,
 } from "../app/game/mastery.ts";
+import {
+  certifiedRemixContractsForLevel,
+  remixReplayLevelId,
+  resolveCertifiedRemix,
+} from "../app/game/remix-contracts.ts";
 
 test("telemetry counts authored stealth beats without double-counting lost-sight recovery", () => {
   const telemetry = applyRunEvents(createRunTelemetry(), [
@@ -135,11 +142,127 @@ test("causal telemetry rejects decorative searches and credits deployed decoys/m
 });
 
 test("every campaign level receives a finite, achievable-looking mastery target", () => {
-  const targets = CAMPAIGN_LEVELS.map((level) => (
-    masteryTargetSeconds(level, getCampaignGameplayConfig(level))
+  const plans = CAMPAIGN_LEVELS.map((level) => (
+    masteryTargetPlan(level, getCampaignGameplayConfig(level))
   ));
+  const targets = plans.map(({ targetSeconds }) => targetSeconds);
   assert.ok(targets.every((seconds) => Number.isInteger(seconds) && seconds >= 20 && seconds <= 90));
   assert.ok(new Set(targets).size >= 5, "authored maze lengths should not collapse to one target");
+  for (const [index, plan] of plans.entries()) {
+    assert.ok(
+      plan.missionRouteDistanceCells > plan.directRouteDistanceCells,
+      `${CAMPAIGN_LEVELS[index].id} ignored mandatory mission routing`,
+    );
+    assert.ok(
+      plan.targetSeconds >= Math.ceil(plan.theoreticalMinimumSeconds + plan.executionMarginSeconds),
+      `${CAMPAIGN_LEVELS[index].id} target undercut its proven lower bound`,
+    );
+    assert.ok(plan.executionMarginRatio >= 0.18);
+  }
+});
+
+test("mastery lower bound includes profile-forced hide time and gives Assisted a wider lane", () => {
+  const level = CAMPAIGN_LEVELS.find(({ id }) => id === "fire-station-training-tower");
+  assert.ok(level);
+  const config = getCampaignGameplayConfig(level);
+  const standard = masteryTargetPlan(level, config, {
+    context: {
+      levelId: level.id,
+      theme: level.campaign.theme,
+      ruleset: "standard",
+    },
+  });
+  const assisted = masteryTargetPlan(level, config, {
+    context: {
+      levelId: level.id,
+      theme: level.campaign.theme,
+      ruleset: "assisted",
+    },
+  });
+
+  assert.ok(standard.challengeForcedSeconds >= 7, "double-slip transitions were omitted");
+  assert.ok(standard.missionObjectiveSeconds >= 3, "mission commitments were omitted");
+  assert.ok(standard.targetSeconds > standard.theoreticalMinimumSeconds);
+  assert.ok(assisted.targetSeconds > standard.targetSeconds);
+  assert.equal(assisted.ruleset, "assisted");
+});
+
+test("all thirty certified layouts keep feasible Standard and Assisted mastery clocks", () => {
+  let difficultRemix = null;
+  for (const source of CAMPAIGN_LEVELS) {
+    for (const contract of certifiedRemixContractsForLevel(source)) {
+      const remixed = resolveCertifiedRemix(source, contract, "standard").level;
+      const baseConfig = getCampaignGameplayConfig(source);
+      const plans = ["standard", "assisted"].map((ruleset) => masteryTargetPlan(
+        remixed,
+        ruleset === "assisted" ? assistedGameplayConfig(baseConfig) : baseConfig,
+        {
+          context: {
+            levelId: source.id,
+            theme: source.campaign.theme,
+            ruleset,
+          },
+        },
+      ));
+      for (const plan of plans) {
+        assert.ok(
+          plan.targetSeconds >= Math.ceil(
+            plan.theoreticalMinimumSeconds + plan.executionMarginSeconds,
+          ),
+          `${contract.id}/${plan.ruleset} has an impossible clock`,
+        );
+        assert.ok(plan.missionRouteDistanceCells >= plan.directRouteDistanceCells);
+      }
+      assert.ok(
+        plans[1].targetSeconds >= plans[0].targetSeconds,
+        `${contract.id} made Assisted timing stricter`,
+      );
+      if (
+        source.id === "fire-station-training-tower"
+        && contract.variantIndex === 2
+      ) difficultRemix = plans[0];
+    }
+  }
+  assert.ok(difficultRemix);
+  assert.ok(difficultRemix.targetSeconds >= 42);
+  assert.ok(difficultRemix.targetSeconds > difficultRemix.theoreticalMinimumSeconds);
+});
+
+test("certified Remix storage identity never changes its authored mastery profile", () => {
+  for (const source of CAMPAIGN_LEVELS) {
+    for (const contract of certifiedRemixContractsForLevel(source)) {
+      const remixed = resolveCertifiedRemix(source, contract, "standard").level;
+      const context = {
+        levelId: source.id,
+        theme: source.campaign.theme,
+        ruleset: "standard",
+      };
+      const preview = previewRunMastery(
+        remixed,
+        getCampaignGameplayConfig(source),
+        context,
+      );
+      const result = evaluateRunMastery(
+        preview.targetSeconds + 1,
+        preview.targetSeconds,
+        createRunTelemetry(context),
+      );
+      assert.equal(result.profileId, preview.profileId, contract.id);
+      assert.deepEqual(
+        result.challenges.map(({ id }) => id),
+        preview.objectives.map(({ id }) => id),
+        `${contract.id} preview/result challenges diverged`,
+      );
+
+      const recordIdentity = remixReplayLevelId(contract, "standard");
+      assert.notEqual(recordIdentity, context.levelId);
+      assert.equal(
+        getMasteryProfile(context).id,
+        `level:${source.id}:v2`,
+        `${contract.id} stopped using its source chapter mastery`,
+      );
+    }
+  }
 });
 
 test("run evaluation awards readable bronze, silver and gold mastery", () => {

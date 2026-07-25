@@ -20,12 +20,30 @@ export type GhostKeyframe = readonly [
   flags: number,
 ];
 
+export type GhostRuleReplayEvent =
+  | {
+      readonly tick: number;
+      readonly type: "objective-completed" | "exit-unlocked";
+      readonly objectiveId: string;
+    }
+  | {
+      readonly tick: number;
+      readonly type: "mechanic-committed";
+      readonly mechanicId: string;
+    }
+  | {
+      readonly tick: number;
+      readonly type: "run-completed";
+    };
+
 export interface GhostReplayPayload {
   readonly version: typeof GHOST_REPLAY_VERSION;
   readonly levelId: string;
   readonly fixedStepSeconds: number;
   readonly durationTicks: number;
   readonly keyframes: readonly GhostKeyframe[];
+  /** Optional mission-faithful sidecar; legacy v1 recordings omit it. */
+  readonly ruleEvents?: readonly GhostRuleReplayEvent[];
 }
 
 export interface GhostRecording extends GhostReplayPayload {
@@ -105,6 +123,9 @@ function payloadFrom(recording: Readonly<GhostReplayPayload>): GhostReplayPayloa
     fixedStepSeconds: recording.fixedStepSeconds,
     durationTicks: recording.durationTicks,
     keyframes: recording.keyframes,
+    ...(recording.ruleEvents?.length
+      ? { ruleEvents: recording.ruleEvents }
+      : {}),
   };
 }
 
@@ -128,6 +149,39 @@ function validKeyframe(value: unknown, previousTick: number, durationTicks: numb
     && Number.isInteger(flags)
     && flags >= 0
     && flags <= (HELD_FLAGS | FLAG_INTERACT);
+}
+
+function validRuleReplayEvent(
+  value: unknown,
+  previousTick: number,
+  durationTicks: number,
+): value is GhostRuleReplayEvent {
+  if (!value || typeof value !== "object") return false;
+  const event = value as Partial<GhostRuleReplayEvent> & {
+    readonly objectiveId?: unknown;
+    readonly mechanicId?: unknown;
+  };
+  if (
+    !Number.isInteger(event.tick)
+    || Number(event.tick) < previousTick
+    || Number(event.tick) < 0
+    || Number(event.tick) > durationTicks
+  ) return false;
+  switch (event.type) {
+    case "objective-completed":
+    case "exit-unlocked":
+      return typeof event.objectiveId === "string"
+        && event.objectiveId.length > 0
+        && event.objectiveId.length <= 120;
+    case "mechanic-committed":
+      return typeof event.mechanicId === "string"
+        && event.mechanicId.length > 0
+        && event.mechanicId.length <= 120;
+    case "run-completed":
+      return true;
+    default:
+      return false;
+  }
 }
 
 function validatePayload(value: unknown): GhostReplayPayload | null {
@@ -156,12 +210,27 @@ function validatePayload(value: unknown): GhostReplayPayload | null {
     previousTick = frame[0];
   }
   if (candidate.keyframes[0][0] !== 0) return null;
+  const rawRuleEvents = (value as { ruleEvents?: unknown }).ruleEvents;
+  if (
+    rawRuleEvents !== undefined
+    && (!Array.isArray(rawRuleEvents) || rawRuleEvents.length > 96)
+  ) return null;
+  let previousRuleTick = -1;
+  const ruleEvents: GhostRuleReplayEvent[] = [];
+  for (const event of rawRuleEvents ?? []) {
+    if (!validRuleReplayEvent(event, previousRuleTick, Number(candidate.durationTicks))) {
+      return null;
+    }
+    previousRuleTick = Number(event.tick);
+    ruleEvents.push(Object.freeze({ ...event }) as GhostRuleReplayEvent);
+  }
   return {
     version: GHOST_REPLAY_VERSION,
     levelId: candidate.levelId,
     fixedStepSeconds: candidate.fixedStepSeconds,
     durationTicks: Number(candidate.durationTicks),
     keyframes: candidate.keyframes.map((frame) => Object.freeze([...frame]) as GhostKeyframe),
+    ...(ruleEvents.length ? { ruleEvents: Object.freeze(ruleEvents) } : {}),
   };
 }
 
@@ -171,6 +240,7 @@ export class GhostInputRecorder {
   readonly maximumBytes: number;
 
   private readonly frames: GhostKeyframe[] = [];
+  private readonly ruleEvents: GhostRuleReplayEvent[] = [];
   private lastTick = -1;
   private lastMoveX = 0;
   private lastMoveY = 0;
@@ -201,6 +271,27 @@ export class GhostInputRecorder {
 
   get overflowed(): boolean {
     return this.exceededBudget;
+  }
+
+  recordRuleEvent(event: Readonly<GhostRuleReplayEvent>): boolean {
+    if (
+      this.exceededBudget
+      || !validRuleReplayEvent(
+        event,
+        this.ruleEvents.at(-1)?.tick ?? -1,
+        Number.MAX_SAFE_INTEGER,
+      )
+    ) return false;
+    const previous = this.ruleEvents.at(-1);
+    const duplicate = previous
+      && JSON.stringify(previous) === JSON.stringify(event);
+    if (duplicate) return true;
+    this.ruleEvents.push(Object.freeze({ ...event }) as GhostRuleReplayEvent);
+    if (this.frames.length * 28 + this.ruleEvents.length * 96 > this.maximumBytes) {
+      this.exceededBudget = true;
+      return false;
+    }
+    return true;
   }
 
   record(tick: number, input: Readonly<SimulationInput>): boolean {
@@ -242,6 +333,7 @@ export class GhostInputRecorder {
       this.exceededBudget
       || !Number.isInteger(durationTicks)
       || durationTicks < Math.max(0, this.lastTick)
+      || this.ruleEvents.some((event) => event.tick > durationTicks)
     ) {
       return null;
     }
@@ -254,6 +346,9 @@ export class GhostInputRecorder {
       fixedStepSeconds: this.fixedStepSeconds,
       durationTicks,
       keyframes: Object.freeze([...this.frames]),
+      ...(this.ruleEvents.length
+        ? { ruleEvents: Object.freeze([...this.ruleEvents]) }
+        : {}),
     };
     const recording: GhostRecording = Object.freeze({
       ...payload,
