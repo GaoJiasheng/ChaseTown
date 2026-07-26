@@ -313,19 +313,26 @@ try {
     }
     const lockerEntries = Object.entries(opening.lockers);
     assert.equal(lockerEntries.length, opening.campaign.hideSpots.length, `${opening.campaign.id} locker count drifted`);
-    const visibleEntry = lockerEntries.find(([, locker]) => (
-      locker.archetype === "hard-locker" && locker.beaconVisible
-    )) ?? lockerEntries.find(([, locker]) => locker.archetype === "hard-locker");
-    assert.ok(visibleEntry, `${opening.campaign.id} has no locker presentation`);
-    const [lockerId, visibleLocker] = visibleEntry;
-    assert.equal(visibleLocker.beaconVisible, true, `${opening.campaign.id} has no active in-world hide marker`);
+    const activeMarkerEntry = lockerEntries.find(([, locker]) => locker.beaconVisible);
+    assert.ok(activeMarkerEntry, `${opening.campaign.id} has no active in-world hide marker`);
+    const [, activeMarkerLocker] = activeMarkerEntry;
     const guide = await browser.evaluate("Boolean(document.querySelector('.hide-guide, .interaction-prompt'))");
     assert.equal(guide, true, `${opening.campaign.id} has no discoverability UI`);
     const edgeGuideVisible = await browser.evaluate("Boolean(document.querySelector('.hide-edge-marker'))");
-    assert.equal(visibleLocker.beaconViewport.centerInFrustum || edgeGuideVisible, true, `${opening.campaign.id} marker is offscreen without a direction guide`);
+    assert.equal(
+      activeMarkerLocker.beaconViewport.centerInFrustum || edgeGuideVisible,
+      true,
+      `${opening.campaign.id} marker is offscreen without a direction guide`,
+    );
 
-    const chaser = fartherAnchor(visibleLocker.approach, opening.campaign.playerStart, opening.campaign.exit);
-    await browser.evaluate(`window.__CHASING_QA__.setScenario(${JSON.stringify({ player: visibleLocker.approach, chaser })})`);
+    // Discoverability is allowed to recommend the safest currently relevant
+    // hide archetype. Test the authored hard locker independently so a valid
+    // soft-cover/traversal recommendation cannot mask cabinet regressions.
+    const hardLockerEntry = lockerEntries.find(([, locker]) => locker.archetype === "hard-locker");
+    assert.ok(hardLockerEntry, `${opening.campaign.id} has no hard-locker presentation`);
+    const [lockerId, hardLocker] = hardLockerEntry;
+    const chaser = fartherAnchor(hardLocker.approach, opening.campaign.playerStart, opening.campaign.exit);
+    await browser.evaluate(`window.__CHASING_QA__.setScenario(${JSON.stringify({ player: hardLocker.approach, chaser })})`);
     await browser.waitFor(`window.__CHASING_QA__?.getState()?.interaction?.kind === 'enter' && window.__CHASING_QA__?.getState()?.interaction?.hideSpotId === ${JSON.stringify(lockerId)}`, 8_000);
     await browser.waitFor("document.querySelector('.interaction-prompt')?.textContent.includes('进入硬质藏柜')", 5_000);
     await sleep(260);
@@ -460,7 +467,7 @@ try {
       id: opening.campaign.id,
       lockerId,
       lockerCount: lockerEntries.length,
-      openingMarkerInFrustum: visibleLocker.beaconViewport.centerInFrustum,
+      openingMarkerInFrustum: activeMarkerLocker.beaconViewport.centerInFrustum,
       openingEdgeGuideVisible: edgeGuideVisible,
       readyScreenshotBytes: screenshotBytes.bytes,
       readyScreenshot: screenshotBytes,
