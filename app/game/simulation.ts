@@ -108,6 +108,9 @@ interface ActiveChaserArchetypeAction {
 
 const ZERO_INTENT: MoveIntent = Object.freeze({ x: 0, y: 0 });
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+type WorldClueEvidence = Extract<PerceptionEvidence, { kind: "world-clue" }>;
+const WORLD_CLUE_PENDING_CAPACITY = 24;
+const WORLD_CLUE_RECENT_ID_CAPACITY = 96;
 
 /**
  * Movement cadence is part of the gameplay/animation contract. Chase keeps
@@ -170,6 +173,7 @@ export class GameSimulation {
   private heldSneak = false;
   private heldEnvironmentSoundMasking = 0;
   private heldVisionRangeMultiplier = 1;
+  private heldChaserSpeedMultiplier = 1;
   private heldExitEnabled = true;
   private heldHideExitChoice: HideExitKind = "origin";
   private pendingSound: SoundStimulus | null = null;
@@ -178,6 +182,12 @@ export class GameSimulation {
     readonly notBeforeTick: number;
     readonly sequence: number;
   }> = [];
+  private readonly pendingWorldClues: WorldClueEvidence[] = [];
+  /** Insertion-ordered FIFO: bounds idempotence memory without exhausting a run. */
+  private readonly recentWorldClueIds = new Set<string>();
+  private worldClueAcceptedCount = 0;
+  private worldClueDeliveredCount = 0;
+  private lastDeliveredWorldClueId: string | null = null;
   private worldSoundSequence = 0;
   private worldSoundAcceptedCount = 0;
   private worldSoundDeliveredCount = 0;
@@ -247,10 +257,16 @@ export class GameSimulation {
     this.heldSneak = false;
     this.heldEnvironmentSoundMasking = 0;
     this.heldVisionRangeMultiplier = 1;
+    this.heldChaserSpeedMultiplier = 1;
     this.heldExitEnabled = true;
     this.heldHideExitChoice = "origin";
     this.pendingSound = null;
     this.pendingWorldSounds.length = 0;
+    this.pendingWorldClues.length = 0;
+    this.recentWorldClueIds.clear();
+    this.worldClueAcceptedCount = 0;
+    this.worldClueDeliveredCount = 0;
+    this.lastDeliveredWorldClueId = null;
     this.worldSoundSequence = 0;
     this.worldSoundAcceptedCount = 0;
     this.worldSoundDeliveredCount = 0;
@@ -285,6 +301,9 @@ export class GameSimulation {
       : 0;
     this.heldVisionRangeMultiplier = Number.isFinite(input.visionRangeMultiplier)
       ? Math.min(1, Math.max(0.5, input.visionRangeMultiplier ?? 1))
+      : 1;
+    this.heldChaserSpeedMultiplier = Number.isFinite(input.chaserSpeedMultiplier)
+      ? Math.min(1.25, Math.max(0, input.chaserSpeedMultiplier ?? 1))
       : 1;
     this.heldExitEnabled = input.exitEnabled !== false;
     if (input.hideExitChoice !== undefined) {
@@ -502,6 +521,57 @@ export class GameSimulation {
       deliveredCount: this.worldSoundDeliveredCount,
       lastDeliveredSourceId: this.lastDeliveredWorldSoundSourceId,
       lastDeliveredTick: this.lastDeliveredWorldSoundTick,
+    };
+  }
+
+  /**
+   * Accepts one already observer-validated public clue. Authenticity, player
+   * identity and hidden occupancy are intentionally absent from the contract;
+   * stable ids make repeated render-frame queries idempotent.
+   */
+  emitWorldClue(evidence: WorldClueEvidence): boolean {
+    if (
+      !evidence.clueId.trim()
+      || !Number.isFinite(evidence.position.x)
+      || !Number.isFinite(evidence.position.y)
+      || !Number.isFinite(evidence.observedAtSeconds)
+      || evidence.observedAtSeconds < 0
+      || !Number.isFinite(evidence.confidence)
+      || evidence.confidence <= 0
+    ) return false;
+    if (
+      this.recentWorldClueIds.has(evidence.clueId)
+      || this.pendingWorldClues.some((entry) => entry.clueId === evidence.clueId)
+    ) return true;
+    if (this.pendingWorldClues.length >= WORLD_CLUE_PENDING_CAPACITY) return false;
+
+    if (this.recentWorldClueIds.size >= WORLD_CLUE_RECENT_ID_CAPACITY) {
+      const oldestClueId = this.recentWorldClueIds.values().next().value;
+      if (oldestClueId !== undefined) this.recentWorldClueIds.delete(oldestClueId);
+    }
+    this.pendingWorldClues.push(Object.freeze({
+      ...evidence,
+      position: Object.freeze(copyPoint(evidence.position)),
+      confidence: clamp01(evidence.confidence),
+      decayPerSecond: Math.max(0, evidence.decayPerSecond ?? 0.06),
+    }));
+    this.recentWorldClueIds.add(evidence.clueId);
+    this.worldClueAcceptedCount += 1;
+    return true;
+  }
+
+  /** QA-only public queue receipt; it exposes no actor or authenticity data. */
+  getWorldClueQueueSnapshot() {
+    return {
+      pending: this.pendingWorldClues.map((entry) => ({
+        clueId: entry.clueId,
+        sourceType: entry.sourceType,
+        confidence: entry.confidence,
+        observedAtSeconds: entry.observedAtSeconds,
+      })),
+      acceptedCount: this.worldClueAcceptedCount,
+      deliveredCount: this.worldClueDeliveredCount,
+      lastDeliveredClueId: this.lastDeliveredWorldClueId,
     };
   }
 
@@ -1339,6 +1409,37 @@ export class GameSimulation {
         || right.evidence.strength - left.evidence.strength
         || Number(right.source === "player") - Number(left.source === "player")
       ));
+      const actionableWorldClues = this.pendingWorldClues
+        .map((entry) => {
+          const age = Math.max(0, this.state.elapsedSeconds - entry.observedAtSeconds);
+          const confidence = clamp01(
+            entry.confidence - age * Math.max(0, entry.decayPerSecond ?? 0.06),
+          );
+          return { entry, confidence, age };
+        })
+        .filter(({ confidence, age }) => confidence > 0.08 && age <= 10)
+        .sort((left, right) => (
+          right.confidence - left.confidence
+          || right.entry.observedAtSeconds - left.entry.observedAtSeconds
+          || left.entry.clueId.localeCompare(right.entry.clueId)
+        ));
+      for (let index = this.pendingWorldClues.length - 1; index >= 0; index -= 1) {
+        const entry = this.pendingWorldClues[index];
+        const age = Math.max(0, this.state.elapsedSeconds - entry.observedAtSeconds);
+        const confidence = clamp01(
+          entry.confidence - age * Math.max(0, entry.decayPerSecond ?? 0.06),
+        );
+        if (age > 10 || confidence <= 0.08) this.pendingWorldClues.splice(index, 1);
+      }
+      const selectedWorldClue = actionableWorldClues[0] ?? null;
+      let selectedWorldClueUsed = false;
+      if (evidence.kind === "none" && selectedWorldClue) {
+        evidence = {
+          ...selectedWorldClue.entry,
+          confidence: selectedWorldClue.confidence,
+        };
+        selectedWorldClueUsed = true;
+      }
       let secondarySoundEvidence:
         | Extract<PerceptionEvidence, { kind: "sound" }>
         | undefined;
@@ -1378,6 +1479,12 @@ export class GameSimulation {
           selectedWorldSound.entry.stimulus.sourceId ?? null;
         this.lastDeliveredWorldSoundTick = this.state.tick;
       }
+      if (selectedWorldClueUsed && selectedWorldClue) {
+        const selectedIndex = this.pendingWorldClues.indexOf(selectedWorldClue.entry);
+        if (selectedIndex >= 0) this.pendingWorldClues.splice(selectedIndex, 1);
+        this.worldClueDeliveredCount += 1;
+        this.lastDeliveredWorldClueId = selectedWorldClue.entry.clueId;
+      }
       // A step or door edge is a transient. Consuming it once prevents a
       // single sound from resetting the search timer on every AI tick.
       this.pendingSound = null;
@@ -1404,11 +1511,13 @@ export class GameSimulation {
       if (previousMode !== result.state.mode) {
         events.push({ type: "chaser-mode-changed", from: previousMode, to: result.state.mode });
       }
-      if (result.completedSoundInvestigation) {
+      const completedInvestigation =
+        result.completedEvidenceInvestigation ?? result.completedSoundInvestigation;
+      if (completedInvestigation) {
         events.push({
           type: "evidence-investigation-completed",
-          evidenceId: result.completedSoundInvestigation.sourceId,
-          sourceType: result.completedSoundInvestigation.sourceType,
+          evidenceId: completedInvestigation.sourceId,
+          sourceType: completedInvestigation.sourceType,
           completedAtSeconds: this.state.elapsedSeconds,
           completedAtTick: this.state.tick,
         });
@@ -1462,8 +1571,19 @@ export class GameSimulation {
     const target = activeAction
       ? this.archetypeActionTarget(activeAction)
       : getChaserTarget(this.state.chaser, this.level);
+    // Public tension events may accelerate ordinary patrol/search pressure,
+    // but never the tick that acquires or is still pursuing the player. This
+    // clamp runs after perception updates, closing the patrol→chase boundary
+    // without defeating a door wedge's legitimate zero-speed hold.
+    const fairSpeedMultiplier = (
+      this.state.chaser.mode === "chase"
+      || this.state.chaser.mode === "lost-sight"
+    )
+      ? Math.min(1, this.heldChaserSpeedMultiplier)
+      : this.heldChaserSpeedMultiplier;
     const speed = chaserSpeedForMode(this.state.chaser.mode, this.config.chaserSpeed)
-      * (activeAction ? this.archetypeActionSpeedMultiplier(activeAction) : 1);
+      * (activeAction ? this.archetypeActionSpeedMultiplier(activeAction) : 1)
+      * fairSpeedMultiplier;
     if (!target || speed <= 0) return;
     const movement = moveAlongGridPath(this.planner, this.state.chaser.position, target, speed, delta);
     this.state.chaser.position = movement.position;

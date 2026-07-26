@@ -236,6 +236,55 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
 .theme-factory .theme-event-wash {
   background: repeating-linear-gradient(92deg, rgba(237, 176, 81, .2) 0 5%, transparent 5% 13%);
 }
+.stealth-blackout-wash,
+.director-cue-frame {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.stealth-blackout-wash {
+  background:
+    radial-gradient(circle at 18% 72%, rgba(67, 116, 175, .22), transparent 17%),
+    radial-gradient(circle at 79% 28%, rgba(90, 140, 195, .17), transparent 15%),
+    linear-gradient(180deg, rgba(3, 7, 17, .38), rgba(1, 4, 10, .72));
+  box-shadow: inset 0 0 110px rgba(0, 0, 0, .68);
+  mix-blend-mode: multiply;
+  transition: opacity .24s ease-out;
+}
+.stealth-blackout-active .stealth-blackout-wash { opacity: .88; }
+.director-cue-frame {
+  z-index: 2;
+  inset: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, currentColor 0 52px, transparent 52px) left top / 72px 1px no-repeat,
+    linear-gradient(180deg, currentColor 0 52px, transparent 52px) left top / 1px 72px no-repeat,
+    linear-gradient(270deg, currentColor 0 52px, transparent 52px) right top / 72px 1px no-repeat,
+    linear-gradient(180deg, currentColor 0 52px, transparent 52px) right top / 1px 72px no-repeat,
+    linear-gradient(90deg, currentColor 0 52px, transparent 52px) left bottom / 72px 1px no-repeat,
+    linear-gradient(0deg, currentColor 0 52px, transparent 52px) left bottom / 1px 72px no-repeat,
+    linear-gradient(270deg, currentColor 0 52px, transparent 52px) right bottom / 72px 1px no-repeat,
+    linear-gradient(0deg, currentColor 0 52px, transparent 52px) right bottom / 1px 72px no-repeat;
+  color: rgba(255, 176, 83, .66);
+  filter: drop-shadow(0 0 8px rgba(255, 137, 55, .2));
+  transition: opacity .18s ease-out, color .18s ease-out;
+}
+.director-warning .director-cue-frame {
+  opacity: .72;
+  animation: director-cue-breathe 1.2s ease-in-out infinite alternate;
+}
+.director-active .director-cue-frame {
+  opacity: .48;
+  color: rgba(255, 112, 78, .7);
+}
+.mirror-threat-visible .director-cue-frame {
+  opacity: .72;
+  color: rgba(135, 229, 255, .76);
+  filter: drop-shadow(0 0 10px rgba(105, 214, 255, .26));
+}
 
 /* Varnished timber, clinical glass, apparatus steel and heat-stained plate
    keep the four chapters materially distinct without changing the markup. */
@@ -602,6 +651,184 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
 .portable-decoy-status.phase-ready { border-color: rgba(90, 224, 160, .5); }
 .portable-decoy-status.phase-ready > button > span { color: var(--safe); border-color: rgba(90, 224, 160, .52); }
 .portable-decoy-status.phase-depleted { filter: saturate(.45); }
+.stealth-toolbelt-status {
+  --stealth-accent: var(--theme-glow, #8eddf0);
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 14px;
+  width: min(570px, calc(100% - 420px));
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--stealth-accent) 39%, rgba(255, 255, 255, .08));
+  border-radius: 12px;
+  color: #eff7f6;
+  background:
+    linear-gradient(104deg, color-mix(in srgb, var(--stealth-accent) 9%, transparent), transparent 42%),
+    var(--hud-surface-strong);
+  box-shadow:
+    0 14px 38px rgba(0, 0, 0, .34),
+    inset 0 1px 0 rgba(255, 255, 255, .055),
+    0 0 24px color-mix(in srgb, var(--stealth-accent) 7%, transparent);
+  backdrop-filter: blur(13px) saturate(1.08);
+  transform: translateX(-50%);
+  animation: hud-card-in .24s ease-out;
+}
+.stealth-toolbelt-status.with-decoy { bottom: 69px; }
+.stealth-system-readout {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 6px 8px 5px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .065);
+  background: linear-gradient(90deg, rgba(255, 255, 255, .025), transparent 64%);
+}
+.stealth-system-readout > div { min-width: 0; flex: 1; }
+.stealth-system-readout small,
+.stealth-system-readout strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stealth-system-readout small {
+  color: color-mix(in srgb, var(--stealth-accent) 72%, #aebbc0);
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .1em;
+}
+.stealth-system-readout strong { margin-top: 2px; font-size: 9px; letter-spacing: .015em; }
+.stealth-mobile-notice { display: none; }
+.director-orb {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--stealth-accent) 66%, transparent);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--stealth-accent) 70%, white) 0 14%, transparent 17%),
+    conic-gradient(from 30deg, transparent, color-mix(in srgb, var(--stealth-accent) 50%, transparent), transparent 56%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--stealth-accent) 24%, transparent);
+}
+.director-orb::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid color-mix(in srgb, var(--stealth-accent) 54%, transparent);
+  border-radius: 50%;
+}
+.director-orb.tier-watchful,
+.director-orb.tier-heightened,
+.director-active .director-orb {
+  --stealth-accent: #ff8b58;
+  animation: director-orb-turn 1.6s linear infinite;
+}
+.erase-evidence {
+  min-height: 27px;
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid rgba(123, 220, 239, .28);
+  border-radius: 7px;
+  color: #b6e7ef;
+  background: rgba(7, 22, 27, .68);
+  font-size: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.erase-evidence[data-evidence-ready="false"]:not(:disabled) {
+  color: #8eb5bc;
+  border-color: rgba(123, 220, 239, .18);
+  background: rgba(7, 22, 27, .48);
+}
+.erase-evidence:disabled { cursor: default; opacity: .4; }
+.erase-evidence kbd { margin-left: 4px; color: inherit; border-color: rgba(142, 221, 238, .26); }
+.stealth-tool-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  padding: 5px 6px 7px;
+}
+.stealth-tool-row > button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 39px;
+  padding: 5px 7px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 8px;
+  color: #d8e3e5;
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, .035), transparent 53%),
+    rgba(4, 11, 14, .56);
+  text-align: left;
+  cursor: pointer;
+}
+.stealth-tool-row > button::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--stealth-accent);
+  opacity: 0;
+  transform: scaleX(.22);
+  transition: opacity .16s ease-out, transform .16s ease-out;
+}
+.stealth-tool-row > button:hover:not(:disabled) { border-color: color-mix(in srgb, var(--stealth-accent) 32%, transparent); }
+.stealth-tool-row > button.selected {
+  color: #f4ffff;
+  border-color: color-mix(in srgb, var(--stealth-accent) 56%, transparent);
+  background:
+    linear-gradient(125deg, color-mix(in srgb, var(--stealth-accent) 14%, transparent), transparent 58%),
+    rgba(4, 14, 18, .78);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--stealth-accent) 7%, transparent);
+}
+.stealth-tool-row > button.selected::after { opacity: .86; transform: scaleX(1); }
+.stealth-tool-row > button:disabled { cursor: default; opacity: .52; }
+.stealth-tool-row > button > i {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--stealth-accent) 34%, transparent);
+  border-radius: 7px;
+  color: color-mix(in srgb, var(--stealth-accent) 82%, white);
+  background: rgba(6, 20, 23, .64);
+  font-size: 12px;
+  font-style: normal;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--stealth-accent) 28%, transparent);
+}
+.stealth-tool-row > button > span { min-width: 0; flex: 1; }
+.stealth-tool-row b,
+.stealth-tool-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stealth-tool-row b { font-size: 9px; }
+.stealth-tool-row small { margin-top: 1px; color: #82969b; font-size: 7px; }
+.stealth-tool-row kbd { color: color-mix(in srgb, var(--stealth-accent) 74%, #d9e6e8); border-color: rgba(255, 255, 255, .12); }
+.stealth-tool-row > .erase-evidence-mobile { display: none; }
+.director-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #7bd8e8, var(--stealth-accent), #ff975d);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--stealth-accent) 42%, transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .12s linear;
+}
+.director-warning .director-progress,
+.stealth-toolbelt-status.director-warning .director-progress { animation: director-progress-glow .8s ease-in-out infinite alternate; }
+.playfield:has(.stealth-toolbelt-status) .interaction-prompt { bottom: 112px; }
+.playfield:has(.stealth-toolbelt-status.with-decoy) .interaction-prompt { bottom: 168px; }
+.playfield:has(.overlay) .stealth-toolbelt-status,
+.playfield:has(.pause-card) .stealth-toolbelt-status { opacity: 0; pointer-events: none; }
 .theme-mechanic.phase-cooldown { opacity: .78; }
 .theme-mechanic.phase-cooldown > span { animation: none; opacity: .48; }
 
@@ -1312,6 +1539,9 @@ footer small { margin-left: auto; color: #687882; }
 @keyframes prompt-in { from { opacity: 0; transform: translate(-50%, 7px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes card-in { from { opacity: 0; transform: translateY(-7px) scale(.985); } to { opacity: 1; transform: none; } }
 @keyframes hud-card-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes director-cue-breathe { from { opacity: .35; } to { opacity: .78; } }
+@keyframes director-orb-turn { to { transform: rotate(360deg); } }
+@keyframes director-progress-glow { from { filter: brightness(.78); } to { filter: brightness(1.45); } }
 
 @media (max-width: 900px), (pointer: coarse) {
   button { touch-action: manipulation; }
@@ -1331,6 +1561,74 @@ footer small { margin-left: auto; color: #687882; }
   .controls { display: block; }
   .action-controls { display: flex; }
   .portable-decoy-status { display: none; }
+  .stealth-toolbelt-status,
+  .stealth-toolbelt-status.with-decoy {
+    bottom: 60px;
+    width: min(212px, calc(100% - 16px));
+    border-radius: 10px;
+  }
+  .stealth-system-readout { display: none; }
+  .stealth-mobile-notice {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    min-height: 27px;
+    padding: 4px 7px;
+    border-bottom: 1px solid rgba(255, 255, 255, .07);
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--stealth-accent) 10%, transparent), transparent 72%),
+      rgba(3, 12, 15, .42);
+  }
+  .stealth-mobile-notice strong,
+  .stealth-mobile-notice small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stealth-mobile-notice strong {
+    color: #eaffff;
+    font-size: 8px;
+    letter-spacing: .015em;
+  }
+  .stealth-mobile-notice small {
+    color: color-mix(in srgb, var(--stealth-accent) 72%, #aebbc0);
+    font-size: 7px;
+    font-weight: 850;
+  }
+  .stealth-tool-row {
+    grid-template-columns: repeat(4, minmax(44px, 1fr));
+    gap: 4px;
+    padding: 4px;
+  }
+  .stealth-tool-row > button {
+    justify-content: center;
+    min-height: 46px;
+    padding: 4px;
+  }
+  .stealth-tool-row > .erase-evidence-mobile {
+    display: flex;
+    color: #bdf4ee;
+    border-color: rgba(103, 226, 209, .25);
+    background:
+      linear-gradient(145deg, rgba(103, 226, 209, .11), transparent 58%),
+      rgba(4, 17, 18, .7);
+  }
+  .stealth-tool-row > .erase-evidence-mobile:not(:disabled) {
+    box-shadow: inset 0 0 16px rgba(103, 226, 209, .08);
+  }
+  .stealth-tool-row > .erase-evidence-mobile > i {
+    border-color: rgba(103, 226, 209, .4);
+    color: #cffff8;
+    background: rgba(7, 37, 35, .72);
+    text-shadow: 0 0 10px rgba(103, 226, 209, .34);
+  }
+  .stealth-tool-row > button > i { width: 32px; height: 32px; font-size: 14px; }
+  .stealth-tool-row > button > span,
+  .stealth-tool-row > button > kbd { display: none; }
+  .playfield:has(.stealth-toolbelt-status) .interaction-prompt,
+  .playfield:has(.stealth-toolbelt-status.with-decoy) .interaction-prompt { bottom: 158px; }
   .view-controls {
     top: auto;
     right: 50%;
@@ -1491,6 +1789,15 @@ footer small { margin-left: auto; color: #687882; }
      both the joystick and action lane. Lift them into a dedicated tier. */
   .view-controls { right: 50%; bottom: 168px; padding: 3px; }
   .view-controls button { min-width: 44px; height: 44px; }
+  /* The four independent stealth verbs form a dedicated rail above camera
+     tuning. This keeps every target reachable on 320px phones without
+     competing with either thumb's movement/action territory. */
+  .stealth-toolbelt-status,
+  .stealth-toolbelt-status.with-decoy {
+    top: 72px;
+    bottom: auto;
+    width: min(212px, calc(100% - 16px));
+  }
   /* Contextual interaction owns the same central attention lane. Temporarily
      retire camera tuning instead of leaving three visually present controls
      underneath a higher-z prompt. */
@@ -1526,24 +1833,24 @@ footer small { margin-left: auto; color: #687882; }
     transform: none;
   }
   .theme-mechanic {
-    top: 72px;
+    top: 160px;
     left: 8px;
     transform: none;
   }
   .ghost-race {
-    top: 72px;
+    top: 160px;
     right: 8px;
   }
   .hide-guide {
-    top: 136px;
+    top: 224px;
     left: 8px;
   }
-  .theme-event-active .hide-guide { top: 136px; }
+  .theme-event-active .hide-guide { top: 224px; }
   .objective-route-guide {
-    top: 136px;
+    top: 224px;
     right: 8px;
   }
-  .theme-event-active .objective-route-guide { top: 136px; }
+  .theme-event-active .objective-route-guide { top: 224px; }
   .hide-guide,
   .objective-route-guide {
     width: 44px;
@@ -1578,11 +1885,11 @@ footer small { margin-left: auto; color: #687882; }
     padding: 5px 7px;
   }
   .hud-cinematic .theme-mechanic,
-  .hud-cinematic .ghost-race { top: 60px; }
+  .hud-cinematic .ghost-race { top: 160px; }
   .hud-cinematic .hide-guide,
   .hud-cinematic .objective-route-guide,
   .hud-cinematic .theme-event-active .hide-guide,
-  .hud-cinematic .theme-event-active .objective-route-guide { top: 112px; }
+  .hud-cinematic .theme-event-active .objective-route-guide { top: 212px; }
   .hud-cinematic .awareness small,
   .hud-cinematic .hide-guide small,
   .hud-cinematic .objective-route-guide small { display: none; }
@@ -1819,6 +2126,7 @@ footer small { margin-left: auto; color: #687882; }
 .high-contrast .ghost-race,
 .high-contrast .theme-mechanic,
 .high-contrast .portable-decoy-status,
+.high-contrast .stealth-toolbelt-status,
 .high-contrast .hide-guide,
 .high-contrast .objective-route-guide,
 .high-contrast .interaction-prompt,
@@ -1849,6 +2157,7 @@ footer small { margin-left: auto; color: #687882; }
 .high-contrast .ghost-race strong,
 .high-contrast .theme-mechanic strong,
 .high-contrast .portable-decoy-status strong,
+.high-contrast .stealth-system-readout strong,
 .high-contrast .hide-guide strong,
 .high-contrast .objective-route-guide strong { color: #fff; }
 .high-contrast .awareness-chase,
@@ -1904,6 +2213,17 @@ footer small { margin-left: auto; color: #687882; }
   mix-blend-mode: normal;
   opacity: calc(var(--theme-event, 0) * .28);
 }
+.high-contrast .stealth-tool-row > button,
+.high-contrast .erase-evidence {
+  color: #fff;
+  border-color: rgba(255, 255, 255, .72);
+  background: #020607;
+}
+.high-contrast .stealth-tool-row > button.selected {
+  color: #020607;
+  border-color: #fff;
+  background: #fff;
+}
 
 .reduced-motion,
 .reduced-motion *,
@@ -1934,6 +2254,7 @@ footer small { margin-left: auto; color: #687882; }
   .mission-status,
   .ghost-race,
   .theme-mechanic,
+  .stealth-toolbelt-status,
   .hide-guide,
   .objective-route-guide,
   .interaction-prompt,
@@ -1951,5 +2272,7 @@ footer small { margin-left: auto; color: #687882; }
   button[aria-pressed="true"],
   .level-card.active { outline: 2px solid Highlight; outline-offset: 2px; }
   .cinematic-vignette,
-  .theme-event-wash { display: none; }
+  .theme-event-wash,
+  .stealth-blackout-wash,
+  .director-cue-frame { display: none; }
 }

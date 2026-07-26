@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { collectQaSourceProvenance } from "./qa-source-provenance.mjs";
@@ -39,6 +40,44 @@ const SCREENSHOT_MINIMUM = Object.freeze({
   mobile: 35_000,
 });
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const QA_BOOTSTRAP_SOURCE = `(() => {
+  if (!new URLSearchParams(location.search).has("qa")) return;
+  const nativeSetTimeout = window.setTimeout.bind(window);
+  const nativeClearTimeout = window.clearTimeout.bind(window);
+  const handles = new Map();
+  let nextFrameId = 1;
+  Object.defineProperty(window, "__CHASING_QA_FRAME_DRIVER__", { value: "timer-60hz" });
+  window.requestAnimationFrame = (callback) => {
+    const frameId = nextFrameId++;
+    handles.set(frameId, nativeSetTimeout(() => {
+      handles.delete(frameId);
+      callback(performance.now());
+    }, 16));
+    return frameId;
+  };
+  window.cancelAnimationFrame = (frameId) => {
+    const handle = handles.get(frameId);
+    if (handle === undefined) return;
+    handles.delete(frameId);
+    nativeClearTimeout(handle);
+  };
+  Object.defineProperty(window, "__CHASING_QA_CSS_MOTION__", { value: "settled" });
+  const settle = () => {
+    const style = document.createElement("style");
+    style.dataset.chasingQaCssMotion = "settled";
+    style.textContent = "*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}";
+    document.documentElement.append(style);
+  };
+  if (document.documentElement) settle();
+  else window.addEventListener("DOMContentLoaded", settle, { once: true });
+})();`;
+
+function qaUrl(suffix) {
+  const url = new URL(BASE_URL);
+  url.searchParams.set("qa", `deep-gameplay-visual-${suffix}`);
+  url.searchParams.set("qaQuality", "high");
+  return url.href;
+}
 
 function pointDistance(first, second) {
   return Math.hypot(first.x - second.x, first.y - second.y);
@@ -130,13 +169,15 @@ async function connect() {
       { cause: error },
     );
   }
-  const target = targets.find((entry) => (
-    entry.type === "page"
-    && (entry.url === "about:blank" || entry.url.startsWith(BASE_URL))
-  )) ?? targets.find((entry) => (
+  const pageTargets = targets.filter((entry) => (
     entry.type === "page" && !entry.url.startsWith("chrome://")
   ));
-  assert.ok(target, "Chrome has no inspectable page target");
+  assert.equal(
+    pageTargets.length,
+    1,
+    `QA requires exactly one dedicated page target; found ${pageTargets.length}`,
+  );
+  const [target] = pageTargets;
 
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
@@ -147,6 +188,20 @@ async function connect() {
   let requestId = 0;
   const pending = new Map();
   const events = [];
+  const screenshotProvenance = [];
+  const rejectPending = (reason) => {
+    for (const { reject, timeout } of pending.values()) {
+      clearTimeout(timeout);
+      reject(reason);
+    }
+    pending.clear();
+  };
+  socket.addEventListener("close", () => {
+    rejectPending(new Error("Chrome DevTools socket closed with commands pending"));
+  });
+  socket.addEventListener("error", () => {
+    rejectPending(new Error("Chrome DevTools socket failed with commands pending"));
+  });
   socket.addEventListener("message", (event) => {
     const message = JSON.parse(String(event.data));
     if (!message.id) {
@@ -156,12 +211,17 @@ async function connect() {
     const waiter = pending.get(message.id);
     if (!waiter) return;
     pending.delete(message.id);
+    clearTimeout(waiter.timeout);
     if (message.error) waiter.reject(new Error(message.error.message));
     else waiter.resolve(message.result);
   });
   const send = (method, params = {}) => new Promise((resolve, reject) => {
     const id = ++requestId;
-    pending.set(id, { resolve, reject });
+    const timeout = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error(`CDP ${method} timed out after 30000ms`));
+    }, 30_000);
+    pending.set(id, { resolve, reject, timeout });
     socket.send(JSON.stringify({ id, method, params }));
   });
 
@@ -253,6 +313,13 @@ async function connect() {
       : SCREENSHOT_MINIMUM.desktop;
     assert.ok(bytes.length >= minimum, `${file} is suspiciously small (${bytes.length} bytes)`);
     await writeFile(file, bytes);
+    screenshotProvenance.push({
+      file,
+      bytes: bytes.length,
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+      captureBackend: "headless-shell-surface",
+      viewport,
+    });
     return bytes.length;
   }
 
@@ -281,6 +348,7 @@ async function connect() {
     setViewport,
     screenshot,
     dispatchKey,
+    screenshotProvenance,
     close,
   };
 }
@@ -294,15 +362,24 @@ async function waitForReady(browser, levelIndex, layoutNumber, timeout = 90_000)
       && state?.game?.phase === 'ready'
       && state?.certifiedRemix?.layoutNumber === ${JSON.stringify(layoutNumber)}
       && state?.assets?.decorativeReady === true
+      && state?.assets?.deferredDressingSettled === true
+      && state?.assets?.qaDecorativeSceneCompiled === true
+      && state?.assets?.qaDecorativeSceneCompileCount === 1
+      && state?.assets?.qaTransientArtPrewarmCount === 1
       && !document.querySelector('.loading-card, .loading-shell, .error-card, .load-error')
     );
   })()`, timeout, 120);
+  await browser.evaluate("window.__CHASING_QA__.setDirectorEnabled(false)");
+  assert.equal(
+    await browser.evaluate("window.__CHASING_QA__.getStealthProbe().director.enabled"),
+    false,
+    `level ${levelIndex + 1} layout ${layoutNumber ?? "authored"} did not isolate the Director`,
+  );
 }
 
 async function navigateFresh(browser, viewport, suffix, resetStorage = false) {
   await browser.setViewport(viewport);
-  const separator = BASE_URL.includes("?") ? "&" : "?";
-  const url = `${BASE_URL}${separator}qa=deep-gameplay-visual-${suffix}`;
+  const url = qaUrl(suffix);
   await browser.send("Page.navigate", { url });
   await browser.waitFor("document.readyState === 'complete'", 25_000);
   if (resetStorage) {
@@ -312,6 +389,12 @@ async function navigateFresh(browser, viewport, suffix, resetStorage = false) {
   }
   await waitForReady(browser, 0, null);
   await browser.evaluate("window.__CHASING_QA__.setUnlockedThrough(10)");
+  await browser.evaluate("window.__CHASING_QA__.setDirectorEnabled(false)");
+  assert.equal(
+    await browser.evaluate("window.__CHASING_QA__.getStealthProbe().director.enabled"),
+    false,
+    `${suffix} did not isolate the Director`,
+  );
 }
 
 async function selectReadyLevel(browser, index, layoutNumber = null) {
@@ -957,7 +1040,19 @@ const sourceProvenance = collectQaSourceProvenance();
 const browser = await connect();
 const screenshotEvidence = [];
 try {
+  await browser.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: QA_BOOTSTRAP_SOURCE,
+  });
   await navigateFresh(browser, DESKTOP, "desktop", true);
+  const frameDriver = await browser.evaluate("window.__CHASING_QA_FRAME_DRIVER__");
+  const cssMotion = await browser.evaluate("window.__CHASING_QA_CSS_MOTION__");
+  assert.equal(frameDriver, "timer-60hz");
+  assert.equal(cssMotion, "settled");
+  await browser.evaluate("window.__CHASING_QA__.setDirectorEnabled(false)");
+  assert.equal(
+    await browser.evaluate("window.__CHASING_QA__.getStealthProbe().director.enabled"),
+    false,
+  );
 
   const originalReady = await browser.evaluate("window.__CHASING_QA__.getState()");
   assert.equal(originalReady.campaign.number, 1);
@@ -1163,15 +1258,28 @@ try {
     (event) => event.method === "Log.entryAdded"
       && event.params?.entry?.level === "error",
   );
+  const httpErrors = browser.events.filter(
+    (event) => event.method === "Network.responseReceived"
+      && event.params?.response?.status >= 400,
+  );
+  const networkFailures = browser.events.filter(
+    (event) => event.method === "Network.loadingFailed"
+      && event.params?.canceled !== true,
+  );
   assert.deepEqual(runtimeExceptions, [], "browser runtime emitted an exception");
   assert.deepEqual(consoleErrors, [], "browser console emitted an error/assertion");
   assert.deepEqual(severeLogs, [], "browser emitted an error log entry");
+  assert.deepEqual(httpErrors, [], "browser received an HTTP error response");
+  assert.deepEqual(networkFailures, [], "browser emitted a network loading failure");
 
   const summary = {
     generatedAt: new Date().toISOString(),
     target: "final-production-build",
     sourceProvenance,
     baseUrl: BASE_URL,
+    qaUrl: qaUrl("desktop"),
+    frameDriver,
+    cssMotion,
     chromeDebugPort: DEBUG_PORT,
     viewports: {
       desktop: DESKTOP,
@@ -1224,11 +1332,14 @@ try {
       hardLockerHidden: mobileHiddenState.game.player.hideSpotId,
     },
     screenshots: screenshotEvidence,
+    screenshotProvenance: browser.screenshotProvenance,
     screenshotThresholds: SCREENSHOT_MINIMUM,
     diagnostics: {
       runtimeExceptions: runtimeExceptions.length,
       consoleErrors: consoleErrors.length,
       severeLogEntries: severeLogs.length,
+      httpErrors: httpErrors.length,
+      networkFailures: networkFailures.length,
     },
     allPassed: true,
   };

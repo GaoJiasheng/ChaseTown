@@ -112,8 +112,8 @@ test("Ghost recording commits buffered input at the authoritative pre-step tick"
   assert.match(GAME, /const\s+completedTick\s*=\s*latestState\.tick;/u);
   assert.match(
     GAME,
-    /const\s+recordingTick\s*=\s*latestState\.tick;\s*ghostInputBuffer\.stage\(recordingTick,\s*simulationInput\);\s*latestState\s*=\s*simulation\.advance/u,
-    "the render input must be staged before the fixed simulation advances",
+    /const\s+recordingTick\s*=\s*latestState\.tick;[\s\S]{0,360}ghostInputBuffer\.stage\(recordingTick,\s*simulationInput\);[\s\S]{0,360}latestState\s*=\s*simulation\.advance\(\s*fixedStepSeconds/u,
+    "each fixed-step input must be staged before that authoritative tick advances",
   );
   assert.match(
     GAME,
@@ -250,7 +250,7 @@ test("portable decoy UI and keyboard feedback agree near hide interactions", () 
   );
   const edge = sliceBetween(
     GAME,
-    "const portableDecoyEdge = portableDecoyPressed.current;",
+    "const portableDecoyEdge = hostTick.edges.portableDecoyPressed;",
     "let completedMissionObjective:",
   );
   assert.match(edge, /if\s*\(hideInteractionBeforeStep\)/u);
@@ -397,7 +397,11 @@ test("portable decoys are extracted only from the named books.glb notebook assem
 test("F key, touch controls, and the QA bridge all deploy the same portable decoy action", () => {
   assert.match(
     GAME,
-    /else\s+if\s*\(key\s*===\s*"f"\s*&&\s*phase\s*===\s*"playing"\)\s*commands\.current\.deployDecoy\(\)/u,
+    /else\s+if\s*\(key\s*===\s*"f"\)\s*commands\.current\.deployDecoy\(\)/u,
+  );
+  assert.doesNotMatch(
+    GAME,
+    /key\s*===\s*"f"\s*&&\s*phase\s*===\s*"playing"/u,
   );
   assert.match(
     GAME,

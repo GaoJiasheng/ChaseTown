@@ -39,6 +39,12 @@ export function collectQaSourceProvenance(cwd = process.cwd()) {
     changedEntryCount: status.split("\0").filter(Boolean).length,
   });
   const expectedCommit = process.env.CHASING_QA_COMMIT_SHA;
+  const formalQa = process.env.CHASING_QA_FORMAL === "true";
+  if (formalQa && expectedCommit === undefined) {
+    throw new Error(
+      "Formal QA requires CHASING_QA_COMMIT_SHA to bind evidence to a clean commit",
+    );
+  }
   if (expectedCommit !== undefined) {
     if (!/^[0-9a-f]{40}$/u.test(expectedCommit)) {
       throw new Error("CHASING_QA_COMMIT_SHA must be a complete 40-character Git SHA");

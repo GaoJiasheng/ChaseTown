@@ -53,6 +53,13 @@ export interface SimulationInput {
    */
   visionRangeMultiplier?: number;
   /**
+   * Public, physical traversal modifier supplied by a bounded world effect
+   * such as a door wedge or a telegraphed pressure window. The runtime clamps
+   * it to [0, 1.25]. It affects translation only; AI decisions, catch range,
+   * player collision and navigation topology remain unchanged.
+   */
+  chaserSpeedMultiplier?: number;
+  /**
    * Public objective gate supplied by the mission layer. It defaults to true
    * for legacy and sandbox levels, changes no collision or AI knowledge, and
    * only prevents the exit trigger from resolving before authored objectives.
@@ -158,7 +165,8 @@ export interface ChaserMemory {
   lastKnownPosition: Point | null;
   lastSeenAtSeconds: number | null;
   lastHeardAtSeconds: number | null;
-  lastKnownEvidence: "visual" | "sound" | null;
+  lastClueAtSeconds: number | null;
+  lastKnownEvidence: "visual" | "sound" | "world-clue" | null;
   /**
    * A secondary, imprecise sound sample remembered while stronger visual
    * evidence is still being pursued. It never contains hidden player state.
@@ -238,7 +246,27 @@ export type PerceptionEvidence =
       /** Linear certainty loss per second. */
       decayPerSecond?: number;
     }
+  | {
+      /**
+       * A public, spatial clue that the chaser has physically observed. The
+       * payload deliberately excludes authenticity and actor identity, so a
+       * forged trace and a genuine trace are indistinguishable to the brain.
+       */
+      kind: "world-clue";
+      clueId: string;
+      position: Point;
+      observedAtSeconds: number;
+      confidence: number;
+      sourceType: WorldClueSourceType;
+      decayPerSecond?: number;
+    }
   | { kind: "none"; observedAtSeconds: number };
+
+export type WorldClueSourceType =
+  | "footprint"
+  | "disturbed-prop"
+  | "door-disturbance"
+  | "infrastructure-anomaly";
 
 export type SoundEvidenceSourceType =
   | "player-movement"
@@ -249,12 +277,12 @@ export type SoundEvidenceSourceType =
   | "unknown";
 
 export interface PublicEvidenceMemory {
-  readonly kind: "visual" | "hide-entry-visible" | "sound";
+  readonly kind: "visual" | "hide-entry-visible" | "sound" | "world-clue";
   readonly position: Point;
   readonly observedAtSeconds: number;
   readonly confidence: number;
   readonly decayPerSecond: number;
-  readonly sourceType: SoundEvidenceSourceType | "player";
+  readonly sourceType: SoundEvidenceSourceType | WorldClueSourceType | "player";
   readonly sourceId: string | null;
   /** Consecutive uses of the same stable environmental emitter. */
   readonly repeatCount: number;
@@ -290,7 +318,7 @@ export type SimulationEvent =
   | {
       type: "evidence-investigation-completed";
       evidenceId: string;
-      sourceType: SoundEvidenceSourceType;
+      sourceType: SoundEvidenceSourceType | WorldClueSourceType;
       completedAtSeconds: number;
       completedAtTick: number;
     }

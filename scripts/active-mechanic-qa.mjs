@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { collectQaSourceProvenance } from "./qa-source-provenance.mjs";
 
 const BASE_URL = process.env.CHASING_QA_URL ?? "http://localhost:4173/";
 const DEBUG_PORT = Number(process.env.CHROME_DEBUG_PORT ?? 9223);
@@ -10,14 +12,56 @@ const OUTPUT = path.resolve(process.env.CHASING_QA_OUT ?? "/tmp/chasing-active-m
 const VIEWPORT = { width: 1512, height: 982, deviceScaleFactor: 1, mobile: false };
 const REPRESENTATIVE_LEVELS = [0, 3, 5, 9];
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const QA_BOOTSTRAP_SOURCE = `(() => {
+  if (!new URLSearchParams(location.search).has("qa")) return;
+  const nativeSetTimeout = window.setTimeout.bind(window);
+  const nativeClearTimeout = window.clearTimeout.bind(window);
+  const handles = new Map();
+  let nextFrameId = 1;
+  Object.defineProperty(window, "__CHASING_QA_FRAME_DRIVER__", { value: "timer-60hz" });
+  window.requestAnimationFrame = (callback) => {
+    const frameId = nextFrameId++;
+    handles.set(frameId, nativeSetTimeout(() => {
+      handles.delete(frameId);
+      callback(performance.now());
+    }, 16));
+    return frameId;
+  };
+  window.cancelAnimationFrame = (frameId) => {
+    const handle = handles.get(frameId);
+    if (handle === undefined) return;
+    handles.delete(frameId);
+    nativeClearTimeout(handle);
+  };
+  Object.defineProperty(window, "__CHASING_QA_CSS_MOTION__", { value: "settled" });
+  const settle = () => {
+    const style = document.createElement("style");
+    style.dataset.chasingQaCssMotion = "settled";
+    style.textContent = "*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}";
+    document.documentElement.append(style);
+  };
+  if (document.documentElement) settle();
+  else window.addEventListener("DOMContentLoaded", settle, { once: true });
+})();`;
+
+function qaUrl() {
+  const url = new URL(BASE_URL);
+  url.searchParams.set("qa", "active-mechanic-regression");
+  url.searchParams.set("qaQuality", "high");
+  return url.href;
+}
 
 async function connect() {
   const targets = await (await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/list`)).json();
-  const target = targets.find((entry) => (
-    entry.type === "page"
-    && (entry.url === "about:blank" || entry.url.startsWith(BASE_URL))
-  )) ?? targets.find((entry) => entry.type === "page" && !entry.url.startsWith("chrome://"));
-  assert.ok(target, "Chrome has no inspectable page target");
+  const pageTargets = targets.filter(
+    (entry) => entry.type === "page" && !entry.url.startsWith("chrome://"),
+  );
+  assert.equal(
+    pageTargets.length,
+    1,
+    `QA requires exactly one dedicated page target; found ${pageTargets.length}`,
+  );
+  const [target] = pageTargets;
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     socket.addEventListener("open", resolve, { once: true });
@@ -27,6 +71,19 @@ async function connect() {
   let requestId = 0;
   const pending = new Map();
   const events = [];
+  const rejectPending = (reason) => {
+    for (const { reject, timeout } of pending.values()) {
+      clearTimeout(timeout);
+      reject(reason);
+    }
+    pending.clear();
+  };
+  socket.addEventListener("close", () => {
+    rejectPending(new Error("Chrome DevTools socket closed with commands pending"));
+  });
+  socket.addEventListener("error", () => {
+    rejectPending(new Error("Chrome DevTools socket failed with commands pending"));
+  });
   socket.addEventListener("message", (event) => {
     const message = JSON.parse(String(event.data));
     if (!message.id) {
@@ -36,12 +93,17 @@ async function connect() {
     const waiter = pending.get(message.id);
     if (!waiter) return;
     pending.delete(message.id);
+    clearTimeout(waiter.timeout);
     if (message.error) waiter.reject(new Error(message.error.message));
     else waiter.resolve(message.result);
   });
   const send = (method, params = {}) => new Promise((resolve, reject) => {
     const id = ++requestId;
-    pending.set(id, { resolve, reject });
+    const timeout = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error(`CDP ${method} timed out after 30000ms`));
+    }, 30_000);
+    pending.set(id, { resolve, reject, timeout });
     socket.send(JSON.stringify({ id, method, params }));
   });
   await Promise.all([
@@ -84,6 +146,14 @@ async function connect() {
     throw new Error(`Timed out waiting for ${expression}; last=${JSON.stringify(last)}`);
   };
   const screenshot = async (file) => {
+    const blockers = await evaluate(`({
+      loading: document.querySelectorAll(".loading-card, .loading-shell").length,
+      errors: document.querySelectorAll(".loading-card.error, .error-card, .load-error").length,
+      canvases: document.querySelectorAll(".playfield canvas").length
+    })`);
+    assert.equal(blockers.loading, 0, `${file} still has loading UI`);
+    assert.equal(blockers.errors, 0, `${file} contains load error UI`);
+    assert.equal(blockers.canvases, 1, `${file} must contain exactly one game canvas`);
     const result = await send("Page.captureScreenshot", {
       format: "png",
       fromSurface: true,
@@ -92,7 +162,12 @@ async function connect() {
     const bytes = Buffer.from(result.data, "base64");
     assert.ok(bytes.length >= 100_000, `${file} is suspiciously small`);
     await writeFile(file, bytes);
-    return bytes.length;
+    return {
+      file,
+      bytes: bytes.length,
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+      captureBackend: "headless-shell-surface",
+    };
   };
   return { socket, events, send, evaluate, waitFor, screenshot };
 }
@@ -103,13 +178,35 @@ function fartherAnchor(point, first, second) {
 }
 
 await mkdir(OUTPUT, { recursive: true });
+const sourceProvenance = collectQaSourceProvenance();
 const browser = await connect();
 try {
-  await browser.send("Page.navigate", { url: `${BASE_URL}?qa=active-mechanic-regression` });
+  await browser.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: QA_BOOTSTRAP_SOURCE,
+  });
+  await browser.send("Page.navigate", { url: qaUrl() });
   await browser.waitFor("document.readyState === 'complete'", 20_000);
   await browser.waitFor(
-    "window.__CHASING_QA__?.getState()?.ready && !document.querySelector('.loading-card')",
+    `(() => {
+      const state = window.__CHASING_QA__?.getState();
+      return state?.ready
+        && state.assets?.decorativeReady === true
+        && state.assets?.deferredDressingSettled === true
+        && state.assets?.qaDecorativeSceneCompiled === true
+        && state.assets?.qaDecorativeSceneCompileCount === 1
+        && state.assets?.qaTransientArtPrewarmCount === 1
+        && !document.querySelector('.loading-card, .loading-shell, .error-card, .load-error');
+    })()`,
     60_000,
+  );
+  const frameDriver = await browser.evaluate("window.__CHASING_QA_FRAME_DRIVER__");
+  const cssMotion = await browser.evaluate("window.__CHASING_QA_CSS_MOTION__");
+  assert.equal(frameDriver, "timer-60hz");
+  assert.equal(cssMotion, "settled");
+  await browser.evaluate("window.__CHASING_QA__.setDirectorEnabled(false)");
+  assert.equal(
+    await browser.evaluate("window.__CHASING_QA__.getStealthProbe().director.enabled"),
+    false,
   );
   await browser.evaluate("window.__CHASING_QA__.setUnlockedThrough(10)");
 
@@ -118,10 +215,26 @@ try {
     if (levelIndex > 0) {
       await browser.evaluate(`window.__CHASING_QA__.selectLevel(${levelIndex})`);
       await browser.waitFor(
-        `window.__CHASING_QA__?.getState()?.campaign?.number === ${levelIndex + 1} && window.__CHASING_QA__?.getState()?.ready && !document.querySelector('.loading-card')`,
+        `(() => {
+          const state = window.__CHASING_QA__?.getState();
+          return state?.campaign?.number === ${levelIndex + 1}
+            && state.ready
+            && state.assets?.decorativeReady === true
+            && state.assets?.deferredDressingSettled === true
+            && state.assets?.qaDecorativeSceneCompiled === true
+            && state.assets?.qaDecorativeSceneCompileCount === 1
+            && state.assets?.qaTransientArtPrewarmCount === 1
+            && !document.querySelector('.loading-card, .loading-shell, .error-card, .load-error');
+        })()`,
         60_000,
       );
     }
+    await browser.evaluate("window.__CHASING_QA__.setDirectorEnabled(false)");
+    assert.equal(
+      await browser.evaluate("window.__CHASING_QA__.getStealthProbe().director.enabled"),
+      false,
+      `level ${levelIndex + 1} did not isolate the Director`,
+    );
     await browser.evaluate("window.__CHASING_QA__.start()");
     await browser.waitFor("window.__CHASING_QA__?.getState()?.game?.phase === 'playing'", 10_000);
     const opening = await browser.evaluate("window.__CHASING_QA__.getState()");
@@ -187,8 +300,9 @@ try {
       visionRangeMultiplier: active.themeMechanic.sample.visionRangeMultiplier,
       activationCount: active.themeMechanic.state.activationCount,
       decoysDeployed: active.telemetry.decoysDeployed,
-      readyScreenshotBytes: readyBytes,
-      activeScreenshotBytes: activeBytes,
+      readyScreenshotBytes: readyBytes.bytes,
+      activeScreenshotBytes: activeBytes.bytes,
+      screenshots: { ready: readyBytes, active: activeBytes },
     });
   }
 
@@ -197,11 +311,37 @@ try {
     (event) => event.method === "Log.entryAdded"
       && ["error", "warning"].includes(event.params?.entry?.level),
   );
+  const consoleErrors = browser.events.filter(
+    (event) => event.method === "Runtime.consoleAPICalled"
+      && ["error", "assert"].includes(event.params?.type),
+  );
+  const httpErrors = browser.events.filter(
+    (event) => event.method === "Network.responseReceived"
+      && event.params?.response?.status >= 400,
+  );
+  const networkFailures = browser.events.filter(
+    (event) => event.method === "Network.loadingFailed"
+      && event.params?.canceled !== true,
+  );
   assert.deepEqual(exceptions, [], "browser runtime emitted an exception");
+  assert.deepEqual(consoleErrors, [], "browser console emitted an error/assertion");
   assert.deepEqual(severeLogs, [], "browser emitted warning/error log entries");
+  assert.deepEqual(httpErrors, [], "browser received an HTTP error response");
+  assert.deepEqual(networkFailures, [], "browser emitted a network loading failure");
   const summary = {
     generatedAt: new Date().toISOString(),
     baseUrl: BASE_URL,
+    qaUrl: qaUrl(),
+    frameDriver,
+    cssMotion,
+    sourceProvenance,
+    diagnostics: {
+      runtimeExceptions: exceptions.length,
+      consoleErrors: consoleErrors.length,
+      severeLogs: severeLogs.length,
+      httpErrors: httpErrors.length,
+      networkFailures: networkFailures.length,
+    },
     viewport: VIEWPORT,
     representatives: report,
     allMechanicsPassed: report.length === REPRESENTATIVE_LEVELS.length

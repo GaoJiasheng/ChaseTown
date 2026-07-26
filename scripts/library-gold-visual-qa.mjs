@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { collectQaSourceProvenance } from "./qa-source-provenance.mjs";
@@ -11,6 +12,44 @@ const OUTPUT = path.resolve(
   process.env.CHASING_QA_OUT ?? "/tmp/chasing-library-gold-visual-qa",
 );
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const QA_BOOTSTRAP_SOURCE = `(() => {
+  if (!new URLSearchParams(location.search).has("qa")) return;
+  const nativeSetTimeout = window.setTimeout.bind(window);
+  const nativeClearTimeout = window.clearTimeout.bind(window);
+  const handles = new Map();
+  let nextFrameId = 1;
+  Object.defineProperty(window, "__CHASING_QA_FRAME_DRIVER__", { value: "timer-60hz" });
+  window.requestAnimationFrame = (callback) => {
+    const frameId = nextFrameId++;
+    handles.set(frameId, nativeSetTimeout(() => {
+      handles.delete(frameId);
+      callback(performance.now());
+    }, 16));
+    return frameId;
+  };
+  window.cancelAnimationFrame = (frameId) => {
+    const handle = handles.get(frameId);
+    if (handle === undefined) return;
+    handles.delete(frameId);
+    nativeClearTimeout(handle);
+  };
+  Object.defineProperty(window, "__CHASING_QA_CSS_MOTION__", { value: "settled" });
+  const settle = () => {
+    const style = document.createElement("style");
+    style.dataset.chasingQaCssMotion = "settled";
+    style.textContent = "*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}";
+    document.documentElement.append(style);
+  };
+  if (document.documentElement) settle();
+  else window.addEventListener("DOMContentLoaded", settle, { once: true });
+})();`;
+
+function qaUrl() {
+  const url = new URL(BASE_URL);
+  url.searchParams.set("qa", "library-gold-visual");
+  url.searchParams.set("qaQuality", "high");
+  return url.href;
+}
 const COMPLETED_OBJECTIVE_LIGHT_COLOR = 0x5ae0a0;
 const LIBRARY_PLAN_EXPECTATIONS = Object.freeze({
   "access-authorization": Object.freeze({
@@ -116,9 +155,15 @@ async function connect() {
       assert.equal(response.ok, true, `Chrome target endpoint returned ${response.status}`);
       return response.json();
     });
-  const target = targets.find((entry) => entry.type === "page" && entry.url === "about:blank")
-    ?? targets.find((entry) => entry.type === "page" && !entry.url.startsWith("chrome://"));
-  assert.ok(target, "Chrome has no inspectable page target");
+  const pageTargets = targets.filter(
+    (entry) => entry.type === "page" && !entry.url.startsWith("chrome://"),
+  );
+  assert.equal(
+    pageTargets.length,
+    1,
+    `QA requires exactly one dedicated page target; found ${pageTargets.length}`,
+  );
+  const [target] = pageTargets;
 
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
@@ -128,30 +173,80 @@ async function connect() {
   let requestId = 0;
   const pending = new Map();
   const diagnostics = [];
+  const rejectPending = (reason) => {
+    for (const { reject, timeout } of pending.values()) {
+      clearTimeout(timeout);
+      reject(reason);
+    }
+    pending.clear();
+  };
+  socket.addEventListener("close", () => {
+    rejectPending(new Error("Chrome DevTools socket closed with commands pending"));
+  });
+  socket.addEventListener("error", () => {
+    rejectPending(new Error("Chrome DevTools socket failed with commands pending"));
+  });
   socket.addEventListener("message", (event) => {
     const message = JSON.parse(String(event.data));
     if (!message.id) {
       if (message.method === "Runtime.exceptionThrown") {
-        diagnostics.push(
-          message.params.exceptionDetails.exception?.description
+        diagnostics.push({
+          kind: "runtime-exception",
+          text: message.params.exceptionDetails.exception?.description
             ?? message.params.exceptionDetails.text,
-        );
+        });
+      } else if (
+        message.method === "Runtime.consoleAPICalled"
+        && ["error", "assert"].includes(message.params.type)
+      ) {
+        diagnostics.push({
+          kind: "console-error",
+          text: message.params.args
+            .map((argument) => argument.value ?? argument.description ?? "")
+            .join(" "),
+        });
       }
       if (
         message.method === "Log.entryAdded"
         && message.params.entry.level === "error"
-      ) diagnostics.push(message.params.entry.text);
+      ) {
+        diagnostics.push({
+          kind: "log-error",
+          text: message.params.entry.text,
+        });
+      } else if (
+        message.method === "Network.responseReceived"
+        && message.params.response.status >= 400
+      ) {
+        diagnostics.push({
+          kind: "http-error",
+          text: `${message.params.response.status} ${message.params.response.url}`,
+        });
+      } else if (
+        message.method === "Network.loadingFailed"
+        && message.params.canceled !== true
+      ) {
+        diagnostics.push({
+          kind: "network-loading-failed",
+          text: `${message.params.type}: ${message.params.errorText}`,
+        });
+      }
       return;
     }
     const waiter = pending.get(message.id);
     if (!waiter) return;
     pending.delete(message.id);
+    clearTimeout(waiter.timeout);
     if (message.error) waiter.reject(new Error(message.error.message));
     else waiter.resolve(message.result);
   });
   const send = (method, params = {}) => new Promise((resolve, reject) => {
     const id = ++requestId;
-    pending.set(id, { resolve, reject });
+    const timeout = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error(`CDP ${method} timed out after 30000ms`));
+    }, 30_000);
+    pending.set(id, { resolve, reject, timeout });
     socket.send(JSON.stringify({ id, method, params }));
   });
   await Promise.all([
@@ -211,8 +306,8 @@ async function connect() {
   const screenshot = async (name) => {
     const file = path.join(OUTPUT, name);
     const blockers = await evaluate(`({
-      loading: document.querySelectorAll(".loading-card").length,
-      errors: document.querySelectorAll(".loading-card.error").length,
+      loading: document.querySelectorAll(".loading-card, .loading-shell").length,
+      errors: document.querySelectorAll(".loading-card.error, .error-card, .load-error").length,
       canvases: document.querySelectorAll(".playfield canvas").length
     })`);
     assert.equal(blockers.loading, 0, `${name} still has loading UI`);
@@ -226,7 +321,12 @@ async function connect() {
     const bytes = Buffer.from(result.data, "base64");
     assert.ok(bytes.length > 45_000, `${name} is suspiciously small (${bytes.length})`);
     await writeFile(file, bytes);
-    return { file, bytes: bytes.length };
+    return {
+      file,
+      bytes: bytes.length,
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+      captureBackend: "headless-shell-surface",
+    };
   };
 
   return {
@@ -361,10 +461,13 @@ const sourceProvenance = collectQaSourceProvenance();
 const browser = await connect();
 try {
   await browser.viewport(1512, 982, false);
-  await browser.send("Page.navigate", { url: BASE_URL });
+  await browser.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: QA_BOOTSTRAP_SOURCE,
+  });
+  await browser.send("Page.navigate", { url: qaUrl() });
   await browser.waitFor("document.readyState === 'complete'", 45_000);
   await browser.evaluate("localStorage.clear()");
-  await browser.send("Page.navigate", { url: BASE_URL });
+  await browser.send("Page.navigate", { url: qaUrl() });
   await browser.waitFor(
     "document.readyState === 'complete' && Boolean(window.__CHASING_QA__?.getState()?.ready)",
     45_000,
@@ -376,8 +479,22 @@ try {
     return state?.ready
       && state.campaign?.id === "campus-library-lockdown"
       && state.themeMission?.library?.selectedPlan?.id === "access-authorization"
+      && state.assets?.decorativeReady === true
+      && state.assets?.deferredDressingSettled === true
+      && state.assets?.qaDecorativeSceneCompiled === true
+      && state.assets?.qaDecorativeSceneCompileCount === 1
+      && state.assets?.qaTransientArtPrewarmCount === 1
       && !document.querySelector(".loading-card");
   })()`, 45_000);
+  const frameDriver = await browser.evaluate("window.__CHASING_QA_FRAME_DRIVER__");
+  const cssMotion = await browser.evaluate("window.__CHASING_QA_CSS_MOTION__");
+  assert.equal(frameDriver, "timer-60hz");
+  assert.equal(cssMotion, "settled");
+  await browser.evaluate("window.__CHASING_QA__.setDirectorEnabled(false)");
+  assert.equal(
+    await browser.evaluate("window.__CHASING_QA__.getStealthProbe().director.enabled"),
+    false,
+  );
 
   const accessExpected = LIBRARY_PLAN_EXPECTATIONS["access-authorization"];
   const access = await browser.evaluate("window.__CHASING_QA__.getState()");
@@ -429,7 +546,12 @@ try {
       && state.themeMission?.library?.selectedPlan?.id === "fire-release"
       && state.campaign?.exit?.x === 2
       && state.campaign?.exit?.y === 5
-      && !document.querySelector(".loading-card");
+      && state.assets?.decorativeReady === true
+      && state.assets?.deferredDressingSettled === true
+      && state.assets?.qaDecorativeSceneCompiled === true
+      && state.assets?.qaDecorativeSceneCompileCount === 1
+      && state.assets?.qaTransientArtPrewarmCount === 1
+      && !document.querySelector(".loading-card, .loading-shell, .error-card, .load-error");
   })()`, 45_000);
   const fireExpected = LIBRARY_PLAN_EXPECTATIONS["fire-release"];
   const fire = await browser.evaluate("window.__CHASING_QA__.getState()");
@@ -781,7 +903,11 @@ try {
   assert.deepEqual(browser.diagnostics, []);
   const report = {
     baseUrl: BASE_URL,
+    qaUrl: qaUrl(),
+    frameDriver,
+    cssMotion,
     sourceProvenance,
+    diagnostics: browser.diagnostics,
     screenshots: [
       accessReady,
       accessComplete,

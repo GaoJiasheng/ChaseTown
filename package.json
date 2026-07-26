@@ -26,6 +26,7 @@
     "qa:deep-gameplay": "node scripts/deep-gameplay-visual-qa.mjs",
     "qa:library-gold": "node scripts/library-gold-visual-qa.mjs",
     "qa:locker-maze": "node scripts/locker-maze-qa.mjs",
+    "qa:stealth-systems": "node scripts/stealth-systems-visual-qa.mjs",
     "qa:theme-bootstrap": "node scripts/theme-bootstrap-visual-qa.mjs",
     "test": "npm run build:clean && npm run test:unit",
     "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
@@ -36,33 +37,33 @@
   },
   "dependencies": {
     "next": "16.2.11",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "three": "^0.185.1"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
+    "@cloudflare/vite-plugin": "1.47.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/three": "^0.185.1",
-    "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
+    "@vitejs/plugin-react": "6.0.4",
+    "@vitejs/plugin-rsc": "0.5.30",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.11",
     "gltfpack": "1.2.0",
-    "react-server-dom-webpack": "19.2.6",
-    "sharp": "0.35.0",
+    "react-server-dom-webpack": "19.2.8",
+    "sharp": "0.35.2",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "vite": "8.1.5",
+    "wrangler": "4.114.0"
   },
   "overrides": {
     "postcss": "8.5.23",
-    "sharp": "0.35.0"
+    "sharp": "0.35.2"
   },
   "type": "module"
 }

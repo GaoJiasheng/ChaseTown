@@ -7,6 +7,7 @@ import type {
   Point,
   PublicEvidenceMemory,
   SoundEvidenceSourceType,
+  WorldClueSourceType,
 } from "./contracts.ts";
 import { distanceBetween, findPath, isWalkable, neighbors, normalizeVector, pointKey } from "./navigation.ts";
 
@@ -24,16 +25,18 @@ export interface ChaserBrainInput {
   deltaSeconds: number;
 }
 
-export interface CompletedSoundInvestigation {
+export interface CompletedEvidenceInvestigation {
   readonly sourceId: string;
-  readonly sourceType: SoundEvidenceSourceType;
+  readonly sourceType: SoundEvidenceSourceType | WorldClueSourceType;
 }
 
 export interface ChaserBrainResult {
   state: ChaserState;
   completedHideCheckId: string | null;
   completedHideCheckSource: "witnessed" | "search" | null;
-  completedSoundInvestigation?: CompletedSoundInvestigation;
+  /** Backward-compatible sound-only receipt used by existing adapters. */
+  completedSoundInvestigation?: CompletedEvidenceInvestigation;
+  completedEvidenceInvestigation?: CompletedEvidenceInvestigation;
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -88,6 +91,7 @@ export function createInitialChaser(
       lastKnownPosition: null,
       lastSeenAtSeconds: null,
       lastHeardAtSeconds: null,
+      lastClueAtSeconds: null,
       lastKnownEvidence: null,
       deferredSoundEvidence: null,
       witnessedHideSpotId: null,
@@ -104,7 +108,9 @@ function evidenceSearchSeed(state: ChaserState): number {
   const point = state.memory.lastKnownPosition ?? state.position;
   const evidenceAtSeconds = state.memory.lastKnownEvidence === "sound"
     ? state.memory.lastHeardAtSeconds
-    : state.memory.lastSeenAtSeconds;
+    : state.memory.lastKnownEvidence === "world-clue"
+      ? state.memory.lastClueAtSeconds
+      : state.memory.lastSeenAtSeconds;
   const observedTick = Math.round((evidenceAtSeconds ?? 0) * 10);
   let seed = (Math.round(point.x * 100) * 73856093)
     ^ (Math.round(point.y * 100) * 19349663)
@@ -184,6 +190,20 @@ function publicEvidenceRecord(
       strength: clamp01(evidence.strength),
     });
   }
+  if (evidence.kind === "world-clue") {
+    return Object.freeze({
+      kind: "world-clue",
+      position: Object.freeze({ ...evidence.position }),
+      observedAtSeconds: evidence.observedAtSeconds,
+      confidence: clamp01(evidence.confidence),
+      decayPerSecond: Math.max(0, evidence.decayPerSecond ?? 0.06),
+      sourceType: evidence.sourceType,
+      sourceId: evidence.clueId,
+      repeatCount: 0,
+      hideSpotId: null,
+      strength: clamp01(evidence.confidence),
+    });
+  }
   return Object.freeze({
     kind: evidence.kind === "hide-entry-visible" ? "hide-entry-visible" : "visual",
     position: Object.freeze({ ...evidence.position }),
@@ -205,8 +225,9 @@ function decayedEvidenceConfidence(entry: PublicEvidenceMemory, nowSeconds: numb
 
 function evidencePriority(entry: PublicEvidenceMemory): number {
   switch (entry.kind) {
-    case "hide-entry-visible": return 3;
-    case "visual": return 2;
+    case "hide-entry-visible": return 4;
+    case "visual": return 3;
+    case "world-clue": return 2;
     case "sound": return 1;
   }
 }
@@ -331,6 +352,7 @@ function rememberVisibleTarget(state: ChaserState, evidence: Exclude<PerceptionE
       lastKnownPosition: { ...evidence.position },
       lastSeenAtSeconds: evidence.observedAtSeconds,
       lastHeardAtSeconds: null,
+      lastClueAtSeconds: state.memory.lastClueAtSeconds,
       lastKnownEvidence: "visual",
       // A fresh visual point remains primary, but must not erase a legally
       // heard secondary cue before its post-visual investigation window.
@@ -361,6 +383,29 @@ function rememberSoundTarget(
       lastKnownPosition: { ...evidence.position },
       lastHeardAtSeconds: evidence.observedAtSeconds,
       lastKnownEvidence: "sound",
+      deferredSoundEvidence: null,
+      witnessedHideSpotId: null,
+      evidenceTrail,
+    },
+  };
+}
+
+function rememberWorldClueTarget(
+  state: ChaserState,
+  evidence: Extract<PerceptionEvidence, { kind: "world-clue" }>,
+): ChaserState {
+  const evidenceTrail = rememberPublicEvidence(state, evidence);
+  return {
+    ...state,
+    searchHideSpotId: null,
+    hideCheckSource: null,
+    searchHideChecksCompleted: 0,
+    inspectedHideSpotIds: Object.freeze([]),
+    memory: {
+      ...state.memory,
+      lastKnownPosition: { ...evidence.position },
+      lastClueAtSeconds: evidence.observedAtSeconds,
+      lastKnownEvidence: "world-clue",
       deferredSoundEvidence: null,
       witnessedHideSpotId: null,
       evidenceTrail,
@@ -462,11 +507,17 @@ function rememberConcurrentSound(
   return deferSoundEvidence(state, level, config, evidence, nowSeconds);
 }
 
-function drivingSoundEvidence(state: ChaserState): PublicEvidenceMemory | null {
-  if (state.memory.lastKnownEvidence !== "sound") return null;
+function drivingInvestigableEvidence(state: ChaserState): PublicEvidenceMemory | null {
+  if (
+    state.memory.lastKnownEvidence !== "sound"
+    && state.memory.lastKnownEvidence !== "world-clue"
+  ) return null;
+  const observedAtSeconds = state.memory.lastKnownEvidence === "sound"
+    ? state.memory.lastHeardAtSeconds
+    : state.memory.lastClueAtSeconds;
   return (state.memory.evidenceTrail ?? []).find((entry) => (
-    entry.kind === "sound"
-    && Math.abs(entry.observedAtSeconds - (state.memory.lastHeardAtSeconds ?? -1)) <= 1e-6
+    entry.kind === state.memory.lastKnownEvidence
+    && Math.abs(entry.observedAtSeconds - (observedAtSeconds ?? -1)) <= 1e-6
   )) ?? null;
 }
 
@@ -584,6 +635,47 @@ export function stepChaserBrain(
     return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
   }
 
+  if (input.evidence.kind === "world-clue") {
+    const worldClue = input.evidence;
+    const alreadyDrivingSameClue = next.memory.lastKnownEvidence === "world-clue"
+      && next.memory.evidenceTrail?.some((entry) => (
+        entry.kind === "world-clue"
+        && entry.sourceId === worldClue.clueId
+      ));
+    const committedToVisualAnchor = state.memory.lastKnownEvidence === "visual"
+      && ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known"].includes(state.mode);
+    if (committedToVisualAnchor || state.mode === "check-hide" || alreadyDrivingSameClue) {
+      next = {
+        ...next,
+        memory: {
+          ...next.memory,
+          evidenceTrail: rememberPublicEvidence(next, worldClue),
+        },
+      };
+      if (input.secondarySoundEvidence) {
+        next = rememberConcurrentSound(
+          next,
+          level,
+          config,
+          input.secondarySoundEvidence,
+          input.nowSeconds,
+        );
+      }
+    } else {
+      next = enterMode(rememberWorldClueTarget(next, worldClue), "go-to-last-known");
+      if (input.secondarySoundEvidence) {
+        next = rememberConcurrentSound(
+          next,
+          level,
+          config,
+          input.secondarySoundEvidence,
+          input.nowSeconds,
+        );
+      }
+      return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
+    }
+  }
+
   if (input.evidence.kind === "sound") {
     let secondarySoundHandled = false;
     const confidence = actionableSoundConfidence(next, input.evidence);
@@ -680,7 +772,7 @@ export function stepChaserBrain(
     next = { ...next, visualConfirmationSeconds: null };
   }
 
-  let completedSoundInvestigation: CompletedSoundInvestigation | undefined;
+  let completedEvidenceInvestigation: CompletedEvidenceInvestigation | undefined;
   switch (state.mode) {
     case "patrol":
       if (input.reachedTarget && level.patrol.length) {
@@ -709,14 +801,14 @@ export function stepChaserBrain(
         heading: lastKnownScanHeading(state.scanOriginHeading, elapsed, config.lastKnownScanSeconds),
       };
       if (elapsed + 1e-9 >= config.lastKnownScanSeconds) {
-        const investigatedSound = drivingSoundEvidence(state);
+        const investigatedEvidence = drivingInvestigableEvidence(state);
         if (
-          investigatedSound?.sourceId
-          && investigatedSound.sourceType !== "player"
+          investigatedEvidence?.sourceId
+          && investigatedEvidence.sourceType !== "player"
         ) {
-          completedSoundInvestigation = {
-            sourceId: investigatedSound.sourceId,
-            sourceType: investigatedSound.sourceType,
+          completedEvidenceInvestigation = {
+            sourceId: investigatedEvidence.sourceId,
+            sourceType: investigatedEvidence.sourceType,
           };
         }
         const deferred = promoteDeferredSound(next, level, config, input.nowSeconds);
@@ -749,6 +841,7 @@ export function stepChaserBrain(
             lastKnownPosition: null,
             lastSeenAtSeconds: null,
             lastHeardAtSeconds: null,
+            lastClueAtSeconds: null,
             lastKnownEvidence: null,
             deferredSoundEvidence: null,
             witnessedHideSpotId: null,
@@ -802,7 +895,13 @@ export function stepChaserBrain(
     state: next,
     completedHideCheckId: null,
     completedHideCheckSource: null,
-    ...(completedSoundInvestigation ? { completedSoundInvestigation } : {}),
+    ...(completedEvidenceInvestigation && completedEvidenceInvestigation.sourceType !== "footprint"
+      && completedEvidenceInvestigation.sourceType !== "disturbed-prop"
+      && completedEvidenceInvestigation.sourceType !== "door-disturbance"
+      && completedEvidenceInvestigation.sourceType !== "infrastructure-anomaly"
+      ? { completedSoundInvestigation: completedEvidenceInvestigation }
+      : {}),
+    ...(completedEvidenceInvestigation ? { completedEvidenceInvestigation } : {}),
   };
 }
 
@@ -980,10 +1079,13 @@ function legacyLocalSearchWaypoints(level: LevelDefinition, anchor: Point, seed:
 }
 
 function searchWaypoints(state: ChaserState, level: LevelDefinition, anchor: Point): Point[] {
-  const drivingSound = drivingSoundEvidence(state);
+  const drivingEvidence = drivingInvestigableEvidence(state);
   const authoredEnvironmentEvidence = Boolean(
-    drivingSound
-    && ["environment-decoy", "environment-hazard"].includes(drivingSound.sourceType),
+    drivingEvidence
+    && (
+      drivingEvidence.kind === "world-clue"
+      || ["environment-decoy", "environment-hazard"].includes(drivingEvidence.sourceType)
+    ),
   );
   // Certified visual/footstep routes retain their calibrated local sweep.
   // Player-triggered authored mechanisms opt into the richer branch search,

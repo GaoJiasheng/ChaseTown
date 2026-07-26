@@ -16,22 +16,63 @@ simulation.start(); // 开始或完整重开
 ## 2. 输入与固定步更新
 
 ```ts
-const state = simulation.advance(renderDeltaSeconds, {
-  move: { x: moveX, y: moveY },
-  interactPressed,
-  peekHeld,
+import {
+  advanceFixedStepHostFrame,
+  createFixedStepHost,
+  resetFixedStepHost,
+} from "./game/fixed-step-host.ts";
+
+let host = createFixedStepHost({
+  fixedStepSeconds: simulation.config.fixedStepSeconds,
+  maxFrameDeltaSeconds: simulation.config.maxFrameDeltaSeconds,
 });
+
+const frame = advanceFixedStepHostFrame(host, renderDeltaSeconds, {
+  interactionPressed: interactPressed,
+  portableDecoyPressed,
+  stealthToolPressed,
+  evidenceErasePressed,
+});
+host = frame.state;
+
+for (const fixedTick of frame.ticks) {
+  // 先在同一个 fixedTick 上推进任务承诺、主题机关、诱饵和 Director，
+  // 再构造本 tick 的 SimulationInput。
+  const state = simulation.advance(simulation.config.fixedStepSeconds, {
+    move: { x: moveX, y: moveY },
+    interactPressed: fixedTick.edges.interactionPressed,
+    peekHeld,
+  });
+  if (state.tick !== fixedTick.tick) throw new Error("fixed-step drift");
+}
+
+if (simulation.getState().phase !== "playing" || paused) {
+  host = resetFixedStepHost(host, simulation.getState().tick);
+}
 ```
 
-- `move` 和 `peekHeld` 是持续量，每个渲染帧提交当前值。
-- `interactPressed` 是按下沿，只在一个渲染帧为 `true`；键盘重复事件不能重复触发。
+- `move` 和 `peekHeld` 是持续量：每个渲染帧采样一次，同一帧产出的所有 fixed tick
+  使用该样本。
+- 所有动作按下沿先进入 `fixed-step-host`。120/144 Hz 下即使当前渲染帧没有产出
+  fixed tick，也必须保留到下一个 tick；多 tick 帧只允许第一个 tick 消费一次。
 - 窗口失焦、页面隐藏、pointer cancel 时立即把持续输入清零。
-- 不要自行按 60 Hz 循环。`advance()` 内部已经用 `fixedStepSeconds` 累积和推进，并限制异常的大帧间隔。
-- 一个渲染帧可能包含多个固定步；返回的 `state.events` 会保留这些固定步产生的全部事件。
+- 生产接线由 render host 累积并限制异常大帧，再逐个 emitted tick 调用一次
+  `simulation.advance(fixedStepSeconds, input)`。`GameSimulation.advance()` 保留内部
+  accumulator 作为独立逻辑测试/兼容入口，但生产宿主不能再把整帧
+  `renderDeltaSeconds` 直接交给它，否则任务、机关、诱饵、Director 与模拟会跨帧率分叉。
+- 任务承诺完成/取消、主题机关、便携诱饵和 Director 必须在构造该 tick 的
+  `SimulationInput` 前推进；证据、工具收据和公开调查结果在模拟步后消费同一 tick。
+  Director 要先依据当前公开 threat 激活/撤销，危险已出现时本 tick 不得残留倍率。
+- 一个渲染帧可能包含多个固定步。宿主应按 tick 汇总 `state.events`，一次性动画、
+  声音、触觉和 React 状态只在 fixed loop 结束后按生命周期事件各触发一次。
+- 非 `playing`、暂停、重开、切关或模拟在多 tick 帧中进入终态时，必须把 host
+  原子 `resetFixedStepHost(..., state.tick)`；同时清空未消费 edge 和 remainder，
+  不能只改 render clock 或放宽 tick 断言。
 
 ### 主动主题机关
 
 周期主题事件仍可继续使用 `sampleThemeMechanic(theme, elapsedSeconds)`。需要把铃声、呼叫器、排烟阀或蒸汽阀落到真实位置时，使用纯状态机：
+以下 step 必须放在上面的 `for (const fixedTick of frame.ticks)` 内：
 
 ```ts
 import {
@@ -45,9 +86,10 @@ let bell = createMechanicInstance(
 );
 
 const result = stepMechanicInstance(bell, {
-  deltaSeconds,
-  nowSeconds: simulation.getState().elapsedSeconds,
-  activationRequested: interactPressed,
+  deltaSeconds: simulation.config.fixedStepSeconds,
+  nowSeconds:
+    simulation.getState().elapsedSeconds + simulation.config.fixedStepSeconds,
+  activationRequested: fixedTick.edges.interactionPressed,
   actorPosition: simulation.getState().player.position,
 });
 bell = result.instance;
@@ -55,7 +97,7 @@ bell = result.instance;
 if (result.emittedSoundStimulus) {
   simulation.emitWorldSound(result.emittedSoundStimulus);
 }
-simulation.advance(deltaSeconds, {
+simulation.advance(simulation.config.fixedStepSeconds, {
   environmentSoundMasking: result.sample.soundMasking,
   visionRangeMultiplier: result.sample.visionRangeMultiplier,
 });
@@ -131,10 +173,13 @@ const legalChecks = queryLegalHideCandidates(
 
 每帧按以下顺序接线：
 
-1. 采样输入并调用 `advance()`。
-2. 消费 `state.events`，触发一次性动画、声音和镜头反馈。
-3. 用 `state.player`、`state.chaser` 和 `state.hideSpots` 更新 Three.js 表现对象。
-4. HUD 只需以 5–10 Hz 把必要字段同步给 React，不能让 React state 驱动模拟。
+1. 采样持续输入和动作 edge，调用 `advanceFixedStepHostFrame()`。
+2. 对每个 emitted tick 依次推进前置玩法域、构造 `SimulationInput`，再调用一次
+   `advance(fixedStepSeconds)`；模拟步后推进同 tick 的证据/工具/公开调查域。
+3. fixed loop 结束后汇总事件，触发一次性动画、声音和镜头反馈；同一生命周期
+   事件不能因为一帧含多个 tick 而重复播放。
+4. 用最终 `state.player`、`state.chaser` 和 `state.hideSpots` 更新 Three.js 表现对象。
+5. HUD 只需以 5–10 Hz 把必要字段同步给 React，不能让 React state 驱动模拟。
 
 `getState()` 返回防外部修改的副本。渲染平滑应在表现层对当前视觉 transform 做插值/阻尼；不得把平滑后的坐标写回模拟。
 
@@ -369,3 +414,125 @@ const cue = simulation.getChaserArchetypeRuntime();
   出口选择不会进入主题控制器；占用只在既有检查动作完成后用于命中结算。
 - 四种规则的集成测试同时跑 30 / 60 / 120 Hz 渲染步进；决策、事件、位置和
   查询态必须完全一致。新增规则不得以渲染帧率作为随机源或计时源。
+
+## 10. 系统性潜行 2.0 接线
+
+### 10.1 公开证据
+
+`stealth-evidence.ts` 是独立的固定 tick 证据账本。渲染层可以记录公开观察，
+但交给 AI 的查询 capability 必须只闭包静态 `LevelDefinition`：
+
+```ts
+let evidence = createStealthEvidenceState();
+evidence = stepStealthEvidence(evidence, {
+  type: "record",
+  tick,
+  observation: {
+    kind: "footprint",
+    position,
+    source: {
+      publicId: `${level.id}:floor:${tick}`,
+      kind: "surface",
+      publicity: "world-observable",
+    },
+    detail: { direction: heading },
+  },
+}).state;
+
+const clue = selectStealthEvidenceForAi(evidence, {
+  atTick: tick,
+  observer: {
+    position: simulation.getState().chaser.position,
+    heading: simulation.getState().chaser.heading,
+  },
+  maximumDistance,
+  fieldOfViewDegrees,
+}, {
+  isVisible: (from, to) => hasLineOfSight(level, from, to),
+});
+
+if (clue) {
+  simulation.emitWorldClue(
+    aiEvidenceCandidateToPerception(clue, simulation.getState().elapsedSeconds),
+  );
+}
+```
+
+- 不要把 `GameState`、`HideSpotRuntimeState`、Three.js scene 或任何 actor
+  引用捕获进 `isVisible / isReachable` 回调。
+- `AiEvidenceView` 故意不包含 `origin`；表现层也不能用真实/伪造身份改写
+  AI 优先级。
+- `emitWorldClue()` 只排队公开线索。模拟仍在 AI tick 上执行视觉优先、
+  衰减、一次性消费、到点巡视和调查回执。
+- 同一 `clueId` 是幂等的；不得每帧换 ID 规避路径重置保护。
+
+### 10.2 工具收据
+
+`stealth-toolbelt.ts` 不直接修改模拟。主循环必须逐固定 tick 调用
+`advanceStealthToolbelt()`，再把收据适配为有限运行效果：
+
+```ts
+const begun = beginStealthToolUse(toolbelt, level, {
+  tick: toolbelt.tick,
+  tool: "door-wedge",
+  actorPosition,
+  target: resolveStealthToolTarget(
+    "door-wedge",
+    level,
+    actorPosition,
+    actorHeading,
+    powerCircuitPosition,
+  )!,
+});
+toolbelt = begun.state;
+
+const advanced = advanceStealthToolbelt(toolbelt, nextFixedTick);
+toolbelt = advanced.state;
+for (const event of advanced.events) {
+  if (event.type === "tool-commitment-completed") {
+    // 创建正式 3D View，并把 riskEvidence 适配为公开证据/声音。
+  }
+  if (event.type === "tool-effect-ended") {
+    // 撤销有限效果并成对释放 View、Light 和自有 GPU 资源。
+  }
+}
+```
+
+- 门楔只允许把 `chaserSpeedMultiplier` 暂时降为 0；不能改玩家导航图。
+- 门楔目标必须是拓扑证明的窄门阈值并携带 `traversalAxis`；只有
+  `isDoorWedgeTraversalAttempt()` 证明追捕者沿该轴朝门槛穿越时才应用延迟。
+- 拐角镜只能通过 `canCornerMirrorObservePoint()` 返回有限公开观察结果，
+  不能把追捕者对象或持续坐标写入 HUD。
+- 断电只能收紧正常的 `visionRangeMultiplier`、增加有限
+  `environmentSoundMasking`；抓捕距离、碰撞和出口不变。
+- 工具承诺期间可以冻结玩家移动，但模拟、AI、证据衰减和导演 tick 必须继续。
+
+### 10.3 公平节奏导演
+
+`tension-director.ts` 是建议器，不拥有世界。每个固定 tick 只提交公开聚合量：
+
+```ts
+const step = stepTensionDirector(definition, director, {
+  tick,
+  runPhase,
+  threat,
+  safeTicks,
+  chaseTicks,
+  ticksSinceChaseEscape,
+  missionProgressPermille,
+  resourcesRemainingPermille,
+  legalRouteIds,
+});
+director = step.state;
+```
+
+- 输入对象执行严格白名单校验；不要附加玩家坐标、房间、朝向、视线或最近物件。
+- 只有 `active` 阶段才应用 `tensionDirectorModifiers()`；`warning` 只做可见预告。
+- `event-cancelled / event-ended` 后必须立即回到基线倍率。
+- 所有全局路线 ID 都由任务软锁审计中可达的完整目标顺序/出口生成，禁止传入
+  没有审计记录的占位字符串。未来若接入 `door-cycle`，必须使用建议中的
+  `preservedLegalRouteIds` 安全证书再次校验，不能由渲染层猜路线。
+- 暂停、危险、刚脱险、资源保护或路线保护会撤销/抑制事件；不得在外层绕开。
+
+完整设计与验收边界见
+[`../../docs/14_系统性潜行2.0机制与接线合同.md`](../../docs/14_系统性潜行2.0机制与接线合同.md)。

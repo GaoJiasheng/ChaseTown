@@ -18,6 +18,7 @@ import {
 import { AdaptiveScoreController, prewarmAdaptiveScoreAssets } from "./game/audio/adaptive-score.ts";
 import {
   ImmersiveSoundscapeController,
+  THEME_MECHANIC_AUDIO_PROFILES,
   soundPanForWorldPoints,
 } from "./game/audio/immersive-soundscape.ts";
 import {
@@ -62,8 +63,16 @@ import type {
   LevelDefinition,
   PlayerMode,
   Point,
+  SimulationInput,
 } from "./game/contracts.ts";
 import { failureFeedback } from "./game/failure-feedback.ts";
+import {
+  advanceFixedStepHostFrame,
+  createFixedStepHost,
+  resetFixedStepHost,
+  type FixedStepHostEdges,
+  type FixedStepHostTick,
+} from "./game/fixed-step-host.ts";
 import {
   planHideGuidance,
   stabilizeHideGuidance,
@@ -168,6 +177,40 @@ import {
   type PortableDecoySample,
   type PortableDecoyState,
 } from "./game/portable-decoy.ts";
+import {
+  createStealthEvidenceState,
+  queryStealthEvidenceForAi,
+  stepStealthEvidence,
+  type AiEvidenceView,
+  type PublicEvidenceObservation,
+  type StealthEvidenceState,
+} from "./game/stealth-evidence.ts";
+import {
+  STEALTH_TOOL_KINDS,
+  advanceStealthToolbelt,
+  beginStealthToolUse,
+  createStealthToolbeltState,
+  sampleStealthToolbelt,
+  type StealthToolKind,
+  type StealthToolReceipt,
+  type StealthToolbeltSample,
+  type StealthToolbeltState,
+} from "./game/stealth-toolbelt.ts";
+import {
+  aiEvidenceCandidateToPerception,
+  canCornerMirrorObservePoint,
+  createCampaignTensionDirectorDefinition,
+  isDoorWedgeTraversalAttempt,
+  resolveStealthToolTarget,
+  tensionDirectorModifiers,
+} from "./game/stealth-expansion.ts";
+import {
+  createInitialTensionDirectorState,
+  stepTensionDirector,
+  type TensionDirectorEventKind,
+  type TensionDirectorState,
+  type TensionTier,
+} from "./game/tension-director.ts";
 import { isPlayerVisuallyExposed } from "./game/perception.ts";
 import {
   EMERGENCY_RENDER_POLICIES,
@@ -483,6 +526,103 @@ const THEME_MECHANIC_ART: Readonly<Record<CampaignTheme, ThemeMechanicArtSpec>> 
     node: "FactoryControlConsole",
     height: 1.62,
     label: "设备旁路控制台",
+  },
+};
+
+type StealthToolArtSpec = {
+  readonly node: string;
+  readonly height: number;
+  readonly label: string;
+  readonly indicatorAnchor?: readonly [number, number, number];
+  readonly wallOffsetCells?: number;
+};
+
+const THEME_STEALTH_TOOL_ART: Readonly<
+  Record<CampaignTheme, Readonly<Record<StealthToolKind, StealthToolArtSpec>>>
+> = {
+  campus: {
+    "door-wedge": {
+      node: "CampusBikeRack",
+      height: 0.48,
+      label: "走廊门楔锁",
+      indicatorAnchor: [0, 0.27, 0.11],
+    },
+    "corner-mirror": {
+      node: "CampusWaterFountain",
+      height: 0.72,
+      label: "饮水台转角镜",
+      indicatorAnchor: [0, 0.58, 0.18],
+    },
+    "temporary-blackout": {
+      node: "CampusWayfinding",
+      height: 0.82,
+      label: "走廊断电控制牌",
+      indicatorAnchor: [0, 0.64, 0.055],
+      wallOffsetCells: 0.46,
+    },
+  },
+  hospital: {
+    "door-wedge": {
+      node: "HospitalCrashCart",
+      height: 0.68,
+      label: "急救车门楔锁",
+      indicatorAnchor: [0, 0.45, 0.16],
+    },
+    "corner-mirror": {
+      node: "HospitalIVStation",
+      height: 0.8,
+      label: "输液架转角镜",
+      indicatorAnchor: [0, 0.66, 0.18],
+    },
+    "temporary-blackout": {
+      node: "HospitalWayfinding",
+      height: 0.82,
+      label: "病区应急控制牌",
+      indicatorAnchor: [0, 0.64, 0.055],
+      wallOffsetCells: 0.46,
+    },
+  },
+  "fire-station": {
+    "door-wedge": {
+      node: "FireSafetyCones",
+      height: 0.5,
+      label: "训练区门楔锁",
+      indicatorAnchor: [0, 0.28, 0.22],
+    },
+    "corner-mirror": {
+      node: "FireHoseReel",
+      height: 0.72,
+      label: "水带盘转角镜",
+      indicatorAnchor: [0, 0.4, 0.2],
+    },
+    "temporary-blackout": {
+      node: "FireStationWayfinding",
+      height: 0.84,
+      label: "消防站断电控制牌",
+      indicatorAnchor: [0, 0.63, 0.06],
+      wallOffsetCells: 0.46,
+    },
+  },
+  factory: {
+    "door-wedge": {
+      node: "FactorySafetyBarrier",
+      height: 0.52,
+      label: "安全栅门楔锁",
+      indicatorAnchor: [0, 0.32, 0.13],
+    },
+    "corner-mirror": {
+      node: "FactoryPipeAssembly",
+      height: 0.72,
+      label: "管线转角镜",
+      indicatorAnchor: [-0.18, 0.66, 0.23],
+    },
+    "temporary-blackout": {
+      node: "FactoryControlConsole",
+      height: 0.78,
+      label: "设备断电控制台",
+      indicatorAnchor: [0, 0.64, 0.24],
+      wallOffsetCells: 0.36,
+    },
   },
 };
 
@@ -1255,6 +1395,26 @@ function staticMeshBounds(root: THREE.Object3D) {
   return bounds;
 }
 
+function authoredGeometrySignature(root: THREE.Object3D) {
+  root.updateMatrixWorld(true);
+  const parts: string[] = [];
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+    const bounds = object.geometry.boundingBox;
+    const size = bounds?.getSize(new THREE.Vector3()) ?? new THREE.Vector3();
+    const position = object.geometry.getAttribute("position");
+    parts.push([
+      position?.count ?? 0,
+      object.geometry.index?.count ?? 0,
+      size.x.toFixed(4),
+      size.y.toFixed(4),
+      size.z.toFixed(4),
+    ].join(":"));
+  });
+  return parts.sort().join("|");
+}
+
 function fitActor(source: THREE.Object3D, height: number) {
   const cloned = SkeletonUtils.clone(source);
   const clonedMaterials = new Map<string, THREE.Material>();
@@ -1729,6 +1889,50 @@ type PortableDecoyView = {
   disposed: boolean;
 };
 
+type StealthEvidenceView = {
+  readonly id: string;
+  readonly placedAssetId: string;
+  readonly root: THREE.Group;
+  readonly light: THREE.PointLight | null;
+  readonly createdAtTick: number;
+  readonly expiresAtTick: number;
+};
+
+type StealthToolWorldView = {
+  readonly receiptId: string;
+  readonly placedAssetId: string;
+  readonly tool: StealthToolKind;
+  readonly root: THREE.Group;
+  readonly light: THREE.PointLight | null;
+  readonly createdAtTick: number;
+  readonly expiresAtTick: number;
+  readonly basePosition: THREE.Vector3;
+  readonly baseScale: THREE.Vector3;
+  readonly baseRotation: THREE.Euler;
+  readonly ownedGeometries: ReadonlySet<THREE.BufferGeometry>;
+  readonly ownedMaterials: ReadonlySet<THREE.Material>;
+  disposed: boolean;
+};
+
+type StealthSystemsUiState = {
+  readonly toolbelt: StealthToolbeltSample;
+  readonly selectedTool: StealthToolKind;
+  readonly evidenceCount: number;
+  readonly countermeasureBudget: number;
+  readonly countermeasureBusy: boolean;
+  readonly notice: string | null;
+  readonly mirrorThreatVisible: boolean;
+};
+
+type TensionDirectorUiState = {
+  readonly tier: TensionTier;
+  readonly score: number;
+  readonly phase: "idle" | "warning" | "active";
+  readonly kind: TensionDirectorEventKind | null;
+  readonly label: string;
+  readonly progress: number;
+};
+
 type ThemeMechanicUiState = MechanicInstanceSample & {
   readonly distanceMeters: number;
   readonly activationCostLabel: string;
@@ -1772,6 +1976,9 @@ type GameCommands = {
   restart: () => void;
   interact: () => void;
   deployDecoy: () => void;
+  selectStealthTool: (tool: StealthToolKind) => void;
+  useStealthTool: () => void;
+  eraseEvidence: () => void;
   toggleMute: () => void;
   togglePause: () => void;
   adjustZoom: (factor: number) => void;
@@ -1898,11 +2105,40 @@ const MASTERY_RANK_LABEL: Readonly<Record<MasteryRank, string>> = Object.freeze(
   gold: "金章",
 });
 
+const STEALTH_TOOL_UI: Readonly<Record<StealthToolKind, {
+  readonly label: string;
+  readonly shortLabel: string;
+  readonly glyph: string;
+  readonly hint: string;
+}>> = Object.freeze({
+  "door-wedge": Object.freeze({
+    label: "门楔",
+    shortLabel: "楔",
+    glyph: "◢",
+    hint: "在窄门布置，只延迟追捕者",
+  }),
+  "corner-mirror": Object.freeze({
+    label: "拐角镜",
+    shortLabel: "镜",
+    glyph: "◉",
+    hint: "从公开观察锥确认拐角威胁",
+  }),
+  "temporary-blackout": Object.freeze({
+    label: "临时断电",
+    shortLabel: "电",
+    glyph: "ϟ",
+    hint: "在主题控制台制造有限暗区",
+  }),
+});
+
 const NOOP_COMMANDS: GameCommands = {
   begin() {},
   restart() {},
   interact() {},
   deployDecoy() {},
+  selectStealthTool() {},
+  useStealthTool() {},
+  eraseEvidence() {},
   toggleMute() {},
   togglePause() {},
   adjustZoom() {},
@@ -2481,10 +2717,20 @@ export function ChasingGame() {
   const keyboardKeys = useRef(new Set<string>());
   const touchKeys = useRef(new Set<string>());
   const analogueMove = useRef({ x: 0, y: 0 });
+  const joystickControl = useRef<HTMLDivElement>(null);
   const joystickBase = useRef<HTMLDivElement>(null);
+  const joystickThumb = useRef<HTMLSpanElement>(null);
   const joystickPointerId = useRef<number | null>(null);
+  const joystickGeometry = useRef<{
+    readonly centerX: number;
+    readonly centerY: number;
+    readonly radius: number;
+  } | null>(null);
   const interactPressed = useRef(false);
   const portableDecoyPressed = useRef(false);
+  const stealthToolPressed = useRef(false);
+  const evidenceErasePressed = useRef(false);
+  const selectedStealthToolRef = useRef<StealthToolKind>("door-wedge");
   const preferredHideExit = useRef<HideExitKind>("origin");
   const pausedRef = useRef(false);
   const resumeButton = useRef<HTMLButtonElement>(null);
@@ -2662,17 +2908,34 @@ export function ChasingGame() {
   const [interaction, setInteraction] = useState<HideInteraction | null>(null);
   const [activeHideArchetype, setActiveHideArchetype] = useState<HideArchetypeKind | null>(null);
   const [hideExitSelection, setHideExitSelection] = useState<HideExitSelection | null>(null);
+  const keyboardPresentationRef = useRef({
+    phase,
+    selectedLevelIndex,
+    hideExitSelection,
+  });
+  useEffect(() => {
+    keyboardPresentationRef.current = {
+      phase,
+      selectedLevelIndex,
+      hideExitSelection,
+    };
+  }, [hideExitSelection, phase, selectedLevelIndex]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [loadProgress, setLoadProgress] = useState({ done: 0, total: BOOTSTRAP_ASSET_COUNT, message: "正在载入项目美术资产：角色、校园与互动道具…" });
   const [resultVisible, setResultVisible] = useState(true);
   const [musicMuted, setMusicMuted] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [joystickThumb, setJoystickThumb] = useState({ x: 0, y: 0, active: false });
   const [themeMechanic, setThemeMechanic] = useState<ThemeMechanicUiState | null>(null);
   const [themeMission, setThemeMission] = useState<ThemeMissionUiState | null>(null);
   const [portableDecoy, setPortableDecoy] = useState<PortableDecoySample | null>(null);
   const [portableDecoyNotice, setPortableDecoyNotice] = useState<string | null>(null);
+  const [selectedStealthTool, setSelectedStealthTool] =
+    useState<StealthToolKind>("door-wedge");
+  const [stealthSystems, setStealthSystems] =
+    useState<StealthSystemsUiState | null>(null);
+  const [tensionDirector, setTensionDirector] =
+    useState<TensionDirectorUiState | null>(null);
   const [ghostRace, setGhostRace] = useState<GhostRaceUiState | null>(null);
   const [lastCaptureReason, setLastCaptureReason] = useState<CaptureReason | null>(null);
   const [lastRunSummary, setLastRunSummary] = useState<LastRunSummary | null>(null);
@@ -2731,6 +2994,14 @@ export function ChasingGame() {
   const restart = useCallback(() => commands.current.restart(), []);
   const interact = useCallback(() => commands.current.interact(), []);
   const deployDecoy = useCallback(() => commands.current.deployDecoy(), []);
+  const chooseStealthTool = useCallback((tool: StealthToolKind) => {
+    commands.current.selectStealthTool(tool);
+  }, []);
+  const deployStealthTool = useCallback(
+    () => commands.current.useStealthTool(),
+    [],
+  );
+  const eraseEvidence = useCallback(() => commands.current.eraseEvidence(), []);
   const retryScene = useCallback(() => {
     setLoading(true);
     setLoadError("");
@@ -2744,29 +3015,39 @@ export function ChasingGame() {
   const resetAnalogueMove = useCallback(() => {
     analogueMove.current = { x: 0, y: 0 };
     joystickPointerId.current = null;
-    setJoystickThumb({ x: 0, y: 0, active: false });
+    joystickGeometry.current = null;
+    if (joystickThumb.current) {
+      joystickThumb.current.style.transform = "translate3d(0px, 0px, 0)";
+    }
+    joystickControl.current?.classList.remove("active");
   }, []);
   const sampleJoystickPointer = useCallback((clientX: number, clientY: number) => {
-    const base = joystickBase.current;
-    if (!base) return;
-    const bounds = base.getBoundingClientRect();
-    const radius = Math.max(26, Math.min(bounds.width, bounds.height) * 0.28);
+    const geometry = joystickGeometry.current;
+    if (!geometry) return;
     const sample = sampleVirtualStick(
-      { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 },
+      { x: geometry.centerX, y: geometry.centerY },
       { x: clientX, y: clientY },
-      radius,
+      geometry.radius,
     );
     analogueMove.current = { x: sample.x, y: sample.y };
-    setJoystickThumb({
-      x: sample.thumbX,
-      y: sample.thumbY,
-      active: sample.strength > 0,
-    });
+    if (joystickThumb.current) {
+      joystickThumb.current.style.transform =
+        `translate3d(${sample.thumbX}px, ${sample.thumbY}px, 0)`;
+    }
+    joystickControl.current?.classList.toggle("active", sample.strength > 0);
   }, []);
   const joystickPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (pausedRef.current) return;
     if (joystickPointerId.current !== null) return;
+    const base = joystickBase.current;
+    if (!base) return;
     event.preventDefault();
+    const bounds = base.getBoundingClientRect();
+    joystickGeometry.current = {
+      centerX: bounds.left + bounds.width / 2,
+      centerY: bounds.top + bounds.height / 2,
+      radius: Math.max(26, Math.min(bounds.width, bounds.height) * 0.28),
+    };
     joystickPointerId.current = event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
     sampleJoystickPointer(event.clientX, event.clientY);
@@ -2912,9 +3193,19 @@ export function ChasingGame() {
       else if (key === "0") commands.current.resetZoom();
       else if (key === "-" || key === "_") commands.current.adjustZoom(1.12);
       else if (key === "+" || key === "=") commands.current.adjustZoom(1 / 1.12);
+      else if (key === "1") commands.current.selectStealthTool("door-wedge");
+      else if (key === "2") commands.current.selectStealthTool("corner-mirror");
+      else if (key === "3") commands.current.selectStealthTool("temporary-blackout");
+      // Gameplay commands validate against the authoritative simulation state.
+      // React's presentation phase can trail a freshly loaded/set QA scenario
+      // by one commit; gating here made the first real key press disappear.
+      else if (key === "g") commands.current.useStealthTool();
+      else if (key === "c") commands.current.eraseEvidence();
       else if (
         key === "x"
-        && hideExitSelection?.options.some((option) => option.kind === "alternate")
+        && keyboardPresentationRef.current.hideExitSelection?.options.some(
+          (option) => option.kind === "alternate",
+        )
       ) {
         const nextHideExit = preferredHideExit.current === "alternate"
           ? "origin"
@@ -2924,12 +3215,24 @@ export function ChasingGame() {
           ? { ...current, selected: nextHideExit }
           : current);
       }
-      else if ((key === "enter" || key === " ") && phase !== "playing") {
-        if (phase === "won" && selectedLevelIndex < CAMPAIGN_LEVELS.length - 1) chooseLevel(selectedLevelIndex + 1);
+      else if (
+        (key === "enter" || key === " ")
+        && keyboardPresentationRef.current.phase !== "playing"
+      ) {
+        const keyboardPresentation = keyboardPresentationRef.current;
+        if (
+          keyboardPresentation.phase === "won"
+          && keyboardPresentation.selectedLevelIndex < CAMPAIGN_LEVELS.length - 1
+        ) {
+          chooseLevelRef.current(keyboardPresentation.selectedLevelIndex + 1);
+        }
         else commands.current.begin();
       }
-      else if (key === "e" || (key === " " && phase === "playing")) commands.current.interact();
-      else if (key === "f" && phase === "playing") commands.current.deployDecoy();
+      else if (
+        key === "e"
+        || (key === " " && keyboardPresentationRef.current.phase === "playing")
+      ) commands.current.interact();
+      else if (key === "f") commands.current.deployDecoy();
     };
     const keyUp = (event: KeyboardEvent) => keyboardKeys.current.delete(event.key.toLowerCase());
     const clearInput = () => {
@@ -2937,6 +3240,8 @@ export function ChasingGame() {
       touchKeys.current.clear();
       interactPressed.current = false;
       portableDecoyPressed.current = false;
+      stealthToolPressed.current = false;
+      evidenceErasePressed.current = false;
       preferredHideExit.current = "origin";
       resetAnalogueMove();
     };
@@ -2952,7 +3257,10 @@ export function ChasingGame() {
         // lose foreground focus to the host browser's updater; suppressing the
         // overlay there keeps evidence frames deterministic without changing
         // player-facing behaviour.
-        if (phase === "playing" && !pausedRef.current) {
+        if (
+          keyboardPresentationRef.current.phase === "playing"
+          && !pausedRef.current
+        ) {
           commands.current.togglePause();
         }
       }
@@ -2967,7 +3275,7 @@ export function ChasingGame() {
       removeEventListener("blur", clearBlurInput);
       document.removeEventListener("visibilitychange", clearHiddenInput);
     };
-  }, [chooseLevel, hideExitSelection, phase, resetAnalogueMove, selectedLevelIndex]);
+  }, [resetAnalogueMove]);
 
   useEffect(() => {
     const host = mount.current;
@@ -3020,6 +3328,10 @@ export function ChasingGame() {
     let lastHudUpdate = 0;
     let ready = false;
     let decorativeAssetsReady = false;
+    let qaDecorativeSceneCompiled = false;
+    let qaDecorativeSceneCompileCount = 0;
+    let qaTransientArtPrewarmCount = 0;
+    let qaDirectorEnabled = true;
     let textureDeduplication: TextureDeduplication = {
       sourceTextures: 0,
       canonicalTextures: 0,
@@ -3098,6 +3410,24 @@ export function ChasingGame() {
     if (!missionAudit.passed) {
       throw new Error(`主题任务链未通过软锁审计：${missionAudit.failures.join("；")}`);
     }
+    const certifiedDirectorRouteIds = Object.freeze(
+      "plans" in missionAudit
+        ? missionAudit.plans
+            .filter((route) => route.reachable)
+            .map((route) => (
+              `${campaignLevel.id}:mission-route:${route.planId}:${route.exitId}`
+            ))
+        : missionAudit.orders
+            .filter((route) => route.reachable)
+            .map((route, index) => (
+              `${campaignLevel.id}:mission-route:${index + 1}:${
+                route.objectiveIds.join(">")
+              }`
+            )),
+    );
+    if (certifiedDirectorRouteIds.length === 0) {
+      throw new Error("公平节奏导演缺少通过拓扑软锁审计的完成路线");
+    }
     const missionPlacementById = new Map(
       missionPlacements.map((placement) => [placement.objectiveId, placement.position]),
     );
@@ -3158,6 +3488,37 @@ export function ChasingGame() {
       chaserArchetypeProfile,
     });
     let latestState = simulation.getState();
+    let fixedStepHost = createFixedStepHost({
+      fixedStepSeconds: simulation.config.fixedStepSeconds,
+      maxFrameDeltaSeconds: simulation.config.maxFrameDeltaSeconds,
+      initialTick: latestState.tick,
+    });
+    let stealthEvidenceState: StealthEvidenceState = createStealthEvidenceState();
+    let stealthToolbeltState: StealthToolbeltState = createStealthToolbeltState();
+    const tensionDirectorDefinition = createCampaignTensionDirectorDefinition(
+      campaignLevel.id,
+      certifiedDirectorRouteIds,
+      simulation.config.fixedStepSeconds,
+    );
+    let tensionDirectorState: TensionDirectorState =
+      createInitialTensionDirectorState(tensionDirectorDefinition);
+    let directorSafeTicks = 0;
+    let directorChaseTicks = 0;
+    let directorTicksSinceChaseEscape: number | null = null;
+    let directorWasChased = false;
+    let lastStealthAuxiliaryTick = 0;
+    let lastFootprintTick = Number.NEGATIVE_INFINITY;
+    let lastFootprintPosition = { ...campaignLevel.playerStart };
+    let stealthNotice: string | null = null;
+    let stealthNoticeUntilTick = 0;
+    let mirrorThreatVisible = false;
+    const deliveredEvidenceIds = new Set<string>();
+    const investigatedEvidenceIds = new Set<string>();
+    const triggeredDoorWedges = new Map<string, number>();
+    let activeWedgeHoldUntilTick = 0;
+    const stealthEvidenceViews = new Map<string, StealthEvidenceView>();
+    const stealthToolWorldViews = new Map<string, StealthToolWorldView>();
+    const stealthToolModelTemplates: Partial<Record<StealthToolKind, THREE.Group>> = {};
     let runTelemetry = createRunTelemetry({
       levelId: campaignLevel.id,
       theme: campaignLevel.campaign.theme,
@@ -3355,20 +3716,35 @@ export function ChasingGame() {
       cameraViewportHeight,
       gameplayCameraInsetsForViewport(cameraViewportWidth, cameraViewportHeight, touchLayoutMedia.matches),
     );
-    let renderQualityTier: RenderQualityTier = selectInitialRenderQuality({
-      viewportWidth: Math.max(1, initialBounds.width),
-      viewportHeight: Math.max(1, initialBounds.height),
-      devicePixelRatio,
-      coarsePointer: touchLayoutMedia.matches,
-      deviceMemoryGb: deviceNavigator.deviceMemory,
-      hardwareConcurrency: navigator.hardwareConcurrency,
-    });
+    const qaSearchParams = new URLSearchParams(location.search);
+    const qaQualityValue = qaSearchParams.has("qa")
+      ? qaSearchParams.get("qaQuality")
+      : null;
+    const qaRequestedRenderQuality: RenderQualityTier | null =
+      qaQualityValue === "high"
+      || qaQualityValue === "balanced"
+      || qaQualityValue === "mobile"
+        ? qaQualityValue
+        : null;
+    let renderQualityTier: RenderQualityTier = qaRequestedRenderQuality
+      ?? selectInitialRenderQuality({
+        viewportWidth: Math.max(1, initialBounds.width),
+        viewportHeight: Math.max(1, initialBounds.height),
+        devicePixelRatio,
+        coarsePointer: touchLayoutMedia.matches,
+        deviceMemoryGb: deviceNavigator.deviceMemory,
+        hardwareConcurrency: navigator.hardwareConcurrency,
+      });
     let renderQualityProfile: RenderQualityProfile = RENDER_QUALITY_PROFILES[renderQualityTier];
     let emergencyDegradation: EmergencyDegradationState = INITIAL_EMERGENCY_DEGRADATION_STATE;
     let qualitySamples: number[] = [];
     let qualityEvaluationSeconds = 0;
     let qualityDecisionSeconds = 0;
     let qualityCandidate: RenderQualityTier = renderQualityTier;
+    let qaRenderQualityLocked = qaRequestedRenderQuality !== null;
+    const qaQualityAppliedBeforeRendererCreation = qaRenderQualityLocked;
+    let renderQualityTransitionCount = 0;
+    let emergencyQualityTransitionCount = 0;
     let deferredDressingRoot: THREE.Group | null = null;
     let latestFirstPlayableAudit: ReturnType<typeof auditFirstPlayableAssetBudget> | null = null;
     const loadedTransferBytes = new Map<string, number>();
@@ -3602,6 +3978,46 @@ export function ChasingGame() {
       );
       if (!source) {
         throw new Error(`${campaignLevel.campaign.themeLabel}主题模型缺少主动机关节点 ${art.node}`);
+      }
+      const toolArt = THEME_STEALTH_TOOL_ART[campaignLevel.campaign.theme];
+      for (const tool of STEALTH_TOOL_KINDS) {
+        const toolSpec = toolArt[tool];
+        const toolSource = resolveThemeNode(
+          themeKit.scene,
+          campaignLevel.campaign.theme,
+          [toolSpec.node],
+        );
+        if (!toolSource) {
+          throw new Error(
+            `${campaignLevel.campaign.themeLabel}主题模型缺少${toolSpec.label}节点 ${toolSpec.node}`,
+          );
+        }
+        // Isolate the tool finish before fitProp tunes PBR values. Geometry
+        // and texture images remain shared, while source-kit materials cannot
+        // be mutated by a transient gameplay presentation.
+        const styledToolSource = toolSource.clone(true);
+        applyThemeSurface(styledToolSource, campaignLevel.campaign.palette.accent, {
+          blend: tool === "temporary-blackout" ? 0.16 : 0.08,
+          emissive: campaignLevel.campaign.palette.emissive,
+          emissiveIntensity: tool === "temporary-blackout" ? 0.36 : 0.2,
+          roughnessShift: tool === "corner-mirror" ? -0.14 : -0.06,
+        });
+        const template = fitProp(styledToolSource, toolSpec.height, true);
+        template.name = `${campaignLevel.campaign.theme}-authored-${tool}-template`;
+        template.userData.authoredToolSource = toolSpec.node;
+        template.userData.authoredToolLabel = toolSpec.label;
+        template.userData.authoredToolAssetId =
+          `theme-kit:${campaignLevel.campaign.theme}`;
+        template.userData.authoredToolSourceUrl =
+          THEME_KIT_ASSETS[campaignLevel.campaign.theme];
+        template.userData.authoredToolGeometrySignature =
+          authoredGeometrySignature(toolSource);
+        template.userData.authoredToolFallbackUsed = false;
+        template.userData.authoredToolIndicatorAnchor =
+          toolSpec.indicatorAnchor ? [...toolSpec.indicatorAnchor] : null;
+        template.userData.authoredToolWallOffsetCells =
+          toolSpec.wallOffsetCells ?? null;
+        stealthToolModelTemplates[tool] = template;
       }
       const root = fitProp(source, art.height, true);
       root.name = `active-theme-mechanic-${mechanicDefinition.id}`;
@@ -3948,6 +4364,509 @@ export function ChasingGame() {
         }
       }
     };
+    const createFootprintEvidenceTexture = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 256;
+      canvas.height = 256;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("无法创建足迹证据纹理");
+      const paintSole = (
+        x: number,
+        y: number,
+        rotation: number,
+        mirrored: boolean,
+      ) => {
+        context.save();
+        context.translate(x, y);
+        context.rotate(rotation);
+        context.scale(mirrored ? -1 : 1, 1);
+        const gradient = context.createLinearGradient(-20, -66, 20, 66);
+        gradient.addColorStop(0, "rgba(231,248,239,.96)");
+        gradient.addColorStop(0.38, "rgba(142,181,160,.88)");
+        gradient.addColorStop(0.72, "rgba(87,119,102,.7)");
+        gradient.addColorStop(1, "rgba(43,62,52,.35)");
+        context.fillStyle = gradient;
+        context.shadowColor = "rgba(126,231,190,.32)";
+        context.shadowBlur = 8;
+        context.beginPath();
+        context.moveTo(-4, -63);
+        context.bezierCurveTo(-24, -61, -30, -43, -25, -24);
+        context.bezierCurveTo(-21, -9, -12, -2, -14, 15);
+        context.bezierCurveTo(-17, 34, -20, 54, -12, 64);
+        context.bezierCurveTo(-4, 72, 12, 70, 17, 60);
+        context.bezierCurveTo(22, 48, 15, 30, 15, 15);
+        context.bezierCurveTo(15, -1, 29, -15, 29, -34);
+        context.bezierCurveTo(29, -53, 15, -65, -4, -63);
+        context.closePath();
+        context.fill();
+        context.shadowBlur = 0;
+
+        // Carve the arch and worn tread gaps from a continuous, recognizable
+        // shoe silhouette. Fixed lug placement keeps the generated texture
+        // deterministic across runs and screenshots.
+        context.globalCompositeOperation = "destination-out";
+        context.fillStyle = "rgba(0,0,0,.86)";
+        context.beginPath();
+        context.ellipse(-13, 6, 8, 19, -0.18, 0, Math.PI * 2);
+        context.fill();
+        for (let row = -48; row <= 52; row += 17) {
+          for (const column of [-10, 5, 18]) {
+            context.save();
+            context.translate(column, row);
+            context.rotate((row / 17) % 2 ? 0.3 : -0.3);
+            context.beginPath();
+            context.roundRect(-5, -2.3, 10, 4.6, 1.6);
+            context.fill();
+            context.restore();
+          }
+        }
+        context.save();
+        context.rotate(-0.22);
+        context.fillRect(-23, -4, 46, 5);
+        context.restore();
+
+        context.globalCompositeOperation = "source-over";
+        context.strokeStyle = "rgba(226,251,239,.84)";
+        context.lineWidth = 2.2;
+        context.beginPath();
+        context.moveTo(-4, -63);
+        context.bezierCurveTo(-24, -61, -30, -43, -25, -24);
+        context.bezierCurveTo(-21, -9, -12, -2, -14, 15);
+        context.bezierCurveTo(-17, 34, -20, 54, -12, 64);
+        context.bezierCurveTo(-4, 72, 12, 70, 17, 60);
+        context.bezierCurveTo(22, 48, 15, 30, 15, 15);
+        context.bezierCurveTo(15, -1, 29, -15, 29, -34);
+        context.bezierCurveTo(29, -53, 15, -65, -4, -63);
+        context.stroke();
+
+        context.fillStyle = "rgba(205,239,220,.44)";
+        for (const [speckX, speckY, radius] of [
+          [-20, -56, 2.1],
+          [23, -40, 1.5],
+          [-15, 29, 1.8],
+          [14, 50, 1.2],
+          [3, -25, 1.4],
+        ] as const) {
+          context.beginPath();
+          context.arc(speckX, speckY, radius, 0, Math.PI * 2);
+          context.fill();
+        }
+        context.restore();
+      };
+      paintSole(81, 126, -0.12, false);
+      paintSole(177, 119, 0.12, true);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.name = "shared-premium-footprint-evidence";
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = true;
+      texture.anisotropy = Math.min(
+        8,
+        renderer.capabilities.getMaxAnisotropy(),
+      );
+      return texture;
+    };
+    const footprintEvidenceTexture = createFootprintEvidenceTexture();
+    const footprintEvidenceGeometry = new THREE.PlaneGeometry(
+      CELL * 0.76,
+      CELL * 0.58,
+    );
+    const footprintEvidenceMaterial = new THREE.MeshStandardMaterial({
+      name: "shared-premium-footprint-evidence-material",
+      map: footprintEvidenceTexture,
+      emissiveMap: footprintEvidenceTexture,
+      transparent: true,
+      opacity: 0.82,
+      alphaTest: 0.055,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -5,
+      polygonOffsetUnits: -5,
+      roughness: 0.78,
+      metalness: 0.02,
+      emissive: new THREE.Color(0x8ee5bc),
+      emissiveIntensity: 0.18,
+      side: THREE.DoubleSide,
+    });
+    const prewarmTransientArtResources = () => {
+      if (qaTransientArtPrewarmCount > 0) return true;
+      const templates = STEALTH_TOOL_KINDS.map(
+        (tool) => stealthToolModelTemplates[tool],
+      );
+      if (templates.some((template) => !template)) return false;
+
+      // The resource lifecycle gate must start after every shared authored
+      // geometry has reached WebGL once. A normal compile only prepares shader
+      // programs; a small offscreen draw also uploads geometry that happens to
+      // be outside the live camera on the first tool deployment. This keeps
+      // the baseline deterministic without weakening exact leak assertions.
+      const prewarmScene = new THREE.Scene();
+      const prewarmCamera = new THREE.OrthographicCamera(-2.6, 2.6, 1.8, -1.8, 0.1, 20);
+      prewarmCamera.position.set(0, 0.72, 8);
+      prewarmCamera.lookAt(0, 0.45, 0);
+      const clones = templates.map((template, index) => {
+        const clone = template!.clone(true);
+        clone.position.set((index - 1) * 1.55, 0, 0);
+        clone.traverse((object) => {
+          object.visible = true;
+          if (object instanceof THREE.Mesh) object.frustumCulled = false;
+        });
+        prewarmScene.add(clone);
+        return clone;
+      });
+      const footprint = new THREE.Mesh(
+        footprintEvidenceGeometry,
+        footprintEvidenceMaterial,
+      );
+      footprint.position.set(2.2, 0.35, 0);
+      footprint.frustumCulled = false;
+      prewarmScene.add(footprint);
+      const overrideMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+      });
+      prewarmScene.overrideMaterial = overrideMaterial;
+      const target = new THREE.WebGLRenderTarget(8, 8, {
+        depthBuffer: false,
+        stencilBuffer: false,
+      });
+      const previousTarget = renderer.getRenderTarget();
+      const previousAutoClear = renderer.autoClear;
+      try {
+        renderer.setRenderTarget(target);
+        renderer.autoClear = true;
+        renderer.clear();
+        renderer.render(prewarmScene, prewarmCamera);
+      } finally {
+        renderer.setRenderTarget(previousTarget);
+        renderer.autoClear = previousAutoClear;
+        prewarmScene.overrideMaterial = null;
+        clones.forEach((clone) => clone.removeFromParent());
+        footprint.removeFromParent();
+        target.dispose();
+        overrideMaterial.dispose();
+      }
+      qaTransientArtPrewarmCount += 1;
+      return true;
+    };
+    const compileSettledQaScene = () => {
+      if (
+        qaDecorativeSceneCompiled
+        || !decorativeAssetsReady
+        || deferredDressingFade !== null
+        || !qaRenderQualityLocked
+        || !prewarmTransientArtResources()
+      ) return false;
+      scene.updateMatrixWorld(true);
+      camera.updateMatrixWorld(true);
+      renderer.compile(scene, camera);
+      qaDecorativeSceneCompiled = true;
+      qaDecorativeSceneCompileCount += 1;
+      return true;
+    };
+    const createStealthEvidenceView = (evidence: AiEvidenceView) => {
+      if (stealthEvidenceViews.has(evidence.id)) return;
+      const placedAssetId =
+        `gameplay:stealth-evidence:${evidence.kind}:${evidence.id}`;
+      const root = new THREE.Group();
+      root.name = `stealth-evidence-${evidence.id}`;
+      root.userData.transientStealthRoot = true;
+      root.position.copy(world(evidence.position, campaignLevel));
+      if (evidence.kind === "footprint") {
+        const tread = new THREE.Mesh(
+          footprintEvidenceGeometry,
+          footprintEvidenceMaterial,
+        );
+        tread.name = "shared-premium-footprint-pair";
+        tread.rotation.x = -Math.PI / 2;
+        const direction = "direction" in evidence.detail
+          ? evidence.detail.direction
+          : { x: 0, y: 1 };
+        tread.rotation.z = -Math.atan2(direction.x, direction.y);
+        // Route markings sit at y=.072. Keep the evidence clearly above them
+        // while remaining visually bonded to the floor.
+        tread.position.y = 0.092;
+        tread.renderOrder = 4;
+        root.add(tread);
+      } else {
+        const evidenceTool: StealthToolKind = evidence.kind === "door-state"
+          ? "door-wedge"
+          : evidence.kind === "power-change"
+            ? "temporary-blackout"
+            : "corner-mirror";
+        const evidenceTemplate = stealthToolModelTemplates[evidenceTool];
+        if (!evidenceTemplate) return;
+        const authoredClue = evidenceTemplate.clone(true);
+        authoredClue.name = `authored-${evidence.kind}-evidence`;
+        authoredClue.scale.multiplyScalar(evidence.kind === "power-change" ? 0.8 : 0.62);
+        authoredClue.rotation.y = (evidence.createdAtTick % 7) * 0.17;
+        root.add(authoredClue);
+      }
+      // Evidence shares authored/emissive surfaces instead of changing the
+      // renderer's global point-light count for every transient clue. That
+      // avoids compiling a new shader family across the entire environment.
+      const light = null;
+      campus.add(root);
+      stealthEvidenceViews.set(evidence.id, {
+        id: evidence.id,
+        placedAssetId,
+        root,
+        light,
+        createdAtTick: evidence.createdAtTick,
+        expiresAtTick: evidence.expiresAtTick,
+      });
+      placedAssetIds.add(placedAssetId);
+    };
+    const disposeStealthEvidenceView = (view: StealthEvidenceView) => {
+      if (view.light) unregisterPerformanceLight(view.light);
+      view.root.removeFromParent();
+      view.root.traverse((child) => {
+        if (!(child instanceof THREE.Mesh) || !child.userData.transientStealthOwned) return;
+        child.geometry.dispose();
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((material) => {
+          for (const value of Object.values(material)) {
+            if (value instanceof THREE.Texture) value.dispose();
+          }
+          material.dispose();
+        });
+      });
+      stealthEvidenceViews.delete(view.id);
+      placedAssetIds.delete(view.placedAssetId);
+    };
+    const createStealthToolWorldView = (
+      receipt: StealthToolReceipt,
+    ) => {
+      const template = stealthToolModelTemplates[receipt.tool];
+      if (!template || stealthToolWorldViews.has(receipt.receiptId)) return;
+      const placedAssetId =
+        `gameplay:stealth-tool:${receipt.tool}:${receipt.receiptId}`;
+      const root = new THREE.Group();
+      const ownedGeometries = new Set<THREE.BufferGeometry>();
+      const ownedMaterials = new Set<THREE.Material>();
+      root.name = `stealth-tool-${receipt.tool}-${receipt.receiptId}`;
+      root.userData.transientStealthRoot = true;
+      for (const key of [
+        "authoredToolSource",
+        "authoredToolLabel",
+        "authoredToolAssetId",
+        "authoredToolSourceUrl",
+        "authoredToolGeometrySignature",
+        "authoredToolFallbackUsed",
+        "authoredToolIndicatorAnchor",
+        "authoredToolWallOffsetCells",
+      ]) {
+        root.userData[key] = template.userData[key];
+      }
+      const authoredDevice = template.clone(true);
+      authoredDevice.name = `authored-${receipt.tool}-device`;
+      root.add(authoredDevice);
+      const authoredIndicatorAnchor =
+        Array.isArray(template.userData.authoredToolIndicatorAnchor)
+        && template.userData.authoredToolIndicatorAnchor.length === 3
+          ? template.userData.authoredToolIndicatorAnchor as [number, number, number]
+          : null;
+      const addOwnedStatusLens = (
+        name: string,
+        anchor: readonly [number, number, number],
+        radius: number,
+        emissiveIntensity: number,
+      ) => {
+        const material = new THREE.MeshStandardMaterial({
+          color: 0xffef9b,
+          metalness: 0.36,
+          roughness: 0.24,
+          emissive: campaignLevel.campaign.palette.emissive,
+          emissiveIntensity,
+          side: THREE.DoubleSide,
+        });
+        const lens = new THREE.Mesh(
+          new THREE.CircleGeometry(radius, 32),
+          material,
+        );
+        lens.name = name;
+        lens.position.fromArray(anchor);
+        lens.position.z += 0.008;
+        lens.userData.transientStealthOwned = true;
+        ownedGeometries.add(lens.geometry);
+        ownedMaterials.add(material);
+        root.add(lens);
+      };
+      const position = receipt.riskEvidence.position;
+      root.position.copy(world(position, campaignLevel));
+      if (receipt.tool === "door-wedge") {
+        const thresholdOffset = receipt.effect.traversalAxis === "horizontal"
+          ? new THREE.Vector3(0.18, 0, 0)
+          : new THREE.Vector3(0, 0, 0.18);
+        root.position.add(thresholdOffset);
+        root.position.y = 0.025;
+        root.scale.setScalar(1);
+        root.rotation.y =
+          receipt.effect.traversalAxis === "horizontal" ? Math.PI / 2 : 0;
+        addOwnedStatusLens(
+          "authored-door-wedge-contact-indicator",
+          authoredIndicatorAnchor ?? [0, 0.28, 0.11],
+          0.06,
+          0.82,
+        );
+      } else if (receipt.tool === "corner-mirror") {
+        root.position.add(new THREE.Vector3(
+          receipt.effect.heading.x * 0.2,
+          0,
+          receipt.effect.heading.y * 0.2,
+        ));
+        root.position.y = 0.035;
+        root.scale.setScalar(1);
+        root.rotation.y = Math.atan2(
+          receipt.effect.heading.x,
+          receipt.effect.heading.y,
+        );
+        const mirrorMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xd9edf3,
+          metalness: 0.92,
+          roughness: 0.035,
+          clearcoat: 1,
+          clearcoatRoughness: 0.04,
+          envMapIntensity: 1.8,
+          emissive: 0x27434b,
+          emissiveIntensity: 0.18,
+          side: THREE.DoubleSide,
+        });
+        const mirrorFace = new THREE.Mesh(
+          new THREE.CircleGeometry(0.17, 48),
+          mirrorMaterial,
+        );
+        mirrorFace.name = "polished-corner-mirror-face";
+        mirrorFace.position.fromArray(authoredIndicatorAnchor ?? [0, 0.58, 0.18]);
+        mirrorFace.userData.transientStealthOwned = true;
+        ownedGeometries.add(mirrorFace.geometry);
+        ownedMaterials.add(mirrorMaterial);
+        root.add(mirrorFace);
+        const mirrorRimMaterial = new THREE.MeshStandardMaterial({
+          color: campaignLevel.campaign.palette.accent,
+          metalness: 0.86,
+          roughness: 0.2,
+          emissive: campaignLevel.campaign.palette.emissive,
+          emissiveIntensity: 0.16,
+        });
+        const mirrorRim = new THREE.Mesh(
+          new THREE.TorusGeometry(0.175, 0.014, 12, 48),
+          mirrorRimMaterial,
+        );
+        mirrorRim.name = "authored-corner-mirror-rim";
+        mirrorRim.position.copy(mirrorFace.position);
+        mirrorRim.userData.transientStealthOwned = true;
+        ownedGeometries.add(mirrorRim.geometry);
+        ownedMaterials.add(mirrorRimMaterial);
+        root.add(mirrorRim);
+      } else {
+        const adjacentWallDirection = [
+          { x: -1, y: 0 },
+          { x: 1, y: 0 },
+          { x: 0, y: -1 },
+          { x: 0, y: 1 },
+        ].find((direction) => (
+          !campaignLevel.walkable[position.y + direction.y]?.[position.x + direction.x]
+        )) ?? nearestExteriorDirection(position, campaignLevel);
+        const wallOffsetCells =
+          typeof template.userData.authoredToolWallOffsetCells === "number"
+            ? template.userData.authoredToolWallOffsetCells
+            : 0.42;
+        root.position.add(new THREE.Vector3(
+          adjacentWallDirection.x * CELL * wallOffsetCells,
+          0,
+          adjacentWallDirection.y * CELL * wallOffsetCells,
+        ));
+        root.position.y = 0.05;
+        root.scale.setScalar(1);
+        root.rotation.y = Math.atan2(
+          -adjacentWallDirection.x,
+          -adjacentWallDirection.y,
+        );
+        addOwnedStatusLens(
+          "authored-blackout-status-lens",
+          authoredIndicatorAnchor ?? [0, 0.64, 0.08],
+          0.075,
+          1.35,
+        );
+      }
+      const basePosition = root.position.clone();
+      const baseScale = root.scale.clone();
+      const baseRotation = root.rotation.clone();
+      root.position.y += 0.14;
+      root.scale.multiplyScalar(0.74);
+      root.rotation.y += 0.16;
+      // The fitted authored mesh already carries a readable emissive response.
+      // Avoid a transient PointLight here: adding/removing it changes the
+      // global light-count shader key for every PBR material in view.
+      const light = null;
+      campus.add(root);
+      stealthToolWorldViews.set(receipt.receiptId, {
+        receiptId: receipt.receiptId,
+        placedAssetId,
+        tool: receipt.tool,
+        root,
+        light,
+        createdAtTick: receipt.issuedAtTick,
+        expiresAtTick: receipt.expiresAtTick,
+        basePosition,
+        baseScale,
+        baseRotation,
+        ownedGeometries,
+        ownedMaterials,
+        disposed: false,
+      });
+      placedAssetIds.add(placedAssetId);
+    };
+    const disposeStealthToolWorldView = (view: StealthToolWorldView) => {
+      if (view.disposed) return;
+      view.disposed = true;
+      if (view.light) unregisterPerformanceLight(view.light);
+      for (const geometry of view.ownedGeometries) geometry.dispose();
+      for (const material of view.ownedMaterials) material.dispose();
+      view.root.removeFromParent();
+      stealthToolWorldViews.delete(view.receiptId);
+      placedAssetIds.delete(view.placedAssetId);
+    };
+    const updateStealthWorldViews = (tick: number) => {
+      for (const view of [...stealthEvidenceViews.values()]) {
+        const record = stealthEvidenceState.records.find(({ id }) => id === view.id);
+        if (!record || tick >= view.expiresAtTick) {
+          disposeStealthEvidenceView(view);
+          continue;
+        }
+        const lifetime = Math.max(1, view.expiresAtTick - view.createdAtTick);
+        const age = Math.max(0, tick - view.createdAtTick);
+        const fade = THREE.MathUtils.clamp(1 - age / lifetime, 0, 1);
+        view.root.visible = fade > 0.04;
+        if (view.light) view.light.intensity = 0.2 + fade * 0.72;
+      }
+      for (const view of [...stealthToolWorldViews.values()]) {
+        if (tick >= view.expiresAtTick) {
+          disposeStealthToolWorldView(view);
+          continue;
+        }
+        const deployProgress = THREE.MathUtils.clamp(
+          (tick - view.createdAtTick) / 10,
+          0,
+          1,
+        );
+        const eased = 1 - Math.pow(1 - deployProgress, 3);
+        const settle = Math.sin(deployProgress * Math.PI) * 0.045;
+        view.root.position.copy(view.basePosition);
+        view.root.position.y += (1 - eased) * 0.14 + settle;
+        view.root.scale.copy(view.baseScale).multiplyScalar(
+          0.74 + eased * 0.26 + settle,
+        );
+        view.root.rotation.copy(view.baseRotation);
+        view.root.rotation.y += (1 - eased) * 0.16;
+        if (view.light) {
+          const pulse = 0.5 + Math.sin(tick * 0.09 + view.createdAtTick) * 0.5;
+          view.light.intensity = 0.7 + pulse * 1.25;
+        }
+      }
+    };
     const updateThemeMissionViews = (nowMilliseconds: number) => {
       const available = new Set(
         availableRuntimeMissionObjectiveIds(),
@@ -4189,6 +5108,7 @@ export function ChasingGame() {
     };
 
     const applyRenderQuality = (tier: RenderQualityTier) => {
+      if (tier !== renderQualityTier) renderQualityTransitionCount += 1;
       renderQualityTier = tier;
       renderQualityProfile = RENDER_QUALITY_PROFILES[tier];
       const emergencyPolicy = EMERGENCY_RENDER_POLICIES[emergencyDegradation.level];
@@ -4635,6 +5555,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       touchKeys.current.clear();
       interactPressed.current = false;
       portableDecoyPressed.current = false;
+      stealthToolPressed.current = false;
+      evidenceErasePressed.current = false;
       preferredHideExit.current = "origin";
       resetAnalogueMove();
       lastCheckSpot = null;
@@ -4656,6 +5578,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         simulation.config.fixedStepSeconds,
       );
       ghostInputBuffer.reset();
+      fixedStepHost = resetFixedStepHost(fixedStepHost, state.tick);
       libraryMissionState = libraryGoldEnabled
         ? stepLibraryBranchingMission(
             LIBRARY_BRANCHING_MISSION,
@@ -4691,6 +5614,47 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ? samplePortableDecoy(portableDecoyState, 0)
         : null);
       setPortableDecoyNotice(portableDecoyFeedback);
+      stealthEvidenceState = createStealthEvidenceState();
+      stealthToolbeltState = createStealthToolbeltState();
+      tensionDirectorState =
+        createInitialTensionDirectorState(tensionDirectorDefinition);
+      directorSafeTicks = 0;
+      directorChaseTicks = 0;
+      directorTicksSinceChaseEscape = null;
+      directorWasChased = false;
+      lastStealthAuxiliaryTick = 0;
+      lastFootprintTick = Number.NEGATIVE_INFINITY;
+      lastFootprintPosition = { ...state.player.position };
+      stealthNotice = STEALTH_TOOL_UI[selectedStealthToolRef.current].hint;
+      stealthNoticeUntilTick = 240;
+      mirrorThreatVisible = false;
+      deliveredEvidenceIds.clear();
+      investigatedEvidenceIds.clear();
+      triggeredDoorWedges.clear();
+      activeWedgeHoldUntilTick = 0;
+      for (const view of [...stealthEvidenceViews.values()]) {
+        disposeStealthEvidenceView(view);
+      }
+      for (const view of [...stealthToolWorldViews.values()]) {
+        disposeStealthToolWorldView(view);
+      }
+      setStealthSystems({
+        toolbelt: sampleStealthToolbelt(stealthToolbeltState),
+        selectedTool: selectedStealthToolRef.current,
+        evidenceCount: 0,
+        countermeasureBudget: stealthEvidenceState.countermeasureBudgetRemaining,
+        countermeasureBusy: false,
+        notice: stealthNotice,
+        mirrorThreatVisible: false,
+      });
+      setTensionDirector({
+        tier: "rest",
+        score: 0,
+        phase: "idle",
+        kind: null,
+        label: "公平节奏导演待机",
+        progress: 0,
+      });
       playerRuleProgressTracker = new GhostRuleProgressTracker(
         missionObjectiveIds,
       );
@@ -4838,14 +5802,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
     };
 
-    const attemptPortableDecoyDeployment = () => {
+    const hasPlayerActionCommitment = () => Boolean(
+      missionCommitment
+      || mechanicRequiresMovementCommitment(mechanicInstance)
+      || portableDecoyThrowRemainingSeconds > 0
+      || stealthToolbeltState.commitment
+      || stealthEvidenceState.tick
+        < stealthEvidenceState.countermeasureBusyUntilTick
+    );
+
+    const attemptPortableDecoyDeployment = (
+      presentationEffects: Array<() => void>,
+    ) => {
       if (
         !portableDecoyState
         || !portableDecoyTemplate
         || latestState.phase !== "playing"
         || latestState.player.mode !== "free"
-        || missionCommitment
-        || mechanicRequiresMovementCommitment(mechanicInstance)
+        || hasPlayerActionCommitment()
       ) return false;
       const headingLength = Math.hypot(
         latestState.player.heading.x,
@@ -4901,7 +5875,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             ? "本局精装笔记本已经用完"
             : "前方没有无遮挡落点；转向开阔走廊后再投掷";
         portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.4;
-        setPortableDecoyNotice(portableDecoyFeedback);
+        const notice = portableDecoyFeedback;
+        presentationEffects.push(() => setPortableDecoyNotice(notice));
         return false;
       }
       const deployment = accepted.state.activeDeployment;
@@ -4916,13 +5891,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (!soundScheduled) {
         portableDecoyFeedback = "当前声场过于拥挤；诱饵没有消耗，请稍后重试";
         portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.4;
-        setPortableDecoyNotice(portableDecoyFeedback);
+        const notice = portableDecoyFeedback;
+        presentationEffects.push(() => setPortableDecoyNotice(notice));
         return false;
       }
       portableDecoyState = accepted.state;
       portableDecoySourceIds.add(deployment.sourceId);
       scheduledPortableDecoySourceIds.add(deployment.sourceId);
-      createPortableDecoyView(deployment);
       portableDecoyThrowRemainingSeconds =
         LIBRARY_PORTABLE_DECOY_DEFINITION.fuseSeconds;
       portableDecoyThrownCount += 1;
@@ -4937,17 +5912,291 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       });
       portableDecoyFeedback = `诱饵已投出 · 剩余 ${portableDecoyState.inventoryRemaining}`;
       portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.1;
-      setPortableDecoy(samplePortableDecoy(
+      const portableDecoySample = samplePortableDecoy(
         portableDecoyState,
         portableDecoyState.updatedAtSeconds,
+      );
+      const notice = portableDecoyFeedback;
+      presentationEffects.push(() => {
+        createPortableDecoyView(deployment);
+        setPortableDecoy(portableDecoySample);
+        setPortableDecoyNotice(notice);
+        playHapticCue(
+          "theme-warning",
+          preferencesRef.current.hapticsEnabled,
+          navigator.vibrate?.bind(navigator),
+        );
+      });
+      return true;
+    };
+
+    const applyStealthEvidenceCommand = (
+      command: unknown,
+      emitCountermeasureNoise = true,
+    ) => {
+      const step = stepStealthEvidence(stealthEvidenceState, command);
+      stealthEvidenceState = step.state;
+      for (const event of step.events) {
+        if (event.type === "evidence-recorded" || event.type === "evidence-forged") {
+          createStealthEvidenceView(event.evidence);
+        } else if (
+          event.type === "evidence-erased"
+          || event.type === "evidence-expired"
+          || event.type === "evidence-evicted"
+          || event.type === "evidence-superseded"
+        ) {
+          const view = stealthEvidenceViews.get(event.evidenceId);
+          if (view) disposeStealthEvidenceView(view);
+          deliveredEvidenceIds.delete(event.evidenceId);
+          investigatedEvidenceIds.delete(event.evidenceId);
+        } else if (
+          event.type === "countermeasure-cost-paid"
+          && emitCountermeasureNoise
+          && event.publicNoiseStrength > 0
+        ) {
+          simulation.emitWorldSound({
+            position: { ...latestState.player.position },
+            strength: event.publicNoiseStrength,
+            sourceType: "player-movement",
+            sourceId: `${campaignLevel.id}:countermeasure:${latestState.tick}`,
+            confidence: 0.7,
+            decayPerSecond: 0.22,
+          });
+        }
+      }
+      if (step.events.length > 0) {
+        const evidenceCount = step.state.records.length;
+        const countermeasureBudget =
+          step.state.countermeasureBudgetRemaining;
+        const runtimePlayfield = host.parentElement;
+        runtimePlayfield?.querySelectorAll<HTMLElement>(
+          "[data-stealth-evidence-summary]",
+        ).forEach((element) => {
+          element.textContent =
+            element.dataset.stealthEvidenceSummary === "compact"
+              ? `线索 ${evidenceCount} · 反侦察 ${countermeasureBudget}`
+              : `TACTICAL STEALTH · 线索 ${evidenceCount} · 反侦察 ${
+                  countermeasureBudget
+                }`;
+        });
+        setStealthSystems((current) => current
+          ? {
+              ...current,
+              evidenceCount,
+              countermeasureBudget,
+              countermeasureBusy:
+                step.state.tick < step.state.countermeasureBusyUntilTick,
+            }
+          : current);
+      }
+      return step;
+    };
+
+    const publishStealthNotice = (
+      message: string,
+      durationTicks: number,
+    ) => {
+      stealthNotice = message;
+      stealthNoticeUntilTick = latestState.tick + durationTicks;
+      const runtimePlayfield = host.parentElement;
+      runtimePlayfield?.querySelectorAll<HTMLElement>(
+        "[data-stealth-runtime-message], [data-stealth-mobile-message]",
+      ).forEach((element) => {
+        element.textContent = message;
+      });
+      setStealthSystems((current) => current
+        ? { ...current, notice: message }
+        : current);
+    };
+
+    const qaStealthToolPlacementAnchor = (tool: StealthToolKind) => {
+      const preferred = campaignLevel.hideSpots[0]?.approach
+        ?? campaignLevel.playerStart;
+      const candidates: Point[] = [];
+      for (let y = 0; y < campaignLevel.height; y += 1) {
+        for (let x = 0; x < campaignLevel.width; x += 1) {
+          if (!campaignLevel.walkable[y]?.[x]) continue;
+          candidates.push({ x, y });
+        }
+      }
+      candidates.sort((left, right) => (
+        distanceBetween(left, preferred) - distanceBetween(right, preferred)
+        || left.y - right.y
+        || left.x - right.x
       ));
-      setPortableDecoyNotice(portableDecoyFeedback);
+      if (tool === "temporary-blackout") {
+        const player = { ...mechanicPosition };
+        return Object.freeze({
+          player: Object.freeze(player),
+          target: resolveStealthToolTarget(
+            tool,
+            campaignLevel,
+            player,
+            { x: 0, y: 1 },
+            mechanicPosition,
+          ),
+        });
+      }
+      for (const player of candidates) {
+        const target = resolveStealthToolTarget(
+          tool,
+          campaignLevel,
+          player,
+          { x: 0, y: 1 },
+          mechanicPosition,
+        );
+        if (!target) continue;
+        return Object.freeze({
+          player: Object.freeze({ ...player }),
+          target,
+        });
+      }
+      return null;
+    };
+    const qaStealthToolPlacementAnchors = Object.freeze({
+      "door-wedge": qaStealthToolPlacementAnchor("door-wedge"),
+      "corner-mirror": qaStealthToolPlacementAnchor("corner-mirror"),
+      "temporary-blackout": qaStealthToolPlacementAnchor(
+        "temporary-blackout",
+      ),
+    });
+
+    const attemptStealthToolUse = () => {
+      const selected = selectedStealthToolRef.current;
+      if (
+        latestState.phase !== "playing"
+        || latestState.player.mode !== "free"
+        || hasPlayerActionCommitment()
+      ) {
+        publishStealthNotice("先完成当前动作，再使用潜行工具", 150);
+        return false;
+      }
+      const target = resolveStealthToolTarget(
+        selected,
+        campaignLevel,
+        latestState.player.position,
+        latestState.player.heading,
+        mechanicPosition,
+      );
+      if (!target) {
+        const message = selected === "corner-mirror"
+          ? "靠近有遮挡的拐角后再架镜"
+          : selected === "temporary-blackout"
+            ? "靠近带闪电标识的配电控制台后再切断照明"
+            : "靠近窄门或墙边阈值后再放置门楔";
+        publishStealthNotice(message, 180);
+        return false;
+      }
+      const result = beginStealthToolUse(
+        stealthToolbeltState,
+        campaignLevel,
+        {
+          tick: stealthToolbeltState.tick,
+          tool: selected,
+          actorPosition: latestState.player.position,
+          target,
+        },
+      );
+      if (!result.accepted) {
+        const rejectionCopy: Partial<Record<NonNullable<typeof result.rejection>, string>> = {
+          "inventory-empty": "本局库存已用完",
+          "cooldown-active": "工具正在冷却",
+          "effect-active": "该工具效果仍在生效",
+          "out-of-range": selected === "temporary-blackout"
+            ? "需要到主题控制台旁操作断电"
+            : "目标距离过远",
+          "interaction-blocked": "目标被实体遮挡",
+          "commitment-active": "上一项工具动作尚未完成",
+        };
+        const message = result.rejection
+          ? rejectionCopy[result.rejection] ?? "当前无法安全使用该工具"
+          : "当前无法安全使用该工具";
+        publishStealthNotice(message, 180);
+        return false;
+      }
+      stealthToolbeltState = result.state;
+      const seconds = (
+        result.state.commitment
+          ? result.state.commitment.completesAtTick - result.state.tick
+          : 0
+      ) * simulation.config.fixedStepSeconds;
+      publishStealthNotice(
+        `${STEALTH_TOOL_UI[selected].label}部署中 · ${seconds.toFixed(1)}s`,
+        180,
+      );
       playHapticCue(
         "theme-warning",
         preferencesRef.current.hapticsEnabled,
         navigator.vibrate?.bind(navigator),
       );
       return true;
+    };
+
+    const attemptEvidenceErase = () => {
+      if (
+        latestState.player.mode !== "free"
+        || hasPlayerActionCommitment()
+      ) {
+        publishStealthNotice("先结束当前动作，再处理地面线索", 150);
+        return false;
+      }
+      const nearest = stealthEvidenceState.records
+        .filter((record) => record.source.publicity === "world-observable")
+        .map((record) => ({
+          record,
+          distance: distanceBetween(record.position, latestState.player.position),
+        }))
+        .filter(({ distance }) => distance <= 1.35)
+        .sort((left, right) => left.distance - right.distance)[0]?.record;
+      if (!nearest) {
+        publishStealthNotice("附近没有可抹除的公开痕迹", 150);
+        return false;
+      }
+      const step = applyStealthEvidenceCommand({
+        type: "erase",
+        tick: stealthEvidenceState.tick,
+        evidenceId: nearest.id,
+      });
+      if (!step.accepted) {
+        const message = step.rejection === "insufficient-countermeasure-budget"
+          ? "反侦察资源不足"
+          : step.rejection === "countermeasure-busy"
+            ? "反侦察动作尚未完成"
+            : "这条公开线索无法被抹除";
+        publishStealthNotice(message, 180);
+        return false;
+      }
+      publishStealthNotice(
+        `已抹除${nearest.kind === "footprint" ? "足迹" : "环境痕迹"} · 资源 ${
+          stealthEvidenceState.countermeasureBudgetRemaining
+        }`,
+        180,
+      );
+      soundscape.triggerWorldSound({
+        listenerPosition: latestState.player.position,
+        sourcePosition: latestState.player.position,
+        kind: "theme-event",
+        maxDistance: 5,
+        baseGain: 0.13,
+        occlusion: 0,
+        foleySet: "cloth",
+        playbackRate: 1.16,
+      });
+      return true;
+    };
+
+    const canRuntimeObserveChaser = (state: GameState) => {
+      if (canPlayerObserveChaser(state, campaignLevel, simulation.config)) return true;
+      const mirrorReceipt = stealthToolbeltState.activeEffects["corner-mirror"]
+        ?.receipt;
+      return Boolean(
+        mirrorReceipt?.tool === "corner-mirror"
+        && canCornerMirrorObservePoint(
+          mirrorReceipt,
+          state.chaser.position,
+          campaignLevel,
+        ),
+      );
     };
 
     const setPauseState = (nextPaused: boolean) => {
@@ -4958,6 +6207,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       touchKeys.current.clear();
       interactPressed.current = false;
       portableDecoyPressed.current = false;
+      stealthToolPressed.current = false;
+      evidenceErasePressed.current = false;
+      fixedStepHost = resetFixedStepHost(
+        fixedStepHost,
+        latestState.tick,
+      );
       resetAnalogueMove();
       last = performance.now();
       score.setThreat(nextPaused ? 0 : threatForMode(latestState.chaser.mode));
@@ -4990,6 +6245,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         void score.unlock();
         void soundscape.unlock();
         portableDecoyPressed.current = true;
+      },
+      selectStealthTool(tool) {
+        selectedStealthToolRef.current = tool;
+        setSelectedStealthTool(tool);
+        setStealthSystems((current) => current
+          ? { ...current, selectedTool: tool, notice: STEALTH_TOOL_UI[tool].hint }
+          : current);
+      },
+      useStealthTool() {
+        if (!ready || latestState.phase !== "playing") return;
+        void score.unlock();
+        void soundscape.unlock();
+        stealthToolPressed.current = true;
+      },
+      eraseEvidence() {
+        if (!ready || latestState.phase !== "playing") return;
+        evidenceErasePressed.current = true;
       },
       toggleMute() {
         setMusicMuted((current) => {
@@ -6261,6 +7533,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         root.add(beaconLight);
         registerPerformanceLight(beaconLight, 3);
         parent.add(root);
+        if (archetype === "hard-locker") {
+          // A hero cabinet may sit directly between the fixed camera and both
+          // the player and a newly placed tool. Treat its authored shell like
+          // the maze architecture so the local silhouette cutout can reveal
+          // gameplay, while hidden/peek cameras still restore full opacity.
+          registerCameraOccluder(`hero-locker-${spot.id}`, [root]);
+        }
         const view: LockerView = {
           id: spot.id,
           archetype,
@@ -6295,12 +7574,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }
       }
       if (hideDressingSource && hideDressingPlacements.length) {
-        addInstancedModuleBatches([
+        const hideDressingBatches = addInstancedModuleBatches([
           { source: hideDressingSource, placements: hideDressingPlacements, preserveAuthoredScale: true },
         ], new THREE.Vector3(1.5, 2.3, 0.8), parent, true, `${campaignLevel.campaign.theme}-hide-dressing`, supportsMultiDraw);
-        // The surround is a landmark, not a wall. Keeping it opaque and crisp
-        // prevents the camera-occlusion shader from turning the cabinet into a
-        // translucent blur exactly when the player reaches it.
+        registerCameraOccluder(
+          `${campaignLevel.campaign.theme}-hide-dressing`,
+          hideDressingBatches,
+        );
+        // The shader opens only the narrow camera-to-actor corridor. Away from
+        // that corridor the authored landmark stays opaque and crisp.
         placedAssetIds.add(`theme-node:${hideDressingSource.name}`);
       }
 
@@ -6874,7 +8156,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           if (
             name !== "villain"
             || latestState.phase !== "playing"
-            || !canPlayerObserveChaser(latestState, campaignLevel, simulation.config)
+            || !canRuntimeObserveChaser(latestState)
           ) return;
           const visibleDistance = distanceBetween(
             latestState.player.position,
@@ -7191,7 +8473,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const committedMissionView = missionCommitment
         ? missionViews.get(missionCommitment.objectiveId)
         : null;
-      if (committedMissionView) {
+      const activeStealthCommitment = stealthToolbeltState.commitment;
+      if (activeStealthCommitment) {
+        const target = activeStealthCommitment.target.interactionPoint;
+        missionPerformanceTarget.copy(world(target, campaignLevel));
+        kid.root.getWorldPosition(missionPerformanceOrigin);
+        const heading = {
+          x: missionPerformanceTarget.x - missionPerformanceOrigin.x,
+          y: missionPerformanceTarget.z - missionPerformanceOrigin.z,
+        };
+        const headingLength = Math.hypot(heading.x, heading.y);
+        if (headingLength > 1e-5) {
+          kidPose = {
+            point: kidPose.point,
+            heading: {
+              x: heading.x / headingLength,
+              y: heading.y / headingLength,
+            },
+          };
+        }
+      } else if (committedMissionView) {
         committedMissionView.root.getWorldPosition(missionPerformanceTarget);
         kid.root.getWorldPosition(missionPerformanceOrigin);
         const heading = {
@@ -7230,7 +8531,44 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : state.player.hideTurnDirection < 0
               ? "turnRight"
               : null;
-          if (state.player.mode === "free" && missionCommitment) {
+          if (state.player.mode === "free" && activeStealthCommitment) {
+            const performanceId =
+              `stealth-tool:${activeStealthCommitment.useId}`;
+            const restart = missionPerformanceObjectiveId !== performanceId;
+            requestAnimation(kid, "point", {
+              fade: 0.08,
+              duration: Math.max(
+                simulation.config.fixedStepSeconds,
+                (
+                  activeStealthCommitment.completesAtTick
+                  - activeStealthCommitment.startedAtTick
+                ) * simulation.config.fixedStepSeconds,
+              ),
+              loop: false,
+              restart,
+            });
+            missionPerformanceObjectiveId = performanceId;
+          } else if (
+            state.player.mode === "free"
+            && state.tick < stealthEvidenceState.countermeasureBusyUntilTick
+          ) {
+            const performanceId =
+              `stealth-evidence:${stealthEvidenceState.countermeasureBusyUntilTick}`;
+            const restart = missionPerformanceObjectiveId !== performanceId;
+            requestAnimation(kid, "point", {
+              fade: 0.08,
+              duration: Math.max(
+                simulation.config.fixedStepSeconds,
+                (
+                  stealthEvidenceState.countermeasureBusyUntilTick
+                  - state.tick
+                ) * simulation.config.fixedStepSeconds,
+              ),
+              loop: false,
+              restart,
+            });
+            missionPerformanceObjectiveId = performanceId;
+          } else if (state.player.mode === "free" && missionCommitment) {
             const restart = missionPerformanceObjectiveId
               !== missionCommitment.objectiveId;
             requestAnimation(kid, "point", {
@@ -7690,13 +9028,440 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       });
     };
 
+    /**
+     * Advance/cancel the advisory director before the simulation input for
+     * `nextTick` is built. It samples only the current public threat state, so
+     * a chase cancels modifiers at the boundary instead of leaking a boosted
+     * movement tick into the chase.
+     */
+    const advanceDirectorForSimulationTick = (
+      state: GameState,
+      nextTick: number,
+      presentationEffects: Array<() => void>,
+    ) => {
+      if (nextTick !== state.tick + 1) {
+        throw new Error(
+          `Director boundary drift: expected ${state.tick + 1}, received ${
+            nextTick
+          }`,
+        );
+      }
+      if (!qaDirectorEnabled) return;
+      const chased = state.chaser.mode === "chase"
+        || state.chaser.mode === "lost-sight";
+      const suspicious = !chased && [
+        "suspicious",
+        "go-to-last-known",
+        "scan-last-known",
+        "search",
+        "check-hide",
+      ].includes(state.chaser.mode);
+      if (chased) {
+        directorChaseTicks += 1;
+        directorSafeTicks = 0;
+        directorTicksSinceChaseEscape = null;
+      } else if (suspicious) {
+        if (directorWasChased) directorTicksSinceChaseEscape = 0;
+        else if (directorTicksSinceChaseEscape !== null) {
+          directorTicksSinceChaseEscape += 1;
+        }
+        directorSafeTicks = 0;
+        directorChaseTicks = 0;
+      } else {
+        if (directorWasChased) directorTicksSinceChaseEscape = 0;
+        else if (directorTicksSinceChaseEscape !== null) {
+          directorTicksSinceChaseEscape += 1;
+        }
+        directorSafeTicks += 1;
+        directorChaseTicks = 0;
+      }
+      directorWasChased = chased;
+      const toolInventory = Object.values(stealthToolbeltState.tools)
+        .reduce((sum, runtime) => sum + runtime.inventoryRemaining, 0);
+      const resourcePermille = Math.round(
+        (toolInventory / 7 * 0.72
+          + stealthEvidenceState.countermeasureBudgetRemaining / 10 * 0.28)
+          * 1_000,
+      );
+      const directorStep = stepTensionDirector(
+        tensionDirectorDefinition,
+        tensionDirectorState,
+        {
+          tick: nextTick,
+          runPhase: state.phase === "playing"
+            ? "playing"
+            : state.phase === "ready"
+              ? "paused"
+              : "complete",
+          threat: chased ? "chased" : suspicious ? "suspicious" : "safe",
+          safeTicks: directorSafeTicks,
+          chaseTicks: directorChaseTicks,
+          ticksSinceChaseEscape: directorTicksSinceChaseEscape,
+          missionProgressPermille: Math.round(
+            missionState.completedObjectiveIds.length
+              / Math.max(1, runtimeMissionObjectives.length)
+              * 1_000,
+          ),
+          resourcesRemainingPermille: THREE.MathUtils.clamp(
+            resourcePermille,
+            0,
+            1_000,
+          ),
+          legalRouteIds: tensionDirectorDefinition.routeIds,
+        },
+      );
+      tensionDirectorState = directorStep.state;
+      for (const event of directorStep.lifecycleEvents) {
+        if (event.type === "event-suggested") {
+          stealthNotice = `环境预告 · ${event.suggestion.label} ${
+            (event.suggestion.safety.warningTicks
+              * simulation.config.fixedStepSeconds).toFixed(1)
+          }s 后开始`;
+          stealthNoticeUntilTick = nextTick
+            + event.suggestion.safety.warningTicks;
+        } else if (event.type === "event-activated") {
+          const suggestion = tensionDirectorState.activeEvent?.suggestion;
+          if (suggestion) {
+            const playerPosition = { ...state.player.position };
+            const profile =
+              THEME_MECHANIC_AUDIO_PROFILES[campaignLevel.campaign.theme];
+            presentationEffects.push(() => {
+              soundscape.triggerWorldSound({
+                listenerPosition: playerPosition,
+                sourcePosition: mechanicPosition,
+                kind: "theme-event",
+                maxDistance: 18,
+                baseGain: suggestion.kind === "broadcast"
+                  ? 0.16
+                  : suggestion.kind === "blackout"
+                    ? 0.13
+                    : 0.1,
+                occlusion: hasLineOfSight(
+                  campaignLevel,
+                  playerPosition,
+                  mechanicPosition,
+                ) ? 0 : 0.38,
+                foleySet: profile.foleySet,
+                playbackRate: suggestion.kind === "blackout"
+                  ? profile.playbackRate * 0.72
+                  : profile.playbackRate,
+              });
+              playHapticCue(
+                "theme-warning",
+                preferencesRef.current.hapticsEnabled,
+                navigator.vibrate?.bind(navigator),
+              );
+            });
+          }
+          if (suggestion?.kind === "broadcast") {
+            simulation.emitWorldSound({
+              position: mechanicPosition,
+              strength: 0.66,
+              sourceType: "environment-hazard",
+              sourceId: suggestion.suggestionId,
+              confidence: 0.86,
+              decayPerSecond: 0.12,
+            });
+          } else if (suggestion?.kind === "blackout") {
+            applyStealthEvidenceCommand({
+              type: "record",
+              tick: nextTick,
+              observation: {
+                kind: "power-change",
+                position: mechanicPosition,
+                source: {
+                  publicId: suggestion.publicChannelId
+                    ?? `${campaignLevel.id}:lighting-grid`,
+                  kind: "power-grid",
+                  publicity: "publicly-announced",
+                },
+                detail: { state: "unstable" },
+                confidenceScale: 0.92,
+              },
+            }, false);
+          }
+          stealthNotice = suggestion
+            ? `环境事件 · ${suggestion.label}已开始`
+            : "环境事件已开始";
+          stealthNoticeUntilTick = nextTick + 180;
+        } else if (
+          event.type === "event-ended"
+          || event.type === "event-cancelled"
+        ) {
+          stealthNotice = event.reason === "completed"
+            ? "环境压力窗口结束 · 进入喘息期"
+            : "环境事件已按公平保护规则撤销";
+          stealthNoticeUntilTick = nextTick + 150;
+        }
+      }
+      if (directorStep.lifecycleEvents.length > 0) {
+        const activeDirectorEvent = tensionDirectorState.activeEvent;
+        const uiState: TensionDirectorUiState = {
+          tier: tensionDirectorState.tier,
+          score: tensionDirectorState.score,
+          phase: activeDirectorEvent?.phase ?? "idle",
+          kind: activeDirectorEvent?.suggestion.kind ?? null,
+          label: activeDirectorEvent?.suggestion.label
+            ?? (tensionDirectorState.tier === "rest"
+              ? "公平节奏导演待机"
+              : "环境压力正在评估"),
+          progress: 0,
+        };
+        presentationEffects.push(() => setTensionDirector(uiState));
+      }
+    };
+
+    /**
+     * Runs once, and only once, after each authoritative 60 Hz simulation
+     * step. Evidence/tool progression consumes the resulting public world
+     * state; the director already advanced before input construction.
+     */
+    const processStealthFixedStep = (
+      state: GameState,
+      simulationInput: SimulationInput,
+    ) => {
+      const auxiliaryTick = state.tick;
+      if (auxiliaryTick !== lastStealthAuxiliaryTick + 1) {
+        throw new Error(
+          `Stealth fixed-step sequence gap: expected ${
+            lastStealthAuxiliaryTick + 1
+          }, received ${auxiliaryTick}`,
+        );
+      }
+
+      applyStealthEvidenceCommand({
+        type: "advance",
+        tick: auxiliaryTick,
+      }, false);
+      const toolStep = advanceStealthToolbelt(
+        stealthToolbeltState,
+        auxiliaryTick,
+      );
+      stealthToolbeltState = toolStep.state;
+      for (const event of toolStep.events) {
+        if (event.type === "tool-commitment-completed") {
+          createStealthToolWorldView(event.receipt);
+          let observation: PublicEvidenceObservation;
+          if (event.receipt.tool === "door-wedge") {
+            observation = {
+              kind: "door-state",
+              position: event.receipt.riskEvidence.position,
+              source: {
+                publicId: event.receipt.effect.doorId,
+                kind: "door",
+                publicity: "world-observable",
+              },
+              detail: { state: "forced" },
+              confidenceScale: event.receipt.riskEvidence.confidence,
+            };
+          } else if (event.receipt.tool === "corner-mirror") {
+            observation = {
+              kind: "moved-object",
+              position: event.receipt.riskEvidence.position,
+              source: {
+                publicId: event.receipt.effect.cornerId,
+                kind: "object",
+                publicity: "world-observable",
+              },
+              detail: { state: "moved" },
+              confidenceScale: event.receipt.riskEvidence.confidence,
+            };
+          } else {
+            observation = {
+              kind: "power-change",
+              position: event.receipt.riskEvidence.position,
+              source: {
+                publicId: event.receipt.effect.circuitId,
+                kind: "power-grid",
+                publicity: "publicly-announced",
+              },
+              detail: { state: "offline" },
+              confidenceScale: event.receipt.riskEvidence.confidence,
+            };
+          }
+          applyStealthEvidenceCommand({
+            type: "record",
+            tick: auxiliaryTick,
+            observation,
+          }, false);
+          soundscape.triggerWorldSound({
+            listenerPosition: state.player.position,
+            sourcePosition: event.receipt.riskEvidence.position,
+            kind: "theme-event",
+            maxDistance: event.tool === "temporary-blackout" ? 15 : 8,
+            baseGain: event.tool === "temporary-blackout"
+              ? 0.18
+              : event.tool === "door-wedge"
+                ? 0.14
+                : 0.08,
+            occlusion: hasLineOfSight(
+              campaignLevel,
+              state.player.position,
+              event.receipt.riskEvidence.position,
+            ) ? 0 : 0.45,
+            foleySet: event.tool === "corner-mirror"
+              ? "cloth"
+              : "metal-hit",
+            playbackRate: event.tool === "temporary-blackout"
+              ? 0.66
+              : event.tool === "door-wedge"
+                ? 1.22
+                : 1.08,
+          });
+          stealthNotice = `${STEALTH_TOOL_UI[event.tool].label}已生效 · 风险线索已留在现场`;
+          stealthNoticeUntilTick = auxiliaryTick + 210;
+        } else if (event.type === "tool-risk-emitted") {
+          if (event.evidence.channel !== "visual") {
+            simulation.emitWorldSound({
+              position: event.evidence.position,
+              strength: event.evidence.strength,
+              sourceType: event.evidence.channel === "infrastructure"
+                ? "environment-hazard"
+                : "player-movement",
+              sourceId: event.evidence.sourceId,
+              confidence: event.evidence.confidence,
+              decayPerSecond: 0.16,
+            });
+          }
+        } else if (event.type === "tool-effect-ended") {
+          const view = stealthToolWorldViews.get(event.receiptId);
+          if (view) disposeStealthToolWorldView(view);
+        }
+      }
+
+      const moveIntent = simulationInput.move ?? { x: 0, y: 0 };
+      const playerMovedSinceFootprint = distanceBetween(
+        state.player.position,
+        lastFootprintPosition,
+      );
+      if (
+        state.phase === "playing"
+        && state.player.mode === "free"
+        && Math.hypot(moveIntent.x, moveIntent.y) > 0.4
+        && !simulationInput.sneakHeld
+        && playerMovedSinceFootprint >= 0.72
+        && auxiliaryTick - lastFootprintTick >= 34
+      ) {
+        applyStealthEvidenceCommand({
+          type: "record",
+          tick: auxiliaryTick,
+          observation: {
+            kind: "footprint",
+            position: { ...state.player.position },
+            source: {
+              publicId: `${campaignLevel.id}:floor:${auxiliaryTick}`,
+              kind: "surface",
+              publicity: "world-observable",
+            },
+            detail: { direction: { ...state.player.heading } },
+          },
+        }, false);
+        lastFootprintTick = auxiliaryTick;
+        lastFootprintPosition = { ...state.player.position };
+      }
+
+      for (const event of state.events) {
+        if (
+          event.type === "player-mode-changed"
+          && (event.to === "entering-hide" || event.to === "exiting-hide")
+        ) {
+          const spot = state.player.hideSpotId
+            ? campaignLevel.hideSpots.find(
+                ({ id }) => id === state.player.hideSpotId,
+              )
+            : null;
+          if (spot) {
+            applyStealthEvidenceCommand({
+              type: "record",
+              tick: auxiliaryTick,
+              observation: {
+                kind: "door-state",
+                position: spot.approach,
+                source: {
+                  publicId: `${campaignLevel.id}:hide-door:${spot.id}`,
+                  kind: "door",
+                  publicity: "world-observable",
+                },
+                detail: {
+                  state: event.to === "entering-hide" ? "closed" : "open",
+                },
+              },
+            }, false);
+          }
+        }
+        if (
+          event.type === "evidence-investigation-completed"
+          && stealthEvidenceState.records.some(
+            ({ id }) => id === event.evidenceId,
+          )
+        ) {
+          investigatedEvidenceIds.add(event.evidenceId);
+          stealthNotice = "追捕者已检查公开线索，正在左右巡视";
+          stealthNoticeUntilTick = auxiliaryTick + 180;
+        }
+      }
+
+      const aiObservationIntervalTicks = Math.max(
+        1,
+        Math.round(
+          simulation.config.aiTickSeconds
+            / simulation.config.fixedStepSeconds,
+        ),
+      );
+      const observedEvidence = auxiliaryTick % aiObservationIntervalTicks === 0
+        ? queryStealthEvidenceForAi(
+          stealthEvidenceState,
+          {
+            atTick: auxiliaryTick,
+            observer: {
+              position: state.chaser.position,
+              heading: state.chaser.heading,
+            },
+            maximumDistance:
+              simulation.config.visionRange
+              * (simulationInput.visionRangeMultiplier ?? 1),
+            fieldOfViewDegrees: Math.min(
+              180,
+              simulation.config.visionConeDegrees + 24,
+            ),
+            minimumConfidence: 0.16,
+          },
+          {
+            isVisible: (observerPosition, evidencePosition) => (
+              hasLineOfSight(
+                campaignLevel,
+                observerPosition,
+                evidencePosition,
+              )
+            ),
+          },
+        ).find(({ evidence }) => !deliveredEvidenceIds.has(evidence.id))
+        : undefined;
+      if (observedEvidence) {
+        const accepted = simulation.emitWorldClue(
+          aiEvidenceCandidateToPerception(
+            observedEvidence,
+            state.elapsedSeconds,
+          ),
+        );
+        if (accepted) deliveredEvidenceIds.add(observedEvidence.evidence.id);
+      }
+      lastStealthAuxiliaryTick = auxiliaryTick;
+    };
+
     const animate = (now: number) => {
       const delta = boundedFrameDeltaSeconds(last, now, simulation.config.maxFrameDeltaSeconds);
       last = now;
       if (ready && !pausedRef.current) {
-        qualitySamples.push(delta * 1_000);
-        qualityEvaluationSeconds += delta;
-        if (qualityEvaluationSeconds >= 1 && qualitySamples.length >= 20) {
+        if (!qaRenderQualityLocked) {
+          qualitySamples.push(delta * 1_000);
+          qualityEvaluationSeconds += delta;
+        }
+        if (
+          !qaRenderQualityLocked
+          && qualityEvaluationSeconds >= 1
+          && qualitySamples.length >= 20
+        ) {
           const sampleWindowSeconds = qualityEvaluationSeconds;
           const sortedSamples = [...qualitySamples].sort((left, right) => left - right);
           const p95 = sortedSamples[Math.min(
@@ -7740,6 +9505,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             },
           );
           if (nextEmergency.level !== emergencyDegradation.level) {
+            emergencyQualityTransitionCount += 1;
             emergencyDegradation = nextEmergency;
             applyRenderQuality(renderQualityTier);
           } else {
@@ -7805,7 +9571,65 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           analogueMove.current,
         );
         const move = screenMoveToWorld(screenMove);
-        const interactionEdge = interactPressed.current;
+        const frameEdges: FixedStepHostEdges = {
+          interactionPressed: interactPressed.current,
+          portableDecoyPressed: portableDecoyPressed.current,
+          stealthToolPressed: stealthToolPressed.current,
+          evidenceErasePressed: evidenceErasePressed.current,
+        };
+        interactPressed.current = false;
+        portableDecoyPressed.current = false;
+        stealthToolPressed.current = false;
+        evidenceErasePressed.current = false;
+        const simulationAcceptsFixedTicks = latestState.phase === "playing";
+        let fixedStepTicks: readonly FixedStepHostTick[] = [];
+        if (simulationAcceptsFixedTicks) {
+          const fixedStepFrame = advanceFixedStepHostFrame(
+            fixedStepHost,
+            delta,
+            frameEdges,
+          );
+          fixedStepHost = fixedStepFrame.state;
+          fixedStepTicks = fixedStepFrame.ticks;
+        } else if (
+          fixedStepHost.clock.tick !== latestState.tick
+          || fixedStepHost.clock.remainderSeconds !== 0
+          || fixedStepHost.pendingEdges.interactionPressed
+          || fixedStepHost.pendingEdges.portableDecoyPressed
+          || fixedStepHost.pendingEdges.stealthToolPressed
+          || fixedStepHost.pendingEdges.evidenceErasePressed
+        ) {
+          fixedStepHost = resetFixedStepHost(fixedStepHost, latestState.tick);
+        }
+        const simulationFrameEvents: GameState["events"] = [];
+        const fixedStepSeconds = simulation.config.fixedStepSeconds;
+        const causalEvents: RunCausalEvent[] = [];
+        const presentationEffects: Array<() => void> = [];
+        if (pendingRouteSelectionTelemetry && selectedLibraryPlanDefinition) {
+          causalEvents.push({
+            type: "route-selected",
+            routeId: selectedLibraryPlanDefinition.id,
+          });
+          pendingRouteSelectionTelemetry = false;
+        }
+        let environment = sampleMechanicInstance(
+          mechanicInstance,
+          latestState.player.position,
+        );
+        for (
+          let fixedStepIndex = 0;
+          fixedStepIndex < fixedStepTicks.length;
+          fixedStepIndex += 1
+        ) {
+          const hostTick = fixedStepTicks[fixedStepIndex];
+          if (latestState.phase !== "playing") {
+            fixedStepHost = resetFixedStepHost(
+              fixedStepHost,
+              latestState.tick,
+            );
+            break;
+          }
+          const interactionEdge = hostTick.edges.interactionPressed;
         const beforeMechanic = sampleMechanicInstance(
           mechanicInstance,
           latestState.player.position,
@@ -7833,8 +9657,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           (portableDecoyState?.activeDeployment?.soundAtSeconds ?? 0)
             - latestState.elapsedSeconds,
         );
-        const portableDecoyEdge = portableDecoyPressed.current;
-        portableDecoyPressed.current = false;
+        const portableDecoyEdge = hostTick.edges.portableDecoyPressed;
         if (
           portableDecoyEdge
           && !interactionEdge
@@ -7842,10 +9665,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           if (hideInteractionBeforeStep) {
             portableDecoyFeedback = "先离开藏点交互范围，再投掷精装笔记本";
             portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.4;
-            setPortableDecoyNotice(portableDecoyFeedback);
+            const notice = portableDecoyFeedback;
+            presentationEffects.push(() => setPortableDecoyNotice(notice));
           } else {
-            attemptPortableDecoyDeployment();
+            attemptPortableDecoyDeployment(presentationEffects);
           }
+        }
+        const stealthToolEdge = hostTick.edges.stealthToolPressed;
+        const evidenceEraseEdge = hostTick.edges.evidenceErasePressed;
+        if (stealthToolEdge && !interactionEdge && !portableDecoyEdge) {
+          attemptStealthToolUse();
+        }
+        if (
+          evidenceEraseEdge
+          && !interactionEdge
+          && !portableDecoyEdge
+          && !stealthToolEdge
+        ) {
+          attemptEvidenceErase();
         }
         let completedMissionObjective: typeof activeMissionObjective = null;
         if (missionCommitment && activeMissionObjective) {
@@ -7862,7 +9699,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const missionCanActivate = Boolean(
           activeMissionObjective
           && latestState.phase === "playing"
-          && missionCommitment === null
+          && !hasPlayerActionCommitment()
           && distanceBetween(
             latestState.player.position,
             activeMissionObjective.position,
@@ -7872,7 +9709,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           || missionCommitment !== null;
         const mechanicConsumesInteraction = beforeMechanic.canActivate
           && hideInteractionBeforeStep === null
-          && !missionInteractionReserved;
+          && !missionInteractionReserved
+          && !hasPlayerActionCommitment();
         const missionConsumesInteraction = interactionEdge
           && hideInteractionBeforeStep === null
           && missionInteractionReserved;
@@ -7894,11 +9732,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             remainingSeconds: commitmentWindow.durationSeconds,
             totalSeconds: commitmentWindow.durationSeconds,
           };
-          playHapticCue(
-            "theme-warning",
-            preferencesRef.current.hapticsEnabled,
-            navigator.vibrate?.bind(navigator),
-          );
+          presentationEffects.push(() => {
+            playHapticCue(
+              "theme-warning",
+              preferencesRef.current.hapticsEnabled,
+              navigator.vibrate?.bind(navigator),
+            );
+          });
         }
         if (completedMissionObjective) {
           if (libraryMissionState) {
@@ -7929,19 +9769,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 decayPerSecond: 0.1,
               };
               simulation.emitWorldSound(fireReleaseNoise);
-              soundscape.triggerWorldSound({
-                listenerPosition: latestState.player.position,
-                sourcePosition: completedMissionObjective.position,
-                kind: "objective",
-                maxDistance: Math.max(12, simulation.config.hearingRange * 1.6),
-                baseGain: completedMissionObjective.objective.unlocksExit ? 0.48 : 0.36,
-                occlusion: hasLineOfSight(
-                  campaignLevel,
-                  latestState.player.position,
-                  completedMissionObjective.position,
-                ) ? 0 : 0.52,
-                foleySet: "metal-hit",
-                playbackRate: completedMissionObjective.objective.unlocksExit ? 0.82 : 1.08,
+              const listenerPosition = { ...latestState.player.position };
+              const objectivePosition = { ...completedMissionObjective.position };
+              const unlocksExit =
+                completedMissionObjective.objective.unlocksExit;
+              presentationEffects.push(() => {
+                soundscape.triggerWorldSound({
+                  listenerPosition,
+                  sourcePosition: objectivePosition,
+                  kind: "objective",
+                  maxDistance: Math.max(
+                    12,
+                    simulation.config.hearingRange * 1.6,
+                  ),
+                  baseGain: unlocksExit ? 0.48 : 0.36,
+                  occlusion: hasLineOfSight(
+                    campaignLevel,
+                    listenerPosition,
+                    objectivePosition,
+                  ) ? 0 : 0.52,
+                  foleySet: "metal-hit",
+                  playbackRate: unlocksExit ? 0.82 : 1.08,
+                });
               });
             }
           } else {
@@ -7964,49 +9813,42 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               });
             }
           }
-          playHapticCue(
-            missionState.exitUnlocked ? "escaped" : "hide-latched",
-            preferencesRef.current.hapticsEnabled,
-            navigator.vibrate?.bind(navigator),
-          );
-          soundscape.triggerWorldSound({
-            listenerPosition: latestState.player.position,
-            sourcePosition: completedMissionObjective.position,
-            kind: "theme-event",
-            maxDistance: 12,
-            baseGain: missionState.exitUnlocked ? 0.5 : 0.34,
-            occlusion: 0,
-            foleySet: campaignLevel.campaign.theme === "factory"
-              ? "metal-hit"
-              : campaignLevel.campaign.theme === "fire-station"
-                ? "cloth"
-                : "locker-latch",
-            playbackRate: missionState.exitUnlocked ? 1.12 : 0.94,
+          const missionExitUnlocked = missionState.exitUnlocked;
+          const listenerPosition = { ...latestState.player.position };
+          const objectivePosition = { ...completedMissionObjective.position };
+          presentationEffects.push(() => {
+            playHapticCue(
+              missionExitUnlocked ? "escaped" : "hide-latched",
+              preferencesRef.current.hapticsEnabled,
+              navigator.vibrate?.bind(navigator),
+            );
+            soundscape.triggerWorldSound({
+              listenerPosition,
+              sourcePosition: objectivePosition,
+              kind: "theme-event",
+              maxDistance: 12,
+              baseGain: missionExitUnlocked ? 0.5 : 0.34,
+              occlusion: 0,
+              foleySet: campaignLevel.campaign.theme === "factory"
+                ? "metal-hit"
+                : campaignLevel.campaign.theme === "fire-station"
+                  ? "cloth"
+                  : "locker-latch",
+              playbackRate: missionExitUnlocked ? 1.12 : 0.94,
+            });
           });
         }
         const mechanicStep = stepMechanicInstance(mechanicInstance, {
-          deltaSeconds: delta,
-          nowSeconds: latestState.elapsedSeconds,
+          deltaSeconds: fixedStepSeconds,
+          nowSeconds: latestState.elapsedSeconds + fixedStepSeconds,
           activationRequested: interactionEdge
             && mechanicConsumesInteraction
             && !missionConsumesInteraction,
           actorPosition: latestState.player.position,
         });
         mechanicInstance = mechanicStep.instance;
-        const environment = mechanicStep.sample;
+        environment = mechanicStep.sample;
         const environmentPlaying = latestState.phase === "playing";
-        const environmentActivity = environmentPlaying && environment.phase === "active"
-          ? Math.sin(environment.progress * Math.PI)
-          : 0;
-        soundscape.setThemeMechanicActivity(environmentActivity);
-        const causalEvents: RunCausalEvent[] = [];
-        if (pendingRouteSelectionTelemetry && selectedLibraryPlanDefinition) {
-          causalEvents.push({
-            type: "route-selected",
-            routeId: selectedLibraryPlanDefinition.id,
-          });
-          pendingRouteSelectionTelemetry = false;
-        }
         const activationCostApplied = mechanicStep.events.some(
           (event) => event.type === "activation-cost-applied",
         );
@@ -8019,17 +9861,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           const activationNoise = mechanicActivationNoiseStimulus(mechanicDefinition);
           if (activationNoise) {
             simulation.emitWorldSound(activationNoise);
-            soundscape.triggerWorldSound({
-              listenerPosition: latestState.player.position,
-              sourcePosition: activationNoise.position,
-              kind: "theme-event",
-              maxDistance: Math.max(9, simulation.config.hearingRange * 1.5),
-              baseGain: 0.28 + mechanicDefinition.activationCost.amount * 0.18,
-              occlusion: 0,
-              foleySet: campaignLevel.campaign.theme === "factory"
-                ? "metal-hit"
-                : "locker-latch",
-              playbackRate: campaignLevel.campaign.theme === "campus" ? 1.14 : 0.9,
+            const listenerPosition = { ...latestState.player.position };
+            presentationEffects.push(() => {
+              soundscape.triggerWorldSound({
+                listenerPosition,
+                sourcePosition: activationNoise.position,
+                kind: "theme-event",
+                maxDistance: Math.max(
+                  9,
+                  simulation.config.hearingRange * 1.5,
+                ),
+                baseGain:
+                  0.28 + mechanicDefinition.activationCost.amount * 0.18,
+                occlusion: 0,
+                foleySet: campaignLevel.campaign.theme === "factory"
+                  ? "metal-hit"
+                  : "locker-latch",
+                playbackRate: campaignLevel.campaign.theme === "campus"
+                  ? 1.14
+                  : 0.9,
+              });
             });
           }
         }
@@ -8038,11 +9889,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             type: "theme-mechanic-used",
             mechanicId: mechanicDefinition.id,
           });
-          playHapticCue(
-            "theme-warning",
-            preferencesRef.current.hapticsEnabled,
-            navigator.vibrate?.bind(navigator),
-          );
+          presentationEffects.push(() => {
+            playHapticCue(
+              "theme-warning",
+              preferencesRef.current.hapticsEnabled,
+              navigator.vibrate?.bind(navigator),
+            );
+          });
         }
         const emittedMechanicSound = mechanicStep.emittedSoundStimulus;
         if (
@@ -8056,23 +9909,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }
         if (environmentPlaying && emittedMechanicSound) {
           simulation.emitWorldSound(emittedMechanicSound);
-          soundscape.triggerWorldSound({
-            listenerPosition: latestState.player.position,
-            sourcePosition: emittedMechanicSound.position,
-            kind: "theme-event",
-            maxDistance: Math.max(10, mechanicDefinition.effectRadius * 2),
-            baseGain: 0.32,
-            occlusion: hasLineOfSight(
-              campaignLevel,
-              latestState.player.position,
-              emittedMechanicSound.position,
-            ) ? 0 : 0.58,
-            foleySet: campaignLevel.campaign.theme === "factory"
-              ? "metal-hit"
-              : campaignLevel.campaign.theme === "fire-station"
-                ? "cloth"
-                : "locker-latch",
-            playbackRate: campaignLevel.campaign.theme === "hospital" ? 1.18 : 0.92,
+          const listenerPosition = { ...latestState.player.position };
+          presentationEffects.push(() => {
+            soundscape.triggerWorldSound({
+              listenerPosition,
+              sourcePosition: emittedMechanicSound.position,
+              kind: "theme-event",
+              maxDistance: Math.max(10, mechanicDefinition.effectRadius * 2),
+              baseGain: 0.32,
+              occlusion: hasLineOfSight(
+                campaignLevel,
+                listenerPosition,
+                emittedMechanicSound.position,
+              ) ? 0 : 0.58,
+              foleySet: campaignLevel.campaign.theme === "factory"
+                ? "metal-hit"
+                : campaignLevel.campaign.theme === "fire-station"
+                  ? "cloth"
+                  : "locker-latch",
+              playbackRate: campaignLevel.campaign.theme === "hospital"
+                ? 1.18
+                : 0.92,
+            });
           });
         }
         if (environmentPlaying && portableDecoyState) {
@@ -8086,9 +9944,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : null;
           const completedInvestigation = investigation?.type
             === "evidence-investigation-completed"
-            ? {
+              ? {
                 sourceId: investigation.evidenceId,
-                sourceType: investigation.sourceType,
+                sourceType: "environment-decoy" as const,
                 completedAtSeconds: investigation.completedAtSeconds,
               }
             : null;
@@ -8146,33 +10004,39 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             }
           }
           if (soundAcknowledged && pendingDecoySound) {
-            soundscape.triggerWorldSound({
-              listenerPosition: latestState.player.position,
-              sourcePosition: pendingDecoySound.position,
-              kind: "theme-event",
-              maxDistance: Math.max(11, simulation.config.hearingRange * 1.55),
-              baseGain: 0.38,
-              occlusion: hasLineOfSight(
+            const listenerPosition = { ...latestState.player.position };
+            presentationEffects.push(() => {
+              const occlusion = hasLineOfSight(
                 campaignLevel,
-                latestState.player.position,
+                listenerPosition,
                 pendingDecoySound.position,
-              ) ? 0 : 0.55,
-              foleySet: "cloth",
-              playbackRate: 0.9,
-            });
-            soundscape.triggerWorldSound({
-              listenerPosition: latestState.player.position,
-              sourcePosition: pendingDecoySound.position,
-              kind: "objective",
-              maxDistance: Math.max(11, simulation.config.hearingRange * 1.55),
-              baseGain: 0.16,
-              occlusion: hasLineOfSight(
-                campaignLevel,
-                latestState.player.position,
-                pendingDecoySound.position,
-              ) ? 0 : 0.55,
-              foleySet: "metal-hit",
-              playbackRate: 1.26,
+              ) ? 0 : 0.55;
+              soundscape.triggerWorldSound({
+                listenerPosition,
+                sourcePosition: pendingDecoySound.position,
+                kind: "theme-event",
+                maxDistance: Math.max(
+                  11,
+                  simulation.config.hearingRange * 1.55,
+                ),
+                baseGain: 0.38,
+                occlusion,
+                foleySet: "cloth",
+                playbackRate: 0.9,
+              });
+              soundscape.triggerWorldSound({
+                listenerPosition,
+                sourcePosition: pendingDecoySound.position,
+                kind: "objective",
+                maxDistance: Math.max(
+                  11,
+                  simulation.config.hearingRange * 1.55,
+                ),
+                baseGain: 0.16,
+                occlusion,
+                foleySet: "metal-hit",
+                playbackRate: 1.26,
+              });
             });
             portableDecoyFeedback = "笔记本已落地 · 追捕者只能依据公开声源调查";
             portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.8;
@@ -8199,30 +10063,191 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           && missionCommitment !== null;
         const portableDecoyMovementCommitted = environmentPlaying
           && portableDecoyThrowRemainingSeconds > 0;
-        const simulationInput = {
-          move: mechanicMovementCommitted
+        const stealthInteractionBlocked = environmentPlaying
+          && (
+            stealthToolbeltState.commitment !== null
+            || latestState.tick
+              < stealthEvidenceState.countermeasureBusyUntilTick
+          );
+        const simulationInteract = interactionEdge
+          && !mechanicConsumesInteraction
+          && !missionConsumesInteraction
+          && !portableDecoyMovementCommitted
+          && !stealthInteractionBlocked;
+        advanceDirectorForSimulationTick(
+          latestState,
+          hostTick.tick,
+          presentationEffects,
+        );
+
+        const buildSimulationInput = (
+          interactPressedForStep: boolean,
+        ): SimulationInput => {
+          const nextTick = latestState.tick + 1;
+          const stealthToolMovementCommitted = environmentPlaying
+            && stealthToolbeltState.commitment !== null;
+          const countermeasureMovementCommitted = environmentPlaying
+            && nextTick <= stealthEvidenceState.countermeasureBusyUntilTick;
+          const movementCommitted = mechanicMovementCommitted
             || missionMovementCommitted
             || portableDecoyMovementCommitted
-            ? { x: 0, y: 0 }
-            : move,
-          interactPressed: interactionEdge
-            && !mechanicConsumesInteraction
-            && !missionConsumesInteraction
-            && !portableDecoyMovementCommitted,
-          peekHeld: held("q"),
-          sneakHeld: mechanicMovementCommitted
-            || missionMovementCommitted
-            || portableDecoyMovementCommitted
-            ? false
-            : held("q"),
-          environmentSoundMasking: environment.soundMasking,
-          visionRangeMultiplier: environment.visionRangeMultiplier,
-          exitEnabled: missionState.exitUnlocked,
-          hideExitChoice: preferredHideExit.current,
+            || stealthToolMovementCommitted
+            || countermeasureMovementCommitted;
+          const directorSuggestion =
+            tensionDirectorState.activeEvent?.suggestion ?? null;
+          const directorEventActive =
+            tensionDirectorState.activeEvent?.phase === "active"
+            && Boolean(
+              directorSuggestion
+              && nextTick < directorSuggestion.endsAtTick,
+            );
+          const directorModifiers = tensionDirectorModifiers(
+            directorSuggestion,
+            directorEventActive,
+          );
+          const activeBlackout =
+            stealthToolbeltState.activeEffects["temporary-blackout"]?.receipt;
+          const blackoutIsActive =
+            activeBlackout?.tool === "temporary-blackout"
+            && nextTick < activeBlackout.expiresAtTick;
+          const blackoutVisionMultiplier = blackoutIsActive
+            ? activeBlackout.effect.visionRangeMultiplier
+            : 1;
+          const blackoutSoundMasking = blackoutIsActive
+            ? activeBlackout.effect.ambientSoundMasking
+            : 0;
+          const activeDoorWedge =
+            stealthToolbeltState.activeEffects["door-wedge"]?.receipt;
+          let wedgeSpeedMultiplier = 1;
+          if (
+            activeDoorWedge?.tool === "door-wedge"
+            && nextTick < activeDoorWedge.expiresAtTick
+            && isDoorWedgeTraversalAttempt(
+              activeDoorWedge,
+              latestState.chaser.position,
+              latestState.chaser.heading,
+            )
+          ) {
+            const previousHold = triggeredDoorWedges.get(
+              activeDoorWedge.receiptId,
+            );
+            if (previousHold === undefined) {
+              activeWedgeHoldUntilTick = nextTick
+                + activeDoorWedge.effect.delayTicksPerAttempt;
+              triggeredDoorWedges.set(
+                activeDoorWedge.receiptId,
+                activeWedgeHoldUntilTick,
+              );
+              stealthNotice = "门楔咬合 · 追捕者正在强行推门";
+              stealthNoticeUntilTick = nextTick + 150;
+              const listenerPosition = { ...latestState.player.position };
+              presentationEffects.push(() => {
+                soundscape.triggerWorldSound({
+                  listenerPosition,
+                  sourcePosition: activeDoorWedge.riskEvidence.position,
+                  kind: "theme-event",
+                  maxDistance: 11,
+                  baseGain: 0.34,
+                  occlusion: hasLineOfSight(
+                    campaignLevel,
+                    listenerPosition,
+                    activeDoorWedge.riskEvidence.position,
+                  ) ? 0 : 0.5,
+                  foleySet: "metal-hit",
+                  playbackRate: 0.84,
+                });
+              });
+            } else {
+              activeWedgeHoldUntilTick = previousHold;
+            }
+            if (nextTick < activeWedgeHoldUntilTick) {
+              wedgeSpeedMultiplier = 0;
+            }
+          }
+          const combinedSoundMasking = 1 - (
+            (1 - environment.soundMasking)
+            * (1 - blackoutSoundMasking)
+            * (1 - directorModifiers.soundMasking)
+          );
+          const baselinePerceptionEnvironment = {
+            environmentSoundMasking: environment.soundMasking,
+            visionRangeMultiplier: environment.visionRangeMultiplier,
+          };
+          return {
+            // Keep the authored environment as the explicit baseline contract;
+            // temporary effects may only tighten these values.
+            ...baselinePerceptionEnvironment,
+            environmentSoundMasking: combinedSoundMasking,
+            visionRangeMultiplier: Math.min(
+              environment.visionRangeMultiplier,
+              blackoutVisionMultiplier,
+              directorModifiers.visionRangeMultiplier,
+            ),
+            chaserSpeedMultiplier:
+              wedgeSpeedMultiplier * directorModifiers.chaserSpeedMultiplier,
+            move: movementCommitted ? { x: 0, y: 0 } : move,
+            interactPressed: interactPressedForStep && !movementCommitted,
+            peekHeld: held("q"),
+            sneakHeld: movementCommitted ? false : held("q"),
+            exitEnabled: missionState.exitUnlocked,
+            hideExitChoice: preferredHideExit.current,
+          };
         };
-        const recordingTick = latestState.tick;
-        ghostInputBuffer.stage(recordingTick, simulationInput);
-        latestState = simulation.advance(delta, simulationInput);
+
+          const recordingTick = latestState.tick;
+          const simulationInput = buildSimulationInput(
+            simulationInteract,
+          );
+          if (latestState.phase === "playing") {
+            ghostInputBuffer.stage(recordingTick, simulationInput);
+          }
+          const previousTick = latestState.tick;
+          latestState = simulation.advance(
+            fixedStepSeconds,
+            simulationInput,
+          );
+          if (latestState.tick > previousTick) {
+            const expectedTick = hostTick.tick;
+            if (latestState.tick !== expectedTick) {
+              throw new Error(
+                `Simulation fixed-step drift: expected ${expectedTick}, received ${
+                  latestState.tick
+                }`,
+              );
+            }
+            simulationFrameEvents.push(...latestState.events);
+            processStealthFixedStep(latestState, simulationInput);
+            const committedGhostInput = ghostInputBuffer.consumeIfAdvanced(
+              latestState.tick,
+            );
+            if (committedGhostInput) {
+              ghostRecorder.record(
+                committedGhostInput.tick,
+                committedGhostInput.input,
+              );
+            }
+          }
+        }
+        for (const effect of presentationEffects) effect();
+        const environmentActivity =
+          latestState.phase === "playing" && environment.phase === "active"
+            ? Math.sin(environment.progress * Math.PI)
+            : 0;
+        const stealthSoundscapeActivity =
+          stealthToolbeltState.activeEffects["temporary-blackout"]
+            ? 0.72
+            : tensionDirectorState.activeEvent?.phase === "active"
+              ? 0.54
+              : tensionDirectorState.activeEvent?.phase === "warning"
+                ? 0.22
+                : 0;
+        soundscape.setThemeMechanicActivity(
+          Math.max(environmentActivity, stealthSoundscapeActivity),
+        );
+        latestState = {
+          ...latestState,
+          events: simulationFrameEvents,
+        };
         if (missionCommitment) {
           missionCommitment.remainingSeconds = Math.max(
             0,
@@ -8236,16 +10261,100 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             - latestState.elapsedSeconds,
         );
         updatePortableDecoyViews(latestState.elapsedSeconds);
-        const currentGhostTick = latestState.tick;
-        const committedGhostInput = ghostInputBuffer.consumeIfAdvanced(
-          currentGhostTick,
+        const activeMirrorReceipt =
+          stealthToolbeltState.activeEffects["corner-mirror"]?.receipt;
+        mirrorThreatVisible = Boolean(
+          activeMirrorReceipt?.tool === "corner-mirror"
+          && canCornerMirrorObservePoint(
+            activeMirrorReceipt,
+            latestState.chaser.position,
+            campaignLevel,
+          ),
         );
-        if (committedGhostInput) {
-          ghostRecorder.record(
-            committedGhostInput.tick,
-            committedGhostInput.input,
+        // Critical perception cues follow the authoritative runtime every
+        // frame; the heavier React HUD snapshot may remain throttled.
+        const runtimePlayfield = host.parentElement;
+        if (runtimePlayfield?.classList.contains("playfield")) {
+          const blackoutReceipt =
+            stealthToolbeltState.activeEffects["temporary-blackout"]?.receipt;
+          const activeDirectorEvent = tensionDirectorState.activeEvent;
+          const directorBlackoutActive = Boolean(
+            activeDirectorEvent?.phase === "active"
+            && activeDirectorEvent.suggestion.kind === "blackout"
+            && latestState.tick < activeDirectorEvent.suggestion.endsAtTick,
           );
+          runtimePlayfield.classList.toggle(
+            "stealth-blackout-active",
+            (
+              blackoutReceipt?.tool === "temporary-blackout"
+              && latestState.tick < blackoutReceipt.expiresAtTick
+            ) || directorBlackoutActive,
+          );
+          runtimePlayfield.classList.toggle(
+            "mirror-threat-visible",
+            mirrorThreatVisible,
+          );
+          runtimePlayfield.classList.toggle(
+            "director-warning",
+            activeDirectorEvent?.phase === "warning",
+          );
+          runtimePlayfield.classList.toggle(
+            "director-active",
+            activeDirectorEvent?.phase === "active",
+          );
+          const directorProgress = activeDirectorEvent
+            ? activeDirectorEvent.phase === "warning"
+              ? THREE.MathUtils.clamp(
+                  (latestState.tick
+                    - activeDirectorEvent.suggestion.announcedAtTick)
+                    / Math.max(
+                      1,
+                      activeDirectorEvent.suggestion.startsAtTick
+                        - activeDirectorEvent.suggestion.announcedAtTick,
+                    ),
+                  0,
+                  1,
+                )
+              : THREE.MathUtils.clamp(
+                  (latestState.tick
+                    - activeDirectorEvent.suggestion.startsAtTick)
+                    / Math.max(
+                      1,
+                      activeDirectorEvent.suggestion.endsAtTick
+                        - activeDirectorEvent.suggestion.startsAtTick,
+                    ),
+                  0,
+                  1,
+                )
+            : 0;
+          runtimePlayfield.style.setProperty(
+            "--director-progress",
+            directorProgress.toFixed(4),
+          );
+          const runtimeStealthMessage = runtimePlayfield.querySelector<HTMLElement>(
+            "[data-stealth-runtime-message]",
+          );
+          if (runtimeStealthMessage && activeDirectorEvent) {
+            runtimeStealthMessage.dataset.runtimeDirectorPhase =
+              activeDirectorEvent.phase;
+            runtimeStealthMessage.dataset.runtimeDirectorKind =
+              activeDirectorEvent.suggestion.kind;
+            runtimeStealthMessage.textContent = activeDirectorEvent.phase === "warning"
+              ? `环境预告 · ${activeDirectorEvent.suggestion.label}`
+              : `环境事件 · ${activeDirectorEvent.suggestion.label}`;
+          } else if (
+            runtimeStealthMessage?.dataset.runtimeDirectorPhase
+          ) {
+            delete runtimeStealthMessage.dataset.runtimeDirectorPhase;
+            delete runtimeStealthMessage.dataset.runtimeDirectorKind;
+            runtimeStealthMessage.textContent =
+              stealthNotice && latestState.tick <= stealthNoticeUntilTick
+                ? stealthNotice
+                : STEALTH_TOOL_UI[selectedStealthToolRef.current].hint;
+          }
         }
+        updateStealthWorldViews(latestState.tick);
+        const currentGhostTick = latestState.tick;
         if (
           latestState.phase === "won"
           || distanceBetween(latestState.player.position, campaignLevel.exit)
@@ -8279,7 +10388,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               )
             : 0;
         const playerActuallyVisible = playerPresentationAlpha > 0.01;
-        const chaserKnowledgeObservable = canPlayerObserveChaser(latestState, campaignLevel, simulation.config);
+        const chaserKnowledgeObservable = canRuntimeObserveChaser(latestState);
         if (latestState.phase === "playing" && chaserKnowledgeObservable) {
           playerKnownChaser = {
             position: { ...latestState.chaser.position },
@@ -8661,6 +10770,59 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               ? portableDecoyFeedback
               : null,
           );
+          const activeDirectorEvent = tensionDirectorState.activeEvent;
+          const directorPhase = activeDirectorEvent?.phase ?? "idle";
+          const directorProgress = activeDirectorEvent
+            ? directorPhase === "warning"
+              ? THREE.MathUtils.clamp(
+                  (latestState.tick
+                    - activeDirectorEvent.suggestion.announcedAtTick)
+                    / Math.max(
+                      1,
+                      activeDirectorEvent.suggestion.startsAtTick
+                        - activeDirectorEvent.suggestion.announcedAtTick,
+                    ),
+                  0,
+                  1,
+                )
+              : THREE.MathUtils.clamp(
+                  (latestState.tick
+                    - activeDirectorEvent.suggestion.startsAtTick)
+                    / Math.max(
+                      1,
+                      activeDirectorEvent.suggestion.endsAtTick
+                        - activeDirectorEvent.suggestion.startsAtTick,
+                    ),
+                  0,
+                  1,
+                )
+            : 0;
+          setTensionDirector({
+            tier: tensionDirectorState.tier,
+            score: tensionDirectorState.score,
+            phase: directorPhase,
+            kind: activeDirectorEvent?.suggestion.kind ?? null,
+            label: activeDirectorEvent?.suggestion.label
+              ?? (tensionDirectorState.tier === "rest"
+                ? "公平节奏导演待机"
+                : "环境压力正在评估"),
+            progress: directorProgress,
+          });
+          setStealthSystems({
+            toolbelt: sampleStealthToolbelt(stealthToolbeltState),
+            selectedTool: selectedStealthToolRef.current,
+            evidenceCount: stealthEvidenceState.records.length,
+            countermeasureBudget:
+              stealthEvidenceState.countermeasureBudgetRemaining,
+            countermeasureBusy:
+              latestState.tick
+                < stealthEvidenceState.countermeasureBusyUntilTick,
+            notice: stealthNotice
+              && latestState.tick <= stealthNoticeUntilTick
+              ? stealthNotice
+              : null,
+            mirrorThreatVisible,
+          });
           setGhostRace(latestGhostRace
             ? {
                 ...latestGhostRace,
@@ -8701,6 +10863,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         camera.layers.set(0);
         renderer.clear(true, true, true);
         renderer.render(scene, camera);
+        compileSettledQaScene();
       }
       frame = requestAnimationFrame(animate);
     };
@@ -8783,13 +10946,75 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           && center.z <= 1,
       };
     };
+    const inspectStealthArtSemantics = (root: THREE.Object3D) => {
+      let meshCount = 0;
+      const materials = new Map<string, THREE.Material>();
+      const semanticNames: string[] = [];
+      const authoredSources = new Map<string, {
+        readonly node: string;
+        readonly label: string | null;
+        readonly assetId: string | null;
+        readonly sourceUrl: string | null;
+        readonly geometrySignature: string | null;
+        readonly fallbackUsed: boolean;
+      }>();
+      root.traverse((object) => {
+        if (object.name.trim()) semanticNames.push(object.name);
+        if (typeof object.userData.authoredToolSource === "string") {
+          const node = object.userData.authoredToolSource;
+          authoredSources.set(node, {
+            node,
+            label: typeof object.userData.authoredToolLabel === "string"
+              ? object.userData.authoredToolLabel
+              : null,
+            assetId: typeof object.userData.authoredToolAssetId === "string"
+              ? object.userData.authoredToolAssetId
+              : null,
+            sourceUrl: typeof object.userData.authoredToolSourceUrl === "string"
+              ? object.userData.authoredToolSourceUrl
+              : null,
+            geometrySignature:
+              typeof object.userData.authoredToolGeometrySignature === "string"
+                ? object.userData.authoredToolGeometrySignature
+                : null,
+            fallbackUsed: object.userData.authoredToolFallbackUsed === true,
+          });
+        }
+        if (!(object instanceof THREE.Mesh)) return;
+        meshCount += 1;
+        const meshMaterials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        for (const material of meshMaterials) {
+          materials.set(material.uuid, material);
+        }
+      });
+      const texturedMaterialCount = [...materials.values()].filter(
+        (material) => Object.values(material).some(
+          (value) => value instanceof THREE.Texture,
+        ),
+      ).length;
+      return {
+        meshCount,
+        materialCount: materials.size,
+        texturedMaterialCount,
+        semanticNames,
+        authoredSources: [...authoredSources.values()].sort(
+          (left, right) => left.node.localeCompare(right.node),
+        ),
+      };
+    };
 
     const qaWindow = window as typeof window & {
       __CHASING_QA__?: {
         getState: () => unknown;
+        getStealthProbe: () => unknown;
         start: () => void;
         interact: () => void;
         deployDecoy: () => void;
+        selectStealthTool: (tool: StealthToolKind) => void;
+        useStealthTool: () => void;
+        eraseEvidence: () => void;
         togglePause: () => void;
         inspectScene: () => unknown;
         setScenario: (positions: { player: Point; chaser: Point }) => void;
@@ -8798,10 +11023,56 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         selectLayout: (layoutNumber: number | null) => void;
         selectLibraryPlan: (planId: LibraryMissionPlanId) => void;
         setUnlockedThrough: (levelNumber: number) => void;
+        lockRenderQuality: () => void;
+        setDirectorEnabled: (enabled: boolean) => void;
       };
     };
     if (new URLSearchParams(location.search).has("qa")) {
       qaWindow.__CHASING_QA__ = {
+        getStealthProbe: () => ({
+          ready,
+          phase: latestState.phase,
+          tick: latestState.tick,
+          playerPosition: latestState.player.position,
+          campaign: {
+            index: campaignLevel.campaign.levelNumber - 1,
+            number: campaignLevel.campaign.levelNumber,
+            theme: campaignLevel.campaign.theme,
+          },
+          selectedTool: selectedStealthToolRef.current,
+          activeTools: Object.keys(stealthToolbeltState.activeEffects),
+          toolViews: [...stealthToolWorldViews.values()].map((view) => ({
+            receiptId: view.receiptId,
+            tool: view.tool,
+            createdAtTick: view.createdAtTick,
+            expiresAtTick: view.expiresAtTick,
+          })),
+          evidenceKinds: stealthEvidenceState.records.map(({ kind }) => kind),
+          evidenceViewCount: stealthEvidenceViews.size,
+          registeredStealthLights: performanceLights.filter(
+            ({ light }) => light.userData.transientStealthLight === true,
+          ).length,
+          assets: {
+            decorativeReady: decorativeAssetsReady,
+            deferredDressingSettled:
+              decorativeAssetsReady && deferredDressingFade === null,
+            qaDecorativeSceneCompiled,
+            qaDecorativeSceneCompileCount,
+            qaTransientArtPrewarmCount,
+          },
+          render: {
+            qualityTier: renderQualityTier,
+            qualityLocked: qaRenderQualityLocked,
+            qualityTransitionCount: renderQualityTransitionCount,
+            emergencyTransitionCount: emergencyQualityTransitionCount,
+            emergencyLevel: emergencyDegradation.level,
+          },
+          director: {
+            enabled: qaDirectorEnabled,
+            state: tensionDirectorState,
+            safeTicks: directorSafeTicks,
+          },
+        }),
         getState: () => ({
           ready,
           paused: pausedRef.current,
@@ -8859,7 +11130,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             viewport: projectActorToViewport(view),
           }])),
           knowledge: {
-            chaserObservable: canPlayerObserveChaser(latestState, campaignLevel, simulation.config),
+            chaserObservable: canRuntimeObserveChaser(latestState),
             publicThreat: playerKnowledge,
           },
           chaserArchetype: {
@@ -8968,6 +11239,81 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 })),
               }
             : null,
+          stealth: {
+            selectedTool: selectedStealthToolRef.current,
+            evidence: {
+              tick: stealthEvidenceState.tick,
+              countermeasureBudgetRemaining:
+                stealthEvidenceState.countermeasureBudgetRemaining,
+              countermeasureBudgetSpent:
+                stealthEvidenceState.countermeasureBudgetSpent,
+              countermeasureBusyUntilTick:
+                stealthEvidenceState.countermeasureBusyUntilTick,
+              erasedEvidenceCount: stealthEvidenceState.erasedEvidenceCount,
+              forgedEvidenceCount: stealthEvidenceState.forgedEvidenceCount,
+              records: stealthEvidenceState.records.map((record) => ({
+                id: record.id,
+                kind: record.kind,
+                position: record.position,
+                source: record.source,
+                detail: record.detail,
+                createdAtTick: record.createdAtTick,
+                expiresAtTick: record.expiresAtTick,
+              })),
+              deliveredIds: [...deliveredEvidenceIds],
+              investigatedIds: [...investigatedEvidenceIds],
+              worldClueDelivery: simulation.getWorldClueQueueSnapshot(),
+              views: [...stealthEvidenceViews.values()].map((view) => ({
+                id: view.id,
+                rootName: view.root.name,
+                createdAtTick: view.createdAtTick,
+                expiresAtTick: view.expiresAtTick,
+                ...inspectStealthArtSemantics(view.root),
+                viewport: projectObjectToViewport(view.root),
+              })),
+            },
+            toolbelt: {
+              state: stealthToolbeltState,
+              sample: sampleStealthToolbelt(stealthToolbeltState),
+              qaPlacementAnchors: qaStealthToolPlacementAnchors,
+              views: [...stealthToolWorldViews.values()].map((view) => ({
+                receiptId: view.receiptId,
+                tool: view.tool,
+                rootName: view.root.name,
+                createdAtTick: view.createdAtTick,
+                expiresAtTick: view.expiresAtTick,
+                ...inspectStealthArtSemantics(view.root),
+                viewport: projectObjectToViewport(view.root),
+              })),
+              mirrorThreatVisible,
+              activeWedgeHoldUntilTick,
+            },
+            resources: {
+              registeredLights: performanceLights.filter(
+                ({ light }) => light.userData.transientStealthLight === true,
+              ).length,
+              sceneRoots: (() => {
+                let count = 0;
+                scene.traverse((object) => {
+                  if (object.userData.transientStealthRoot === true) count += 1;
+                });
+                return count;
+              })(),
+              transientPlacedAssetIds: [
+                ...[...stealthEvidenceViews.values()]
+                  .map(({ root }) => root.name),
+                ...[...stealthToolWorldViews.values()]
+                  .map(({ root }) => root.name),
+              ],
+            },
+            director: {
+              definition: tensionDirectorDefinition,
+              state: tensionDirectorState,
+              safeTicks: directorSafeTicks,
+              chaseTicks: directorChaseTicks,
+              ticksSinceChaseEscape: directorTicksSinceChaseEscape,
+            },
+          },
           ghost: {
             eligible: ghostEligible,
             recording: ghostRecording
@@ -8992,6 +11338,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           },
           assets: {
             decorativeReady: decorativeAssetsReady,
+            deferredDressingSettled:
+              decorativeAssetsReady && deferredDressingFade === null,
+            qaDecorativeSceneCompiled,
+            qaDecorativeSceneCompileCount,
+            qaTransientArtPrewarmCount,
             loadedAssetIds: [...loadedAssetIds].sort(),
             placedAssetIds: [...placedAssetIds].sort(),
             unusedLoadedAssetIds: [...loadedAssetIds].filter((id) => !placedAssetIds.has(id)).sort(),
@@ -9049,6 +11400,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           render: {
             batching: supportsMultiDraw ? "multi-draw" : "instanced-mesh",
             qualityTier: renderQualityTier,
+            qualityLock: {
+              enabled: qaRenderQualityLocked,
+              requestedTier: qaRequestedRenderQuality,
+              appliedBeforeRendererCreation: qaQualityAppliedBeforeRendererCreation,
+            },
+            qualityTransitionCount: renderQualityTransitionCount,
+            emergencyTransitionCount: emergencyQualityTransitionCount,
+            pixelRatio: renderer.getPixelRatio(),
+            shadowMapSize: moon.shadow.mapSize.x,
             emergencyDegradation,
             calls: renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
@@ -9064,6 +11424,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         start: beginGame,
         interact: () => { interactPressed.current = true; },
         deployDecoy: () => { portableDecoyPressed.current = true; },
+        selectStealthTool: (tool) => commands.current.selectStealthTool(tool),
+        useStealthTool: () => commands.current.useStealthTool(),
+        eraseEvidence: () => commands.current.eraseEvidence(),
         togglePause: () => commands.current.togglePause(),
         inspectScene: () => {
           camera.updateMatrixWorld();
@@ -9125,6 +11488,32 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             ),
           }));
         },
+        lockRenderQuality: () => {
+          qaRenderQualityLocked = true;
+          qualitySamples = [];
+          qualityEvaluationSeconds = 0;
+          qualityDecisionSeconds = 0;
+          qualityCandidate = renderQualityTier;
+        },
+        setDirectorEnabled: (enabled) => {
+          qaDirectorEnabled = enabled;
+          tensionDirectorState = {
+            ...createInitialTensionDirectorState(tensionDirectorDefinition),
+            currentTick: latestState.tick,
+          };
+          directorSafeTicks = 0;
+          directorChaseTicks = 0;
+          directorTicksSinceChaseEscape = null;
+          directorWasChased = false;
+          setTensionDirector({
+            tier: "rest",
+            score: 0,
+            phase: "idle",
+            kind: null,
+            label: "公平节奏导演待机",
+            progress: 0,
+          });
+        },
         completeMission: () => {
           if (libraryMissionState) {
             for (const objective of runtimeMissionObjectives) {
@@ -9170,7 +11559,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             chaserArchetypeProfile,
           });
           latestState = simulation.getState();
+          fixedStepHost = resetFixedStepHost(
+            fixedStepHost,
+            latestState.tick,
+          );
           resetPresentation(latestState);
+          // Idempotent: a settled QA scene compiles exactly once, whether the
+          // harness waits at the briefing or immediately installs a scenario.
+          compileSettledQaScene();
         },
       };
     }
@@ -9202,6 +11598,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       delete document.documentElement.dataset.chasingReady;
       delete document.documentElement.dataset.chasingQuality;
       delete document.documentElement.dataset.chasingEmergency;
+      const runtimePlayfield = host.parentElement;
+      if (runtimePlayfield?.classList.contains("playfield")) {
+        runtimePlayfield.classList.remove(
+          "stealth-blackout-active",
+          "mirror-threat-visible",
+          "director-warning",
+          "director-active",
+        );
+        runtimePlayfield.style.removeProperty("--director-progress");
+      }
       if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
       for (const actor of Object.values(actors)) actor?.animator.dispose();
       ghostActor?.animator.dispose();
@@ -9223,10 +11629,20 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         disposePortableDecoyView(view);
       }
       portableDecoyViews.clear();
+      for (const view of [...stealthEvidenceViews.values()]) {
+        disposeStealthEvidenceView(view);
+      }
+      footprintEvidenceGeometry.dispose();
+      footprintEvidenceMaterial.dispose();
+      footprintEvidenceTexture.dispose();
+      for (const view of [...stealthToolWorldViews.values()]) {
+        disposeStealthToolWorldView(view);
+      }
       disposeObjectResources([
         scene,
         ...loadedAssetRoots,
         ...(portableDecoyTemplate ? [portableDecoyTemplate] : []),
+        ...Object.values(stealthToolModelTemplates),
       ]);
       for (const objectUrl of controlledDependencyUrls.values()) URL.revokeObjectURL(objectUrl);
       controlledDependencyUrls.clear();
@@ -9415,6 +11831,56 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         : portableDecoy?.phase === "depleted"
           ? "本局已用完"
           : "可投掷";
+  const selectedToolMeta = STEALTH_TOOL_UI[selectedStealthTool];
+  const selectedToolSample =
+    stealthSystems?.toolbelt.tools[selectedStealthTool] ?? null;
+  const stealthToolActionAvailable = Boolean(
+    selectedToolSample?.canUse
+    && phase === "playing"
+    && !paused
+    && playerMode === "free"
+    && !missionInteractionInProgress
+    && !themeMechanic?.movementCommitted
+    && !stealthSystems?.countermeasureBusy,
+  );
+  const selectedToolPhaseLabel = selectedToolSample?.phase === "commitment"
+    ? `部署 ${
+        (selectedToolSample.commitmentRemainingTicks / 60).toFixed(1)
+      }s`
+    : selectedToolSample?.phase === "active"
+      ? `生效 ${
+          (selectedToolSample.effectRemainingTicks / 60).toFixed(1)
+        }s`
+      : selectedToolSample?.phase === "cooldown"
+        ? `冷却 ${
+            (selectedToolSample.cooldownRemainingTicks / 60).toFixed(1)
+          }s`
+        : selectedToolSample?.phase === "depleted"
+          ? "已耗尽"
+          : "可部署";
+  const evidenceEraseAvailable = Boolean(
+    stealthSystems
+    && stealthSystems.evidenceCount > 0
+    && stealthSystems.countermeasureBudget > 0
+    && !stealthSystems.countermeasureBusy
+    && phase === "playing"
+    && playerMode === "free",
+  );
+  const stealthRuntimeMessage = tensionDirector?.phase === "warning"
+    ? `环境预告 · ${tensionDirector.label}`
+    : tensionDirector?.phase === "active"
+      ? `环境事件 · ${tensionDirector.label}`
+      : stealthSystems?.notice
+        ?? (stealthSystems?.mirrorThreatVisible
+          ? "镜面已捕捉追捕者 · 可安全判断出柜时机"
+          : `${selectedToolMeta.label} · ${selectedToolPhaseLabel}`);
+  const stealthBlackoutActive = Boolean(
+    stealthSystems?.toolbelt.tools["temporary-blackout"].phase === "active"
+    || (
+      tensionDirector?.phase === "active"
+      && tensionDirector.kind === "blackout"
+    ),
+  );
   const primaryAction = phase === "won" && hasNextLevel
     ? () => chooseLevel(selectedLevelIndex + 1)
     : begin;
@@ -9456,10 +11922,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       </header>
 
       <section
-        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${activeHideArchetype ? ` hide-${activeHideArchetype}` : ""}${themeMechanic?.phase === "active" ? " theme-event-active" : ""}${missionInteractionInProgress ? " mission-commitment-active" : ""}${activeHideArchetype === "hard-locker" && ["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? " locker-interior" : ""}${ghostRace?.visible ? " ghost-race-active" : ""}`}
+        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${activeHideArchetype ? ` hide-${activeHideArchetype}` : ""}${themeMechanic?.phase === "active" ? " theme-event-active" : ""}${missionInteractionInProgress ? " mission-commitment-active" : ""}${activeHideArchetype === "hard-locker" && ["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? " locker-interior" : ""}${ghostRace?.visible ? " ghost-race-active" : ""}${stealthBlackoutActive ? " stealth-blackout-active" : ""}${stealthSystems?.mirrorThreatVisible ? " mirror-threat-visible" : ""}${tensionDirector?.phase === "warning" ? " director-warning" : tensionDirector?.phase === "active" ? " director-active" : ""}`}
         style={{
           "--threat": danger,
           "--theme-event": themeEventActivity,
+          "--director-progress": tensionDirector?.progress ?? 0,
           "--theme-accent": campaignLevel.campaign.palette.accent,
           "--theme-glow": campaignLevel.campaign.palette.emissive,
         } as React.CSSProperties}
@@ -9467,6 +11934,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         <div className="three-mount" ref={mount} />
         <div className="cinematic-vignette" aria-hidden="true" />
         <div className="theme-event-wash" aria-hidden="true" />
+        <div className="stealth-blackout-wash" aria-hidden="true" />
+        <div className="director-cue-frame" aria-hidden="true" />
 
         {loading && (
           <div className={`loading-card${loadError ? " error" : ""}`} role="status">
@@ -9613,6 +12082,118 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               style={{
                 "--decoy-progress": `${Math.round(portableDecoy.progress * 100)}%`,
               } as React.CSSProperties}
+            />
+          </div>
+        )}
+
+        {!loading && !paused && phase === "playing" && stealthSystems && (
+          <div
+            className={`stealth-toolbelt-status${libraryGoldEnabled ? " with-decoy" : ""} director-${tensionDirector?.phase ?? "idle"}`}
+            role="group"
+            aria-label="潜行工具、公开线索与公平节奏导演"
+          >
+            <div className="stealth-system-readout">
+              <span
+                className={`director-orb tier-${tensionDirector?.tier ?? "rest"}`}
+                aria-hidden="true"
+              />
+              <div>
+                <small data-stealth-evidence-summary="desktop">
+                  TACTICAL STEALTH · 线索 {stealthSystems.evidenceCount} · 反侦察 {
+                    stealthSystems.countermeasureBudget
+                  }
+                </small>
+                <strong
+                  data-stealth-runtime-message
+                  data-runtime-director-phase={
+                    tensionDirector?.phase !== "idle"
+                      ? tensionDirector?.phase
+                      : undefined
+                  }
+                  data-runtime-director-kind={tensionDirector?.kind ?? undefined}
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {stealthRuntimeMessage}
+                </strong>
+              </div>
+              <button
+                type="button"
+                className="erase-evidence"
+                disabled={phase !== "playing" || paused || playerMode !== "free"}
+                data-evidence-ready={evidenceEraseAvailable ? "true" : "false"}
+                onClick={eraseEvidence}
+                aria-label={`抹除附近公开线索，反侦察次数剩余 ${stealthSystems.countermeasureBudget}`}
+              >
+                抹迹 <kbd className="desktop-key">C</kbd>
+              </button>
+            </div>
+            <div
+              className="stealth-mobile-notice"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <strong data-stealth-mobile-message>{stealthRuntimeMessage}</strong>
+              <small data-stealth-evidence-summary="compact">
+                线索 {stealthSystems.evidenceCount} · 反侦察 {
+                  stealthSystems.countermeasureBudget
+                }
+              </small>
+            </div>
+            <div className="stealth-tool-row">
+              <button
+                type="button"
+                className="erase-evidence-mobile"
+                disabled={phase !== "playing" || paused || playerMode !== "free"}
+                data-evidence-ready={evidenceEraseAvailable ? "true" : "false"}
+                onClick={eraseEvidence}
+                aria-label={`抹除附近公开线索，反侦察次数剩余 ${stealthSystems.countermeasureBudget}`}
+                title="抹除附近公开线索"
+              >
+                <i aria-hidden="true">抹</i>
+                <span>
+                  <b>抹迹</b>
+                  <small>{stealthSystems.countermeasureBudget} 次</small>
+                </span>
+              </button>
+              {([
+                "door-wedge",
+                "corner-mirror",
+                "temporary-blackout",
+              ] as const).map((tool, index) => {
+                const sample = stealthSystems.toolbelt.tools[tool];
+                const selected = selectedStealthTool === tool;
+                return (
+                  <button
+                    type="button"
+                    key={tool}
+                    data-stealth-tool={tool}
+                    className={`${selected ? "selected" : ""} phase-${sample.phase}`}
+                    aria-pressed={selected}
+                    disabled={selected && !stealthToolActionAvailable}
+                    onClick={() => {
+                      if (selected) deployStealthTool();
+                      else chooseStealthTool(tool);
+                    }}
+                    title={`${STEALTH_TOOL_UI[tool].hint}；按 ${index + 1} 选择，G 使用`}
+                  >
+                    <i aria-hidden="true">{STEALTH_TOOL_UI[tool].glyph}</i>
+                    <span>
+                      <b>{STEALTH_TOOL_UI[tool].label}</b>
+                      <small>{sample.inventoryRemaining} 剩余</small>
+                    </span>
+                    <kbd className="desktop-key">{index + 1}</kbd>
+                  </button>
+                );
+              })}
+            </div>
+            <i
+              className="director-progress"
+              style={{
+                transform: "scaleX(var(--director-progress, 0))",
+              }}
             />
           </div>
         )}
@@ -9980,6 +12561,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                       ? "按 F 投掷精装笔记本诱饵，趁调查与左右巡视时改线"
                       : "利用本关主题机关制造公开线索，趁追捕者调查时改线"}
                   </span>
+                  <span>
+                    <b>4</b>
+                    1–3 选战术工具，G 部署门楔、转角镜或局部断电；C 抹除近处足迹
+                  </span>
                 </div>
               )}
 
@@ -10088,7 +12673,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         {phase === "playing" && !paused && (
           <>
             <div
-              className={`controls virtual-stick${joystickThumb.active ? " active" : ""}`}
+              className="controls virtual-stick"
+              ref={joystickControl}
               role="group"
               aria-label="移动控制，拖动摇杆；也可使用方向键或 WASD"
               tabIndex={0}
@@ -10099,10 +12685,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               onLostPointerCapture={resetAnalogueMove}
             >
               <div className="stick-ring" aria-hidden="true" ref={joystickBase}>
-                <span
-                  className="stick-thumb"
-                  style={{ transform: `translate3d(${joystickThumb.x}px, ${joystickThumb.y}px, 0)` }}
-                >
+                <span className="stick-thumb" ref={joystickThumb}>
                   <i />
                 </span>
               </div>
@@ -10164,7 +12747,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         <small>
           {`WASD / 方向键移动 · E 躲藏或离开 · ${
             libraryGoldEnabled ? "F 投掷诱饵 · " : ""
-          }Q 轻步 / 柜内观察 · X 切换穿行出口 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开`}
+          }1–3 选工具 / G 部署 · C 抹迹 · Q 轻步 / 柜内观察 · X 切换穿行出口 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开`}
         </small>
       </footer>
     </main>

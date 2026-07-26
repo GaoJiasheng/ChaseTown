@@ -6,6 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = await readFile(path.join(ROOT, "app", "chasing-game.tsx"), "utf8");
+const INTEGRATION = await readFile(
+  path.join(ROOT, "app", "game", "INTEGRATION.md"),
+  "utf8",
+);
 
 test("first playable frame gates only on navigation-critical scene assets", () => {
   assert.match(SOURCE, /type DetailBuildPhase = "essential" \| "decorative"/);
@@ -102,6 +106,16 @@ test("mobile controls, pause and theme mechanics drive the real simulation", () 
   assert.match(SOURCE, /combineScreenMove\(/);
   assert.match(SOURCE, /if \(joystickPointerId\.current !== null\) return/);
   assert.match(SOURCE, /className="stick-ring" aria-hidden="true" ref=\{joystickBase\}/);
+  assert.match(SOURCE, /const joystickGeometry = useRef<\{/);
+  assert.match(
+    SOURCE,
+    /const bounds = base\.getBoundingClientRect\(\);[\s\S]*joystickGeometry\.current = \{[\s\S]*centerX:[\s\S]*centerY:[\s\S]*radius:/,
+  );
+  assert.match(
+    SOURCE,
+    /joystickThumb\.current\.style\.transform =[\s\S]*translate3d\(\$\{sample\.thumbX\}px, \$\{sample\.thumbY\}px, 0\)/,
+  );
+  assert.doesNotMatch(SOURCE, /setJoystickThumb/);
   assert.match(
     SOURCE,
     /touchInteractAvailable = Boolean\(interaction\)[\s\S]*Boolean\(themeMechanic\?\.canActivate\)[\s\S]*playerMode === "aligning-hide"/,
@@ -127,6 +141,181 @@ test("mobile controls, pause and theme mechanics drive the real simulation", () 
   );
 });
 
+test("gameplay hotkeys defer phase authority to the current simulation command", () => {
+  assert.match(SOURCE, /key === "g"\) commands\.current\.useStealthTool\(\)/u);
+  assert.match(SOURCE, /key === "c"\) commands\.current\.eraseEvidence\(\)/u);
+  assert.match(SOURCE, /key === "f"\) commands\.current\.deployDecoy\(\)/u);
+  assert.doesNotMatch(SOURCE, /key === "g" && phase === "playing"/u);
+  assert.match(
+    SOURCE,
+    /useEffect\(\(\) => \{\s*keyboardPresentationRef\.current\s*=\s*\{\s*phase,\s*selectedLevelIndex,\s*hideExitSelection,\s*\};\s*\}, \[hideExitSelection, phase, selectedLevelIndex\]\);/u,
+  );
+  assert.match(
+    SOURCE,
+    /addEventListener\("keydown", keyDown\)[\s\S]*\}, \[resetAnalogueMove\]\);/u,
+  );
+  assert.doesNotMatch(
+    SOURCE,
+    /\}, \[chooseLevel, hideExitSelection, phase, resetAnalogueMove, selectedLevelIndex\]\);/u,
+  );
+});
+
+test("render frames latch actions while every gameplay domain advances on fixed ticks", () => {
+  assert.match(SOURCE, /advanceFixedStepHostFrame\(/);
+  assert.match(
+    SOURCE,
+    /simulationAcceptsFixedTicks\s*=\s*latestState\.phase\s*===\s*"playing"[\s\S]*resetFixedStepHost\(\s*fixedStepHost,\s*latestState\.tick/u,
+  );
+  assert.doesNotMatch(SOURCE, /pendingSimulationInteract/);
+
+  const loopStart = SOURCE.indexOf(
+    "fixedStepIndex < fixedStepTicks.length;",
+  );
+  const loopEnd = SOURCE.indexOf(
+    "latestState = {\n          ...latestState,\n          events: simulationFrameEvents,",
+    loopStart,
+  );
+  assert.ok(loopStart >= 0, "fixed-step host loop is missing");
+  assert.ok(loopEnd > loopStart, "fixed-step host loop has no state boundary");
+  const fixedTickLoop = SOURCE.slice(loopStart, loopEnd);
+
+  assert.match(
+    fixedTickLoop,
+    /latestState\.tick\s*>=\s*missionCommitment\.completesAtTick/u,
+    "mission completion must be evaluated for each authoritative tick",
+  );
+  assert.match(
+    fixedTickLoop,
+    /stepMechanicInstance\(mechanicInstance,\s*\{\s*deltaSeconds:\s*fixedStepSeconds,\s*nowSeconds:\s*latestState\.elapsedSeconds\s*\+\s*fixedStepSeconds/u,
+    "theme mechanics must not advance on render delta",
+  );
+  assert.match(fixedTickLoop, /stepPortableDecoy\(portableDecoyState/u);
+
+  const directorIndex = fixedTickLoop.indexOf(
+    "advanceDirectorForSimulationTick(",
+  );
+  const inputBuilderIndex = fixedTickLoop.indexOf(
+    "const buildSimulationInput =",
+  );
+  const simulationIndex = fixedTickLoop.indexOf("simulation.advance(");
+  assert.ok(directorIndex >= 0, "Director fixed-tick boundary is missing");
+  assert.ok(
+    inputBuilderIndex > directorIndex,
+    "Director must activate/cancel before SimulationInput is built",
+  );
+  assert.ok(
+    simulationIndex > inputBuilderIndex,
+    "gameplay domains must settle before simulation.advance",
+  );
+  assert.match(
+    SOURCE,
+    /for \(const effect of presentationEffects\) effect\(\);/,
+    "one-shot presentation effects must flush after the fixed-tick loop",
+  );
+});
+
+test("stealth presentation keeps cabinets readable and gives Director blackouts the emergency treatment", () => {
+  assert.match(
+    SOURCE,
+    /registerCameraOccluder\(`hero-locker-\$\{spot\.id\}`, \[root\]\)/,
+    "hero lockers must participate in the local actor/tool camera cutout",
+  );
+  assert.match(
+    SOURCE,
+    /registerCameraOccluder\(\s*`\$\{campaignLevel\.campaign\.theme\}-hide-dressing`,\s*hideDressingBatches/u,
+    "authored locker surrounds must not remain as a second opaque blocker",
+  );
+  assert.match(
+    SOURCE,
+    /directorBlackoutActive[\s\S]*activeDirectorEvent\.suggestion\.kind === "blackout"[\s\S]*\|\| directorBlackoutActive/u,
+    "the frame-authoritative class path must include Director lighting events",
+  );
+  assert.match(
+    SOURCE,
+    /const stealthBlackoutActive = Boolean\([\s\S]*tensionDirector\.kind === "blackout"[\s\S]*stealthBlackoutActive \? " stealth-blackout-active"/u,
+    "React reconciliation must preserve the same Director blackout class",
+  );
+});
+
+test("stealth tools use three distinct formal theme-kit subassemblies with auditable provenance", () => {
+  const manifest = SOURCE.match(
+    /const THEME_STEALTH_TOOL_ART:[\s\S]*?\n\};\n\ntype HideArchetypeArtSpec/u,
+  )?.[0] ?? "";
+  assert.ok(manifest, "formal stealth-tool art manifest is missing");
+  const sourceNodes = [...manifest.matchAll(/node: "([^"]+)"/gu)]
+    .map((match) => match[1]);
+  assert.equal(sourceNodes.length, 12, "four themes must bind three formal tool models");
+  assert.equal(
+    new Set(sourceNodes).size,
+    12,
+    "a formal source subassembly is reused across theme/tool bindings",
+  );
+  assert.match(SOURCE, /for \(const tool of STEALTH_TOOL_KINDS\)/u);
+  assert.match(SOURCE, /resolveThemeNode\([\s\S]*\[toolSpec\.node\]/u);
+  assert.match(SOURCE, /authoredGeometrySignature\(toolSource\)/u);
+  assert.match(SOURCE, /authoredToolFallbackUsed = false/u);
+  assert.match(SOURCE, /const template = stealthToolModelTemplates\[receipt\.tool\]/u);
+  assert.match(SOURCE, /authored-blackout-status-lens/u);
+  assert.match(SOURCE, /polished-corner-mirror-face/u);
+  assert.doesNotMatch(
+    SOURCE,
+    /\bstealthToolModelTemplate\b/u,
+    "tools must not regress to one shared silhouette",
+  );
+});
+
+test("resource QA locks render quality before renderer creation and compiles one settled scene", () => {
+  const qualityLockIndex = SOURCE.indexOf("const qaRequestedRenderQuality");
+  const rendererIndex = SOURCE.indexOf("new THREE.WebGLRenderer");
+  assert.ok(qualityLockIndex >= 0, "QA quality request is not parsed");
+  assert.ok(
+    rendererIndex > qualityLockIndex,
+    "QA quality must be selected before WebGLRenderer construction",
+  );
+  assert.match(
+    SOURCE,
+    /let qaRenderQualityLocked = qaRequestedRenderQuality !== null/u,
+  );
+  assert.match(
+    SOURCE,
+    /if \(\s*!qaRenderQualityLocked\s*&& qualityEvaluationSeconds/u,
+  );
+  assert.match(
+    SOURCE,
+    /const compileSettledQaScene = \(\) => \{[\s\S]*qaDecorativeSceneCompiled[\s\S]*!decorativeAssetsReady[\s\S]*deferredDressingFade !== null[\s\S]*!qaRenderQualityLocked[\s\S]*!prewarmTransientArtResources\(\)/u,
+  );
+  assert.match(
+    SOURCE,
+    /renderer\.render\(scene, camera\);\s*compileSettledQaScene\(\);/u,
+  );
+  assert.match(SOURCE, /qaDecorativeSceneCompileCount \+= 1/u);
+  assert.match(SOURCE, /const prewarmTransientArtResources = \(\) =>/u);
+  assert.match(SOURCE, /new THREE\.WebGLRenderTarget\(8, 8/u);
+  assert.match(SOURCE, /qaTransientArtPrewarmCount \+= 1/u);
+  assert.match(SOURCE, /if \(!qaDirectorEnabled\) return/u);
+  assert.match(SOURCE, /setDirectorEnabled: \(enabled\) =>/u);
+  assert.match(SOURCE, /currentTick: latestState\.tick/u);
+  assert.match(SOURCE, /qualityTransitionCount: renderQualityTransitionCount/u);
+  assert.match(SOURCE, /emergencyTransitionCount: emergencyQualityTransitionCount/u);
+});
+
+test("integration guide documents the authoritative render-host fixed-step contract", () => {
+  assert.match(INTEGRATION, /advanceFixedStepHostFrame\(\)/);
+  assert.match(
+    INTEGRATION,
+    /逐个 emitted tick 调用一次\s*`simulation\.advance\(fixedStepSeconds, input\)`/u,
+  );
+  assert.match(
+    INTEGRATION,
+    /非 `playing`、暂停、重开、切关[\s\S]*原子 `resetFixedStepHost/u,
+  );
+  assert.doesNotMatch(
+    INTEGRATION,
+    /不要自行按 60 Hz 循环/u,
+    "the guide must not reintroduce the old render-delta-owned host contract",
+  );
+});
+
 test("player HUD receives only release-smoothed public threat while a chaser is unobservable", () => {
   assert.match(SOURCE, /let playerKnowledge = createPlayerKnowledge\(\)/);
   assert.match(SOURCE, /playerKnowledge = updatePlayerKnowledge\(/);
@@ -137,4 +326,63 @@ test("player HUD receives only release-smoothed public threat while a chaser is 
   assert.match(SOURCE, /const publicCameraThreat = chaserKnowledgeObservable[\s\S]*playerKnowledge\.threat === "active"/);
   assert.doesNotMatch(SOURCE, /className=\{`playfield[^`]*threat-\$\{chaserMode\}/);
   assert.match(SOURCE, /chaserPosition: chaserKnowledgeObservable[\s\S]*playerKnownChaser\?\.position/);
+});
+
+test("player action commitments arbitrate every cross-system fixed-tick entry point", () => {
+  const commitmentGuard = SOURCE.match(
+    /const hasPlayerActionCommitment = \(\) => Boolean\([\s\S]*?\n    \);/u,
+  )?.[0] ?? "";
+  assert.ok(commitmentGuard, "the shared player-action commitment guard is missing");
+  assert.match(commitmentGuard, /missionCommitment/u);
+  assert.match(
+    commitmentGuard,
+    /mechanicRequiresMovementCommitment\(mechanicInstance\)/u,
+  );
+  assert.match(commitmentGuard, /portableDecoyThrowRemainingSeconds > 0/u);
+  assert.match(commitmentGuard, /stealthToolbeltState\.commitment/u);
+  assert.match(
+    commitmentGuard,
+    /stealthEvidenceState\.tick[\s\S]*stealthEvidenceState\.countermeasureBusyUntilTick/u,
+  );
+
+  const portableAttempt = SOURCE.match(
+    /const attemptPortableDecoyDeployment = \([\s\S]*?\n    \};/u,
+  )?.[0] ?? "";
+  const toolAttempt = SOURCE.match(
+    /const attemptStealthToolUse = \(\) => \{[\s\S]*?\n    \};/u,
+  )?.[0] ?? "";
+  const evidenceAttempt = SOURCE.match(
+    /const attemptEvidenceErase = \(\) => \{[\s\S]*?\n    \};/u,
+  )?.[0] ?? "";
+  assert.match(portableAttempt, /\|\| hasPlayerActionCommitment\(\)/u);
+  assert.match(toolAttempt, /\|\| hasPlayerActionCommitment\(\)/u);
+  assert.match(evidenceAttempt, /\|\| hasPlayerActionCommitment\(\)/u);
+  assert.match(
+    SOURCE,
+    /const missionCanActivate = Boolean\([\s\S]*?&& !hasPlayerActionCommitment\(\)[\s\S]*?\n        \);/u,
+  );
+  assert.match(
+    SOURCE,
+    /const mechanicConsumesInteraction = beforeMechanic\.canActivate[\s\S]*?&& !hasPlayerActionCommitment\(\);/u,
+  );
+});
+
+test("transient stealth art releases its unique placed-asset receipt on disposal", () => {
+  assert.match(
+    SOURCE,
+    /`gameplay:stealth-evidence:\$\{evidence\.kind\}:\$\{evidence\.id\}`/u,
+  );
+  assert.match(
+    SOURCE,
+    /`gameplay:stealth-tool:\$\{receipt\.tool\}:\$\{receipt\.receiptId\}`/u,
+  );
+
+  const evidenceDisposal = SOURCE.match(
+    /const disposeStealthEvidenceView = \(view: StealthEvidenceView\) => \{[\s\S]*?\n    \};/u,
+  )?.[0] ?? "";
+  const toolDisposal = SOURCE.match(
+    /const disposeStealthToolWorldView = \(view: StealthToolWorldView\) => \{[\s\S]*?\n    \};/u,
+  )?.[0] ?? "";
+  assert.match(evidenceDisposal, /placedAssetIds\.delete\(view\.placedAssetId\)/u);
+  assert.match(toolDisposal, /placedAssetIds\.delete\(view\.placedAssetId\)/u);
 });
