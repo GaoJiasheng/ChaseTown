@@ -5168,8 +5168,38 @@ export function ChasingGame() {
     loadingManager.setURLModifier((url) => (
       controlledDependencyUrls.get(new URL(url, location.href).href) ?? url
     ));
+    let dependencyLoadingManagerIdle = true;
     let ktx2Loader: KTX2Loader | null = null;
     let gltfLoaderPromise: Promise<GLTFLoader> | null = null;
+    let pendingGlbLoadCount = 0;
+    let controlledDependencyResourcesReleased = false;
+    const releaseControlledDependencyResources = () => {
+      if (controlledDependencyResourcesReleased) return;
+      controlledDependencyResourcesReleased = true;
+      ktx2Loader?.dispose();
+      ktx2Loader = null;
+      for (const objectUrl of controlledDependencyUrls.values()) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      controlledDependencyUrls.clear();
+      controlledDependencyLoads.clear();
+    };
+    const releaseControlledDependencyResourcesWhenSettled = () => {
+      if (
+        disposed
+        && pendingGlbLoadCount === 0
+        && dependencyLoadingManagerIdle
+      ) {
+        releaseControlledDependencyResources();
+      }
+    };
+    loadingManager.onStart = () => {
+      dependencyLoadingManagerIdle = false;
+    };
+    loadingManager.onLoad = () => {
+      dependencyLoadingManagerIdle = true;
+      releaseControlledDependencyResourcesWhenSettled();
+    };
     const getGlbLoader = () => {
       if (gltfLoaderPromise) return gltfLoaderPromise;
       gltfLoaderPromise = Promise.resolve()
@@ -6318,30 +6348,37 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     };
 
     const loadGlbWithRetry = async (url: string) => {
-      const absoluteUrl = new URL(url, location.href);
-      const parser = getGlbLoader();
-      const bytes = await sceneAssets.fetchArrayBuffer(absoluteUrl, {
-        requestInit: { cache: "force-cache" },
-      });
-      loadedTransferBytes.set(absoluteUrl.href, bytes.byteLength);
-      const assetBaseUrl = new URL(".", absoluteUrl);
-      const dependencies = externalAssetUrisFromGlb(bytes)
-        .map((dependency) => new URL(dependency, assetBaseUrl));
-      await Promise.all(
-        dependencies.map(fetchControlledDependency),
-      );
-      assetDependencyUrls.set(
-        absoluteUrl.href,
-        Object.freeze(dependencies.map((dependency) => dependency.href)),
-      );
-      const loader = await parser;
-      const asset = await loader.parseAsync(bytes, assetBaseUrl.href);
-      if (disposed) {
-        disposeObjectResources([asset.scene]);
-        throw new DOMException("Scene disposed", "AbortError");
+      if (disposed) throw new DOMException("Scene disposed", "AbortError");
+      pendingGlbLoadCount += 1;
+      try {
+        const absoluteUrl = new URL(url, location.href);
+        const parser = getGlbLoader();
+        const bytes = await sceneAssets.fetchArrayBuffer(absoluteUrl, {
+          requestInit: { cache: "force-cache" },
+        });
+        loadedTransferBytes.set(absoluteUrl.href, bytes.byteLength);
+        const assetBaseUrl = new URL(".", absoluteUrl);
+        const dependencies = externalAssetUrisFromGlb(bytes)
+          .map((dependency) => new URL(dependency, assetBaseUrl));
+        await Promise.all(
+          dependencies.map(fetchControlledDependency),
+        );
+        assetDependencyUrls.set(
+          absoluteUrl.href,
+          Object.freeze(dependencies.map((dependency) => dependency.href)),
+        );
+        const loader = await parser;
+        const asset = await loader.parseAsync(bytes, assetBaseUrl.href);
+        if (disposed) {
+          disposeObjectResources([asset.scene]);
+          throw new DOMException("Scene disposed", "AbortError");
+        }
+        loadedAssetRoots.add(asset.scene);
+        return asset;
+      } finally {
+        pendingGlbLoadCount = Math.max(0, pendingGlbLoadCount - 1);
+        releaseControlledDependencyResourcesWhenSettled();
       }
-      loadedAssetRoots.add(asset.scene);
-      return asset;
     };
     const registerFirstPlayableAsset = (
       id: string,
@@ -11580,9 +11617,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     frame = requestAnimationFrame(animate);
 
     return () => {
+      disposed = true;
       sceneAssets.abort(new DOMException("Scene disposed", "AbortError"));
       scorePrewarmAbort.abort();
-      disposed = true;
       ready = false;
       requestPoliceAsset = null;
       commands.current = NOOP_COMMANDS;
@@ -11614,7 +11651,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       for (const locker of lockers.values()) locker.mixer.stopAllAction();
       void score.dispose();
       void soundscape.dispose();
-      ktx2Loader?.dispose();
       if (environmentScheduleHandle !== null) {
         if (environmentScheduledWithIdleCallback) {
           (window as Window & { cancelIdleCallback?: (handle: number) => void })
@@ -11644,9 +11680,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ...(portableDecoyTemplate ? [portableDecoyTemplate] : []),
         ...Object.values(stealthToolModelTemplates),
       ]);
-      for (const objectUrl of controlledDependencyUrls.values()) URL.revokeObjectURL(objectUrl);
-      controlledDependencyUrls.clear();
-      controlledDependencyLoads.clear();
+      // GLTFLoader may still be decoding an image from one of these blob URLs
+      // after React has requested a level switch. Revoke only after every
+      // parse settles; the disposed branch above immediately destroys any
+      // late scene, so this retains neither render objects nor long-lived URLs.
+      releaseControlledDependencyResourcesWhenSettled();
       renderer.renderLists.dispose();
       renderer.dispose();
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);

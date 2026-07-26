@@ -99,6 +99,25 @@ test("scene loading is cancellable, retryable, concurrency-limited and KTX2 awar
   assert.match(SOURCE, /const playableTextures = collectObjectTextures\([\s\S]*disposeObjectResources\([\s\S]*playableTextures/);
   assert.match(SOURCE, /sceneAssets\.abort\(new DOMException\("Scene disposed"/);
   assert.match(SOURCE, /ktx2Loader\?\.dispose\(\)/);
+  assert.match(
+    SOURCE,
+    /pendingGlbLoadCount \+= 1;[\s\S]*finally \{[\s\S]*pendingGlbLoadCount = Math\.max\(0, pendingGlbLoadCount - 1\);[\s\S]*releaseControlledDependencyResourcesWhenSettled\(\);/u,
+    "every GLB parse must hold its external blob URLs until its texture work settles",
+  );
+  assert.match(
+    SOURCE,
+    /const releaseControlledDependencyResourcesWhenSettled = \(\) => \{[\s\S]*disposed[\s\S]*pendingGlbLoadCount === 0[\s\S]*dependencyLoadingManagerIdle[\s\S]*releaseControlledDependencyResources\(\);/u,
+  );
+  assert.match(
+    SOURCE,
+    /loadingManager\.onStart = \(\) => \{\s*dependencyLoadingManagerIdle = false;[\s\S]*loadingManager\.onLoad = \(\) => \{\s*dependencyLoadingManagerIdle = true;\s*releaseControlledDependencyResourcesWhenSettled\(\);/u,
+    "external image decoding must participate in the blob URL disposal barrier",
+  );
+  assert.match(
+    SOURCE,
+    /return \(\) => \{\s*disposed = true;\s*sceneAssets\.abort\([\s\S]*releaseControlledDependencyResourcesWhenSettled\(\);\s*renderer\.renderLists\.dispose\(\);/u,
+    "chapter cleanup must abort first and defer URL/KTX2 disposal until pending GLB parses settle",
+  );
 });
 
 test("mobile controls, pause and theme mechanics drive the real simulation", () => {

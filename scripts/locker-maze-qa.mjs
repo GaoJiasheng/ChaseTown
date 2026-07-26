@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isThreeLoaderAssetFailure } from "./qa-protocol-diagnostics.mjs";
 import { collectQaSourceProvenance } from "./qa-source-provenance.mjs";
 
 const BASE_URL = process.env.CHASING_QA_URL ?? "http://localhost:4173/";
@@ -489,11 +490,19 @@ try {
     (event) => event.method === "Network.loadingFailed"
       && event.params?.canceled !== true,
   );
+  const threeLoaderAssetFailures = browser.events.filter(
+    isThreeLoaderAssetFailure,
+  );
   assert.deepEqual(exceptions, [], "browser runtime emitted an exception");
   assert.deepEqual(consoleErrors, [], "browser console emitted an error/assertion");
   assert.deepEqual(severeLogs, [], "browser emitted warning/error log entries");
   assert.deepEqual(httpErrors, [], "browser received an HTTP error response");
   assert.deepEqual(networkFailures, [], "browser emitted a network loading failure");
+  assert.deepEqual(
+    threeLoaderAssetFailures,
+    [],
+    "THREE loader emitted a texture/model loading or decode failure",
+  );
   const summary = {
     generatedAt: new Date().toISOString(),
     baseUrl: BASE_URL,
@@ -508,6 +517,7 @@ try {
       severeLogs: severeLogs.length,
       httpErrors: httpErrors.length,
       networkFailures: networkFailures.length,
+      threeLoaderAssetFailures: threeLoaderAssetFailures.length,
     },
     viewport: VIEWPORT,
     levels: report,

@@ -4,6 +4,10 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  isThreeLoaderAssetFailure,
+  protocolDiagnosticText,
+} from "./qa-protocol-diagnostics.mjs";
 import { collectQaSourceProvenance } from "./qa-source-provenance.mjs";
 
 const BASE_URL = process.env.CHASING_QA_URL ?? "http://127.0.0.1:3000/";
@@ -400,6 +404,11 @@ async function connect() {
           kind: "runtime-exception",
           text: message.params.exceptionDetails.exception?.description
             ?? message.params.exceptionDetails.text,
+        });
+      } else if (isThreeLoaderAssetFailure(message)) {
+        diagnostics.push({
+          kind: "three-loader-asset-failure",
+          text: protocolDiagnosticText(message),
         });
       } else if (
         message.method === "Runtime.consoleAPICalled"
