@@ -1,5 +1,7 @@
 # Web 版实施与验证报告
 
+> 2026-07-26 文档治理说明：本文是 Sites v13 历史候选报告，不代表当前 HEAD 或最新部署。当前指针见 [`releases/LATEST.md`](releases/LATEST.md)。
+
 > 文档日期：2026-07-22
 > 当前状态：`REVIEW` — 本地全量回归、真实浏览器冒烟、Sites v13 发布与线上复核均已通过，等待用户体验验收
 > 工作分支：`codex/top-tier-web-vertical-slice`

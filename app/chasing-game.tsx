@@ -88,11 +88,13 @@ import {
   personalBestDelta,
   previewRunMastery,
   type RunCausalEvent,
+  type MasteryTargetOptions,
   type MasteryRank,
   type RunMasteryResult,
   type StoredMastery,
 } from "./game/mastery.ts";
 import {
+  GhostFixedStepInputBuffer,
   GhostReplayCursor,
   GhostInputRecorder,
   loadPersonalGhost,
@@ -140,6 +142,32 @@ import {
   deriveRouteGuidanceGeometry,
   updateObjectiveGuidance,
 } from "./game/navigation-guidance.ts";
+import {
+  LIBRARY_BRANCHING_MISSION,
+  LIBRARY_BRANCHING_MISSION_TOPOLOGY,
+  LIBRARY_BRANCHING_MISSION_VERSION,
+  adaptLibraryMissionToThemeMissionState,
+  adaptLibraryMissionTransitionToThemeMission,
+  auditLibraryMissionSoftlocks,
+  availableLibraryObjectiveIds,
+  createInitialLibraryMissionState,
+  libraryMissionCommitmentWindow,
+  stepLibraryBranchingMission,
+  type LibraryMissionEvent,
+  type LibraryMissionPlanId,
+  type LibraryMissionState,
+} from "./game/library-branching-mission.ts";
+import {
+  LIBRARY_PORTABLE_DECOY_DEFINITION,
+  acknowledgePortableDecoySound,
+  createPortableDecoyState,
+  deployPortableDecoy,
+  portableDecoySoundStimulus,
+  samplePortableDecoy,
+  stepPortableDecoy,
+  type PortableDecoySample,
+  type PortableDecoyState,
+} from "./game/portable-decoy.ts";
 import { isPlayerVisuallyExposed } from "./game/perception.ts";
 import {
   EMERGENCY_RENDER_POLICIES,
@@ -229,6 +257,7 @@ const LOCKER_PLAYBACK_RATE = 1.2;
 const HIDE_PROP_FORWARD_OFFSET_CELLS = 0.18;
 const POLICE_PREFETCH_DISTANCE_CELLS = 7.5;
 const DEFERRED_DRESSING_FADE_SECONDS = 0.48;
+const PORTABLE_DECOY_RELEASE_FRACTION = 0.32;
 
 const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
   walk: Object.freeze([
@@ -259,7 +288,7 @@ const ACTOR_SPECS = {
       celebrate: "EscapeCelebrate",
       point: "Interact",
     },
-    required: ["idle", "walk", "run", "turnLeft", "turnRight", "enterHide", "hideIdle", "peekLeft", "exitHide", "caught", "celebrate"] as AnimationState[],
+    required: ["idle", "walk", "run", "turnLeft", "turnRight", "enterHide", "hideIdle", "peekLeft", "exitHide", "caught", "celebrate", "point"] as AnimationState[],
   },
   villain: {
     bootstrapUrl: "/models/characters/villain-bootstrap.glb?v=1",
@@ -749,7 +778,10 @@ function lockerSightDirection(
   return best;
 }
 
-function themeMechanicPlacement(level: LevelDefinition): Point {
+function themeMechanicPlacement(
+  level: LevelDefinition,
+  reservedAnchors: readonly Point[] = [],
+): Point {
   const route = new GridPathPlanner(level).path(level.playerStart, level.exit);
   const routeCandidates = route.slice(
     Math.max(1, Math.floor(route.length * 0.24)),
@@ -759,6 +791,7 @@ function themeMechanicPlacement(level: LevelDefinition): Point {
     level.playerStart,
     level.exit,
     ...level.hideSpots.flatMap((spot) => [spot.approach, spot.concealed]),
+    ...reservedAnchors,
   ];
   const junctionScore = (point: Point) => {
     const exits = [
@@ -1268,6 +1301,44 @@ function fitProp(source: THREE.Object3D, height: number, castShadow = false) {
   return flattenStatic(visual, castShadow);
 }
 
+/**
+ * Extract one authored static subassembly from a larger GLB without replacing
+ * it with runtime primitives. World transforms are baked so Blender-authored
+ * hierarchy and gltfpack decode transforms remain intact.
+ */
+function fitNamedStaticProp(
+  source: THREE.Object3D,
+  namePrefix: string,
+  maximumDimension: number,
+  castShadow = false,
+) {
+  source.updateMatrixWorld(true);
+  const selected = new THREE.Group();
+  selected.name = `${namePrefix}-authored-source`;
+  source.traverse((object) => {
+    if (!(object instanceof THREE.Mesh) || !object.name.startsWith(namePrefix)) return;
+    const mesh = new THREE.Mesh(
+      object.geometry,
+      Array.isArray(object.material) ? [...object.material] : object.material,
+    );
+    mesh.name = object.name;
+    object.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);
+    selected.add(mesh);
+  });
+  if (!selected.children.length) {
+    throw new Error(`正式美术资产缺少命名子组件 ${namePrefix}`);
+  }
+  const fitted = fitProp(selected, 1, castShadow);
+  const size = new THREE.Box3()
+    .setFromObject(fitted)
+    .getSize(new THREE.Vector3());
+  fitted.scale.multiplyScalar(
+    maximumDimension / Math.max(size.x, size.y, size.z, 0.001),
+  );
+  fitted.name = `${namePrefix}-authored-prop`;
+  return fitted;
+}
+
 function anchorAuthoredStatic(source: THREE.Object3D, castShadow = false) {
   const model = source.clone(true);
   tuneMeshes(model, { castShadow });
@@ -1640,19 +1711,47 @@ type MissionObjectiveView = {
   baseScale: THREE.Vector3;
 };
 
+type PortableDecoyView = {
+  deploymentId: string;
+  sourceId: string;
+  root: THREE.Group;
+  beacon: THREE.Sprite;
+  light: THREE.PointLight;
+  start: THREE.Vector3;
+  landing: THREE.Vector3;
+  deployedAtSeconds: number;
+  releaseAtSeconds: number;
+  soundAtSeconds: number;
+  expiresAtSeconds: number;
+  settled: boolean;
+  lightRegistered: boolean;
+  released: boolean;
+  disposed: boolean;
+};
+
 type ThemeMechanicUiState = MechanicInstanceSample & {
   readonly distanceMeters: number;
   readonly activationCostLabel: string;
+  readonly movementCommitted: boolean;
 };
 
 type ThemeMissionUiState = {
   readonly state: ThemeMissionState;
-  readonly activeObjective: ThemeObjectiveDefinition | null;
+  readonly activeObjective: RuntimeMissionObjective | null;
   readonly activeDistanceMeters: number | null;
+  readonly canInteract: boolean;
   readonly commitmentProgress: number | null;
   readonly commitmentRemainingSeconds: number | null;
   readonly completedCount: number;
   readonly totalCount: number;
+};
+
+type RuntimeMissionObjective = Pick<
+  ThemeObjectiveDefinition,
+  "id" | "label" | "interactionPrompt" | "completionHint" | "commitmentSeconds"
+> & {
+  readonly unlocksExit: boolean;
+  readonly planId?: LibraryMissionPlanId;
 };
 
 type GhostRaceUiState = GhostRaceSnapshot & {
@@ -1672,6 +1771,7 @@ type GameCommands = {
   begin: () => void;
   restart: () => void;
   interact: () => void;
+  deployDecoy: () => void;
   toggleMute: () => void;
   togglePause: () => void;
   adjustZoom: (factor: number) => void;
@@ -1686,6 +1786,21 @@ type LastRunSummary = RunMasteryResult & {
 
 const CAMPAIGN_PROGRESS_KEY = "chasing.campaign-progress.v1";
 const CERTIFIED_REMIX_RECORD_VERSION = 1;
+
+function libraryG2RunIdentity(
+  levelId: string,
+  planId: LibraryMissionPlanId,
+): string {
+  return `${levelId}#${CERTIFIED_REMIX_MISSION_VERSION}:library-g2-v${
+    LIBRARY_BRANCHING_MISSION_VERSION
+  }:${planId}`;
+}
+
+const LIBRARY_G2_RECORD_IDS = Object.freeze(
+  LIBRARY_BRANCHING_MISSION.plans.map((plan) => (
+    libraryG2RunIdentity(LIBRARY_BRANCHING_MISSION.levelId, plan.id)
+  )),
+);
 
 type CertifiedRemixBestRecord = {
   readonly version: typeof CERTIFIED_REMIX_RECORD_VERSION;
@@ -1787,6 +1902,7 @@ const NOOP_COMMANDS: GameCommands = {
   begin() {},
   restart() {},
   interact() {},
+  deployDecoy() {},
   toggleMute() {},
   togglePause() {},
   adjustZoom() {},
@@ -2368,6 +2484,7 @@ export function ChasingGame() {
   const joystickBase = useRef<HTMLDivElement>(null);
   const joystickPointerId = useRef<number | null>(null);
   const interactPressed = useRef(false);
+  const portableDecoyPressed = useRef(false);
   const preferredHideExit = useRef<HideExitKind>("origin");
   const pausedRef = useRef(false);
   const resumeButton = useRef<HTMLButtonElement>(null);
@@ -2376,6 +2493,8 @@ export function ChasingGame() {
   const qaAssetFaultInjector = useRef<QaAssetFaultInjector | null>(null);
   const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
   const [selectedRemixVariant, setSelectedRemixVariant] = useState<0 | 1 | 2 | null>(null);
+  const [selectedLibraryPlan, setSelectedLibraryPlan] =
+    useState<LibraryMissionPlanId>("access-authorization");
   const [sceneRevision, setSceneRevision] = useState(0);
   const [preferences, setPreferences] = useState<GameplayPreferences>(
     () => DEFAULT_GAMEPLAY_PREFERENCES,
@@ -2397,17 +2516,51 @@ export function ChasingGame() {
     ),
     [preferences.ruleset, selectedRemixContract, sourceCampaignLevel],
   );
-  // Certified remixes clone only LevelDefinition fields; campaign art and
-  // briefing metadata are retained by the spread and remain immutable.
-  const campaignLevel = resolvedRemix.level as CampaignLevelDefinition;
+  const libraryGoldEnabled = sourceCampaignLevel.id === LIBRARY_BRANCHING_MISSION.levelId
+    && selectedRemixContract === null;
+  // The original library layout is the G2 gold slice. Certified remixes retain
+  // their frozen v1 mission identity until they receive separately certified
+  // branching anchors; this avoids silently changing recorded seed topology.
+  const campaignLevel = useMemo(() => {
+    const resolvedLevel = resolvedRemix.level as CampaignLevelDefinition;
+    if (!libraryGoldEnabled) return resolvedLevel;
+    const selectedExitId = LIBRARY_BRANCHING_MISSION.plans
+      .find((plan) => plan.id === selectedLibraryPlan)?.exitId;
+    const selectedExit = LIBRARY_BRANCHING_MISSION_TOPOLOGY.exitPlacements
+      .find((placement) => placement.exitId === selectedExitId)?.position;
+    if (!selectedExit) throw new Error(`图书楼路线 ${selectedLibraryPlan} 缺少出口锚点`);
+    // The original archive soft cover occupied the new fire-exit threshold.
+    // Move that same authored shelf cover to the eastern reading branch so
+    // both premium objects keep clean silhouettes and all three hide
+    // archetypes remain available.
+    const hideSpots = resolvedLevel.hideSpots.map((spot) => (
+      spot.id === "library-archive"
+        ? Object.freeze({
+            ...spot,
+            approach: Object.freeze({ x: 20, y: 14 }),
+            concealed: Object.freeze({ x: 20, y: 13.65 }),
+            facing: Object.freeze({ x: 0, y: 1 }),
+          })
+        : spot
+    ));
+    return Object.freeze({
+      ...resolvedLevel,
+      exit: Object.freeze({ ...selectedExit }),
+      hideSpots: Object.freeze(hideSpots),
+    });
+  }, [libraryGoldEnabled, resolvedRemix.level, selectedLibraryPlan]);
   const chaserArchetypeProfile: ChaserArchetypeProfile =
     CHASER_ARCHETYPE_PROFILES[campaignLevel.campaign.theme];
   const runReplayLevelId = selectedRemixContract
     ? remixReplayLevelId(selectedRemixContract, preferences.ruleset)
-    : `${campaignLevel.id}#${CERTIFIED_REMIX_MISSION_VERSION}`;
+    : libraryGoldEnabled
+      ? libraryG2RunIdentity(campaignLevel.id, selectedLibraryPlan)
+      : `${campaignLevel.id}#${CERTIFIED_REMIX_MISSION_VERSION}`;
   const runRecordLevelId = selectedRemixContract
     ? runReplayLevelId
-    : campaignLevel.id;
+    : libraryGoldEnabled
+      ? runReplayLevelId
+      : campaignLevel.id;
   const remixRecord = selectedRemixContract && typeof window !== "undefined"
     ? loadCertifiedRemixRecord(localStorage, selectedRemixContract, preferences.ruleset)
     : null;
@@ -2424,17 +2577,55 @@ export function ChasingGame() {
   );
   const hideGuidancePolicy = useMemo(() => getCampaignHideGuidancePolicy(campaignLevel), [campaignLevel]);
   const atmosphere = useMemo(() => runtimeAtmosphereForLevel(campaignLevel), [campaignLevel]);
-  const masteryPreview = useMemo(() => previewRunMastery(
-    campaignLevel,
-    gameplayConfig,
-    {
-      // Remix identity belongs to records and ghosts. Mastery is authored for
-      // the source chapter, so preview and result must share its profile.
+  const masteryTargetOptions = useMemo<MasteryTargetOptions>(() => {
+    const context = Object.freeze({
+      // Replay/record identity is versioned separately. The profile itself is
+      // still authored for the source chapter and active rules lane.
       levelId: campaignLevel.id,
       theme: campaignLevel.campaign.theme,
       ruleset: preferences.ruleset,
-    },
-  ), [campaignLevel, gameplayConfig, preferences.ruleset]);
+    });
+    if (!libraryGoldEnabled) return Object.freeze({ context });
+    const plan = LIBRARY_BRANCHING_MISSION.plans.find(
+      (candidate) => candidate.id === selectedLibraryPlan,
+    );
+    if (!plan) throw new Error(`图书楼路线 ${selectedLibraryPlan} 缺少精通计时定义`);
+    const objectives = plan.objectiveIds.map((objectiveId) => {
+      const definition = LIBRARY_BRANCHING_MISSION.objectives.find(
+        (candidate) => candidate.id === objectiveId,
+      );
+      const placement = LIBRARY_BRANCHING_MISSION_TOPOLOGY.objectivePlacements.find(
+        (candidate) => candidate.objectiveId === objectiveId,
+      );
+      if (!definition || !placement) {
+        throw new Error(`图书楼路线 ${selectedLibraryPlan} 缺少精通目标 ${objectiveId}`);
+      }
+      return Object.freeze({
+        id: objectiveId,
+        position: Object.freeze({ ...placement.position }),
+        commitmentSeconds: definition.commitmentSeconds,
+      });
+    });
+    return Object.freeze({
+      context,
+      mission: Object.freeze({
+        kind: "ordered" as const,
+        id: `${LIBRARY_BRANCHING_MISSION.id}:${selectedLibraryPlan}`,
+        objectives: Object.freeze(objectives),
+      }),
+    });
+  }, [
+    campaignLevel.campaign.theme,
+    campaignLevel.id,
+    libraryGoldEnabled,
+    preferences.ruleset,
+    selectedLibraryPlan,
+  ]);
+  const masteryPreview = useMemo(() => previewRunMastery(
+    campaignLevel,
+    gameplayConfig,
+    masteryTargetOptions,
+  ), [campaignLevel, gameplayConfig, masteryTargetOptions]);
   const [campaignProgress, setCampaignProgress] = useState<CampaignProgress>(
     createCampaignProgress,
   );
@@ -2480,6 +2671,8 @@ export function ChasingGame() {
   const [joystickThumb, setJoystickThumb] = useState({ x: 0, y: 0, active: false });
   const [themeMechanic, setThemeMechanic] = useState<ThemeMechanicUiState | null>(null);
   const [themeMission, setThemeMission] = useState<ThemeMissionUiState | null>(null);
+  const [portableDecoy, setPortableDecoy] = useState<PortableDecoySample | null>(null);
+  const [portableDecoyNotice, setPortableDecoyNotice] = useState<string | null>(null);
   const [ghostRace, setGhostRace] = useState<GhostRaceUiState | null>(null);
   const [lastCaptureReason, setLastCaptureReason] = useState<CaptureReason | null>(null);
   const [lastRunSummary, setLastRunSummary] = useState<LastRunSummary | null>(null);
@@ -2506,6 +2699,10 @@ export function ChasingGame() {
       const sanitized = sanitizeCampaignProgress(
         stored,
         CAMPAIGN_LEVELS.map((level) => level.id),
+        [
+          ...CAMPAIGN_LEVELS.map((level) => level.id),
+          ...LIBRARY_G2_RECORD_IDS,
+        ],
       );
       queueMicrotask(() => {
         if (active) setCampaignProgress(sanitized);
@@ -2533,6 +2730,7 @@ export function ChasingGame() {
   const begin = useCallback(() => commands.current.begin(), []);
   const restart = useCallback(() => commands.current.restart(), []);
   const interact = useCallback(() => commands.current.interact(), []);
+  const deployDecoy = useCallback(() => commands.current.deployDecoy(), []);
   const retryScene = useCallback(() => {
     setLoading(true);
     setLoadError("");
@@ -2617,6 +2815,44 @@ export function ChasingGame() {
     setSelectedRemixVariant(variant);
   }, [selectedRemixVariant]);
 
+  const chooseLibraryPlan = useCallback((planId: LibraryMissionPlanId) => {
+    if (planId === selectedLibraryPlan || phase !== "ready") return;
+    setLoading(true);
+    setLoadError("");
+    setLoadProgress({
+      done: 0,
+      total: BOOTSTRAP_ASSET_COUNT,
+      message: planId === "access-authorization"
+        ? "正在布置安静的正门授权路线…"
+        : "正在布置高风险的消防释放路线…",
+    });
+    setSelectedLibraryPlan(planId);
+  }, [phase, selectedLibraryPlan]);
+
+  const switchLibraryPlanAfterRun = useCallback(() => {
+    if (
+      !libraryGoldEnabled
+      || (phase !== "won" && phase !== "lost")
+      || loading
+    ) return;
+    const nextPlan = LIBRARY_BRANCHING_MISSION.plans.find(
+      (plan) => plan.id !== selectedLibraryPlan,
+    );
+    if (!nextPlan) return;
+    setResultVisible(true);
+    setPhase("ready");
+    setLoading(true);
+    setLoadError("");
+    setLoadProgress({
+      done: 0,
+      total: BOOTSTRAP_ASSET_COUNT,
+      message: nextPlan.id === "access-authorization"
+        ? "正在从结算页改走安静的正门授权路线…"
+        : "正在从结算页改走高风险的消防释放路线…",
+    });
+    setSelectedLibraryPlan(nextPlan.id);
+  }, [libraryGoldEnabled, loading, phase, selectedLibraryPlan]);
+
   useEffect(() => {
     chooseLevelRef.current = chooseLevel;
   }, [chooseLevel]);
@@ -2693,12 +2929,14 @@ export function ChasingGame() {
         else commands.current.begin();
       }
       else if (key === "e" || (key === " " && phase === "playing")) commands.current.interact();
+      else if (key === "f" && phase === "playing") commands.current.deployDecoy();
     };
     const keyUp = (event: KeyboardEvent) => keyboardKeys.current.delete(event.key.toLowerCase());
     const clearInput = () => {
       keyboardKeys.current.clear();
       touchKeys.current.clear();
       interactPressed.current = false;
+      portableDecoyPressed.current = false;
       preferredHideExit.current = "origin";
       resetAnalogueMove();
     };
@@ -2752,6 +2990,8 @@ export function ChasingGame() {
     resetAnalogueMove();
     setThemeMechanic(null);
     setThemeMission(null);
+    setPortableDecoy(null);
+    setPortableDecoyNotice(null);
     setGhostRace(null);
     setElapsed(0);
     setLastCaptureReason(null);
@@ -2791,6 +3031,8 @@ export function ChasingGame() {
     const lockerCameraPosition = new THREE.Vector3();
     const lockerCameraTarget = new THREE.Vector3();
     const lockerPeekPosition = new THREE.Vector3();
+    const missionPerformanceTarget = new THREE.Vector3();
+    const missionPerformanceOrigin = new THREE.Vector3();
     let resultTimer: ReturnType<typeof setTimeout> | null = null;
     let lastCheckSpot: string | null = null;
     let renderedHideArchetype: HideArchetypeKind | null = null;
@@ -2808,32 +3050,100 @@ export function ChasingGame() {
     );
     const environmentComposition = buildEnvironmentCompositionPlan(campaignLevel);
     const missionDefinition = themeMissionDefinition(campaignLevel.campaign.theme);
-    const missionPlacementPlan = planThemeMissionPlacements(
+    const legacyMissionPlacementPlan = planThemeMissionPlacements(
       campaignLevel,
       missionDefinition,
     );
+    const legacyMissionPlacements: readonly MissionObjectivePlacement[] =
+      legacyMissionPlacementPlan.placements;
+    const selectedLibraryPlanDefinition = libraryGoldEnabled
+      ? LIBRARY_BRANCHING_MISSION.plans.find((plan) => plan.id === selectedLibraryPlan) ?? null
+      : null;
+    const runtimeMissionObjectives: readonly RuntimeMissionObjective[] =
+      selectedLibraryPlanDefinition
+        ? selectedLibraryPlanDefinition.objectiveIds.map((objectiveId) => {
+            const objective = LIBRARY_BRANCHING_MISSION.objectives
+              .find((candidate) => candidate.id === objectiveId);
+            if (!objective) throw new Error(`图书楼路线缺少任务 ${objectiveId}`);
+            return Object.freeze({
+              id: objective.id,
+              label: objective.label,
+              interactionPrompt: objective.interactionPrompt,
+              completionHint: objective.completionHint,
+              commitmentSeconds: objective.commitmentSeconds,
+              unlocksExit: objective.unlocksExitId !== null,
+              planId: objective.planId,
+            });
+          })
+        : missionDefinition.objectives;
     const missionPlacements: readonly MissionObjectivePlacement[] =
-      missionPlacementPlan.placements;
-    const missionAudit = auditThemeMissionSoftlock(
-      campaignLevel,
-      missionDefinition,
-      missionPlacements,
-    );
+      selectedLibraryPlanDefinition
+        ? selectedLibraryPlanDefinition.objectiveIds.map((objectiveId) => {
+            const placement = LIBRARY_BRANCHING_MISSION_TOPOLOGY.objectivePlacements
+              .find((candidate) => candidate.objectiveId === objectiveId);
+            if (!placement) throw new Error(`图书楼路线缺少任务锚点 ${objectiveId}`);
+            return Object.freeze({
+              objectiveId,
+              position: Object.freeze({ ...placement.position }),
+            });
+          })
+        : legacyMissionPlacements;
+    const missionAudit = libraryGoldEnabled
+      ? auditLibraryMissionSoftlocks(campaignLevel)
+      : auditThemeMissionSoftlock(
+          campaignLevel,
+          missionDefinition,
+          missionPlacements,
+        );
     if (!missionAudit.passed) {
       throw new Error(`主题任务链未通过软锁审计：${missionAudit.failures.join("；")}`);
     }
     const missionPlacementById = new Map(
       missionPlacements.map((placement) => [placement.objectiveId, placement.position]),
     );
-    let missionState = createInitialThemeMissionState(missionDefinition);
+    const initialLibraryMissionState = libraryGoldEnabled
+      ? stepLibraryBranchingMission(
+          LIBRARY_BRANCHING_MISSION,
+          createInitialLibraryMissionState(),
+          { type: "select-plan", planId: selectedLibraryPlan },
+        ).state
+      : null;
+    let libraryMissionState: LibraryMissionState | null = initialLibraryMissionState;
+    let missionState = libraryMissionState
+      ? adaptLibraryMissionToThemeMissionState(libraryMissionState)
+      : createInitialThemeMissionState(missionDefinition);
+    const availableRuntimeMissionObjectiveIds = () => (
+      libraryMissionState
+        ? availableLibraryObjectiveIds(
+            LIBRARY_BRANCHING_MISSION,
+            libraryMissionState,
+          )
+        : availableThemeObjectiveIds(missionDefinition, missionState)
+    );
     let missionCommitment: {
       objectiveId: string;
+      startedAtTick: number;
+      durationTicks: number;
+      completesAtTick: number;
       remainingSeconds: number;
       totalSeconds: number;
     } | null = null;
+    let missionPerformanceObjectiveId: string | null = null;
     const missionViews = new Map<string, MissionObjectiveView>();
     const ghostRunLevelId = runReplayLevelId;
-    const mechanicPosition = themeMechanicPlacement(campaignLevel);
+    const mechanicPosition = themeMechanicPlacement(
+      campaignLevel,
+      libraryGoldEnabled
+        ? [
+            ...LIBRARY_BRANCHING_MISSION_TOPOLOGY.objectivePlacements.map(
+              (placement) => placement.position,
+            ),
+            ...LIBRARY_BRANCHING_MISSION_TOPOLOGY.exitPlacements.map(
+              (placement) => placement.position,
+            ),
+          ]
+        : [],
+    );
     const mechanicDefinition = createThemeMechanicDefinition(
       campaignLevel.campaign.theme,
       `${campaignLevel.id}:primary-mechanic`,
@@ -2857,7 +3167,7 @@ export function ChasingGame() {
       ghostRunLevelId,
       simulation.config.fixedStepSeconds,
     );
-    let ghostLastRecordedTick = -1;
+    const ghostInputBuffer = new GhostFixedStepInputBuffer();
     const storedGhost = preferences.personalGhostEnabled
       ? loadPersonalGhost(localStorage, ghostRunLevelId)
       : null;
@@ -2867,7 +3177,7 @@ export function ChasingGame() {
       fixedStepSeconds: simulation.config.fixedStepSeconds,
       ruleset: preferences.ruleset,
     });
-    const ghostRecording: GhostRecording | null = ghostEligible ? storedGhost : null;
+    let ghostRecording: GhostRecording | null = ghostEligible ? storedGhost : null;
     let ghostSimulation: GameSimulation | null = ghostRecording
       ? new GameSimulation({
           level: campaignLevel,
@@ -2882,9 +3192,32 @@ export function ChasingGame() {
     let ghostCursor = ghostRecording ? new GhostReplayCursor(ghostRecording) : null;
     let ghostActor: ActorView | null = null;
     let ghostAccumulatorSeconds = 0;
-    const missionObjectiveIds = missionDefinition.objectives.map(
+    const missionObjectiveIds = runtimeMissionObjectives.map(
       (objective) => objective.id,
     );
+    let portableDecoyState: PortableDecoyState | null = libraryGoldEnabled
+      ? createPortableDecoyState(LIBRARY_PORTABLE_DECOY_DEFINITION)
+      : null;
+    let portableDecoyTemplate: THREE.Group | null = null;
+    const portableDecoyViews = new Map<string, PortableDecoyView>();
+    const portableDecoySourceIds = new Set<string>();
+    const scheduledPortableDecoySourceIds = new Set<string>();
+    let portableDecoyFeedback: string | null = libraryGoldEnabled
+      ? "F 投掷精装笔记本，制造一次可追查的公开声源"
+      : null;
+    let portableDecoyFeedbackUntilSeconds = libraryGoldEnabled ? 4 : 0;
+    let portableDecoyThrowRemainingSeconds = 0;
+    let portableDecoyThrownCount = 0;
+    let portableDecoyPublicSoundAcceptedCount = 0;
+    let portableDecoyInvestigationCompletedCount = 0;
+    let portableDecoyLastLifecycleEvent: string | null = null;
+    let portableDecoyViewCreatedCount = 0;
+    let portableDecoyViewDisposedCount = 0;
+    let portableDecoyBeaconTextureCreatedCount = 0;
+    let portableDecoyBeaconTextureDisposedCount = 0;
+    let portableDecoyBeaconMaterialDisposedCount = 0;
+    let portableDecoyResetCount = 0;
+    let pendingRouteSelectionTelemetry = libraryGoldEnabled;
     const initialExitRouteDistanceMeters = objectiveDistanceMeters(
       campaignLevel.playerStart,
       campaignLevel,
@@ -2922,7 +3255,7 @@ export function ChasingGame() {
       }) ?? null;
     const ghostRuleInput = (
       event: Readonly<GhostRuleReplayEvent>,
-    ): GhostRuleEventInput => {
+    ): GhostRuleEventInput | null => {
       switch (event.type) {
         case "objective-completed":
         case "exit-unlocked":
@@ -2937,6 +3270,8 @@ export function ChasingGame() {
           };
         case "run-completed":
           return { type: event.type };
+        case "portable-decoy-thrown":
+          return null;
       }
     };
     const consumeGhostRuleEventsThrough = (
@@ -2948,16 +3283,32 @@ export function ChasingGame() {
         ghostRuleEventCursor < ghostRecording.ruleEvents.length
         && ghostRecording.ruleEvents[ghostRuleEventCursor].tick <= tick
       ) {
-        events.push(
-          ghostRuleInput(ghostRecording.ruleEvents[ghostRuleEventCursor]),
+        const input = ghostRuleInput(
+          ghostRecording.ruleEvents[ghostRuleEventCursor],
         );
+        if (input) events.push(input);
         ghostRuleEventCursor += 1;
       }
       return events;
     };
     const recordPlayerRuleEvent = (event: GhostRuleReplayEvent) => {
       ghostRecorder.recordRuleEvent(event);
-      pendingPlayerRuleEvents.push(ghostRuleInput(event));
+      const input = ghostRuleInput(event);
+      if (input) pendingPlayerRuleEvents.push(input);
+    };
+    const recordLibraryMissionRuleEvents = (
+      events: readonly LibraryMissionEvent[],
+      tick: number,
+    ) => {
+      for (const event of events) {
+        if (event.type === "objective-completed" || event.type === "exit-unlocked") {
+          recordPlayerRuleEvent({
+            tick,
+            type: event.type,
+            objectiveId: event.objectiveId,
+          });
+        }
+      }
     };
     let ghostRaceTracker = ghostRecording
       ? new GhostRaceTracker(
@@ -3236,6 +3587,12 @@ export function ChasingGame() {
       light.layers.enable(1);
       performanceLights.push({ light, priority });
     };
+    const unregisterPerformanceLight = (light: THREE.Light) => {
+      const index = performanceLights.findIndex((entry) => entry.light === light);
+      if (index >= 0) performanceLights.splice(index, 1);
+      light.intensity = 0;
+      light.visible = false;
+    };
     const buildThemeMechanicView = (themeKit: GLTF): MechanicView => {
       const art = THEME_MECHANIC_ART[campaignLevel.campaign.theme];
       const source = resolveThemeNode(
@@ -3310,18 +3667,27 @@ export function ChasingGame() {
       return view;
     };
     const buildThemeMissionViews = (themeKit: GLTF) => {
-      for (const [index, objective] of missionDefinition.objectives.entries()) {
+      const libraryObjectiveArt: Readonly<Record<string, readonly string[]>> = {
+        "library:retrieve-temporary-pass": ["CampusArchiveCluster"],
+        "library:write-front-gate-authorization": ["CampusWayfinding"],
+        "library:release-front-gate": ["CampusLibraryExitCluster"],
+        "library:restore-egress-circuit": ["CampusWayfinding"],
+        "library:prime-fire-door-linkage": ["CampusLibraryHideDressing"],
+        "library:release-loading-fire-door": ["CampusLibraryExitCluster"],
+      };
+      for (const [index, objective] of runtimeMissionObjectives.entries()) {
         const beat = environmentComposition.landmarkBeats[
           Math.min(index, environmentComposition.landmarkBeats.length - 1)
         ];
         const position = missionPlacementById.get(objective.id);
         if (!position) throw new Error(`主题任务 ${objective.id} 缺少运行态位置`);
-        const candidates = objective.unlocksExit
-          ? [
-              ...environmentComposition.profile.exitNodeCandidates,
-              ...beat.nodeCandidates,
-            ]
-          : beat.nodeCandidates;
+        const candidates = libraryObjectiveArt[objective.id]
+          ?? (objective.unlocksExit
+            ? [
+                ...environmentComposition.profile.exitNodeCandidates,
+                ...beat.nodeCandidates,
+              ]
+            : beat.nodeCandidates);
         const source = resolveThemeNode(
           themeKit.scene,
           campaignLevel.campaign.theme,
@@ -3398,11 +3764,198 @@ export function ChasingGame() {
         });
       }
     };
+    const buildPortableDecoyTemplate = (booksAsset: GLTF) => {
+      const template = fitNamedStaticProp(
+        booksAsset.scene,
+        "Dropped_Notebook_",
+        0.32,
+        true,
+      );
+      template.name = "portable-decoy-authored-notebook-template";
+      portableDecoyTemplate = template;
+      placedAssetIds.add("detail:books:Dropped_Notebook");
+    };
+    const portableDecoyHandAnchor = () => {
+      const heading = latestState.player.heading;
+      const length = Math.max(1e-6, Math.hypot(heading.x, heading.y));
+      const forward = { x: heading.x / length, y: heading.y / length };
+      const right = { x: forward.y, y: -forward.x };
+      const base = actors.kid?.root.position
+        ?? world(latestState.player.position, campaignLevel);
+      return base.clone().add(new THREE.Vector3(
+        right.x * 0.24 + forward.x * 0.16,
+        1.04,
+        right.y * 0.24 + forward.y * 0.16,
+      ));
+    };
+    const createPortableDecoyView = (
+      deployment: NonNullable<PortableDecoyState["activeDeployment"]>,
+    ) => {
+      if (!portableDecoyTemplate) {
+        throw new Error("图书楼可携式诱饵缺少正式精装笔记本模型");
+      }
+      const root = new THREE.Group();
+      root.name = `portable-decoy-${deployment.deploymentId}`;
+      root.userData.portableDecoyRoot = true;
+      const notebook = portableDecoyTemplate.clone(true);
+      notebook.name = "portable-decoy-authored-notebook";
+      root.add(notebook);
+      const beacon = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: createMechanicBeaconTexture("#ffc976", "诱饵声源"),
+        transparent: true,
+        opacity: 0,
+        depthTest: true,
+        depthWrite: false,
+        toneMapped: false,
+      }));
+      beacon.name = `portable-decoy-beacon-${deployment.deploymentId}`;
+      beacon.position.set(0, 0.64, 0);
+      beacon.scale.set(1.22, 0.46, 1);
+      beacon.renderOrder = 7;
+      root.add(beacon);
+      const light = new THREE.PointLight(0xffbd67, 0, 3.8, 2);
+      light.name = `portable-decoy-light-${deployment.deploymentId}`;
+      light.position.set(0, 0.26, 0);
+      root.add(light);
+      registerPerformanceLight(light, 2);
+      const start = portableDecoyHandAnchor();
+      const landing = world(deployment.position, campaignLevel)
+        .add(new THREE.Vector3(0, 0.012, 0));
+      root.position.copy(start);
+      campus.add(root);
+      const view: PortableDecoyView = {
+        deploymentId: deployment.deploymentId,
+        sourceId: deployment.sourceId,
+        root,
+        beacon,
+        light,
+        start,
+        landing,
+        deployedAtSeconds: deployment.deployedAtSeconds,
+        releaseAtSeconds: deployment.deployedAtSeconds
+          + (deployment.soundAtSeconds - deployment.deployedAtSeconds)
+            * PORTABLE_DECOY_RELEASE_FRACTION,
+        soundAtSeconds: deployment.soundAtSeconds,
+        expiresAtSeconds: deployment.expiresAtSeconds,
+        settled: false,
+        lightRegistered: true,
+        released: false,
+        disposed: false,
+      };
+      portableDecoyViewCreatedCount += 1;
+      portableDecoyBeaconTextureCreatedCount += 1;
+      portableDecoyViews.set(deployment.deploymentId, view);
+      placedAssetIds.add(`gameplay:portable-decoy:${deployment.deploymentId}`);
+      return view;
+    };
+    const disposePortableDecoyView = (view: PortableDecoyView) => {
+      if (view.disposed) return;
+      view.disposed = true;
+      if (view.lightRegistered) {
+        unregisterPerformanceLight(view.light);
+        view.lightRegistered = false;
+      }
+      const material = view.beacon.material as THREE.SpriteMaterial;
+      const texture = material.map;
+      material.map = null;
+      texture?.dispose();
+      if (texture) portableDecoyBeaconTextureDisposedCount += 1;
+      material.dispose();
+      portableDecoyBeaconMaterialDisposedCount += 1;
+      view.root.removeFromParent();
+      portableDecoyViewDisposedCount += 1;
+      placedAssetIds.delete(`gameplay:portable-decoy:${view.deploymentId}`);
+    };
+    const updatePortableDecoyViews = (nowSeconds: number) => {
+      for (const view of portableDecoyViews.values()) {
+        if (latestState.phase !== "playing") {
+          // A terminal phase freezes simulation time. Resolve any in-hand or
+          // airborne notebook to its authored landing pose so the result
+          // performance never shows a prop suspended through the actor.
+          view.root.position.copy(view.landing);
+          view.root.rotation.set(0, Math.PI * 0.18, 0.035);
+          view.released = true;
+          view.settled = true;
+          view.beacon.visible = false;
+          (view.beacon.material as THREE.SpriteMaterial).opacity = 0;
+          view.light.intensity = 0;
+          if (view.lightRegistered) {
+            unregisterPerformanceLight(view.light);
+            view.lightRegistered = false;
+          }
+          continue;
+        }
+        if (nowSeconds < view.releaseAtSeconds) {
+          view.start.copy(portableDecoyHandAnchor());
+          view.root.position.copy(view.start);
+          view.root.rotation.set(-0.12, Math.PI * 0.1, 0.08);
+          continue;
+        }
+        if (!view.released) {
+          view.released = true;
+          soundscape.triggerWorldSound({
+            listenerPosition: latestState.player.position,
+            sourcePosition: latestState.player.position,
+            kind: "theme-event",
+            maxDistance: 6,
+            baseGain: 0.18,
+            occlusion: 0,
+            foleySet: "cloth",
+            playbackRate: 1.08,
+          });
+        }
+        const flightDuration = Math.max(
+          0.001,
+          view.soundAtSeconds - view.releaseAtSeconds,
+        );
+        const flightProgress = THREE.MathUtils.clamp(
+          (nowSeconds - view.releaseAtSeconds) / flightDuration,
+          0,
+          1,
+        );
+        if (flightProgress < 1) {
+          const eased = 1 - (1 - flightProgress) ** 3;
+          view.root.position.lerpVectors(view.start, view.landing, eased);
+          view.root.position.y += Math.sin(flightProgress * Math.PI)
+            * (preferencesRef.current.reducedMotion ? 0.34 : 0.92);
+          view.root.rotation.set(
+            Math.sin(flightProgress * Math.PI)
+              * (preferencesRef.current.reducedMotion ? 0.16 : 0.5),
+            flightProgress * Math.PI
+              * (preferencesRef.current.reducedMotion ? 0.65 : 2.25),
+            Math.sin(flightProgress * Math.PI)
+              * (preferencesRef.current.reducedMotion ? 0.06 : 0.2),
+          );
+        } else if (!view.settled) {
+          view.root.position.copy(view.landing);
+          view.root.rotation.set(0, Math.PI * 0.18, 0.035);
+          view.settled = true;
+        }
+        const active = portableDecoyState?.activeDeployment?.deploymentId
+          === view.deploymentId;
+        const justLanded = nowSeconds - view.soundAtSeconds;
+        const pulse = active && justLanded >= 0
+          ? 0.7 + Math.sin(justLanded * Math.PI * 4) * 0.3
+          : 0;
+        (view.beacon.material as THREE.SpriteMaterial).opacity = active
+          ? THREE.MathUtils.clamp(0.42 + pulse * 0.34, 0, 0.82)
+          : 0;
+        view.beacon.visible = active;
+        view.light.intensity = active ? 1.6 + pulse * 1.9 : 0;
+        if (!active && view.lightRegistered) {
+          unregisterPerformanceLight(view.light);
+          view.lightRegistered = false;
+        }
+      }
+    };
     const updateThemeMissionViews = (nowMilliseconds: number) => {
       const available = new Set(
-        availableThemeObjectiveIds(missionDefinition, missionState),
+        availableRuntimeMissionObjectiveIds(),
       );
-      const completed = new Set(missionState.completedObjectiveIds);
+      const completed = new Set(
+        libraryMissionState?.completedObjectiveIds
+          ?? missionState.completedObjectiveIds,
+      );
       for (const [id, view] of missionViews) {
         const isAvailable = available.has(id);
         const isCompleted = completed.has(id);
@@ -3915,6 +4468,37 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const mix = lockerVisionMix(state.player, simulation.config);
       const playfield = host.parentElement;
       const nextHideArchetype = simulation.getActiveHideSpotArchetype()?.archetype ?? null;
+      if (playfield) {
+        const expectedModeClass = `mode-${state.player.mode}`;
+        const expectedHideClass = nextHideArchetype
+          ? `hide-${nextHideArchetype}`
+          : null;
+        const classList = [...playfield.classList];
+        const classMismatch = !playfield.classList.contains(expectedModeClass)
+          || (expectedHideClass
+            ? !playfield.classList.contains(expectedHideClass)
+            : classList.some((className) => className.startsWith("hide-")));
+        if (classMismatch) {
+          for (const className of classList) {
+            if (
+              className.startsWith("mode-")
+              || className.startsWith("hide-")
+            ) playfield.classList.remove(className);
+          }
+          playfield.classList.add(expectedModeClass);
+          if (expectedHideClass) playfield.classList.add(expectedHideClass);
+        }
+        playfield.classList.toggle(
+          "locker-interior",
+          nextHideArchetype === "hard-locker"
+            && [
+              "hidden",
+              "entering-peek",
+              "peeking",
+              "exiting-peek",
+            ].includes(state.player.mode),
+        );
+      }
       playfield?.style.setProperty("--locker-cover", mix.cover.toFixed(4));
       playfield?.style.setProperty("--locker-peek", mix.peek.toFixed(4));
       playfield?.style.setProperty(
@@ -3936,23 +4520,30 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     const updatePhasePresentation = (next: GamePhase) => {
       setPhase(next);
       if (next === "won") {
+        if (libraryMissionState && selectedLibraryPlanDefinition) {
+          libraryMissionState = stepLibraryBranchingMission(
+            LIBRARY_BRANCHING_MISSION,
+            libraryMissionState,
+            {
+              type: "escape",
+              exitId: selectedLibraryPlanDefinition.exitId,
+            },
+          ).state;
+          missionState = adaptLibraryMissionToThemeMissionState(
+            libraryMissionState,
+          );
+        }
         const completedSeconds = Math.max(
           0.01,
           Math.round(latestState.elapsedSeconds * 100) / 100,
         );
         const masteryResult = evaluateRunMastery(
           completedSeconds,
-          masteryTargetSeconds(campaignLevel, simulation.config, {
-            context: {
-              levelId: campaignLevel.id,
-              theme: campaignLevel.campaign.theme,
-              ruleset: preferences.ruleset,
-            },
-            mission: {
-              definition: missionDefinition,
-              placements: missionPlacements,
-            },
-          }),
+          masteryTargetSeconds(
+            campaignLevel,
+            simulation.config,
+            masteryTargetOptions,
+          ),
           runTelemetry,
         );
         const previousRunRecord = getCampaignRunRecord(
@@ -3973,10 +4564,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : previousRunRecord.bestSeconds,
           completedSeconds,
         );
-        const completedTick = Math.max(
-          0,
-          Math.floor(latestState.elapsedSeconds / simulation.config.fixedStepSeconds),
-        );
+        const completedTick = latestState.tick;
         recordPlayerRuleEvent({
           tick: completedTick,
           type: "run-completed",
@@ -3985,6 +4573,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const ghostSave = ghost
           ? savePersonalBestGhost(localStorage, ghost, preferences.ruleset)
           : null;
+        if (ghost && ghostSave?.saved) {
+          // Keep the newly saved PB in this mounted runtime. The next restart
+          // must race the just-finished run, including the first PB of a fresh
+          // profile, rather than the recording that existed when the scene
+          // effect was originally created.
+          ghostRecording = ghost;
+        }
         if (selectedRemixContract) {
           saveCertifiedRemixRecord(
             localStorage,
@@ -4021,6 +4616,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (next === "won" || next === "lost") {
         touchKeys.current.clear();
         interactPressed.current = false;
+        portableDecoyPressed.current = false;
         setResultVisible(false);
         if (resultTimer) clearTimeout(resultTimer);
         // Include the face-to-face staging beat, then let the full authored
@@ -4030,6 +4626,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     };
 
     const resetPresentation = (state: GameState) => {
+      portableDecoyResetCount += 1;
       if (resultTimer) {
         clearTimeout(resultTimer);
         resultTimer = null;
@@ -4037,6 +4634,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       keyboardKeys.current.clear();
       touchKeys.current.clear();
       interactPressed.current = false;
+      portableDecoyPressed.current = false;
       preferredHideExit.current = "origin";
       resetAnalogueMove();
       lastCheckSpot = null;
@@ -4057,9 +4655,42 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ghostRunLevelId,
         simulation.config.fixedStepSeconds,
       );
-      ghostLastRecordedTick = -1;
-      missionState = createInitialThemeMissionState(missionDefinition);
+      ghostInputBuffer.reset();
+      libraryMissionState = libraryGoldEnabled
+        ? stepLibraryBranchingMission(
+            LIBRARY_BRANCHING_MISSION,
+            createInitialLibraryMissionState(),
+            { type: "select-plan", planId: selectedLibraryPlan },
+          ).state
+        : null;
+      missionState = libraryMissionState
+        ? adaptLibraryMissionToThemeMissionState(libraryMissionState)
+        : createInitialThemeMissionState(missionDefinition);
       missionCommitment = null;
+      missionPerformanceObjectiveId = null;
+      for (const view of portableDecoyViews.values()) {
+        disposePortableDecoyView(view);
+      }
+      portableDecoyViews.clear();
+      portableDecoySourceIds.clear();
+      scheduledPortableDecoySourceIds.clear();
+      portableDecoyState = libraryGoldEnabled
+        ? createPortableDecoyState(LIBRARY_PORTABLE_DECOY_DEFINITION)
+        : null;
+      portableDecoyThrowRemainingSeconds = 0;
+      portableDecoyThrownCount = 0;
+      portableDecoyPublicSoundAcceptedCount = 0;
+      portableDecoyInvestigationCompletedCount = 0;
+      portableDecoyLastLifecycleEvent = null;
+      portableDecoyFeedback = libraryGoldEnabled
+        ? "F 投掷精装笔记本，制造一次可追查的公开声源"
+        : null;
+      portableDecoyFeedbackUntilSeconds = libraryGoldEnabled ? 4 : 0;
+      pendingRouteSelectionTelemetry = libraryGoldEnabled;
+      setPortableDecoy(portableDecoyState
+        ? samplePortableDecoy(portableDecoyState, 0)
+        : null);
+      setPortableDecoyNotice(portableDecoyFeedback);
       playerRuleProgressTracker = new GhostRuleProgressTracker(
         missionObjectiveIds,
       );
@@ -4078,20 +4709,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }) ?? null;
       setThemeMission({
         state: missionState,
-        activeObjective: missionDefinition.objectives[0] ?? null,
-        activeDistanceMeters: missionDefinition.objectives[0]
+        activeObjective: runtimeMissionObjectives[0] ?? null,
+        activeDistanceMeters: runtimeMissionObjectives[0]
           ? Math.round(
               distanceBetween(
                 state.player.position,
-                missionPlacementById.get(missionDefinition.objectives[0].id)
+                missionPlacementById.get(runtimeMissionObjectives[0].id)
                   ?? campaignLevel.exit,
               ) * CELL,
             )
           : null,
         commitmentProgress: null,
         commitmentRemainingSeconds: null,
+        canInteract: false,
         completedCount: 0,
-        totalCount: missionDefinition.objectives.length,
+        totalCount: runtimeMissionObjectives.length,
       });
       if (ghostRecording) {
         ghostSimulation = new GameSimulation({
@@ -4206,6 +4838,118 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
     };
 
+    const attemptPortableDecoyDeployment = () => {
+      if (
+        !portableDecoyState
+        || !portableDecoyTemplate
+        || latestState.phase !== "playing"
+        || latestState.player.mode !== "free"
+        || missionCommitment
+        || mechanicRequiresMovementCommitment(mechanicInstance)
+      ) return false;
+      const headingLength = Math.hypot(
+        latestState.player.heading.x,
+        latestState.player.heading.y,
+      );
+      const baseHeading = headingLength > 1e-6
+        ? {
+            x: latestState.player.heading.x / headingLength,
+            y: latestState.player.heading.y / headingLength,
+          }
+        : { x: 0, y: 1 };
+      const candidateAngles = [0, Math.PI / 7, -Math.PI / 7];
+      const candidateDistances = [4, 3, 2, 1] as const;
+      const attempted = new Set<string>();
+      let accepted: ReturnType<typeof deployPortableDecoy> | null = null;
+      for (const distance of candidateDistances) {
+        for (const angle of candidateAngles) {
+          const cosine = Math.cos(angle);
+          const sine = Math.sin(angle);
+          const direction = {
+            x: baseHeading.x * cosine - baseHeading.y * sine,
+            y: baseHeading.x * sine + baseHeading.y * cosine,
+          };
+          const landing = {
+            x: Math.round(latestState.player.position.x + direction.x * distance),
+            y: Math.round(latestState.player.position.y + direction.y * distance),
+          };
+          const key = `${landing.x},${landing.y}`;
+          if (attempted.has(key)) continue;
+          attempted.add(key);
+          const result = deployPortableDecoy(
+            portableDecoyState,
+            campaignLevel,
+            {
+              nowSeconds: Math.max(
+                latestState.elapsedSeconds,
+                portableDecoyState.updatedAtSeconds,
+              ),
+              actorPosition: latestState.player.position,
+              landingPosition: landing,
+            },
+          );
+          if (!result.accepted) continue;
+          accepted = result;
+          break;
+        }
+        if (accepted) break;
+      }
+      if (!accepted?.state.activeDeployment) {
+        portableDecoyFeedback = portableDecoyState.activeDeployment
+          ? "上一枚诱饵仍在引导调查"
+          : portableDecoyState.inventoryRemaining <= 0
+            ? "本局精装笔记本已经用完"
+            : "前方没有无遮挡落点；转向开阔走廊后再投掷";
+        portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.4;
+        setPortableDecoyNotice(portableDecoyFeedback);
+        return false;
+      }
+      const deployment = accepted.state.activeDeployment;
+      if (!deployment) return false;
+      const soundScheduled = simulation.scheduleWorldSound(
+        portableDecoySoundStimulus(
+          LIBRARY_PORTABLE_DECOY_DEFINITION,
+          deployment,
+        ),
+        deployment.soundAtSeconds,
+      );
+      if (!soundScheduled) {
+        portableDecoyFeedback = "当前声场过于拥挤；诱饵没有消耗，请稍后重试";
+        portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.4;
+        setPortableDecoyNotice(portableDecoyFeedback);
+        return false;
+      }
+      portableDecoyState = accepted.state;
+      portableDecoySourceIds.add(deployment.sourceId);
+      scheduledPortableDecoySourceIds.add(deployment.sourceId);
+      createPortableDecoyView(deployment);
+      portableDecoyThrowRemainingSeconds =
+        LIBRARY_PORTABLE_DECOY_DEFINITION.fuseSeconds;
+      portableDecoyThrownCount += 1;
+      portableDecoyPublicSoundAcceptedCount += 1;
+      portableDecoyLastLifecycleEvent = "thrown-and-scheduled";
+      recordPlayerRuleEvent({
+        tick: latestState.tick,
+        type: "portable-decoy-thrown",
+        deploymentId: deployment.deploymentId,
+        sourceId: deployment.sourceId,
+        landing: deployment.position,
+      });
+      portableDecoyFeedback = `诱饵已投出 · 剩余 ${portableDecoyState.inventoryRemaining}`;
+      portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.1;
+      setPortableDecoy(samplePortableDecoy(
+        portableDecoyState,
+        portableDecoyState.updatedAtSeconds,
+      ));
+      setPortableDecoyNotice(portableDecoyFeedback);
+      playHapticCue(
+        "theme-warning",
+        preferencesRef.current.hapticsEnabled,
+        navigator.vibrate?.bind(navigator),
+      );
+      return true;
+    };
+
     const setPauseState = (nextPaused: boolean) => {
       if (nextPaused === pausedRef.current) return;
       pausedRef.current = nextPaused;
@@ -4213,6 +4957,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       keyboardKeys.current.clear();
       touchKeys.current.clear();
       interactPressed.current = false;
+      portableDecoyPressed.current = false;
       resetAnalogueMove();
       last = performance.now();
       score.setThreat(nextPaused ? 0 : threatForMode(latestState.chaser.mode));
@@ -4239,6 +4984,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         void score.unlock();
         void soundscape.unlock();
         interactPressed.current = true;
+      },
+      deployDecoy() {
+        if (!ready || latestState.phase !== "playing") return;
+        void score.unlock();
+        void soundscape.unlock();
+        portableDecoyPressed.current = true;
       },
       toggleMute() {
         setMusicMuted((current) => {
@@ -4341,6 +5092,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     const loadAll = async () => {
       let done = 0;
       const essentialDetailNames = new Set<DetailAssetName>(["locker"]);
+      if (libraryGoldEnabled) essentialDetailNames.add("books");
       const requiredDetailNames = new Set<DetailAssetName>(["locker", "ceilingLight"]);
       for (const [name] of THEME_SHARED_PROPS[campaignLevel.campaign.theme]) requiredDetailNames.add(name);
       for (const placement of PROP_SET_STANDALONE_PROPS[campaignLevel.campaign.atmosphere.propSet] ?? []) {
@@ -4445,6 +5197,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       buildPerformanceLighting();
       buildThemeMechanicView(themeKitAsset);
       buildThemeMissionViews(themeKitAsset);
+      if (libraryGoldEnabled) {
+        const booksAsset = detailAssets.books;
+        if (!booksAsset) throw new Error("图书楼可携式诱饵的正式 books.glb 未载入");
+        buildPortableDecoyTemplate(booksAsset);
+      }
       buildDetails(detailAssets, themeKitAsset, campus, lockers, "essential");
       placeActors(actorAssets, actors, scene, ["kid", "villain"]);
       placePersonalGhost(actorAssets.kid, scene);
@@ -4614,6 +5371,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const groundMarginCells = 2;
       const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
       const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
+      const exitDoorwayAnchors = libraryGoldEnabled
+        ? LIBRARY_BRANCHING_MISSION_TOPOLOGY.exitPlacements.map((placement) => ({
+            point: placement.position,
+            outward: nearestExteriorDirection(placement.position, campaignLevel),
+          }))
+        : [{ point: campaignLevel.exit, outward: exitDirection }];
       // Every authored wall faces local +Z. Opposite maze edges therefore need
       // opposite rotations; the previous axis-only rotation showed the back of
       // roughly half of every asymmetric wall kit.
@@ -4664,7 +5427,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             };
             if (
               isAnchorEdge(x, y, edge.dx, edge.dy, campaignLevel.playerStart, entranceDirection)
-              || isAnchorEdge(x, y, edge.dx, edge.dy, campaignLevel.exit, exitDirection)
+              || exitDoorwayAnchors.some(({ point, outward }) => (
+                isAnchorEdge(x, y, edge.dx, edge.dy, point, outward)
+              ))
             ) {
               wallBatches.doorway.push(placement);
               continue;
@@ -5213,6 +5978,75 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       exitMissionLight = exitLight;
       exitLight.color.set(0xff5b62);
       exitLight.intensity = 6.5;
+      if (libraryGoldEnabled) {
+        const secondaryExit = LIBRARY_BRANCHING_MISSION_TOPOLOGY.exitPlacements
+          .find((placement) => (
+            Math.abs(placement.position.x - campaignLevel.exit.x) > 1e-6
+            || Math.abs(placement.position.y - campaignLevel.exit.y) > 1e-6
+          ));
+        if (!secondaryExit) throw new Error("图书楼双路线缺少第二个实体出口");
+        const secondaryDirection = nearestExteriorDirection(
+          secondaryExit.position,
+          campaignLevel,
+        );
+        const secondaryDoor = authoredExit
+          ? anchorAuthoredModule(authoredExit)
+          : fitModule(requireStructure("exit"), new THREE.Vector3(1.9, 2.55, 0.42));
+        secondaryDoor.name = `library-secondary-exit-${secondaryExit.exitId}`;
+        secondaryDoor.rotation.y = Math.atan2(
+          -secondaryDirection.x,
+          -secondaryDirection.y,
+        );
+        secondaryDoor.position.add(world(secondaryExit.position, campaignLevel)).add(
+          new THREE.Vector3(
+            secondaryDirection.x * CELL * 0.5,
+            0,
+            secondaryDirection.y * CELL * 0.5,
+          ),
+        );
+        if (!authoredExit) {
+          applyThemeSurface(secondaryDoor, palette.accent, {
+            blend: 0.08,
+            emissive: 0xffad68,
+            emissiveIntensity: 0.12,
+          });
+        }
+        const secondaryExitDefinition = LIBRARY_BRANCHING_MISSION.exits
+          .find((exit) => exit.id === secondaryExit.exitId);
+        const routeBeacon = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: createMechanicBeaconTexture(
+            "#75818b",
+            `${secondaryExitDefinition?.label ?? "备用出口"} · 非当前路线`,
+          ),
+          transparent: true,
+          opacity: 0.3,
+          depthTest: true,
+          depthWrite: false,
+          toneMapped: false,
+        }));
+        routeBeacon.position.set(0, 2.85, 0);
+        routeBeacon.scale.set(2.15, 0.8, 1);
+        secondaryDoor.add(routeBeacon);
+        parent.add(secondaryDoor);
+        placedAssetIds.add(`gameplay:library-secondary-exit:${secondaryExit.exitId}`);
+        registerCameraOccluder(
+          `library-secondary-exit-${secondaryExit.exitId}`,
+          [secondaryDoor],
+        );
+        const secondaryLight = new THREE.SpotLight(
+          0x6f7d88,
+          0.72,
+          8,
+          Math.PI / 7.5,
+          0.64,
+          1.8,
+        );
+        secondaryLight.position.copy(world(secondaryExit.position, campaignLevel))
+          .add(new THREE.Vector3(0, 4.4, 0));
+        secondaryLight.target.position.copy(world(secondaryExit.position, campaignLevel));
+        parent.add(secondaryLight, secondaryLight.target);
+        registerPerformanceLight(secondaryLight, 1);
+      }
     };
 
     const buildDetails = (
@@ -5702,6 +6536,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (ambientClusterCount > 0) placedAssetIds.add("runtime:ambient-room-clusters");
       const arrivalAnchor = exteriorAnchor(campaignLevel.playerStart, 3.05, 0);
       const exitClusterAnchor = exteriorAnchor(campaignLevel.exit, 3.1, 0);
+      const secondaryExitClusterAnchors = libraryGoldEnabled
+        ? LIBRARY_BRANCHING_MISSION_TOPOLOGY.exitPlacements
+            .filter((placement) => (
+              Math.abs(placement.position.x - campaignLevel.exit.x) > 1e-6
+              || Math.abs(placement.position.y - campaignLevel.exit.y) > 1e-6
+            ))
+            .map((placement) => ({
+              exitId: placement.exitId,
+              anchor: exteriorAnchor(placement.position, 3.1, 0),
+            }))
+        : [];
       const propContactGeometry = new THREE.PlaneGeometry(2.45, 1.65);
       propContactGeometry.rotateX(-Math.PI / 2);
       const propContactMaterial = new THREE.MeshBasicMaterial({
@@ -5718,6 +6563,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ...roomAnchors,
         arrivalAnchor,
         exitClusterAnchor,
+        ...secondaryExitClusterAnchors.map(({ anchor }) => anchor),
       ];
       const propContacts = new THREE.InstancedMesh(
         propContactGeometry,
@@ -5747,6 +6593,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         exitClusterAnchor.rotation,
         `${artLayout.key}-exit-cluster`,
       );
+      for (const { exitId, anchor } of secondaryExitClusterAnchors) {
+        addAuthoredCluster(
+          [...artLayout.exitNodes, "DressingClusterA"],
+          anchor.point,
+          anchor.rotation,
+          `${artLayout.key}-secondary-exit-cluster-${exitId}`,
+        );
+      }
       const arrivalPropNodes = new Set<string>(campaignLevel.campaign.theme === "campus"
         ? ["CampusBikeRack", "CampusWayfinding"]
         : campaignLevel.campaign.theme === "hospital"
@@ -6042,7 +6896,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     };
 
     const placePersonalGhost = (asset: GLTF | undefined, targetScene: THREE.Scene) => {
-      if (!ghostRecording || !asset || ghostActor) return;
+      if (!preferences.personalGhostEnabled || !asset || ghostActor) return;
       const spec = ACTOR_SPECS.kid;
       const root = fitActor(asset.scene, spec.height);
       root.name = "actor-personal-best-ghost";
@@ -6131,7 +6985,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           completedInvestigations.push({
             type: "investigation-completed",
             evidenceId: event.evidenceId,
-            source: "theme-mechanic",
+            source: portableDecoySourceIds.has(event.evidenceId)
+              ? "decoy"
+              : "theme-mechanic",
           });
           if (event.evidenceId === mechanicDefinition.soundSource.sourceId) {
             completedInvestigations.push({
@@ -6331,7 +7187,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const villain = actors.villain;
       const police = actors.police;
       if (!kid || !villain) return;
-      const kidPose = playerPresentationPose(state, campaignLevel, simulation);
+      let kidPose = playerPresentationPose(state, campaignLevel, simulation);
+      const committedMissionView = missionCommitment
+        ? missionViews.get(missionCommitment.objectiveId)
+        : null;
+      if (committedMissionView) {
+        committedMissionView.root.getWorldPosition(missionPerformanceTarget);
+        kid.root.getWorldPosition(missionPerformanceOrigin);
+        const heading = {
+          x: missionPerformanceTarget.x - missionPerformanceOrigin.x,
+          y: missionPerformanceTarget.z - missionPerformanceOrigin.z,
+        };
+        const headingLength = Math.hypot(heading.x, heading.y);
+        if (headingLength > 1e-5) {
+          kidPose = {
+            point: kidPose.point,
+            heading: {
+              x: heading.x / headingLength,
+              y: heading.y / headingLength,
+            },
+          };
+        }
+      }
       const kidSpeed = sampleActorSpeed(kid, state.player.position, state.tick, simulation.config.fixedStepSeconds);
       const villainSpeed = sampleActorSpeed(villain, state.chaser.position, state.tick, simulation.config.fixedStepSeconds);
       const captureStaging = state.phase === "lost" && !capturePerformanceStarted;
@@ -6353,7 +7230,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : state.player.hideTurnDirection < 0
               ? "turnRight"
               : null;
-          if (state.player.mode === "aligning-hide" && kidSpeed <= 0.12 && kidTurn) {
+          if (state.player.mode === "free" && missionCommitment) {
+            const restart = missionPerformanceObjectiveId
+              !== missionCommitment.objectiveId;
+            requestAnimation(kid, "point", {
+              fade: 0.08,
+              duration: missionCommitment.totalSeconds,
+              loop: false,
+              restart,
+            });
+            missionPerformanceObjectiveId = missionCommitment.objectiveId;
+          } else if (
+            state.player.mode === "free"
+            && portableDecoyThrowRemainingSeconds > 0
+          ) {
+            requestAnimation(kid, "point", {
+              fade: 0.06,
+              duration: LIBRARY_PORTABLE_DECOY_DEFINITION.fuseSeconds,
+              loop: false,
+            });
+            missionPerformanceObjectiveId = null;
+          } else if (state.player.mode === "aligning-hide" && kidSpeed <= 0.12 && kidTurn) {
+            missionPerformanceObjectiveId = null;
             const restart = kid.lastTurnCycle !== state.player.hideTurnCycle;
             // Simulation yaw and clip normalized time share the same segment
             // duration. A 180° pivot explicitly restarts at the 90° seam.
@@ -6365,6 +7263,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             });
             kid.lastTurnCycle = state.player.hideTurnCycle;
           } else {
+            missionPerformanceObjectiveId = null;
             kid.lastTurnCycle = -1;
             const locomotion: AnimationState = state.player.mode === "aligning-hide"
               ? kidSpeed > 0.12 ? "walk" : "idle"
@@ -6655,11 +7554,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
     const missionObjectiveForPlayer = (
       position: Point,
-    ): { objective: ThemeObjectiveDefinition; position: Point; routeCells: number } | null => {
+    ): { objective: RuntimeMissionObjective; position: Point; routeCells: number } | null => {
       const available = new Set(
-        availableThemeObjectiveIds(missionDefinition, missionState),
+        availableRuntimeMissionObjectiveIds(),
       );
-      const candidates = missionDefinition.objectives.flatMap((objective) => {
+      const candidates = runtimeMissionObjectives.flatMap((objective) => {
         if (!available.has(objective.id)) return [];
         const objectivePosition = missionPlacementById.get(objective.id);
         if (!objectivePosition) return [];
@@ -6682,7 +7581,20 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         setHideGuideProjection(null);
         return;
       }
-      const firstClear = !campaignProgressRef.current.bestSeconds[campaignLevel.id];
+      const routeRecord = getCampaignRunRecord(
+        campaignProgressRef.current,
+        runRecordLevelId,
+        preferences.ruleset,
+      );
+      const legacyLibraryRecord = libraryGoldEnabled
+        ? getCampaignRunRecord(
+            campaignProgressRef.current,
+            campaignLevel.id,
+            preferences.ruleset,
+          )
+        : null;
+      const firstClear = !routeRecord.bestSeconds
+        && !legacyLibraryRecord?.bestSeconds;
       const guidance = planHideGuidance(campaignLevel, {
         playerPosition: state.player.position,
         nowSeconds: state.elapsedSeconds,
@@ -6902,10 +7814,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const activeMissionObjective = missionObjectiveForPlayer(
           latestState.player.position,
         );
-        const ruleEventTick = Math.max(
-          0,
-          Math.floor(latestState.elapsedSeconds / simulation.config.fixedStepSeconds),
-        );
+        const ruleEventTick = latestState.tick;
         if (
           missionCommitment
           && (
@@ -6919,13 +7828,33 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ) {
           missionCommitment = null;
         }
+        portableDecoyThrowRemainingSeconds = Math.max(
+          0,
+          (portableDecoyState?.activeDeployment?.soundAtSeconds ?? 0)
+            - latestState.elapsedSeconds,
+        );
+        const portableDecoyEdge = portableDecoyPressed.current;
+        portableDecoyPressed.current = false;
+        if (
+          portableDecoyEdge
+          && !interactionEdge
+        ) {
+          if (hideInteractionBeforeStep) {
+            portableDecoyFeedback = "先离开藏点交互范围，再投掷精装笔记本";
+            portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.4;
+            setPortableDecoyNotice(portableDecoyFeedback);
+          } else {
+            attemptPortableDecoyDeployment();
+          }
+        }
         let completedMissionObjective: typeof activeMissionObjective = null;
         if (missionCommitment && activeMissionObjective) {
           missionCommitment.remainingSeconds = Math.max(
             0,
-            missionCommitment.remainingSeconds - delta,
+            (missionCommitment.completesAtTick - latestState.tick)
+              * simulation.config.fixedStepSeconds,
           );
-          if (missionCommitment.remainingSeconds <= 1e-9) {
+          if (latestState.tick >= missionCommitment.completesAtTick) {
             completedMissionObjective = activeMissionObjective;
             missionCommitment = null;
           }
@@ -6952,10 +7881,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           && missionCanActivate
           && activeMissionObjective
         ) {
+          const commitmentWindow = libraryMissionCommitmentWindow(
+            latestState.tick,
+            activeMissionObjective.objective.commitmentSeconds,
+            simulation.config.fixedStepSeconds,
+          );
           missionCommitment = {
             objectiveId: activeMissionObjective.objective.id,
-            remainingSeconds: activeMissionObjective.objective.commitmentSeconds,
-            totalSeconds: activeMissionObjective.objective.commitmentSeconds,
+            startedAtTick: commitmentWindow.startedAtTick,
+            durationTicks: commitmentWindow.durationTicks,
+            completesAtTick: commitmentWindow.completesAtTick,
+            remainingSeconds: commitmentWindow.durationSeconds,
+            totalSeconds: commitmentWindow.durationSeconds,
           };
           playHapticCue(
             "theme-warning",
@@ -6964,23 +7901,68 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           );
         }
         if (completedMissionObjective) {
-          const missionStep = stepThemeMission(
-            missionDefinition,
-            missionState,
-            completedMissionObjective.objective.id,
-          );
-          missionState = missionStep.state;
-          recordPlayerRuleEvent({
-            tick: ruleEventTick,
-            type: "objective-completed",
-            objectiveId: completedMissionObjective.objective.id,
-          });
-          if (missionState.exitUnlocked) {
+          if (libraryMissionState) {
+            const previousLibraryState = libraryMissionState;
+            const libraryStep = stepLibraryBranchingMission(
+              LIBRARY_BRANCHING_MISSION,
+              libraryMissionState,
+              {
+                type: "attempt-objective",
+                objectiveId: completedMissionObjective.objective.id,
+                outcome: "completed",
+              },
+            );
+            libraryMissionState = libraryStep.state;
+            const compatibilityStep = adaptLibraryMissionTransitionToThemeMission(
+              previousLibraryState,
+              libraryMissionState,
+            );
+            missionState = compatibilityStep.state;
+            recordLibraryMissionRuleEvents(libraryStep.events, ruleEventTick);
+            if (completedMissionObjective.objective.planId === "fire-release") {
+              const fireReleaseNoise = {
+                position: completedMissionObjective.position,
+                strength: completedMissionObjective.objective.unlocksExit ? 0.92 : 0.76,
+                sourceType: "environment-hazard" as const,
+                sourceId: `library-fire-route:${completedMissionObjective.objective.id}`,
+                confidence: 0.94,
+                decayPerSecond: 0.1,
+              };
+              simulation.emitWorldSound(fireReleaseNoise);
+              soundscape.triggerWorldSound({
+                listenerPosition: latestState.player.position,
+                sourcePosition: completedMissionObjective.position,
+                kind: "objective",
+                maxDistance: Math.max(12, simulation.config.hearingRange * 1.6),
+                baseGain: completedMissionObjective.objective.unlocksExit ? 0.48 : 0.36,
+                occlusion: hasLineOfSight(
+                  campaignLevel,
+                  latestState.player.position,
+                  completedMissionObjective.position,
+                ) ? 0 : 0.52,
+                foleySet: "metal-hit",
+                playbackRate: completedMissionObjective.objective.unlocksExit ? 0.82 : 1.08,
+              });
+            }
+          } else {
+            const missionStep = stepThemeMission(
+              missionDefinition,
+              missionState,
+              completedMissionObjective.objective.id,
+            );
+            missionState = missionStep.state;
             recordPlayerRuleEvent({
               tick: ruleEventTick,
-              type: "exit-unlocked",
+              type: "objective-completed",
               objectiveId: completedMissionObjective.objective.id,
             });
+            if (missionState.exitUnlocked) {
+              recordPlayerRuleEvent({
+                tick: ruleEventTick,
+                type: "exit-unlocked",
+                objectiveId: completedMissionObjective.objective.id,
+              });
+            }
           }
           playHapticCue(
             missionState.exitUnlocked ? "escaped" : "hide-latched",
@@ -7018,6 +8000,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           : 0;
         soundscape.setThemeMechanicActivity(environmentActivity);
         const causalEvents: RunCausalEvent[] = [];
+        if (pendingRouteSelectionTelemetry && selectedLibraryPlanDefinition) {
+          causalEvents.push({
+            type: "route-selected",
+            routeId: selectedLibraryPlanDefinition.id,
+          });
+          pendingRouteSelectionTelemetry = false;
+        }
         const activationCostApplied = mechanicStep.events.some(
           (event) => event.type === "activation-cost-applied",
         );
@@ -7086,19 +8075,144 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             playbackRate: campaignLevel.campaign.theme === "hospital" ? 1.18 : 0.92,
           });
         }
+        if (environmentPlaying && portableDecoyState) {
+          const activeSourceId = portableDecoyState.activeDeployment?.sourceId;
+          const investigation = activeSourceId
+            ? latestState.events.find((event) => (
+                event.type === "evidence-investigation-completed"
+                && event.sourceType === "environment-decoy"
+                && event.evidenceId === activeSourceId
+              ))
+            : null;
+          const completedInvestigation = investigation?.type
+            === "evidence-investigation-completed"
+            ? {
+                sourceId: investigation.evidenceId,
+                sourceType: investigation.sourceType,
+                completedAtSeconds: investigation.completedAtSeconds,
+              }
+            : null;
+          const decoyNowSeconds = Math.max(
+            portableDecoyState.updatedAtSeconds,
+            latestState.elapsedSeconds,
+          );
+          const decoyStep = stepPortableDecoy(portableDecoyState, {
+            nowSeconds: decoyNowSeconds,
+            deltaSeconds: Math.max(
+              0,
+              decoyNowSeconds - portableDecoyState.updatedAtSeconds,
+            ),
+            ...(completedInvestigation
+              ? { completedInvestigation }
+              : {}),
+          });
+          portableDecoyState = decoyStep.state;
+          const pendingDecoySound = decoyStep.pendingSoundStimulus;
+          let soundAcknowledged = false;
+          if (pendingDecoySound?.sourceId) {
+            const alreadyScheduled = scheduledPortableDecoySourceIds.has(
+              pendingDecoySound.sourceId,
+            );
+            const acceptedBySimulation = alreadyScheduled
+              || simulation.scheduleWorldSound(
+                pendingDecoySound,
+                portableDecoyState.activeDeployment?.soundAtSeconds
+                  ?? decoyNowSeconds,
+              );
+            if (acceptedBySimulation) {
+              if (!alreadyScheduled) {
+                scheduledPortableDecoySourceIds.add(pendingDecoySound.sourceId);
+                portableDecoyPublicSoundAcceptedCount += 1;
+              }
+              const acknowledgement = acknowledgePortableDecoySound(
+                portableDecoyState,
+                {
+                  nowSeconds: decoyNowSeconds,
+                  sourceId: pendingDecoySound.sourceId,
+                },
+              );
+              if (acknowledgement.acknowledged) {
+                portableDecoyState = acknowledgement.state;
+                scheduledPortableDecoySourceIds.delete(
+                  pendingDecoySound.sourceId,
+                );
+                soundAcknowledged = true;
+                portableDecoyLastLifecycleEvent = "public-sound-acknowledged";
+                causalEvents.push({
+                  type: "decoy-deployed",
+                  decoyId: pendingDecoySound.sourceId,
+                });
+              }
+            }
+          }
+          if (soundAcknowledged && pendingDecoySound) {
+            soundscape.triggerWorldSound({
+              listenerPosition: latestState.player.position,
+              sourcePosition: pendingDecoySound.position,
+              kind: "theme-event",
+              maxDistance: Math.max(11, simulation.config.hearingRange * 1.55),
+              baseGain: 0.38,
+              occlusion: hasLineOfSight(
+                campaignLevel,
+                latestState.player.position,
+                pendingDecoySound.position,
+              ) ? 0 : 0.55,
+              foleySet: "cloth",
+              playbackRate: 0.9,
+            });
+            soundscape.triggerWorldSound({
+              listenerPosition: latestState.player.position,
+              sourcePosition: pendingDecoySound.position,
+              kind: "objective",
+              maxDistance: Math.max(11, simulation.config.hearingRange * 1.55),
+              baseGain: 0.16,
+              occlusion: hasLineOfSight(
+                campaignLevel,
+                latestState.player.position,
+                pendingDecoySound.position,
+              ) ? 0 : 0.55,
+              foleySet: "metal-hit",
+              playbackRate: 1.26,
+            });
+            portableDecoyFeedback = "笔记本已落地 · 追捕者只能依据公开声源调查";
+            portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.8;
+          }
+          if (decoyStep.events.some((event) => event.type === "investigation-completed")) {
+            portableDecoyInvestigationCompletedCount += 1;
+            portableDecoyLastLifecycleEvent = "investigation-completed";
+            portableDecoyFeedback = "声源调查结束 · 追捕者重新进入搜索";
+            portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 3;
+          } else if (decoyStep.events.some((event) => event.type === "expired")) {
+            if (activeSourceId) {
+              scheduledPortableDecoySourceIds.delete(activeSourceId);
+            }
+            portableDecoyLastLifecycleEvent = "expired";
+            portableDecoyFeedback = portableDecoyState.inventoryRemaining > 0
+              ? "诱饵调查窗口结束 · 下一枚已经可用"
+              : "诱饵调查窗口结束";
+            portableDecoyFeedbackUntilSeconds = latestState.elapsedSeconds + 2.2;
+          }
+        }
         const mechanicMovementCommitted = environmentPlaying
           && mechanicRequiresMovementCommitment(mechanicInstance);
         const missionMovementCommitted = environmentPlaying
           && missionCommitment !== null;
+        const portableDecoyMovementCommitted = environmentPlaying
+          && portableDecoyThrowRemainingSeconds > 0;
         const simulationInput = {
-          move: mechanicMovementCommitted || missionMovementCommitted
+          move: mechanicMovementCommitted
+            || missionMovementCommitted
+            || portableDecoyMovementCommitted
             ? { x: 0, y: 0 }
             : move,
           interactPressed: interactionEdge
             && !mechanicConsumesInteraction
-            && !missionConsumesInteraction,
+            && !missionConsumesInteraction
+            && !portableDecoyMovementCommitted,
           peekHeld: held("q"),
-          sneakHeld: mechanicMovementCommitted || missionMovementCommitted
+          sneakHeld: mechanicMovementCommitted
+            || missionMovementCommitted
+            || portableDecoyMovementCommitted
             ? false
             : held("q"),
           environmentSoundMasking: environment.soundMasking,
@@ -7106,14 +8220,31 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           exitEnabled: missionState.exitUnlocked,
           hideExitChoice: preferredHideExit.current,
         };
+        const recordingTick = latestState.tick;
+        ghostInputBuffer.stage(recordingTick, simulationInput);
         latestState = simulation.advance(delta, simulationInput);
-        const currentGhostTick = Math.max(
+        if (missionCommitment) {
+          missionCommitment.remainingSeconds = Math.max(
+            0,
+            (missionCommitment.completesAtTick - latestState.tick)
+              * simulation.config.fixedStepSeconds,
+          );
+        }
+        portableDecoyThrowRemainingSeconds = Math.max(
           0,
-          Math.floor(latestState.elapsedSeconds / simulation.config.fixedStepSeconds),
+          (portableDecoyState?.activeDeployment?.soundAtSeconds ?? 0)
+            - latestState.elapsedSeconds,
         );
-        if (currentGhostTick > ghostLastRecordedTick) {
-          ghostRecorder.record(currentGhostTick, simulationInput);
-          ghostLastRecordedTick = currentGhostTick;
+        updatePortableDecoyViews(latestState.elapsedSeconds);
+        const currentGhostTick = latestState.tick;
+        const committedGhostInput = ghostInputBuffer.consumeIfAdvanced(
+          currentGhostTick,
+        );
+        if (committedGhostInput) {
+          ghostRecorder.record(
+            committedGhostInput.tick,
+            committedGhostInput.input,
+          );
         }
         if (
           latestState.phase === "won"
@@ -7476,6 +8607,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               distanceBetween(latestState.player.position, mechanicPosition) * CELL,
             ),
             activationCostLabel: mechanicDefinition.activationCost.label,
+            movementCommitted: mechanicRequiresMovementCommitment(mechanicInstance),
           });
           const hudMissionObjective = missionObjectiveForPlayer(
             latestState.player.position,
@@ -7493,6 +8625,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             activeDistanceMeters: hudMissionObjective
               ? Math.round(hudMissionObjective.routeCells * CELL)
               : null,
+            canInteract: Boolean(
+              hudMissionObjective
+              && latestState.phase === "playing"
+              && latestState.player.mode === "free"
+              && missionCommitment === null
+              && simulation.getHideInteraction() === null
+              && distanceBetween(
+                latestState.player.position,
+                hudMissionObjective.position,
+              ) <= 1.35
+            ),
             commitmentProgress: missionCommitment
               ? 1 - missionCommitment.remainingSeconds
                 / Math.max(0.001, missionCommitment.totalSeconds)
@@ -7501,8 +8644,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               ? missionCommitment.remainingSeconds
               : null,
             completedCount: missionState.completedObjectiveIds.length,
-            totalCount: missionDefinition.objectives.length,
+            totalCount: runtimeMissionObjectives.length,
           });
+          setPortableDecoy(portableDecoyState
+            ? samplePortableDecoy(
+                portableDecoyState,
+                Math.max(
+                  portableDecoyState.updatedAtSeconds,
+                  latestState.elapsedSeconds,
+                ),
+              )
+            : null);
+          setPortableDecoyNotice(
+            portableDecoyFeedback
+              && latestState.elapsedSeconds <= portableDecoyFeedbackUntilSeconds
+              ? portableDecoyFeedback
+              : null,
+          );
           setGhostRace(latestGhostRace
             ? {
                 ...latestGhostRace,
@@ -7593,18 +8751,52 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           && projected.z <= 1,
       };
     };
+    const projectObjectToViewport = (object: THREE.Object3D) => {
+      camera.updateMatrixWorld();
+      object.updateWorldMatrix(true, true);
+      const bounds = staticMeshBounds(object);
+      if (bounds.isEmpty()) return null;
+      const corners = [
+        new THREE.Vector3(bounds.min.x, bounds.min.y, bounds.min.z),
+        new THREE.Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
+        new THREE.Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
+        new THREE.Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
+        new THREE.Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
+        new THREE.Vector3(bounds.max.x, bounds.min.y, bounds.max.z),
+        new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
+        new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.max.z),
+      ].map((corner) => corner.project(camera));
+      const minimumX = Math.min(...corners.map(({ x }) => x));
+      const maximumX = Math.max(...corners.map(({ x }) => x));
+      const minimumY = Math.min(...corners.map(({ y }) => y));
+      const maximumY = Math.max(...corners.map(({ y }) => y));
+      const center = bounds.getCenter(new THREE.Vector3()).project(camera);
+      return {
+        x: (center.x + 1) / 2,
+        y: (1 - center.y) / 2,
+        depth: center.z,
+        pixelWidth: (maximumX - minimumX) * cameraViewportWidth / 2,
+        pixelHeight: (maximumY - minimumY) * cameraViewportHeight / 2,
+        centerInFrustum: Math.abs(center.x) <= 1
+          && Math.abs(center.y) <= 1
+          && center.z >= -1
+          && center.z <= 1,
+      };
+    };
 
     const qaWindow = window as typeof window & {
       __CHASING_QA__?: {
         getState: () => unknown;
         start: () => void;
         interact: () => void;
+        deployDecoy: () => void;
         togglePause: () => void;
         inspectScene: () => unknown;
         setScenario: (positions: { player: Point; chaser: Point }) => void;
         completeMission: () => void;
         selectLevel: (level: number | string) => void;
         selectLayout: (layoutNumber: number | null) => void;
+        selectLibraryPlan: (planId: LibraryMissionPlanId) => void;
         setUnlockedThrough: (levelNumber: number) => void;
       };
     };
@@ -7684,14 +8876,98 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           },
           themeMission: {
             definition: missionDefinition,
+            runtimeObjectives: runtimeMissionObjectives,
             state: missionState,
+            playerRuleProgress,
+            views: [...missionViews.values()].map((view) => ({
+              id: view.id,
+              position: view.position,
+              lightColor: view.light.color.getHex(),
+              lightIntensity: view.light.intensity,
+            })),
+            commitment: missionCommitment
+              ? { ...missionCommitment }
+              : null,
+            library: libraryMissionState
+              ? {
+                  definition: LIBRARY_BRANCHING_MISSION,
+                  state: libraryMissionState,
+                  selectedPlan: selectedLibraryPlanDefinition,
+                }
+              : null,
             placements: missionPlacements,
-            availableObjectiveIds: availableThemeObjectiveIds(
-              missionDefinition,
-              missionState,
-            ),
+            availableObjectiveIds: availableRuntimeMissionObjectiveIds(),
             audit: missionAudit,
           },
+          portableDecoy: portableDecoyState
+            ? {
+                definition: LIBRARY_PORTABLE_DECOY_DEFINITION,
+                state: portableDecoyState,
+                sample: samplePortableDecoy(
+                  portableDecoyState,
+                  Math.max(
+                    portableDecoyState.updatedAtSeconds,
+                    latestState.elapsedSeconds,
+                  ),
+                ),
+                formalTemplateReady: Boolean(portableDecoyTemplate),
+                sourceIds: [...portableDecoySourceIds],
+                scheduledSourceIds: [...scheduledPortableDecoySourceIds],
+                lifecycle: {
+                  thrownCount: portableDecoyThrownCount,
+                  publicSoundAcceptedCount:
+                    portableDecoyPublicSoundAcceptedCount,
+                  investigationCompletedCount:
+                    portableDecoyInvestigationCompletedCount,
+                  lastEvent: portableDecoyLastLifecycleEvent,
+                  throwCommitmentRemainingSeconds:
+                    portableDecoyThrowRemainingSeconds,
+                },
+                worldSoundDelivery: simulation.getWorldSoundQueueSnapshot(),
+                resources: {
+                  registeredLights: performanceLights.filter(({ light }) => (
+                    light.name.startsWith("portable-decoy-light-")
+                  )).length,
+                  ownedBeaconMaterials: portableDecoyViews.size,
+                  viewCreatedCount: portableDecoyViewCreatedCount,
+                  viewDisposedCount: portableDecoyViewDisposedCount,
+                  beaconTextureCreatedCount:
+                    portableDecoyBeaconTextureCreatedCount,
+                  beaconTextureDisposedCount:
+                    portableDecoyBeaconTextureDisposedCount,
+                  beaconMaterialDisposedCount:
+                    portableDecoyBeaconMaterialDisposedCount,
+                  resetCount: portableDecoyResetCount,
+                  sceneRoots: (() => {
+                    let count = 0;
+                    scene.traverse((object) => {
+                      if (object.userData.portableDecoyRoot === true) count += 1;
+                    });
+                    return count;
+                  })(),
+                  transientPlacedAssetIds: [...placedAssetIds].filter((id) => (
+                    id.startsWith("gameplay:portable-decoy:")
+                  )),
+                },
+                views: [...portableDecoyViews.values()].map((view) => ({
+                  deploymentId: view.deploymentId,
+                  sourceId: view.sourceId,
+                  settled: view.settled,
+                  released: view.released,
+                  releaseAtSeconds: view.releaseAtSeconds,
+                  rootName: view.root.name,
+                  modelName: view.root.children[0]?.name ?? null,
+                  position: {
+                    x: view.root.position.x,
+                    y: view.root.position.y,
+                    z: view.root.position.z,
+                  },
+                  beaconVisible: view.beacon.visible,
+                  lightRegistered: view.lightRegistered,
+                  viewport: projectObjectToViewport(view.root),
+                })),
+              }
+            : null,
           ghost: {
             eligible: ghostEligible,
             recording: ghostRecording
@@ -7787,6 +9063,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         }),
         start: beginGame,
         interact: () => { interactPressed.current = true; },
+        deployDecoy: () => { portableDecoyPressed.current = true; },
         togglePause: () => commands.current.togglePause(),
         inspectScene: () => {
           camera.updateMatrixWorld();
@@ -7827,6 +9104,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           }
           chooseRemixVariant((layoutNumber - 1) as 0 | 1 | 2);
         },
+        selectLibraryPlan: (planId) => {
+          if (
+            latestState.phase !== "ready"
+            || planId === selectedLibraryPlan
+            || !LIBRARY_BRANCHING_MISSION.plans.some((plan) => plan.id === planId)
+          ) return;
+          setLoading(true);
+          setLoadError("");
+          setSelectedLibraryPlan(planId);
+        },
         setUnlockedThrough: (levelNumber) => {
           setCampaignProgress((current) => ({
             ...current,
@@ -7839,13 +9126,37 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           }));
         },
         completeMission: () => {
-          for (const objective of missionDefinition.objectives) {
-            if (missionState.completedObjectiveIds.includes(objective.id)) continue;
-            missionState = stepThemeMission(
-              missionDefinition,
-              missionState,
-              objective.id,
-            ).state;
+          if (libraryMissionState) {
+            for (const objective of runtimeMissionObjectives) {
+              const previous = libraryMissionState;
+              const libraryStep = stepLibraryBranchingMission(
+                LIBRARY_BRANCHING_MISSION,
+                libraryMissionState,
+                {
+                  type: "attempt-objective",
+                  objectiveId: objective.id,
+                  outcome: "completed",
+                },
+              );
+              libraryMissionState = libraryStep.state;
+              recordLibraryMissionRuleEvents(
+                libraryStep.events,
+                latestState.tick,
+              );
+              missionState = adaptLibraryMissionTransitionToThemeMission(
+                previous,
+                libraryMissionState,
+              ).state;
+            }
+          } else {
+            for (const objective of missionDefinition.objectives) {
+              if (missionState.completedObjectiveIds.includes(objective.id)) continue;
+              missionState = stepThemeMission(
+                missionDefinition,
+                missionState,
+                objective.id,
+              ).state;
+            }
           }
           updateThemeMissionViews(performance.now());
         },
@@ -7908,7 +9219,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         environmentScheduleHandle = null;
       }
       environmentTarget?.dispose();
-      disposeObjectResources([scene, ...loadedAssetRoots]);
+      for (const view of portableDecoyViews.values()) {
+        disposePortableDecoyView(view);
+      }
+      portableDecoyViews.clear();
+      disposeObjectResources([
+        scene,
+        ...loadedAssetRoots,
+        ...(portableDecoyTemplate ? [portableDecoyTemplate] : []),
+      ]);
       for (const objectUrl of controlledDependencyUrls.values()) URL.revokeObjectURL(objectUrl);
       controlledDependencyUrls.clear();
       controlledDependencyLoads.clear();
@@ -7923,6 +9242,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     chooseRemixVariant,
     gameplayConfig,
     hideGuidancePolicy.tutorialHideSpotId,
+    libraryGoldEnabled,
+    masteryTargetOptions,
     objectivePaths,
     preferences.personalGhostEnabled,
     preferences.ruleset,
@@ -7932,6 +9253,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     runRecordLevelId,
     runReplayLevelId,
     sceneRevision,
+    selectedLibraryPlan,
     selectedRemixContract,
   ]);
 
@@ -7957,8 +9279,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
   const activeMissionObjective = themeMission?.activeObjective ?? null;
   const missionCanInteract = Boolean(
     activeMissionObjective
-    && themeMission?.activeDistanceMeters !== null
-    && (themeMission?.activeDistanceMeters ?? Number.POSITIVE_INFINITY) <= 3,
+    && themeMission?.canInteract,
   );
   const missionInteractionInProgress = themeMission?.commitmentProgress !== null
     && themeMission?.commitmentProgress !== undefined;
@@ -7967,13 +9288,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     runRecordLevelId,
     preferences.ruleset,
   );
+  const legacyLibraryRunRecord = libraryGoldEnabled
+    ? getCampaignRunRecord(
+        campaignProgress,
+        campaignLevel.id,
+        preferences.ruleset,
+      )
+    : null;
+  const branchRecordOrLegacy = libraryGoldEnabled
+    && !storedCurrentRunRecord.bestSeconds
+    && !storedCurrentRunRecord.mastery
+    && legacyLibraryRunRecord
+    ? legacyLibraryRunRecord
+    : storedCurrentRunRecord;
   const currentRunRecord = selectedRemixContract
     ? {
         ...storedCurrentRunRecord,
         bestSeconds: remixRecord?.bestSeconds ?? storedCurrentRunRecord.bestSeconds,
         mastery: remixRecord?.mastery ?? storedCurrentRunRecord.mastery,
       }
-    : storedCurrentRunRecord;
+    : branchRecordOrLegacy;
   const unlockedThrough = getCampaignUnlockedThrough(
     campaignProgress,
     preferences.ruleset,
@@ -7996,9 +9330,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       : publicThreat === "caution"
         ? "位置未确认 · 仍在附近搜索"
         : "位置未确认 · 环境已安静";
+  const selectedLibraryPlanDefinition = libraryGoldEnabled
+    ? LIBRARY_BRANCHING_MISSION.plans
+      .find((plan) => plan.id === selectedLibraryPlan) ?? null
+    : null;
+  const displayedMissionObjectives = selectedLibraryPlanDefinition
+    ? selectedLibraryPlanDefinition.objectiveIds.map((objectiveId) => {
+        const objective = LIBRARY_BRANCHING_MISSION.objectives
+          .find((candidate) => candidate.id === objectiveId);
+        if (!objective) throw new Error(`图书楼任务简报缺少 ${objectiveId}`);
+        return objective;
+      })
+    : themeMissionDefinition(campaignLevel.campaign.theme).objectives;
+  const displayedMissionTitle = selectedLibraryPlanDefinition
+    ? `${LIBRARY_BRANCHING_MISSION.title} · ${selectedLibraryPlanDefinition.label}`
+    : themeMissionDefinition(campaignLevel.campaign.theme).title;
   const readyCampaignBriefing = selectedRemixContract
     ? `${campaignLevel.campaign.briefing} ${layoutLabel}已按固定认证方案重编路线连通、巡逻顺序、任务位置与藏点组合；它不是临场随机生成，每次挑战都可学习、可复盘。`
-    : campaignLevel.campaign.briefing;
+    : `${campaignLevel.campaign.briefing}${
+        selectedLibraryPlanDefinition
+          ? ` 本次采用「${selectedLibraryPlanDefinition.label}」：${selectedLibraryPlanDefinition.strategy}`
+          : ""
+      }`;
   const readyBriefing = `${readyCampaignBriefing} 本关追捕者为「${chaserArchetypeProfile.label}」：${chaserArchetypeProfile.readableRule}`;
   const showResult = phase === "ready" || ((phase === "won" || phase === "lost") && resultVisible);
   const interactionSpot = interaction
@@ -8039,6 +9392,29 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     || missionInteractionInProgress
     || Boolean(themeMechanic?.canActivate)
     || playerMode === "aligning-hide";
+  const portableDecoyActionAvailable = Boolean(
+    libraryGoldEnabled
+    && portableDecoy?.canDeploy
+    && phase === "playing"
+    && !paused
+    && playerMode === "free"
+    && !interaction
+    && !missionInteractionInProgress
+    && !themeMechanic?.movementCommitted,
+  );
+  const portableDecoyPhaseLabel = interaction
+    ? "离开藏点后投掷"
+    : portableDecoy?.phase === "arming"
+    ? "投掷中"
+    : portableDecoy?.phase === "awaiting-delivery"
+      ? "声源接入中"
+    : portableDecoy?.phase === "awaiting-investigation"
+      ? "声源待调查"
+      : portableDecoy?.phase === "cooldown"
+        ? `冷却 ${portableDecoy.cooldownRemainingSeconds.toFixed(1)}s`
+        : portableDecoy?.phase === "depleted"
+          ? "本局已用完"
+          : "可投掷";
   const primaryAction = phase === "won" && hasNextLevel
     ? () => chooseLevel(selectedLevelIndex + 1)
     : begin;
@@ -8080,7 +9456,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       </header>
 
       <section
-        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${activeHideArchetype ? ` hide-${activeHideArchetype}` : ""}${themeMechanic?.phase === "active" ? " theme-event-active" : ""}${activeHideArchetype === "hard-locker" && ["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? " locker-interior" : ""}${ghostRace?.visible ? " ghost-race-active" : ""}`}
+        className={`playfield theme-${campaignLevel.campaign.theme} threat-${chaserObservable ? "visible" : `public-${publicThreat}`} mode-${playerMode}${activeHideArchetype ? ` hide-${activeHideArchetype}` : ""}${themeMechanic?.phase === "active" ? " theme-event-active" : ""}${missionInteractionInProgress ? " mission-commitment-active" : ""}${activeHideArchetype === "hard-locker" && ["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? " locker-interior" : ""}${ghostRace?.visible ? " ghost-race-active" : ""}`}
         style={{
           "--threat": danger,
           "--theme-event": themeEventActivity,
@@ -8136,7 +9512,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             <span aria-hidden="true" />
             <div>
               <small>
-                {themeMissionDefinition(campaignLevel.campaign.theme).title} · {themeMission.completedCount}/{themeMission.totalCount}
+                {displayedMissionTitle} · {themeMission.completedCount}/{themeMission.totalCount}
               </small>
               <strong>
                 {themeMission.state.exitUnlocked
@@ -8149,7 +9525,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 <em>
                   {missionInteractionInProgress
                     ? `保持位置 ${Math.max(0, themeMission.commitmentRemainingSeconds ?? 0).toFixed(1)}s`
-                    : `${themeMission.activeDistanceMeters}m · 可按任意顺序完成准备目标`}
+                    : libraryGoldEnabled
+                      ? `${themeMission.activeDistanceMeters}m · 按所选计划依次完成目标`
+                      : `${themeMission.activeDistanceMeters}m · 可按任意顺序完成准备目标`}
                 </em>
               )}
             </div>
@@ -8207,6 +9585,35 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <strong>{themeMechanic.hudHint}</strong>
               {themeMechanic.canActivate && <em>{themeMechanic.activationCostLabel}</em>}
             </div>
+          </div>
+        )}
+
+        {!loading && !paused && phase === "playing" && libraryGoldEnabled && portableDecoy && (
+          <div
+            className={`portable-decoy-status phase-${portableDecoy.phase}`}
+            role="status"
+            aria-live="polite"
+          >
+            <button
+              type="button"
+              disabled={!portableDecoyActionAvailable}
+              onClick={deployDecoy}
+              aria-label={`投掷精装笔记本诱饵，剩余 ${portableDecoy.inventoryRemaining} 枚`}
+            >
+              <span aria-hidden="true">▰</span>
+              <div>
+                <small>可携式诱饵 · 剩余 {portableDecoy.inventoryRemaining}/{
+                  LIBRARY_PORTABLE_DECOY_DEFINITION.capacity
+                }</small>
+                <strong>{portableDecoyNotice ?? portableDecoyPhaseLabel}</strong>
+              </div>
+              <kbd className="desktop-key">F</kbd>
+            </button>
+            <i
+              style={{
+                "--decoy-progress": `${Math.round(portableDecoy.progress * 100)}%`,
+              } as React.CSSProperties}
+            />
           </div>
         )}
 
@@ -8529,8 +9936,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 <div className="mission-briefing" aria-label="本关主题任务">
                   <div>
                     <small>本关任务链 · {layoutLabel}</small>
-                    <strong>{themeMissionDefinition(campaignLevel.campaign.theme).title}</strong>
+                    <strong>{displayedMissionTitle}</strong>
                   </div>
+                  {libraryGoldEnabled && (
+                    <div className="library-plan-selector" role="group" aria-label="选择图书楼脱身计划">
+                      {LIBRARY_BRANCHING_MISSION.plans.map((plan) => (
+                        <button
+                          type="button"
+                          key={plan.id}
+                          aria-pressed={selectedLibraryPlan === plan.id}
+                          onClick={() => chooseLibraryPlan(plan.id)}
+                        >
+                          <b>{plan.label}</b>
+                          <small>{plan.strategy}</small>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {selectedRemixContract && (
                     <span>
                       <i aria-hidden="true">↻</i>
@@ -8538,7 +9960,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                       <small>通路、巡逻、任务锚点与藏点供应均已重编；布局编号固定，可重复练习。</small>
                     </span>
                   )}
-                  {themeMissionDefinition(campaignLevel.campaign.theme).objectives.map((objective, index) => (
+                  {displayedMissionObjectives.map((objective, index) => (
                     <span key={objective.id}>
                       <i aria-hidden="true">{index + 1}</i>
                       <b>{objective.label}</b>
@@ -8552,7 +9974,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 <div className="hide-loop" aria-label="躲柜玩法流程">
                   <span><b>1</b>绕墙切断视线</span>
                   <span><b>2</b>按风险选择硬柜、软遮挡或穿行藏点</span>
-                  <span><b>3</b>用机关制造假线索，完成任务后解锁出口</span>
+                  <span>
+                    <b>3</b>
+                    {libraryGoldEnabled
+                      ? "按 F 投掷精装笔记本诱饵，趁调查与左右巡视时改线"
+                      : "利用本关主题机关制造公开线索，趁追捕者调查时改线"}
+                  </span>
                 </div>
               )}
 
@@ -8577,11 +10004,29 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                   {CAMPAIGN_LEVELS.map((level, index) => {
                     const locked = index + 1 > unlockedThrough;
                     const active = index === selectedLevelIndex;
-                    const runRecord = getCampaignRunRecord(
+                    const levelRecordId = level.id === LIBRARY_BRANCHING_MISSION.levelId
+                      ? libraryG2RunIdentity(level.id, selectedLibraryPlan)
+                      : level.id;
+                    const branchRunRecord = getCampaignRunRecord(
                       campaignProgress,
-                      level.id,
+                      levelRecordId,
                       preferences.ruleset,
                     );
+                    const legacyRunRecord = level.id === LIBRARY_BRANCHING_MISSION.levelId
+                      ? getCampaignRunRecord(
+                          campaignProgress,
+                          level.id,
+                          preferences.ruleset,
+                        )
+                      : null;
+                    const showingLegacyBaseline = Boolean(
+                      legacyRunRecord?.bestSeconds
+                      && !branchRunRecord.bestSeconds
+                      && !branchRunRecord.mastery,
+                    );
+                    const runRecord = showingLegacyBaseline && legacyRunRecord
+                      ? legacyRunRecord
+                      : branchRunRecord;
                     const best = runRecord.bestSeconds;
                     const mastery = runRecord.mastery;
                     return (
@@ -8599,7 +10044,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                           {locked
                             ? "完成上一关"
                             : best
-                              ? `最佳 ${best.toFixed(2)}s${mastery ? ` · ${MASTERY_RANK_LABEL[mastery.rank]}` : ""}`
+                              ? `最佳 ${best.toFixed(2)}s${mastery ? ` · ${MASTERY_RANK_LABEL[mastery.rank]}` : ""}${showingLegacyBaseline ? " · 旧版基线" : ""}`
                               : level.campaign.themeLabel}
                         </small>
                       </button>
@@ -8616,6 +10061,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                   <kbd>Enter</kbd>
                 </button>
                 {phase === "won" && <button className="secondary" type="button" onClick={begin}>重玩本关</button>}
+                {libraryGoldEnabled && phase !== "ready" && (
+                  <button
+                    className="secondary library-plan-switch"
+                    type="button"
+                    onClick={switchLibraryPlanAfterRun}
+                  >
+                    改走{
+                      LIBRARY_BRANCHING_MISSION.plans.find(
+                        (plan) => plan.id !== selectedLibraryPlan,
+                      )?.label
+                    }
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -8666,6 +10124,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                       ? interactionText ?? `离开${hideArchetypeLabel}`
                       : `藏点 ${hideDistance}m`}
               </button>
+              {libraryGoldEnabled && portableDecoy && (
+                <button
+                  type="button"
+                  className={`decoy-action${portableDecoyActionAvailable ? " available" : ""}`}
+                  disabled={!portableDecoyActionAvailable}
+                  onClick={deployDecoy}
+                >
+                  诱饵 {portableDecoy.inventoryRemaining} · {portableDecoyPhaseLabel}
+                </button>
+              )}
               <button
                 type="button"
                 onPointerDown={(event) => {
@@ -8693,7 +10161,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         <span><i className="kid" />玩家</span>
         <span><i className="villain" />追捕者</span>
         <span><i className="safe" />主题藏点</span>
-        <small>WASD / 方向键移动 · E 躲藏或离开 · Q 轻步 / 柜内观察 · X 切换穿行出口 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开</small>
+        <small>
+          {`WASD / 方向键移动 · E 躲藏或离开 · ${
+            libraryGoldEnabled ? "F 投掷诱饵 · " : ""
+          }Q 轻步 / 柜内观察 · X 切换穿行出口 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开`}
+        </small>
       </footer>
     </main>
   );

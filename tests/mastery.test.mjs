@@ -3,9 +3,11 @@ import test from "node:test";
 
 import { CAMPAIGN_LEVELS, getCampaignGameplayConfig } from "../app/game/campaign.ts";
 import { assistedGameplayConfig } from "../app/game/gameplay-preferences.ts";
+import { createLevel } from "../app/game/level.ts";
 import {
   applyRunEvents,
   applyRunTelemetryFrame,
+  auditOrderedMasteryMissionRoute,
   createRunTelemetry,
   evaluateRunMastery,
   getMasteryProfile,
@@ -17,6 +19,10 @@ import {
   previewRunMastery,
   SAFE_HIDE_EXIT_SECONDS,
 } from "../app/game/mastery.ts";
+import {
+  LIBRARY_BRANCHING_MISSION,
+  LIBRARY_BRANCHING_MISSION_TOPOLOGY,
+} from "../app/game/library-branching-mission.ts";
 import {
   certifiedRemixContractsForLevel,
   remixReplayLevelId,
@@ -138,6 +144,174 @@ test("causal telemetry rejects decorative searches and credits deployed decoys/m
   assert.equal(
     mastery.challenges.find(({ id }) => id === "decoy-search").completed,
     true,
+  );
+});
+
+function libraryOrderedMasteryCase(planId, ruleset = "standard") {
+  const source = CAMPAIGN_LEVELS.find(
+    ({ id }) => id === LIBRARY_BRANCHING_MISSION.levelId,
+  );
+  const plan = LIBRARY_BRANCHING_MISSION.plans.find(({ id }) => id === planId);
+  assert.ok(source);
+  assert.ok(plan);
+  const exit = LIBRARY_BRANCHING_MISSION_TOPOLOGY.exitPlacements
+    .find(({ exitId }) => exitId === plan.exitId)?.position;
+  assert.ok(exit);
+  const level = Object.freeze({
+    ...source,
+    exit: Object.freeze({ ...exit }),
+  });
+  const objectives = plan.objectiveIds.map((objectiveId) => {
+    const definition = LIBRARY_BRANCHING_MISSION.objectives
+      .find(({ id }) => id === objectiveId);
+    const placement = LIBRARY_BRANCHING_MISSION_TOPOLOGY.objectivePlacements
+      .find((candidate) => candidate.objectiveId === objectiveId);
+    assert.ok(definition);
+    assert.ok(placement);
+    return {
+      id: objectiveId,
+      position: placement.position,
+      commitmentSeconds: definition.commitmentSeconds,
+    };
+  });
+  const options = {
+    context: {
+      levelId: source.id,
+      theme: source.campaign.theme,
+      ruleset,
+    },
+    mission: {
+      kind: "ordered",
+      id: `${LIBRARY_BRANCHING_MISSION.id}:${plan.id}`,
+      objectives,
+    },
+  };
+  return { source, level, plan, options };
+}
+
+test("G2 mastery follows each selected plan's exact objective order and physical exit", () => {
+  const expected = new Map([
+    ["access-authorization", {
+      routeDistanceCells: 57,
+      objectiveSeconds: 3.4,
+      targetSeconds: 31,
+    }],
+    ["fire-release", {
+      routeDistanceCells: 48,
+      objectiveSeconds: 3.6,
+      targetSeconds: 27,
+    }],
+  ]);
+
+  for (const [planId, authored] of expected) {
+    const { source, level, plan, options } = libraryOrderedMasteryCase(planId);
+    const config = getCampaignGameplayConfig(source);
+    const audit = auditOrderedMasteryMissionRoute(level, options.mission);
+    assert.equal(audit.passed, true, audit.failures.join("; "));
+    assert.deepEqual(audit.objectiveIds, plan.objectiveIds);
+    assert.deepEqual(
+      audit.legs.map(({ fromId, toId }) => [fromId, toId]),
+      [
+        ["spawn", plan.objectiveIds[0]],
+        [plan.objectiveIds[0], plan.objectiveIds[1]],
+        [plan.objectiveIds[1], plan.objectiveIds[2]],
+        [plan.objectiveIds[2], "exit"],
+      ],
+    );
+    assert.equal(audit.routeDistanceCells, authored.routeDistanceCells);
+    assert.ok(Math.abs(audit.objectiveSeconds - authored.objectiveSeconds) < 1e-9);
+
+    const targetPlan = masteryTargetPlan(level, config, options);
+    assert.equal(targetPlan.mission.kind, "ordered");
+    assert.deepEqual(
+      targetPlan.mission.objectives.map(({ id }) => id),
+      plan.objectiveIds,
+    );
+    assert.equal(Object.isFrozen(targetPlan.mission.objectives), true);
+    assert.equal(Object.isFrozen(targetPlan.mission.objectives[0].position), true);
+    assert.equal(
+      targetPlan.missionRouteDistanceCells,
+      authored.routeDistanceCells,
+    );
+    assert.ok(
+      Math.abs(targetPlan.missionObjectiveSeconds - authored.objectiveSeconds) < 1e-9,
+    );
+    assert.equal(targetPlan.targetSeconds, authored.targetSeconds);
+
+    const preview = previewRunMastery(level, config, options);
+    const resultTarget = masteryTargetSeconds(level, config, options);
+    const result = evaluateRunMastery(
+      preview.targetSeconds,
+      resultTarget,
+      createRunTelemetry(options.context),
+    );
+    assert.equal(preview.targetSeconds, resultTarget);
+    assert.equal(result.targetSeconds, preview.targetSeconds);
+    assert.equal(result.profileId, preview.profileId);
+    assert.deepEqual(
+      result.challenges.map(({ id }) => id),
+      preview.objectives.map(({ id }) => id),
+    );
+  }
+});
+
+test("ordered mastery audit rejects malformed or unreachable route legs", () => {
+  const disconnected = createLevel({
+    id: "ordered-mastery-disconnected",
+    width: 5,
+    height: 1,
+    walkable: [[true, true, false, true, true]],
+    playerStart: { x: 0, y: 0 },
+    exit: { x: 1, y: 0 },
+    chaserStart: { x: 4, y: 0 },
+    chaserStartHeading: { x: -1, y: 0 },
+    patrol: [{ x: 4, y: 0 }],
+    hideSpots: [],
+  });
+  const unreachable = {
+    kind: "ordered",
+    id: "unreachable-route",
+    objectives: [{
+      id: "isolated-control",
+      position: { x: 3, y: 0 },
+      commitmentSeconds: 1.25,
+    }],
+  };
+  const unreachableAudit = auditOrderedMasteryMissionRoute(
+    disconnected,
+    unreachable,
+  );
+  assert.equal(unreachableAudit.passed, false);
+  assert.equal(unreachableAudit.routeDistanceCells, null);
+  assert.deepEqual(unreachableAudit.legs, [{
+    fromId: "spawn",
+    toId: "isolated-control",
+    reachable: false,
+    distanceCells: null,
+  }]);
+  assert.match(unreachableAudit.failures.join("; "), /spawn -> isolated-control/u);
+  assert.throws(
+    () => masteryTargetPlan(disconnected, {}, { mission: unreachable }),
+    /Mastery ordered mission route is invalid/u,
+  );
+
+  const { level, options } = libraryOrderedMasteryCase("access-authorization");
+  const malformed = {
+    ...options.mission,
+    objectives: [
+      options.mission.objectives[0],
+      {
+        ...options.mission.objectives[0],
+        commitmentSeconds: Number.NaN,
+      },
+    ],
+  };
+  const malformedAudit = auditOrderedMasteryMissionRoute(level, malformed);
+  assert.equal(malformedAudit.passed, false);
+  assert.equal(malformedAudit.routeDistanceCells, null);
+  assert.match(
+    malformedAudit.failures.join("; "),
+    /Duplicate ordered mastery objective|invalid commitment time/u,
   );
 });
 

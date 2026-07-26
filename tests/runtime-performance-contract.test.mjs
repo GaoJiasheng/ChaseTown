@@ -119,7 +119,7 @@ test("mobile controls, pause and theme mechanics drive the real simulation", () 
   );
   assert.match(
     SOURCE,
-    /event\.type === "evidence-investigation-completed"[\s\S]*source: "theme-mechanic"/,
+    /event\.type === "evidence-investigation-completed"[\s\S]*source: portableDecoySourceIds\.has\(event\.evidenceId\)[\s\S]*\? "decoy"[\s\S]*: "theme-mechanic"/,
   );
   assert.match(
     SOURCE,

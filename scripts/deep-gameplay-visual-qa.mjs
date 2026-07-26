@@ -3,8 +3,9 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { collectQaSourceProvenance } from "./qa-source-provenance.mjs";
 
-const BASE_URL = process.env.CHASING_QA_URL ?? "http://localhost:4173/";
+const BASE_URL = process.env.CHASING_QA_URL ?? "http://127.0.0.1:3000/";
 const DEBUG_PORT = Number(process.env.CHROME_DEBUG_PORT ?? 9223);
 const OUTPUT = path.resolve(
   process.env.CHASING_QA_OUT ?? "/tmp/chasing-deep-gameplay-visual-qa",
@@ -298,13 +299,17 @@ async function waitForReady(browser, levelIndex, layoutNumber, timeout = 90_000)
   })()`, timeout, 120);
 }
 
-async function navigateFresh(browser, viewport, suffix) {
+async function navigateFresh(browser, viewport, suffix, resetStorage = false) {
   await browser.setViewport(viewport);
   const separator = BASE_URL.includes("?") ? "&" : "?";
-  await browser.send("Page.navigate", {
-    url: `${BASE_URL}${separator}qa=deep-gameplay-visual-${suffix}`,
-  });
+  const url = `${BASE_URL}${separator}qa=deep-gameplay-visual-${suffix}`;
+  await browser.send("Page.navigate", { url });
   await browser.waitFor("document.readyState === 'complete'", 25_000);
+  if (resetStorage) {
+    await browser.evaluate("localStorage.clear()");
+    await browser.send("Page.navigate", { url });
+    await browser.waitFor("document.readyState === 'complete'", 25_000);
+  }
   await waitForReady(browser, 0, null);
   await browser.evaluate("window.__CHASING_QA__.setUnlockedThrough(10)");
 }
@@ -580,6 +585,10 @@ async function exerciseAlternativeHide(
       "soft cover should visibly attenuate, not erase, the player",
     );
   }
+  await browser.waitFor(
+    `document.querySelector('.playfield')?.classList.contains('hide-${archetype}') === true`,
+    3_000,
+  );
   const hiddenTreatment = await auditHideTreatment(browser, archetype);
 
   const hiddenFile = path.join(
@@ -727,13 +736,19 @@ async function auditMobileLayout(browser, stage) {
     };
     const isVisible = (element) => {
       if (!(element instanceof HTMLElement)) return false;
-      const style = getComputedStyle(element);
       const rect = element.getBoundingClientRect();
       const visible = clippedRect(element);
-      return style.display !== 'none'
-        && style.visibility !== 'hidden'
-        && Number(style.opacity) > 0
-        && rect.width > 0
+      let current = element;
+      while (current instanceof HTMLElement) {
+        const style = getComputedStyle(current);
+        if (
+          style.display === 'none'
+          || style.visibility === 'hidden'
+          || Number(style.opacity) <= 0
+        ) return false;
+        current = current.parentElement;
+      }
+      return rect.width > 0
         && rect.height > 0
         && visible.width > 0
         && visible.height > 0;
@@ -743,6 +758,10 @@ async function auditMobileLayout(browser, stage) {
       .map((element) => {
         const rect = element.getBoundingClientRect();
         const visible = clippedRect(element);
+        const hit = document.elementFromPoint(
+          Math.min(innerWidth - 1, Math.max(0, rect.left + rect.width / 2)),
+          Math.min(innerHeight - 1, Math.max(0, rect.top + rect.height / 2)),
+        );
         return {
           label: element.getAttribute('aria-label')
             || element.textContent?.replace(/\\s+/g, ' ').trim().slice(0, 80)
@@ -752,6 +771,7 @@ async function auditMobileLayout(browser, stage) {
           visibleWidth: visible.width,
           visibleHeight: visible.height,
           viewportCoverage: visible.area / Math.max(1, rect.width * rect.height),
+          hitTestable: Boolean(hit && element.contains(hit)),
         };
       });
     const playfieldElement = document.querySelector('.playfield');
@@ -856,6 +876,12 @@ async function auditMobileLayout(browser, stage) {
       // target as 43.996px. Keep a half-pixel tolerance while still catching
       // materially undersized controls (the former Pause button was 36px).
       undersized: targets.filter((target) => target.width < 43.5 || target.height < 43.5),
+      // Scrollable setup cards may intentionally peek by a few pixels below
+      // the fold. Require center-point ownership for every fully presented
+      // target; the ready CTA has its own stricter no-scroll contract below.
+      coveredTargets: targets.filter(
+        (target) => target.viewportCoverage >= 0.99 && !target.hitTestable,
+      ),
       readyOverlayPresent: Boolean(readyOverlay),
       readyCta,
       readyOverlayScrollTop: readyOverlay?.querySelector('.overlay-card')?.scrollTop ?? null,
@@ -884,6 +910,11 @@ async function auditMobileLayout(browser, stage) {
     audit.undersized,
     [],
     `${stage} has touch targets smaller than 44x44`,
+  );
+  assert.deepEqual(
+    audit.coveredTargets,
+    [],
+    `${stage} has visible touch targets covered by another HUD element`,
   );
   if (audit.readyOverlayPresent) {
     assert.ok(audit.readyCta, `${stage} ready overlay has no primary CTA`);
@@ -922,10 +953,11 @@ async function auditMobileLayout(browser, stage) {
 }
 
 await mkdir(OUTPUT, { recursive: true });
+const sourceProvenance = collectQaSourceProvenance();
 const browser = await connect();
 const screenshotEvidence = [];
 try {
-  await navigateFresh(browser, DESKTOP, "desktop");
+  await navigateFresh(browser, DESKTOP, "desktop", true);
 
   const originalReady = await browser.evaluate("window.__CHASING_QA__.getState()");
   assert.equal(originalReady.campaign.number, 1);
@@ -1138,6 +1170,7 @@ try {
   const summary = {
     generatedAt: new Date().toISOString(),
     target: "final-production-build",
+    sourceProvenance,
     baseUrl: BASE_URL,
     chromeDebugPort: DEBUG_PORT,
     viewports: {

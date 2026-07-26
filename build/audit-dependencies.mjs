@@ -96,8 +96,12 @@ for (const packageName of exceptions.keys()) {
 if (blockers.length > 0) {
   throw new Error(`Tooling dependency audit failed: ${blockers.join(", ")}`);
 }
-console.log(
-  `Tooling dependency audit passed: no critical vulnerabilities; `
-  + `${activeHigh.size} reviewed high-severity exceptions expire by `
-  + `${policy.exceptions.map(({ expiresOn }) => expiresOn).sort()[0]}.`,
-);
+if (activeHigh.size === 0) {
+  console.log("Tooling dependency audit passed: no high or critical vulnerabilities.");
+} else {
+  console.log(
+    `Tooling dependency audit passed: no critical vulnerabilities; `
+    + `${activeHigh.size} reviewed high-severity exceptions expire by `
+    + `${policy.exceptions.map(({ expiresOn }) => expiresOn).sort()[0]}.`,
+  );
+}

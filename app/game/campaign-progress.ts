@@ -89,6 +89,7 @@ function sanitizeMastery(
 export function sanitizeCampaignProgress(
   value: unknown,
   levelIds: readonly string[],
+  recordIds: readonly string[] = levelIds,
 ): CampaignProgress {
   const fallback = createCampaignProgress();
   if (!value || typeof value !== "object" || levelIds.length === 0) return fallback;
@@ -104,7 +105,7 @@ export function sanitizeCampaignProgress(
     ? Number(stored.unlockedThrough)
     : 1;
   const unlockedThrough = Math.min(levelIds.length, Math.max(1, unlockedCandidate));
-  const knownIds = new Set(levelIds);
+  const knownIds = new Set(recordIds);
   const assistedUnlockedCandidate = Number.isInteger(stored.assistedUnlockedThrough)
     ? Number(stored.assistedUnlockedThrough)
     : 1;

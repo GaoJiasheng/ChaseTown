@@ -3,6 +3,9 @@ import test from "node:test";
 
 import {
   GHOST_POSITION_ERROR_BUDGET_CELLS,
+  GHOST_REPLAY_ID_MAX_LENGTH,
+  GHOST_REPLAY_MAX_RULE_EVENTS,
+  GhostFixedStepInputBuffer,
   GhostInputRecorder,
   GhostReplayCursor,
   estimateGhostStorageBytes,
@@ -37,6 +40,25 @@ class MemoryStorage {
   removeItem(key) {
     this.values.delete(key);
   }
+}
+
+function replayChecksum(payload) {
+  const value = JSON.stringify(payload);
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function resignSerializedGhost(raw) {
+  const payload = { ...raw };
+  delete payload.checksum;
+  return JSON.stringify({
+    ...payload,
+    checksum: replayChecksum(payload),
+  });
 }
 
 test("ghost input recording is change-compressed while interaction remains a one-tick edge", () => {
@@ -138,6 +160,316 @@ test("mission-faithful rule events round-trip without invalidating legacy v1 gho
     parseGhostRecording(serializeGhostRecording(legacyRecording)),
     legacyRecording,
   );
+});
+
+test("portable decoy commands round-trip with canonical identity, landing, and checksum", () => {
+  const firstLanding = { x: 6.25, y: 4.5 };
+  const recorder = new GhostInputRecorder("portable-decoy-sidecar", 1 / 60);
+  recorder.record(0, { move: { x: 1, y: 0 } });
+  assert.equal(recorder.recordRuleEvent({
+    tick: 12,
+    type: "portable-decoy-thrown",
+    deploymentId: "library-portable-decoy:deployment:1",
+    sourceId: "library-portable-decoy:source:1",
+    landing: firstLanding,
+  }), true);
+  assert.equal(recorder.recordRuleEvent({
+    sourceId: "library-portable-decoy:source:2",
+    landing: { y: 7.75, x: 3.125 },
+    deploymentId: "library-portable-decoy:deployment:2",
+    type: "portable-decoy-thrown",
+    tick: 12,
+  }), true);
+  firstLanding.x = 99;
+
+  const recording = recorder.finish(30);
+  assert.ok(recording);
+  const decoyEvents = recording.ruleEvents?.filter(
+    (event) => event.type === "portable-decoy-thrown",
+  );
+  assert.deepEqual(decoyEvents?.map((event) => event.deploymentId), [
+    "library-portable-decoy:deployment:1",
+    "library-portable-decoy:deployment:2",
+  ]);
+  assert.deepEqual(decoyEvents?.map((event) => event.landing), [
+    { x: 6.25, y: 4.5 },
+    { x: 3.125, y: 7.75 },
+  ]);
+  assert.equal(Object.isFrozen(decoyEvents?.[0].landing), true);
+
+  const serialized = serializeGhostRecording(recording);
+  const parsed = parseGhostRecording(
+    serialized,
+    new Set(["portable-decoy-sidecar"]),
+  );
+  assert.deepEqual(parsed, recording);
+  assert.equal(Object.isFrozen(parsed.ruleEvents[0].landing), true);
+
+  const sameCommands = new GhostInputRecorder("portable-decoy-sidecar", 1 / 60);
+  sameCommands.record(0, { move: { x: 1, y: 0 } });
+  sameCommands.recordRuleEvent({
+    landing: { y: 4.5, x: 6.25 },
+    sourceId: "library-portable-decoy:source:1",
+    tick: 12,
+    deploymentId: "library-portable-decoy:deployment:1",
+    type: "portable-decoy-thrown",
+  });
+  sameCommands.recordRuleEvent({
+    tick: 12,
+    type: "portable-decoy-thrown",
+    deploymentId: "library-portable-decoy:deployment:2",
+    sourceId: "library-portable-decoy:source:2",
+    landing: { x: 3.125, y: 7.75 },
+  });
+  const sameRecording = sameCommands.finish(30);
+  assert.ok(sameRecording);
+  assert.equal(sameRecording.checksum, recording.checksum);
+  assert.equal(serializeGhostRecording(sameRecording), serialized);
+
+  const tampered = JSON.parse(serialized);
+  tampered.ruleEvents[0].landing.x = 6.5;
+  assert.equal(parseGhostRecording(JSON.stringify(tampered)), null);
+});
+
+test("portable decoy sidecar rejects non-finite, ambiguous, and malformed payloads", () => {
+  const event = (overrides = {}) => ({
+    tick: 10,
+    type: "portable-decoy-thrown",
+    deploymentId: "decoy:deployment:1",
+    sourceId: "decoy:source:1",
+    landing: { x: 2.5, y: 3.5 },
+    ...overrides,
+  });
+  for (const invalid of [
+    event({ deploymentId: "" }),
+    event({ deploymentId: " padded" }),
+    event({ sourceId: `s${"x".repeat(GHOST_REPLAY_ID_MAX_LENGTH)}` }),
+    event({ landing: { x: Number.NaN, y: 3.5 } }),
+    event({ landing: { x: 2.5, y: Number.POSITIVE_INFINITY } }),
+    event({ landing: { x: 2.5, y: 3.5, z: 0 } }),
+    event({ debugLabel: "not-part-of-the-command" }),
+  ]) {
+    const recorder = new GhostInputRecorder("portable-decoy-invalid", 1 / 60);
+    recorder.record(0, {});
+    assert.equal(recorder.recordRuleEvent(invalid), false);
+    assert.equal(recorder.overflowed, false);
+  }
+
+  const ordered = new GhostInputRecorder("portable-decoy-order", 1 / 60);
+  ordered.record(0, {});
+  assert.equal(ordered.recordRuleEvent(event()), true);
+  assert.equal(ordered.recordRuleEvent(event({
+    tick: 9,
+    deploymentId: "decoy:deployment:2",
+    sourceId: "decoy:source:2",
+  })), false);
+
+  const valid = new GhostInputRecorder("portable-decoy-parse", 1 / 60);
+  valid.record(0, {});
+  valid.recordRuleEvent(event());
+  const validRecording = valid.finish(20);
+  assert.ok(validRecording);
+  const serialized = serializeGhostRecording(validRecording);
+  const malformedMutations = [
+    (raw) => { raw.ruleEvents[0].landing.x = null; },
+    (raw) => { raw.ruleEvents[0].landing.z = 0; },
+    (raw) => { raw.ruleEvents[0].sourceId = " "; },
+    (raw) => { raw.ruleEvents[0].deploymentId = "x".repeat(GHOST_REPLAY_ID_MAX_LENGTH + 1); },
+    (raw) => { raw.ruleEvents[0].unexpected = true; },
+  ];
+  for (const mutate of malformedMutations) {
+    const raw = JSON.parse(serialized);
+    mutate(raw);
+    assert.equal(
+      parseGhostRecording(resignSerializedGhost(raw)),
+      null,
+      "structurally illegal payload survived a valid checksum",
+    );
+  }
+
+  const invalidPayload = {
+    ...validRecording,
+    ruleEvents: [{
+      ...validRecording.ruleEvents[0],
+      landing: { x: Number.NaN, y: 3.5 },
+    }],
+  };
+  delete invalidPayload.checksum;
+  assert.throws(
+    () => serializeGhostRecording({
+      ...invalidPayload,
+      checksum: replayChecksum(invalidPayload),
+    }),
+    /invalid checksum/,
+  );
+});
+
+test("same-tick portable decoy order and rule-event byte/count budgets are deterministic", () => {
+  const ordered = new GhostInputRecorder("portable-decoy-same-tick", 1 / 60);
+  ordered.record(0, {});
+  for (const index of [3, 1, 2]) {
+    assert.equal(ordered.recordRuleEvent({
+      tick: 8,
+      type: "portable-decoy-thrown",
+      deploymentId: `deployment:${index}`,
+      sourceId: `source:${index}`,
+      landing: { x: index + 0.25, y: index + 0.75 },
+    }), true);
+  }
+  const orderedRecording = ordered.finish(12);
+  assert.ok(orderedRecording);
+  const parsedOrdered = parseGhostRecording(
+    serializeGhostRecording(orderedRecording),
+  );
+  assert.ok(parsedOrdered);
+  assert.deepEqual(
+    parsedOrdered.ruleEvents.map((event) => event.deploymentId),
+    ["deployment:3", "deployment:1", "deployment:2"],
+  );
+
+  const countBounded = new GhostInputRecorder("portable-decoy-count-budget", 1 / 60);
+  countBounded.record(0, {});
+  for (let index = 0; index < GHOST_REPLAY_MAX_RULE_EVENTS; index += 1) {
+    assert.equal(countBounded.recordRuleEvent({
+      tick: 1,
+      type: "portable-decoy-thrown",
+      deploymentId: `deployment:${index}`,
+      sourceId: `source:${index}`,
+      landing: { x: index / 10, y: 1 },
+    }), true);
+  }
+  assert.equal(countBounded.recordRuleEvent({
+    tick: 1,
+    type: "portable-decoy-thrown",
+    deploymentId: "deployment:overflow",
+    sourceId: "source:overflow",
+    landing: { x: 0, y: 1 },
+  }), false);
+  assert.equal(countBounded.overflowed, true);
+  assert.equal(countBounded.finish(1), null);
+
+  const byteBounded = new GhostInputRecorder(
+    "portable-decoy-byte-budget",
+    1 / 60,
+    { maximumBytes: 1024 },
+  );
+  byteBounded.record(0, {});
+  let accepted = 0;
+  for (let index = 0; index < 20; index += 1) {
+    const suffix = `${index}-${"x".repeat(76)}`;
+    if (!byteBounded.recordRuleEvent({
+      tick: 4,
+      type: "portable-decoy-thrown",
+      deploymentId: `deployment-${suffix}`,
+      sourceId: `source-${suffix}`,
+      landing: { x: index + 0.125, y: 2.5 },
+    })) break;
+    accepted += 1;
+  }
+  assert.ok(accepted > 0 && accepted < 20);
+  assert.equal(byteBounded.overflowed, true);
+  assert.equal(byteBounded.finish(4), null);
+});
+
+test("fixed-step input buffer preserves a sub-frame interaction edge at 144 Hz", () => {
+  const buffer = new GhostFixedStepInputBuffer();
+  buffer.stage(0, {
+    move: { x: 0, y: 0 },
+    interactPressed: false,
+  });
+  assert.equal(buffer.consumeIfAdvanced(0), null);
+  buffer.stage(0, {
+    move: { x: 1, y: 0 },
+    interactPressed: true,
+    sneakHeld: true,
+  });
+  buffer.stage(0, {
+    move: { x: 0, y: 1 },
+    interactPressed: false,
+    sneakHeld: false,
+  });
+  const committed = buffer.consumeIfAdvanced(1);
+  assert.equal(committed?.tick, 0);
+  assert.deepEqual(committed?.input.move, { x: 0, y: 1 });
+  assert.equal(committed?.input.interactPressed, true);
+  assert.equal(committed?.input.sneakHeld, false);
+  assert.equal(buffer.consumeIfAdvanced(2), null);
+
+  buffer.stage(1, { move: { x: -1, y: 0 } });
+  buffer.reset();
+  assert.equal(buffer.consumeIfAdvanced(2), null);
+});
+
+test("pre-step ghost recording reproduces fixed-step movement at 30/60/120/144 Hz", () => {
+  const walkable = Array.from({ length: 40 }, () => Array(40).fill(true));
+  const level = createLevel({
+    id: "ghost-render-rate-contract",
+    width: 40,
+    height: 40,
+    walkable,
+    playerStart: { x: 4, y: 4 },
+    exit: { x: 38, y: 38 },
+    chaserStart: { x: 38, y: 2 },
+    chaserStartHeading: { x: 0, y: 1 },
+    patrol: [{ x: 38, y: 36 }],
+    hideSpots: [],
+  });
+  const options = {
+    level,
+    autoStart: true,
+    config: {
+      fixedStepSeconds: 1 / 60,
+      spawnDelaySeconds: 999,
+    },
+  };
+
+  for (const renderRate of [30, 60, 120, 144]) {
+    const referenceSimulation = new GameSimulation(options);
+    const recorder = new GhostInputRecorder(`${level.id}:${renderRate}`, 1 / 60);
+    const buffer = new GhostFixedStepInputBuffer();
+    let renderFrame = 0;
+    let referenceState = referenceSimulation.getState();
+    while (referenceState.tick < 180) {
+      const preStepTick = referenceState.tick;
+      const input = {
+        move: preStepTick < 90 ? { x: 1, y: 0 } : { x: 0, y: 1 },
+        // At 144 Hz this edge lands on a render frame that cannot advance the
+        // fixed simulation by itself. The following neutral frame must not
+        // erase it from the recording.
+        interactPressed: renderRate === 144 && renderFrame === 1,
+      };
+      buffer.stage(preStepTick, input);
+      referenceState = referenceSimulation.advance(1 / renderRate, input);
+      const committed = buffer.consumeIfAdvanced(referenceState.tick);
+      if (committed) recorder.record(committed.tick, committed.input);
+      renderFrame += 1;
+    }
+    const recording = recorder.finish(referenceState.tick);
+    assert.ok(recording, `${renderRate} Hz recording failed`);
+    if (renderRate === 144) {
+      assert.equal(sampleGhostInput(recording, 0).interactPressed, true);
+      assert.equal(sampleGhostInput(recording, 1).interactPressed, false);
+    }
+
+    const replaySimulation = new GameSimulation(options);
+    const cursor = new GhostReplayCursor(recording);
+    let replayState = replaySimulation.getState();
+    while (replayState.tick < recording.durationTicks) {
+      replayState = replaySimulation.advance(
+        recording.fixedStepSeconds,
+        cursor.sample(replayState.tick),
+      );
+    }
+    const error = Math.hypot(
+      referenceState.player.position.x - replayState.player.position.x,
+      referenceState.player.position.y - replayState.player.position.y,
+    );
+    assert.ok(
+      error <= GHOST_POSITION_ERROR_BUDGET_CELLS,
+      `${renderRate} Hz replay drifted by ${error.toFixed(6)} cells`,
+    );
+    assert.equal(replayState.tick, referenceState.tick);
+  }
 });
 
 test("quantized replay stays deterministic inside the 0.1-cell personal ghost budget", () => {

@@ -106,3 +106,35 @@ test("Standard and assisted results retain separate best times, mastery, and unl
   assert.equal(migrated.bestSeconds.one, 25);
   assert.equal(migrated.assistedBestSeconds.one, 22);
 });
+
+test("branch-specific records persist without allowing record IDs to inflate chapter unlocks", () => {
+  const accessId = "two#mission-v2:library-g2-v1:access-authorization";
+  const fireId = "two#mission-v2:library-g2-v1:fire-release";
+  const result = evaluateRunMastery(28, 32, {
+    ...createRunTelemetry({ levelId: "two", ruleset: "standard" }),
+    detections: 0,
+    hideEntries: 1,
+    safeHideExits: 1,
+  });
+  let progress = recordCampaignCompletion(
+    createCampaignProgress(),
+    accessId,
+    31,
+    result,
+    3,
+  );
+  progress = recordCampaignCompletion(progress, fireId, 24, result, 3);
+
+  assert.equal(getCampaignRunRecord(progress, accessId).bestSeconds, 31);
+  assert.equal(getCampaignRunRecord(progress, fireId).bestSeconds, 24);
+  assert.equal(getCampaignRunRecord(progress, "two").bestSeconds, undefined);
+
+  const sanitized = sanitizeCampaignProgress(
+    { ...progress, unlockedThrough: 99 },
+    levelIds,
+    [...levelIds, accessId, fireId],
+  );
+  assert.equal(sanitized.unlockedThrough, 3);
+  assert.equal(getCampaignRunRecord(sanitized, accessId).bestSeconds, 31);
+  assert.equal(getCampaignRunRecord(sanitized, fireId).bestSeconds, 24);
+});

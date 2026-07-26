@@ -44,7 +44,7 @@ test("CI runs quality, deterministic build, tests and both audit policies", () =
   assert.doesNotMatch(WORKFLOW, /actions\/(?:checkout|setup-node)@v4/u);
 });
 
-test("every temporary high-severity tooling exception is justified and expires", async () => {
+test("tooling exceptions are empty when clean, or uniquely justified and expiring", async () => {
   const policy = JSON.parse(
     await readFile(
       new URL("../build/tooling-audit-allowlist.json", import.meta.url),
@@ -52,7 +52,7 @@ test("every temporary high-severity tooling exception is justified and expires",
     ),
   );
   assert.equal(policy.formatVersion, 1);
-  assert.ok(policy.exceptions.length > 0);
+  assert.ok(Array.isArray(policy.exceptions));
   assert.equal(
     new Set(policy.exceptions.map((entry) => entry.package)).size,
     policy.exceptions.length,

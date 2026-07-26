@@ -14,8 +14,9 @@ export interface ChaserBrainInput {
   /** Deliberately contains evidence, not PlayerState or playerPosition. */
   evidence: PerceptionEvidence;
   /**
-   * A simultaneously heard public sound. Visual evidence remains primary;
-   * this can only enter the bounded ledger/deferred queue.
+   * A simultaneously heard public sound. The primary visual or louder sound
+   * remains the navigation anchor; this can only enter the bounded
+   * ledger/deferred queue.
    */
   secondarySoundEvidence?: Extract<PerceptionEvidence, { kind: "sound" }>;
   reachedTarget: boolean;
@@ -584,6 +585,7 @@ export function stepChaserBrain(
   }
 
   if (input.evidence.kind === "sound") {
+    let secondarySoundHandled = false;
     const confidence = actionableSoundConfidence(next, input.evidence);
     const stableEnvironmentEmitter = Boolean(
       input.evidence.sourceId
@@ -599,6 +601,32 @@ export function stepChaserBrain(
           evidenceTrail: rememberPublicEvidence(next, input.evidence),
         },
       };
+      const secondary = input.secondarySoundEvidence;
+      if (secondary) {
+        const secondaryConfidence = actionableSoundConfidence(next, secondary);
+        const secondaryStableEnvironmentEmitter = Boolean(
+          secondary.sourceId
+          && ["environment-decoy", "environment-hazard"].includes(
+            soundSourceType(secondary),
+          ),
+        );
+        if (
+          !secondaryStableEnvironmentEmitter
+          || secondaryConfidence >= MIN_ACTIONABLE_SOUND_CONFIDENCE
+        ) {
+          const committedToVisualAnchor = state.memory.lastKnownEvidence === "visual"
+            && ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known"].includes(state.mode);
+          if (committedToVisualAnchor || state.mode === "check-hide") {
+            next = deferSoundEvidence(next, level, config, secondary, input.nowSeconds);
+          } else {
+            next = enterMode(rememberSoundTarget(next, secondary), "go-to-last-known");
+            return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
+          }
+        } else {
+          next = rememberConcurrentSound(next, level, config, secondary, input.nowSeconds);
+        }
+        secondarySoundHandled = true;
+      }
     } else {
       const committedToVisualAnchor = state.memory.lastKnownEvidence === "visual"
         && ["suspicious", "chase", "lost-sight", "go-to-last-known", "scan-last-known"].includes(state.mode);
@@ -609,8 +637,26 @@ export function stepChaserBrain(
         next = deferSoundEvidence(next, level, config, input.evidence, input.nowSeconds);
       } else {
         next = enterMode(rememberSoundTarget(next, input.evidence), "go-to-last-known");
+        if (input.secondarySoundEvidence) {
+          next = rememberConcurrentSound(
+            next,
+            level,
+            config,
+            input.secondarySoundEvidence,
+            input.nowSeconds,
+          );
+        }
         return { state: next, completedHideCheckId: null, completedHideCheckSource: null };
       }
+    }
+    if (input.secondarySoundEvidence && !secondarySoundHandled) {
+      next = rememberConcurrentSound(
+        next,
+        level,
+        config,
+        input.secondarySoundEvidence,
+        input.nowSeconds,
+      );
     }
   }
 

@@ -23,7 +23,14 @@ import {
   type ChaserArchetypeState,
   type ChaserArchetypeStimulus,
 } from "./chaser-archetypes.ts";
-import { getChaserTarget, hasReachedChaserTarget, createInitialChaser, lastKnownScanHeading, stepChaserBrain } from "./chaser-fsm.ts";
+import {
+  actionableSoundConfidence,
+  getChaserTarget,
+  hasReachedChaserTarget,
+  createInitialChaser,
+  lastKnownScanHeading,
+  stepChaserBrain,
+} from "./chaser-fsm.ts";
 import {
   auditHideArchetypeBindings,
   hideExitOptions,
@@ -166,6 +173,16 @@ export class GameSimulation {
   private heldExitEnabled = true;
   private heldHideExitChoice: HideExitKind = "origin";
   private pendingSound: SoundStimulus | null = null;
+  private readonly pendingWorldSounds: Array<{
+    readonly stimulus: SoundStimulus;
+    readonly notBeforeTick: number;
+    readonly sequence: number;
+  }> = [];
+  private worldSoundSequence = 0;
+  private worldSoundAcceptedCount = 0;
+  private worldSoundDeliveredCount = 0;
+  private lastDeliveredWorldSoundSourceId: string | null = null;
+  private lastDeliveredWorldSoundTick: number | null = null;
   private playerSoundCooldownSeconds = 0;
   private readonly initialPlayerPosition: Point;
   private readonly initialPlayerHeading: Point;
@@ -233,6 +250,12 @@ export class GameSimulation {
     this.heldExitEnabled = true;
     this.heldHideExitChoice = "origin";
     this.pendingSound = null;
+    this.pendingWorldSounds.length = 0;
+    this.worldSoundSequence = 0;
+    this.worldSoundAcceptedCount = 0;
+    this.worldSoundDeliveredCount = 0;
+    this.lastDeliveredWorldSoundSourceId = null;
+    this.lastDeliveredWorldSoundTick = null;
     this.playerSoundCooldownSeconds = 0;
     this.selectedHideExit = null;
     this.hideTurnPlan = null;
@@ -406,26 +429,80 @@ export class GameSimulation {
     };
   }
 
-  /**
-   * Queues one authored world sound for the next perception tick. This is the
-   * integration point for MechanicInstanceStep.emittedSoundStimulus; the
-   * stimulus still goes through navigable distance and uncertainty sampling.
-   */
-  emitWorldSound(stimulus: SoundStimulus): boolean {
+  private normalizeWorldSound(stimulus: SoundStimulus): SoundStimulus | null {
     if (
       !Number.isFinite(stimulus.position.x)
       || !Number.isFinite(stimulus.position.y)
       || !Number.isFinite(stimulus.strength)
       || stimulus.strength <= 0
-    ) return false;
-    const normalized: SoundStimulus = {
+    ) return null;
+    return {
       ...stimulus,
       position: copyPoint(stimulus.position),
       strength: clamp01(stimulus.strength),
     };
-    if (this.pendingSound && this.pendingSound.strength >= normalized.strength) return false;
-    this.pendingSound = normalized;
+  }
+
+  /**
+   * Queues an authored sound without allowing another same-frame source to
+   * overwrite it. The bounded queue is drained by deterministic AI ticks, so
+   * a mechanism and a portable decoy can both remain legally audible.
+   */
+  scheduleWorldSound(stimulus: SoundStimulus, notBeforeSeconds: number): boolean {
+    const normalized = this.normalizeWorldSound(stimulus);
+    if (
+      !normalized
+      || !Number.isFinite(notBeforeSeconds)
+      || notBeforeSeconds < 0
+      || this.pendingWorldSounds.length >= 24
+    ) return false;
+    const duplicate = normalized.sourceId
+      ? this.pendingWorldSounds.some(({ stimulus: queued }) => (
+          queued.sourceType === normalized.sourceType
+          && queued.sourceId === normalized.sourceId
+        ))
+      : false;
+    if (duplicate) return true;
+    const notBeforeTick = Math.max(
+      this.state.tick + 1,
+      Math.ceil(
+        (notBeforeSeconds - 1e-9) / this.config.fixedStepSeconds,
+      ),
+    );
+    this.pendingWorldSounds.push({
+      stimulus: normalized,
+      notBeforeTick,
+      sequence: this.worldSoundSequence,
+    });
+    this.worldSoundSequence += 1;
+    this.worldSoundAcceptedCount += 1;
     return true;
+  }
+
+  /**
+   * Immediate authored sound compatibility bridge. Unlike the legacy
+   * strongest-only slot, accepted sources are never silently replaced.
+   */
+  emitWorldSound(stimulus: SoundStimulus): boolean {
+    return this.scheduleWorldSound(stimulus, this.state.elapsedSeconds);
+  }
+
+  /** QA-only public snapshot; it contains authored evidence, never AI secrets. */
+  getWorldSoundQueueSnapshot() {
+    return {
+      authoredPending: this.pendingWorldSounds.map((entry) => ({
+        sourceType: entry.stimulus.sourceType,
+        sourceId: entry.stimulus.sourceId ?? null,
+        strength: entry.stimulus.strength,
+        notBeforeTick: entry.notBeforeTick,
+        sequence: entry.sequence,
+      })),
+      playerSoundPending: Boolean(this.pendingSound),
+      acceptedCount: this.worldSoundAcceptedCount,
+      deliveredCount: this.worldSoundDeliveredCount,
+      lastDeliveredSourceId: this.lastDeliveredWorldSoundSourceId,
+      lastDeliveredTick: this.lastDeliveredWorldSoundTick,
+    };
   }
 
   private validateConfig() {
@@ -1213,19 +1290,94 @@ export class GameSimulation {
             },
         this.state.elapsedSeconds,
       );
-      const sampledSound = this.pendingSound
-        ? sampleSoundPerception(
+      const sampleSound = (stimulus: SoundStimulus) => {
+        const sampled = sampleSoundPerception(
           this.level,
           this.state.chaser,
-          this.pendingSound,
+          stimulus,
           this.config,
           this.state.elapsedSeconds,
-        )
+        );
+        return sampled.kind === "sound" ? sampled : null;
+      };
+      const dueWorldSounds = this.pendingWorldSounds
+        .filter((entry) => entry.notBeforeTick <= this.state.tick)
+        .map((entry) => ({
+          entry,
+          evidence: sampleSound(entry.stimulus),
+        }))
+        .sort((left, right) => (
+          Number(Boolean(right.evidence)) - Number(Boolean(left.evidence))
+          || (
+            right.evidence
+              ? actionableSoundConfidence(this.state.chaser, right.evidence)
+              : 0
+          ) - (
+            left.evidence
+              ? actionableSoundConfidence(this.state.chaser, left.evidence)
+              : 0
+          )
+          || (right.evidence?.strength ?? 0) - (left.evidence?.strength ?? 0)
+          || right.entry.stimulus.strength - left.entry.stimulus.strength
+          || left.entry.notBeforeTick - right.entry.notBeforeTick
+          || left.entry.sequence - right.entry.sequence
+        ));
+      const selectedWorldSound = dueWorldSounds[0] ?? null;
+      const sampledPlayerSound = this.pendingSound
+        ? sampleSound(this.pendingSound)
         : null;
-      const secondarySoundEvidence = evidence.kind !== "none" && sampledSound?.kind === "sound"
-        ? sampledSound
-        : undefined;
-      if (evidence.kind === "none" && sampledSound) evidence = sampledSound;
+      const audibleSounds = [
+        ...(sampledPlayerSound
+          ? [{ source: "player" as const, evidence: sampledPlayerSound }]
+          : []),
+        ...(selectedWorldSound?.evidence
+          ? [{ source: "world" as const, evidence: selectedWorldSound.evidence }]
+          : []),
+      ].sort((left, right) => (
+        actionableSoundConfidence(this.state.chaser, right.evidence)
+          - actionableSoundConfidence(this.state.chaser, left.evidence)
+        || right.evidence.strength - left.evidence.strength
+        || Number(right.source === "player") - Number(left.source === "player")
+      ));
+      let secondarySoundEvidence:
+        | Extract<PerceptionEvidence, { kind: "sound" }>
+        | undefined;
+      let selectedWorldSoundUsed = false;
+      if (evidence.kind === "none") {
+        const primarySound = audibleSounds[0];
+        if (primarySound) {
+          evidence = primarySound.evidence;
+          selectedWorldSoundUsed ||= primarySound.source === "world";
+        }
+        const secondarySound = audibleSounds[1];
+        if (secondarySound) {
+          secondarySoundEvidence = secondarySound.evidence;
+          selectedWorldSoundUsed ||= secondarySound.source === "world";
+        }
+      } else {
+        const secondarySound = audibleSounds[0];
+        if (secondarySound) {
+          secondarySoundEvidence = secondarySound.evidence;
+          selectedWorldSoundUsed = secondarySound.source === "world";
+        }
+      }
+      const consumeSelectedWorldSound = Boolean(
+        selectedWorldSound
+        && (
+          selectedWorldSoundUsed
+          || selectedWorldSound.evidence === null
+        )
+      );
+      if (consumeSelectedWorldSound && selectedWorldSound) {
+        const selectedIndex = this.pendingWorldSounds.indexOf(
+          selectedWorldSound.entry,
+        );
+        if (selectedIndex >= 0) this.pendingWorldSounds.splice(selectedIndex, 1);
+        this.worldSoundDeliveredCount += 1;
+        this.lastDeliveredWorldSoundSourceId =
+          selectedWorldSound.entry.stimulus.sourceId ?? null;
+        this.lastDeliveredWorldSoundTick = this.state.tick;
+      }
       // A step or door edge is a transient. Consuming it once prevents a
       // single sound from resetting the search timer on every AI tick.
       this.pendingSound = null;
@@ -1257,6 +1409,8 @@ export class GameSimulation {
           type: "evidence-investigation-completed",
           evidenceId: result.completedSoundInvestigation.sourceId,
           sourceType: result.completedSoundInvestigation.sourceType,
+          completedAtSeconds: this.state.elapsedSeconds,
+          completedAtTick: this.state.tick,
         });
       }
       if (result.completedHideCheckId) {

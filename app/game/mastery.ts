@@ -3,10 +3,11 @@ import type {
   GamePhase,
   LevelDefinition,
   PlayerMode,
+  Point,
   SimulationEvent,
 } from "./contracts.ts";
 import { DEFAULT_GAME_CONFIG } from "./level.ts";
-import { findPath } from "./navigation.ts";
+import { findPath, isWalkable } from "./navigation.ts";
 import {
   auditThemeMissionSoftlock,
   planThemeMissionPlacements,
@@ -114,17 +115,56 @@ export interface RunMasteryResult {
   challenges: readonly MasteryChallenge[];
 }
 
-export interface MasteryMissionRoute {
+export interface ThemeMasteryMissionRoute {
+  readonly kind?: "theme";
   readonly definition: ThemeMissionDefinition;
   readonly placements: readonly MissionObjectivePlacement[];
+}
+
+export interface OrderedMasteryMissionObjective {
+  readonly id: string;
+  readonly position: Point;
+  readonly commitmentSeconds: number;
+}
+
+/**
+ * A runtime-authored linear route. Array order is authoritative: mastery must
+ * prove spawn → objective[0..n] → the active level exit, never substitute a
+ * shorter permutation.
+ */
+export interface OrderedMasteryMissionRoute {
+  readonly kind: "ordered";
+  readonly id: string;
+  readonly objectives: readonly OrderedMasteryMissionObjective[];
+}
+
+export type MasteryMissionRoute =
+  | ThemeMasteryMissionRoute
+  | OrderedMasteryMissionRoute;
+
+export interface OrderedMasteryMissionLegAudit {
+  readonly fromId: "spawn" | string;
+  readonly toId: "exit" | string;
+  readonly reachable: boolean;
+  readonly distanceCells: number | null;
+}
+
+export interface OrderedMasteryMissionAudit {
+  readonly passed: boolean;
+  readonly failures: readonly string[];
+  readonly objectiveIds: readonly string[];
+  readonly legs: readonly OrderedMasteryMissionLegAudit[];
+  readonly routeDistanceCells: number | null;
+  readonly objectiveSeconds: number;
 }
 
 export interface MasteryTargetOptions {
   readonly context?: Readonly<MasteryContext>;
   /**
-   * Runtime-authored placements take priority (notably certified Remix
-   * variants). Campaign originals otherwise receive the deterministic route
-   * plan from theme-objectives.
+   * Runtime-authored routes take priority (notably certified Remix variants
+   * and G2 branching plans). Use kind:"ordered" when objective sequence is
+   * gameplay-authoritative. Campaign originals otherwise receive the
+   * deterministic route plan from theme-objectives.
    */
   readonly mission?: Readonly<MasteryMissionRoute> | null;
   readonly challengeIds?: readonly MasteryChallengeId[];
@@ -452,6 +492,124 @@ function finitePositive(value: number | undefined, fallback: number): number {
   return Number.isFinite(value) && Number(value) > 0 ? Number(value) : fallback;
 }
 
+function freezeOrderedMissionRoute(
+  route: Readonly<OrderedMasteryMissionRoute>,
+): OrderedMasteryMissionRoute {
+  return Object.freeze({
+    kind: "ordered",
+    id: route.id,
+    objectives: Object.freeze(route.objectives.map((objective) => Object.freeze({
+      id: objective.id,
+      position: Object.freeze({ ...objective.position }),
+      commitmentSeconds: objective.commitmentSeconds,
+    }))),
+  });
+}
+
+function freezeThemeMissionRoute(
+  route: Readonly<ThemeMasteryMissionRoute>,
+): ThemeMasteryMissionRoute {
+  return Object.freeze({
+    kind: "theme",
+    definition: route.definition,
+    placements: Object.freeze([...route.placements]),
+  });
+}
+
+/**
+ * Audits a linear runtime route without widening ThemeMissionDefinition.
+ * This is used by branching missions after one plan and one physical exit are
+ * selected. It rejects malformed authoring and proves every exact leg.
+ */
+export function auditOrderedMasteryMissionRoute(
+  level: LevelDefinition,
+  route: Readonly<OrderedMasteryMissionRoute>,
+): OrderedMasteryMissionAudit {
+  const failures: string[] = [];
+  const legs: OrderedMasteryMissionLegAudit[] = [];
+  const objectiveIds = route.objectives.map(({ id }) => id);
+  let objectiveSeconds = 0;
+
+  if (!route.id.trim()) failures.push("Ordered mastery mission id must not be empty");
+  if (route.objectives.length === 0) {
+    failures.push("Ordered mastery mission requires at least one objective");
+  }
+  const seen = new Set<string>();
+  for (const objective of route.objectives) {
+    if (!objective.id.trim()) {
+      failures.push("Ordered mastery objective id must not be empty");
+    } else if (seen.has(objective.id)) {
+      failures.push(`Duplicate ordered mastery objective ${objective.id}`);
+    }
+    seen.add(objective.id);
+    if (
+      !Number.isFinite(objective.position.x)
+      || !Number.isFinite(objective.position.y)
+    ) {
+      failures.push(`Ordered mastery objective ${objective.id} has an invalid position`);
+    } else if (!isWalkable(level, objective.position)) {
+      failures.push(`Ordered mastery objective ${objective.id} is not on a walkable cell`);
+    }
+    if (
+      !Number.isFinite(objective.commitmentSeconds)
+      || objective.commitmentSeconds < 0
+    ) {
+      failures.push(`Ordered mastery objective ${objective.id} has an invalid commitment time`);
+    } else {
+      objectiveSeconds += objective.commitmentSeconds;
+    }
+  }
+
+  let cursor = level.playerStart;
+  let cursorId = "spawn";
+  let routeDistanceCells = 0;
+  if (failures.length === 0) {
+    for (const objective of route.objectives) {
+      const path = findPath(level, cursor, objective.position);
+      const reachable = path.length > 0;
+      const distanceCells = reachable ? path.length - 1 : null;
+      legs.push(Object.freeze({
+        fromId: cursorId,
+        toId: objective.id,
+        reachable,
+        distanceCells,
+      }));
+      if (distanceCells === null) {
+        failures.push(`Unreachable ordered mastery leg ${cursorId} -> ${objective.id}`);
+        break;
+      }
+      routeDistanceCells += distanceCells;
+      cursor = objective.position;
+      cursorId = objective.id;
+    }
+    if (failures.length === 0) {
+      const path = findPath(level, cursor, level.exit);
+      const reachable = path.length > 0;
+      const distanceCells = reachable ? path.length - 1 : null;
+      legs.push(Object.freeze({
+        fromId: cursorId,
+        toId: "exit",
+        reachable,
+        distanceCells,
+      }));
+      if (distanceCells !== null) {
+        routeDistanceCells += distanceCells;
+      } else {
+        failures.push(`Unreachable ordered mastery leg ${cursorId} -> exit`);
+      }
+    }
+  }
+
+  return Object.freeze({
+    passed: failures.length === 0,
+    failures: Object.freeze(failures),
+    objectiveIds: Object.freeze([...objectiveIds]),
+    legs: Object.freeze(legs),
+    routeDistanceCells: failures.length === 0 ? routeDistanceCells : null,
+    objectiveSeconds,
+  });
+}
+
 /**
  * Produces an auditable lower-bound plan instead of guessing from the direct
  * exit route. Mission topology, non-movement interactions, profile-specific
@@ -476,15 +634,14 @@ export function masteryTargetPlan(
   const ruleset: RunRuleset = context.ruleset === "assisted" ? "assisted" : "standard";
   const theme = campaignThemeFor(level, context);
   let mission: MasteryMissionRoute | null = options.mission
-    ? Object.freeze({
-        definition: options.mission.definition,
-        placements: Object.freeze([...options.mission.placements]),
-      })
+    ? options.mission.kind === "ordered"
+      ? freezeOrderedMissionRoute(options.mission)
+      : freezeThemeMissionRoute(options.mission)
     : null;
   if (options.mission === undefined && theme) {
     const definition = themeMissionDefinition(theme);
     const planned = planThemeMissionPlacements(level, definition);
-    mission = Object.freeze({
+    mission = freezeThemeMissionRoute({
       definition,
       placements: planned.placements,
     });
@@ -493,22 +650,34 @@ export function masteryTargetPlan(
   let missionRouteDistanceCells = directRouteDistanceCells;
   let missionObjectiveSeconds = 0;
   if (mission) {
-    const audit = auditThemeMissionSoftlock(
-      level,
-      mission.definition,
-      mission.placements,
-    );
-    if (!audit.passed || audit.shortestOrderDistanceCells === null) {
-      throw new Error(`Mastery mission route is invalid: ${audit.failures.join("; ")}`);
+    if (mission.kind === "ordered") {
+      const audit = auditOrderedMasteryMissionRoute(level, mission);
+      if (!audit.passed || audit.routeDistanceCells === null) {
+        throw new Error(`Mastery ordered mission route is invalid: ${audit.failures.join("; ")}`);
+      }
+      missionRouteDistanceCells = Math.max(
+        directRouteDistanceCells,
+        audit.routeDistanceCells,
+      );
+      missionObjectiveSeconds = audit.objectiveSeconds;
+    } else {
+      const audit = auditThemeMissionSoftlock(
+        level,
+        mission.definition,
+        mission.placements,
+      );
+      if (!audit.passed || audit.shortestOrderDistanceCells === null) {
+        throw new Error(`Mastery mission route is invalid: ${audit.failures.join("; ")}`);
+      }
+      missionRouteDistanceCells = Math.max(
+        directRouteDistanceCells,
+        audit.shortestOrderDistanceCells,
+      );
+      missionObjectiveSeconds = mission.definition.objectives.reduce(
+        (sum, objective) => sum + objective.commitmentSeconds,
+        0,
+      );
     }
-    missionRouteDistanceCells = Math.max(
-      directRouteDistanceCells,
-      audit.shortestOrderDistanceCells,
-    );
-    missionObjectiveSeconds = mission.definition.objectives.reduce(
-      (sum, objective) => sum + objective.commitmentSeconds,
-      0,
-    );
   }
 
   const challengeIds = options.challengeIds
@@ -627,9 +796,27 @@ export function previewRunMastery(
   level: LevelDefinition,
   config: Partial<GameConfig>,
   context?: Readonly<MasteryContext>,
+): RunMasteryPreview;
+export function previewRunMastery(
+  level: LevelDefinition,
+  config: Partial<GameConfig>,
+  options?: Readonly<MasteryTargetOptions>,
+): RunMasteryPreview;
+export function previewRunMastery(
+  level: LevelDefinition,
+  config: Partial<GameConfig>,
+  contextOrOptions?: Readonly<MasteryContext> | Readonly<MasteryTargetOptions>,
 ): RunMasteryPreview {
+  const options: Readonly<MasteryTargetOptions> = contextOrOptions
+    && "levelId" in contextOrOptions
+    ? { context: contextOrOptions }
+    : contextOrOptions ?? {};
+  const context = options.context ?? {
+    levelId: level.id,
+    theme: campaignThemeFor(level),
+  };
   const profile = getMasteryProfile(context);
-  const targetSeconds = masteryTargetSeconds(level, config, { context });
+  const targetSeconds = masteryTargetSeconds(level, config, options);
   const ruleset = context?.ruleset === "assisted" ? "assisted" : "standard";
   return Object.freeze({
     targetSeconds,

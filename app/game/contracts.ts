@@ -291,6 +291,8 @@ export type SimulationEvent =
       type: "evidence-investigation-completed";
       evidenceId: string;
       sourceType: SoundEvidenceSourceType;
+      completedAtSeconds: number;
+      completedAtTick: number;
     }
   | { type: "hide-check-completed"; hideSpotId: string; occupied: boolean }
   | { type: "player-captured"; reason: CaptureReason }

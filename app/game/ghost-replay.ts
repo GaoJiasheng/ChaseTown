@@ -5,6 +5,8 @@ export const GHOST_MOVE_QUANTIZATION = 127;
 export const GHOST_REPLAY_MAX_BYTES = 64 * 1024;
 export const GHOST_LIBRARY_MAX_BYTES = 512 * 1024;
 export const GHOST_POSITION_ERROR_BUDGET_CELLS = 0.1;
+export const GHOST_REPLAY_MAX_RULE_EVENTS = 96;
+export const GHOST_REPLAY_ID_MAX_LENGTH = 120;
 
 const FLAG_PEEK = 1;
 const FLAG_SNEAK = 2;
@@ -34,6 +36,13 @@ export type GhostRuleReplayEvent =
   | {
       readonly tick: number;
       readonly type: "run-completed";
+    }
+  | {
+      readonly tick: number;
+      readonly type: "portable-decoy-thrown";
+      readonly deploymentId: string;
+      readonly sourceId: string;
+      readonly landing: Point;
     };
 
 export interface GhostReplayPayload {
@@ -80,6 +89,11 @@ export interface GhostRecorderOptions {
   readonly maximumBytes?: number;
 }
 
+export interface BufferedGhostInput {
+  readonly tick: number;
+  readonly input: Readonly<SimulationInput>;
+}
+
 export interface KeyValueStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -101,6 +115,73 @@ function inputFlags(input: Readonly<SimulationInput>): number {
     | (input.sneakHeld ? FLAG_SNEAK : 0)
     | (input.hideExitChoice === "alternate" ? FLAG_ALTERNATE_EXIT : 0)
     | (input.interactPressed ? FLAG_INTERACT : 0);
+}
+
+function copySimulationInput(
+  input: Readonly<SimulationInput>,
+  interactPressed = Boolean(input.interactPressed),
+): Readonly<SimulationInput> {
+  return Object.freeze({
+    ...(input.move
+      ? { move: Object.freeze({ x: input.move.x, y: input.move.y }) }
+      : {}),
+    interactPressed,
+    peekHeld: Boolean(input.peekHeld),
+    sneakHeld: Boolean(input.sneakHeld),
+    ...(input.environmentSoundMasking === undefined
+      ? {}
+      : { environmentSoundMasking: input.environmentSoundMasking }),
+    ...(input.visionRangeMultiplier === undefined
+      ? {}
+      : { visionRangeMultiplier: input.visionRangeMultiplier }),
+    ...(input.exitEnabled === undefined
+      ? {}
+      : { exitEnabled: input.exitEnabled }),
+    ...(input.hideExitChoice === undefined
+      ? {}
+      : { hideExitChoice: input.hideExitChoice }),
+  });
+}
+
+/**
+ * Render frames and deterministic simulation steps do not have a 1:1
+ * relationship. This buffer mirrors GameSimulation's held-input semantics
+ * while preserving interaction edges until the next fixed step actually
+ * executes. The committed tick is therefore the pre-step tick consumed by
+ * GhostReplayCursor, independent of 30/60/120/144 Hz rendering.
+ */
+export class GhostFixedStepInputBuffer {
+  private pending: BufferedGhostInput | null = null;
+
+  stage(tick: number, input: Readonly<SimulationInput>): void {
+    if (!Number.isInteger(tick) || tick < 0) {
+      throw new Error("Ghost input buffer tick must be a non-negative integer");
+    }
+    if (this.pending && this.pending.tick !== tick) {
+      throw new Error("Ghost input buffer must be consumed before staging a new tick");
+    }
+    this.pending = Object.freeze({
+      tick,
+      input: copySimulationInput(
+        input,
+        Boolean(this.pending?.input.interactPressed) || Boolean(input.interactPressed),
+      ),
+    });
+  }
+
+  consumeIfAdvanced(currentTick: number): BufferedGhostInput | null {
+    if (!Number.isInteger(currentTick) || currentTick < 0) {
+      throw new Error("Ghost input buffer tick must be a non-negative integer");
+    }
+    if (!this.pending || currentTick <= this.pending.tick) return null;
+    const committed = this.pending;
+    this.pending = null;
+    return committed;
+  }
+
+  reset(): void {
+    this.pending = null;
+  }
 }
 
 function utf8Bytes(value: string): number {
@@ -151,6 +232,31 @@ function validKeyframe(value: unknown, previousTick: number, durationTicks: numb
     && flags <= (HELD_FLAGS | FLAG_INTERACT);
 }
 
+function hasExactOwnKeys(value: object, expected: readonly string[]): boolean {
+  const keys = Object.keys(value);
+  return Object.getOwnPropertySymbols(value).length === 0
+    && keys.length === expected.length
+    && expected.every((key) => Object.hasOwn(value, key));
+}
+
+function validReplayIdentity(value: unknown): value is string {
+  return typeof value === "string"
+    && value.length > 0
+    && value.length <= GHOST_REPLAY_ID_MAX_LENGTH
+    && value.trim() === value
+    && !/[\u0000-\u001f\u007f]/u.test(value);
+}
+
+function validLandingPoint(value: unknown): value is Point {
+  if (!value || typeof value !== "object") return false;
+  const point = value as Partial<Point>;
+  return hasExactOwnKeys(value, ["x", "y"])
+    && typeof point.x === "number"
+    && Number.isFinite(point.x)
+    && typeof point.y === "number"
+    && Number.isFinite(point.y);
+}
+
 function validRuleReplayEvent(
   value: unknown,
   previousTick: number,
@@ -160,6 +266,9 @@ function validRuleReplayEvent(
   const event = value as Partial<GhostRuleReplayEvent> & {
     readonly objectiveId?: unknown;
     readonly mechanicId?: unknown;
+    readonly deploymentId?: unknown;
+    readonly sourceId?: unknown;
+    readonly landing?: unknown;
   };
   if (
     !Number.isInteger(event.tick)
@@ -179,9 +288,38 @@ function validRuleReplayEvent(
         && event.mechanicId.length <= 120;
     case "run-completed":
       return true;
+    case "portable-decoy-thrown":
+      return hasExactOwnKeys(value, [
+        "tick",
+        "type",
+        "deploymentId",
+        "sourceId",
+        "landing",
+      ])
+        && validReplayIdentity(event.deploymentId)
+        && validReplayIdentity(event.sourceId)
+        && validLandingPoint(event.landing);
     default:
       return false;
   }
+}
+
+function freezeRuleReplayEvent(
+  event: Readonly<GhostRuleReplayEvent>,
+): GhostRuleReplayEvent {
+  if (event.type === "portable-decoy-thrown") {
+    return Object.freeze({
+      tick: event.tick,
+      type: event.type,
+      deploymentId: event.deploymentId,
+      sourceId: event.sourceId,
+      landing: Object.freeze({
+        x: event.landing.x,
+        y: event.landing.y,
+      }),
+    });
+  }
+  return Object.freeze({ ...event }) as GhostRuleReplayEvent;
 }
 
 function validatePayload(value: unknown): GhostReplayPayload | null {
@@ -213,7 +351,7 @@ function validatePayload(value: unknown): GhostReplayPayload | null {
   const rawRuleEvents = (value as { ruleEvents?: unknown }).ruleEvents;
   if (
     rawRuleEvents !== undefined
-    && (!Array.isArray(rawRuleEvents) || rawRuleEvents.length > 96)
+    && (!Array.isArray(rawRuleEvents) || rawRuleEvents.length > GHOST_REPLAY_MAX_RULE_EVENTS)
   ) return null;
   let previousRuleTick = -1;
   const ruleEvents: GhostRuleReplayEvent[] = [];
@@ -222,7 +360,7 @@ function validatePayload(value: unknown): GhostReplayPayload | null {
       return null;
     }
     previousRuleTick = Number(event.tick);
-    ruleEvents.push(Object.freeze({ ...event }) as GhostRuleReplayEvent);
+    ruleEvents.push(freezeRuleReplayEvent(event));
   }
   return {
     version: GHOST_REPLAY_VERSION,
@@ -241,6 +379,7 @@ export class GhostInputRecorder {
 
   private readonly frames: GhostKeyframe[] = [];
   private readonly ruleEvents: GhostRuleReplayEvent[] = [];
+  private ruleEventStorageBytes = 0;
   private lastTick = -1;
   private lastMoveX = 0;
   private lastMoveY = 0;
@@ -273,6 +412,31 @@ export class GhostInputRecorder {
     return this.exceededBudget;
   }
 
+  private estimatedStorageBytes(
+    ruleEvents: readonly GhostRuleReplayEvent[] = this.ruleEvents,
+    durationTicks = Math.max(
+      0,
+      this.lastTick,
+      ruleEvents.at(-1)?.tick ?? -1,
+    ),
+  ): number {
+    const keyframes: readonly GhostKeyframe[] = this.frames.length > 0
+      ? this.frames
+      : [Object.freeze([0, 0, 0, 0]) as GhostKeyframe];
+    const payload: GhostReplayPayload = {
+      version: GHOST_REPLAY_VERSION,
+      levelId: this.levelId,
+      fixedStepSeconds: this.fixedStepSeconds,
+      durationTicks,
+      keyframes,
+      ...(ruleEvents.length ? { ruleEvents } : {}),
+    };
+    return utf8Bytes(JSON.stringify({
+      ...payload,
+      checksum: checksumPayload(payload),
+    }));
+  }
+
   recordRuleEvent(event: Readonly<GhostRuleReplayEvent>): boolean {
     if (
       this.exceededBudget
@@ -282,15 +446,22 @@ export class GhostInputRecorder {
         Number.MAX_SAFE_INTEGER,
       )
     ) return false;
+    const frozenEvent = freezeRuleReplayEvent(event);
     const previous = this.ruleEvents.at(-1);
     const duplicate = previous
-      && JSON.stringify(previous) === JSON.stringify(event);
+      && JSON.stringify(previous) === JSON.stringify(frozenEvent);
     if (duplicate) return true;
-    this.ruleEvents.push(Object.freeze({ ...event }) as GhostRuleReplayEvent);
-    if (this.frames.length * 28 + this.ruleEvents.length * 96 > this.maximumBytes) {
+    if (this.ruleEvents.length >= GHOST_REPLAY_MAX_RULE_EVENTS) {
       this.exceededBudget = true;
       return false;
     }
+    const candidateEvents = [...this.ruleEvents, frozenEvent];
+    if (this.estimatedStorageBytes(candidateEvents) > this.maximumBytes) {
+      this.exceededBudget = true;
+      return false;
+    }
+    this.ruleEvents.push(frozenEvent);
+    this.ruleEventStorageBytes += utf8Bytes(JSON.stringify(frozenEvent)) + 1;
     return true;
   }
 
@@ -321,7 +492,10 @@ export class GhostInputRecorder {
 
     // A compact tuple generally costs 12–24 bytes in JSON. This conservative
     // guard prevents unbounded memory before finish() performs the exact check.
-    if (this.frames.length * 28 > this.maximumBytes) {
+    if (
+      this.frames.length * 28 + this.ruleEventStorageBytes + 192 > this.maximumBytes
+      && this.estimatedStorageBytes() > this.maximumBytes
+    ) {
       this.exceededBudget = true;
       return false;
     }
@@ -429,8 +603,8 @@ export class GhostReplayCursor {
 }
 
 export function serializeGhostRecording(recording: Readonly<GhostRecording>): string {
-  const payload = payloadFrom(recording);
-  if (checksumPayload(payload) !== recording.checksum) {
+  const payload = validatePayload(payloadFrom(recording));
+  if (!payload || checksumPayload(payload) !== recording.checksum) {
     throw new Error("Cannot serialize a ghost with an invalid checksum");
   }
   return JSON.stringify({ ...payload, checksum: recording.checksum });

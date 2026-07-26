@@ -538,6 +538,70 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
   background: rgba(28, 14, 5, .83);
 }
 .theme-mechanic.phase-warning > span { background: #ff9e4d; box-shadow: 0 0 19px #ff9e4d; }
+
+.portable-decoy-status {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 14px;
+  width: min(330px, calc(100% - 420px));
+  overflow: hidden;
+  border: 1px solid rgba(255, 191, 103, .4);
+  border-radius: 11px;
+  background:
+    linear-gradient(110deg, rgba(255, 183, 88, .11), transparent 46%),
+    var(--hud-surface-strong);
+  box-shadow: 0 13px 34px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 230, 190, .06);
+  backdrop-filter: blur(11px) saturate(1.08);
+  transform: translateX(-50%);
+  animation: hud-card-in .24s ease-out;
+}
+.portable-decoy-status > button {
+  width: 100%;
+  min-height: 47px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px 8px;
+  border: 0;
+  color: #f4efe5;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.portable-decoy-status > button:disabled { cursor: default; opacity: .72; }
+.portable-decoy-status > button > span {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 31px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 214, 146, .52);
+  border-radius: 4px 8px 8px 4px;
+  color: #ffce7e;
+  background: linear-gradient(135deg, rgba(255, 202, 119, .2), rgba(35, 19, 7, .58));
+  box-shadow: inset 3px 0 0 rgba(255, 231, 190, .18), 0 0 15px rgba(255, 180, 76, .11);
+  font-size: 11px;
+}
+.portable-decoy-status > button > div { min-width: 0; flex: 1; }
+.portable-decoy-status small,
+.portable-decoy-status strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portable-decoy-status small { color: #d9a85f; font-size: 8px; font-weight: 850; letter-spacing: .08em; }
+.portable-decoy-status strong { margin-top: 2px; font-size: 10px; }
+.portable-decoy-status kbd { color: #ffc976; border-color: rgba(255, 201, 118, .4); }
+.portable-decoy-status > i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--decoy-progress, 0%);
+  height: 2px;
+  background: #ffc36c;
+  box-shadow: 0 0 10px #ffb55a;
+  transition: right .1s linear;
+}
+.portable-decoy-status.phase-ready { border-color: rgba(90, 224, 160, .5); }
+.portable-decoy-status.phase-ready > button > span { color: var(--safe); border-color: rgba(90, 224, 160, .52); }
+.portable-decoy-status.phase-depleted { filter: saturate(.45); }
 .theme-mechanic.phase-cooldown { opacity: .78; }
 .theme-mechanic.phase-cooldown > span { animation: none; opacity: .48; }
 
@@ -979,6 +1043,45 @@ button:focus-visible, [tabindex]:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.mission-briefing > .library-plan-selector {
+  grid-column: 1 / -1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding: 7px;
+  border-color: rgba(255, 193, 105, .24);
+  background:
+    linear-gradient(100deg, rgba(255, 190, 92, .07), transparent 58%),
+    rgba(2, 8, 11, .5);
+}
+.library-plan-selector button {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 7px;
+  color: #dce6e6;
+  background: rgba(255, 255, 255, .025);
+  text-align: left;
+  cursor: pointer;
+}
+.library-plan-selector button:hover {
+  border-color: rgba(255, 203, 126, .34);
+  background: rgba(255, 190, 90, .065);
+}
+.library-plan-selector button[aria-pressed="true"] {
+  color: #fff4dd;
+  border-color: rgba(255, 197, 107, .68);
+  background:
+    linear-gradient(135deg, rgba(255, 184, 76, .16), transparent),
+    rgba(255, 255, 255, .035);
+  box-shadow: inset 0 0 0 1px rgba(255, 215, 150, .08), 0 0 18px rgba(255, 171, 61, .07);
+}
+.library-plan-selector b { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.library-plan-selector small { color: #82959b; font-size: 8px; line-height: 1.35; }
+.library-plan-selector button[aria-pressed="true"] small { color: #c9ae82; }
 .run-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1085,7 +1188,7 @@ button:focus-visible, [tabindex]:focus-visible {
 .mastery-preview span small { overflow: hidden; color: #7f929b; font-size: 8px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .primary { min-height: 44px; border: 0; border-radius: 9px; padding: 11px 15px 11px 18px; color: #11170f; background: linear-gradient(135deg, #efd079, #dbaa50); box-shadow: 0 10px 28px rgba(232, 189, 104, .2); font-weight: 850; cursor: pointer; transition: transform .16s ease, filter .16s ease; }
 .primary:hover { filter: brightness(1.07); transform: translateY(-1px); }
-.overlay-actions { display: flex; align-items: center; gap: 9px; }
+.overlay-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
 .secondary { min-height: 44px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 9px; padding: 11px 14px; color: #dce6e9; background: rgba(255, 255, 255, .045); cursor: pointer; }
 .secondary:hover { border-color: color-mix(in srgb, var(--theme-accent, var(--gold)) 55%, transparent); background: rgba(255, 255, 255, .075); }
 kbd { margin-left: 14px; padding: 3px 6px; border: 1px solid rgba(0, 0, 0, .24); border-radius: 4px; font-size: 10px; }
@@ -1186,6 +1289,12 @@ kbd { margin-left: 14px; padding: 3px 6px; border: 1px solid rgba(0, 0, 0, .24);
 .action-controls { right: 15px; bottom: 53px; flex-direction: column; gap: 7px; }
 .action-controls button { min-width: 108px; min-height: 44px; padding: 8px 12px; font-size: 11px; }
 .action-controls button.available { color: #07130d; border-color: rgba(90, 224, 160, .72); background: var(--safe); font-weight: 800; box-shadow: 0 0 22px rgba(90, 224, 160, .22); }
+.action-controls button.decoy-action.available {
+  color: #211507;
+  border-color: rgba(255, 202, 119, .72);
+  background: #ffc976;
+  box-shadow: 0 0 22px rgba(255, 181, 80, .2);
+}
 .action-controls button:disabled { cursor: default; opacity: .54; }
 
 footer { display: flex; align-items: center; gap: 19px; min-height: 21px; color: var(--muted); font-size: 11px; }
@@ -1221,6 +1330,7 @@ footer small { margin-left: auto; color: #687882; }
   .playfield { border-radius: 12px; }
   .controls { display: block; }
   .action-controls { display: flex; }
+  .portable-decoy-status { display: none; }
   .view-controls {
     top: auto;
     right: 50%;
@@ -1377,8 +1487,18 @@ footer small { margin-left: auto; color: #687882; }
   }
   .hud-full .stats > button { min-height: 44px; font-size: 9px; }
 
-  .view-controls { right: 50%; bottom: 7px; padding: 3px; }
+  /* Three 44px camera targets cannot share the 360–390px bottom row with
+     both the joystick and action lane. Lift them into a dedicated tier. */
+  .view-controls { right: 50%; bottom: 168px; padding: 3px; }
   .view-controls button { min-width: 44px; height: 44px; }
+  /* Contextual interaction owns the same central attention lane. Temporarily
+     retire camera tuning instead of leaving three visually present controls
+     underneath a higher-z prompt. */
+  .playfield:has(.interaction-prompt) .view-controls,
+  .playfield.mission-commitment-active .view-controls {
+    opacity: 0;
+    pointer-events: none;
+  }
 
   /* The two decisive reads stay full-width in their lane. Secondary route
      hints become corner instruments below them so the actor/corridor core is
@@ -1501,7 +1621,10 @@ footer small { margin-left: auto; color: #687882; }
     background: rgba(5, 10, 15, .66);
     box-shadow: 0 6px 16px rgba(0, 0, 0, .2);
   }
-  .action-controls { right: 10px; bottom: 12px; }
+  /* Keep the two right-hand actions above the centered three-button camera
+     strip. At 360–390px the former shared baseline caused a real hit-target
+     overlap even though neither control overflowed the viewport. */
+  .action-controls { right: 10px; bottom: 66px; }
   .action-controls button { min-width: 96px; min-height: 44px; }
   .action-controls button:first-child:disabled { display: none; }
   .overlay-card {
@@ -1569,6 +1692,17 @@ footer small { margin-left: auto; color: #687882; }
     scroll-snap-align: start;
   }
   .mission-briefing > div { padding-block: 6px; }
+  .mission-briefing > .library-plan-selector {
+    flex-basis: min(94%, 360px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: stretch;
+    padding: 6px;
+  }
+  .library-plan-selector button { padding: 7px 8px; }
+  .library-plan-selector small {
+    overflow: visible;
+    white-space: normal;
+  }
   .mission-briefing > span {
     grid-template-columns: 16px minmax(0, 1fr);
     padding: 6px;
@@ -1606,7 +1740,10 @@ footer small { margin-left: auto; color: #687882; }
   }
   .mastery-preview span small { white-space: normal; }
   .loading-card { left: 10px; top: 10px; width: calc(100% - 20px); }
-  .interaction-prompt { bottom: 150px; min-width: 205px; max-width: calc(100% - 32px); }
+  /* The right action lane already carries the full contextual verb on phones.
+     Removing the duplicate center card prevents it from obscuring both the
+     action label and the playfield at 360–390px. */
+  .interaction-prompt { display: none; }
   .hide-exit-selector {
     bottom: 150px;
     max-width: calc(100% - 24px);
@@ -1681,6 +1818,7 @@ footer small { margin-left: auto; color: #687882; }
 .high-contrast .mission-status,
 .high-contrast .ghost-race,
 .high-contrast .theme-mechanic,
+.high-contrast .portable-decoy-status,
 .high-contrast .hide-guide,
 .high-contrast .objective-route-guide,
 .high-contrast .interaction-prompt,
@@ -1710,6 +1848,7 @@ footer small { margin-left: auto; color: #687882; }
 .high-contrast .mission-status strong,
 .high-contrast .ghost-race strong,
 .high-contrast .theme-mechanic strong,
+.high-contrast .portable-decoy-status strong,
 .high-contrast .hide-guide strong,
 .high-contrast .objective-route-guide strong { color: #fff; }
 .high-contrast .awareness-chase,
@@ -1724,6 +1863,7 @@ footer small { margin-left: auto; color: #687882; }
 .high-contrast .objective-route-guide { border-color: #8fc9ff; }
 .high-contrast .preference-settings,
 .high-contrast .mission-briefing > div,
+.high-contrast .library-plan-selector button,
 .high-contrast .mission-briefing > span,
 .high-contrast .ghost-save-note,
 .high-contrast .level-card,
