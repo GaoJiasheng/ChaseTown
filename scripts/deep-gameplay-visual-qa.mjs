@@ -381,13 +381,14 @@ async function waitForReady(browser, levelIndex, layoutNumber, timeout = 90_000)
 async function navigateFresh(browser, viewport, suffix, resetStorage = false) {
   await browser.setViewport(viewport);
   const url = qaUrl(suffix);
+  if (resetStorage) {
+    await browser.send("Storage.clearDataForOrigin", {
+      origin: new URL(url).origin,
+      storageTypes: "local_storage",
+    });
+  }
   await browser.send("Page.navigate", { url });
   await browser.waitFor("document.readyState === 'complete'", 25_000);
-  if (resetStorage) {
-    await browser.evaluate("localStorage.clear()");
-    await browser.send("Page.navigate", { url });
-    await browser.waitFor("document.readyState === 'complete'", 25_000);
-  }
   await waitForReady(browser, 0, null);
   await browser.evaluate("window.__CHASING_QA__.setUnlockedThrough(10)");
   await browser.evaluate("window.__CHASING_QA__.setDirectorEnabled(false)");

@@ -84,3 +84,17 @@ test("all five formal visual harnesses enforce THREE loader diagnostics", () => 
     );
   }
 });
+
+test("storage reset happens before navigation instead of aborting a live art load", () => {
+  for (const harness of [
+    "library-gold-visual-qa.mjs",
+    "deep-gameplay-visual-qa.mjs",
+  ]) {
+    const source = readFileSync(
+      new URL(`../scripts/${harness}`, import.meta.url),
+      "utf8",
+    );
+    assert.match(source, /Storage\.clearDataForOrigin/u, harness);
+    assert.doesNotMatch(source, /localStorage\.clear\(\)/u, harness);
+  }
+});

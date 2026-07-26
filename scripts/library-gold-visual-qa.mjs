@@ -473,9 +473,10 @@ try {
   await browser.send("Page.addScriptToEvaluateOnNewDocument", {
     source: QA_BOOTSTRAP_SOURCE,
   });
-  await browser.send("Page.navigate", { url: qaUrl() });
-  await browser.waitFor("document.readyState === 'complete'", 45_000);
-  await browser.evaluate("localStorage.clear()");
+  await browser.send("Storage.clearDataForOrigin", {
+    origin: new URL(qaUrl()).origin,
+    storageTypes: "local_storage",
+  });
   await browser.send("Page.navigate", { url: qaUrl() });
   await browser.waitFor(
     "document.readyState === 'complete' && Boolean(window.__CHASING_QA__?.getState()?.ready)",
