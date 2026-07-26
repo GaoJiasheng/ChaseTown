@@ -16,11 +16,33 @@ export interface PerceptionTarget {
   hideSpotId: string | null;
   transitionRemainingSeconds: number;
   /**
+   * Public doorway point used while a hard-locker peek is visibly open.
+   * The concealed coordinate remains private and is never treated as the
+   * source of a sight line through a closed wall.
+   */
+  peekPosition?: Point;
+  /**
    * Public visual disturbance authored by the active hide archetype. Zero is
    * fully concealed; partial values reduce legal acquisition range. This is
    * never a private concealed coordinate or occupancy query.
    */
   visualExposureMultiplier?: number;
+}
+
+export function playerVisualObservationPosition(
+  target: Pick<PerceptionTarget, "position" | "mode" | "peekPosition">,
+): Point {
+  if (
+    target.peekPosition
+    && (
+      target.mode === "entering-peek"
+      || target.mode === "peeking"
+      || target.mode === "exiting-peek"
+    )
+  ) {
+    return { ...target.peekPosition };
+  }
+  return { ...target.position };
 }
 
 export interface SoundStimulus {
@@ -132,11 +154,15 @@ export function samplePlayerPerception(
   const exposureMultiplier = playerVisualExposureMultiplier(target, config);
   if (exposureMultiplier <= 0) return { kind: "none", observedAtSeconds };
 
-  const offset = { x: target.position.x - observer.position.x, y: target.position.y - observer.position.y };
-  const distance = distanceBetween(observer.position, target.position);
+  const visualPosition = playerVisualObservationPosition(target);
+  const offset = {
+    x: visualPosition.x - observer.position.x,
+    y: visualPosition.y - observer.position.y,
+  };
+  const distance = distanceBetween(observer.position, visualPosition);
   if (
     distance > config.visionRange * exposureMultiplier
-    || !hasLineOfSight(level, observer.position, target.position)
+    || !hasLineOfSight(level, observer.position, visualPosition)
   ) {
     return { kind: "none", observedAtSeconds };
   }
@@ -154,9 +180,9 @@ export function samplePlayerPerception(
     return {
       kind: "hide-entry-visible",
       hideSpotId: target.hideSpotId,
-      position: { ...target.position },
+      position: visualPosition,
       observedAtSeconds,
     };
   }
-  return { kind: "player-visible", position: { ...target.position }, observedAtSeconds };
+  return { kind: "player-visible", position: visualPosition, observedAtSeconds };
 }

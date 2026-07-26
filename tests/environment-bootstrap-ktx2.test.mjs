@@ -6,6 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REPORT = path.join(
@@ -29,6 +30,8 @@ const SCRIPT = path.join(
 const KTX2_SIGNATURE = Buffer.from([
   0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
+const PINNED_GLTFPACK_SHA256 =
+  "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df";
 const TARGETS = [
   "backpack.glb",
   "basketball.glb",
@@ -89,6 +92,79 @@ function readGlb(buffer, filename) {
   return { json, binary: binary.subarray(0, physicalBuffer.byteLength) };
 }
 
+async function decodeMeshoptBufferViews(glb, filename) {
+  await MeshoptDecoder.ready;
+  assert.equal(
+    MeshoptDecoder.supported,
+    true,
+    "the project Meshopt decoder must support compressed environment assets",
+  );
+  const decoded = new Map();
+  for (const [index, view] of glb.json.bufferViews.entries()) {
+    const compression = view.extensions?.EXT_meshopt_compression;
+    if (!compression) continue;
+    const target = new Uint8Array(compression.count * compression.byteStride);
+    const source = new Uint8Array(
+      glb.binary.buffer,
+      glb.binary.byteOffset + (compression.byteOffset ?? 0),
+      compression.byteLength,
+    );
+    MeshoptDecoder.decodeGltfBuffer(
+      target,
+      compression.count,
+      compression.byteStride,
+      source,
+      compression.mode,
+      compression.filter,
+    );
+    assert.equal(
+      target.byteLength,
+      view.byteLength,
+      `${filename} bufferView ${index} decoded to the wrong size`,
+    );
+    decoded.set(index, Buffer.from(target.buffer, target.byteOffset, target.byteLength));
+  }
+  return decoded;
+}
+
+function uvBounds(glb, decoded, accessorIndex, filename) {
+  const accessor = glb.json.accessors[accessorIndex];
+  assert.equal(accessor.type, "VEC2", `${filename} atlas UV accessor must be VEC2`);
+  assert.equal(accessor.sparse, undefined, `${filename} atlas UVs cannot be sparse`);
+  const view = glb.json.bufferViews[accessor.bufferView];
+  const payload = decoded.get(accessor.bufferView);
+  assert.ok(payload, `${filename} atlas UV bufferView must be Meshopt compressed`);
+  const componentBytes = new Map([
+    [5121, 1],
+    [5123, 2],
+    [5126, 4],
+  ]).get(accessor.componentType);
+  assert.ok(componentBytes, `${filename} has an unsupported atlas UV component type`);
+  const readComponent = {
+    5121: (offset) => payload.readUInt8(offset),
+    5123: (offset) => payload.readUInt16LE(offset),
+    5126: (offset) => payload.readFloatLE(offset),
+  }[accessor.componentType];
+  const normalize = {
+    5121: (value) => value / 255,
+    5123: (value) => value / 65535,
+    5126: (value) => value,
+  }[accessor.componentType];
+  const stride = view.byteStride ?? componentBytes * 2;
+  const start = accessor.byteOffset ?? 0;
+  const minimum = [Infinity, Infinity];
+  const maximum = [-Infinity, -Infinity];
+  for (let item = 0; item < accessor.count; item += 1) {
+    for (let component = 0; component < 2; component += 1) {
+      const raw = readComponent(start + item * stride + component * componentBytes);
+      const value = accessor.normalized ? normalize(raw) : raw;
+      minimum[component] = Math.min(minimum[component], value);
+      maximum[component] = Math.max(maximum[component], value);
+    }
+  }
+  return { minimum, maximum };
+}
+
 test("standalone environment GLBs use exactly two immutable atlas requests and preserve their binary art", async () => {
   const report = JSON.parse(await readFile(REPORT, "utf8"));
   assert.equal(report.formatVersion, 1);
@@ -104,6 +180,9 @@ test("standalone environment GLBs use exactly two immutable atlas requests and p
     fallbackImages: false,
     applicationUrlChangesRequired: false,
   });
+  assert.equal(report.tool.version, "gltfpack 1.2");
+  assert.equal(report.tool.binarySha256, PINNED_GLTFPACK_SHA256);
+  assert.equal(report.tool.nativeBinaryCommitted, false);
   assert.equal(report.atlases.length, 2);
   const expectedUris = new Set(
     report.atlases.map((atlas) => (
@@ -137,25 +216,86 @@ test("standalone environment GLBs use exactly two immutable atlas requests and p
           && Number.isInteger(texture.extensions?.KHR_texture_basisu?.source),
       ),
     );
-    for (const material of glb.json.materials ?? []) {
-      for (const textureInfo of [
-        material.pbrMetallicRoughness?.baseColorTexture,
-        material.normalTexture,
-      ]) {
-        if (!textureInfo) continue;
-        const transform = textureInfo.extensions?.KHR_texture_transform;
-        assert.ok(transform, `${entry.path} lost an atlas texture transform`);
-        assert.ok(transform.offset.every((value) => value >= 0 && value < 1));
-        // The hero locker intentionally tiles its 0..0.25 authored UV island
-        // four times, so its composed Y scale can exceed one while still
-        // remaining completely inside a single atlas tile.
-        assert.ok(transform.scale.every((value) => value > 0 && value <= 2));
-      }
-    }
     const contract = glb.json.asset.extras.chasing_environment_bootstrap;
     assert.equal(contract.version, 1);
     assert.equal(contract.geometryBinarySha256, entry.geometryBinarySha256);
     assert.equal(contract.slots.length, entry.sourceSlots.length);
+    const decoded = await decodeMeshoptBufferViews(glb, entry.path);
+    for (const slot of contract.slots) {
+      const material = glb.json.materials[slot.materialIndex];
+      const textureInfo = slot.slot === "baseColor"
+        ? material.pbrMetallicRoughness?.baseColorTexture
+        : material.normalTexture;
+      const transform = textureInfo?.extensions?.KHR_texture_transform;
+      assert.ok(transform, `${entry.path} lost an atlas texture transform`);
+      assert.ok(transform.offset.every(Number.isFinite));
+      assert.ok(transform.scale.every((value) => Number.isFinite(value) && value > 0));
+
+      const family = path.basename(slot.sourceUri)
+        .replace(/^Env_/u, "")
+        .replace(/_(?:BaseColor|Normal)_2K\.png$/u, "");
+      const familyIndex = report.atlas.textureFamilies.indexOf(family);
+      assert.notEqual(familyIndex, -1, `${entry.path} references unknown atlas family ${family}`);
+      const atlas = slot.slot === "baseColor" ? report.atlas.baseColor : report.atlas.normal;
+      const column = familyIndex % 4;
+      const row = Math.floor(familyIndex / 4);
+      const strideX = atlas.sourceTileWidth + atlas.gutterPixels * 2;
+      const strideY = atlas.sourceTileHeight + atlas.gutterPixels * 2;
+      const tileMinimum = [
+        (column * strideX + atlas.gutterPixels) / atlas.width,
+        (row * strideY + atlas.gutterPixels) / atlas.height,
+      ];
+      const tileMaximum = [
+        tileMinimum[0] + atlas.sourceTileWidth / atlas.width,
+        tileMinimum[1] + atlas.sourceTileHeight / atlas.height,
+      ];
+      const tileGuardMinimum = [
+        column * strideX / atlas.width,
+        row * strideY / atlas.height,
+      ];
+      const tileGuardMaximum = [
+        (column + 1) * strideX / atlas.width,
+        (row + 1) * strideY / atlas.height,
+      ];
+      assert.ok(
+        tileMinimum.every((value, component) => (
+          value > tileGuardMinimum[component]
+            && tileMaximum[component] < tileGuardMaximum[component]
+        )),
+        `${entry.path} atlas tile lost its quantization gutter`,
+      );
+      const texCoord = transform.texCoord ?? textureInfo.texCoord ?? 0;
+      const primitives = glb.json.meshes.flatMap((mesh) => mesh.primitives)
+        .filter((primitive) => primitive.material === slot.materialIndex);
+      assert.ok(primitives.length > 0, `${entry.path} atlas material is not used by geometry`);
+      for (const primitive of primitives) {
+        const accessorIndex = primitive.attributes[`TEXCOORD_${texCoord}`];
+        assert.notEqual(
+          accessorIndex,
+          undefined,
+          `${entry.path} atlas material lost TEXCOORD_${texCoord}`,
+        );
+        const bounds = uvBounds(glb, decoded, accessorIndex, entry.path);
+        const mappedMinimum = bounds.minimum.map(
+          (value, component) => transform.offset[component] + value * transform.scale[component],
+        );
+        const mappedMaximum = bounds.maximum.map(
+          (value, component) => transform.offset[component] + value * transform.scale[component],
+        );
+        for (let component = 0; component < 2; component += 1) {
+          // Linear sampling at the outer gutter edge can blend the adjacent
+          // tile. Keep every decoded UV at least half a texel inside instead
+          // of accepting a coordinate that is merely numerically in range.
+          const halfTexel = 0.5 / (component === 0 ? atlas.width : atlas.height);
+          const epsilon = 1e-9;
+          assert.ok(
+            mappedMinimum[component] >= tileGuardMinimum[component] + halfTexel - epsilon
+              && mappedMaximum[component] <= tileGuardMaximum[component] - halfTexel + epsilon,
+            `${entry.path} transformed UVs leave the filter-safe ${family} atlas gutter`,
+          );
+        }
+      }
+    }
   }
 });
 
@@ -250,10 +390,55 @@ test("hero locker keeps its authored hierarchy and all six animation performance
   ]) {
     assert.ok(names.has(required), `hero locker lost ${required}`);
   }
+  const heroRoot = glb.json.nodes.find((node) => node.name === "Locker_Hero");
+  assert.equal(heroRoot?.extras?.gltfpackVersion, "gltfpack 1.2");
+  assert.equal(heroRoot?.extras?.gltfpackBinarySha256, PINNED_GLTFPACK_SHA256);
   assert.deepEqual(
     glb.json.animations.map((animation) => animation.name).sort(),
     [...LOCKER_CLIPS].sort(),
   );
+});
+
+test("premium common environment report pins the native geometry encoder", async () => {
+  const report = JSON.parse(await readFile(
+    path.join(ROOT, "docs", "art_production", "PREMIUM_COMMON_ENVIRONMENT_REPORT.json"),
+    "utf8",
+  ));
+  assert.deepEqual(report.tool, {
+    name: "gltfpack",
+    version: "gltfpack 1.2",
+    binarySha256: PINNED_GLTFPACK_SHA256,
+    arguments: [
+      "-cc", "-gt", "-kn", "-km", "-ke", "-tr",
+      "-vp", "14", "-vn", "10", "-vt", "12",
+      "-ar", "16", "-af", "0", "-kv",
+    ],
+  });
+});
+
+test("quantized book semantics retain renderable portable-decoy descendants", async () => {
+  const filename = path.join(ROOT, "public", "models", "environment", "books.glb");
+  const glb = readGlb(await readFile(filename), filename);
+  const semanticRoots = glb.json.nodes
+    .map((node, index) => ({ node, index }))
+    .filter(({ node }) => node.name?.startsWith("Dropped_Notebook_"));
+  assert.equal(semanticRoots.length, 5);
+  const descendantMeshes = (rootIndex) => {
+    const meshes = new Set();
+    const visit = (nodeIndex) => {
+      const node = glb.json.nodes[nodeIndex];
+      if (node.mesh !== undefined) meshes.add(node.mesh);
+      for (const child of node.children ?? []) visit(child);
+    };
+    visit(rootIndex);
+    return meshes;
+  };
+  for (const { node, index } of semanticRoots) {
+    assert.ok(
+      descendantMeshes(index).size > 0,
+      `${node.name} lost its renderable mesh below the gltfpack decode node`,
+    );
+  }
 });
 
 test("compact Normal atlas passes checked-in WebGL2 representative-object regression", async () => {
@@ -304,7 +489,10 @@ test("environment atlas pipeline check is self-contained and preserves active ap
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Validated 19 byte-stable environment GLBs and 2 shared KTX2 atlases/u);
 
-  const gameSource = await readFile(path.join(ROOT, "app", "chasing-game.tsx"), "utf8");
+  const gameSource = await Promise.all([
+    path.join(ROOT, "app", "chasing-game.tsx"),
+    path.join(ROOT, "app", "game", "runtime-assets.ts"),
+  ].map((filename) => readFile(filename, "utf8"))).then((sources) => sources.join("\n"));
   for (const basename of TARGETS.filter(
     (candidate) => !["front-gate.glb", "exit.glb"].includes(candidate),
   )) {

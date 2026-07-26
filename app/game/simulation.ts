@@ -1350,6 +1350,9 @@ export class GameSimulation {
           mode: this.state.player.mode,
           hideSpotId: this.state.player.hideSpotId,
           transitionRemainingSeconds: this.state.player.transitionRemainingSeconds,
+          peekPosition: activeHide?.profile.capabilities.canPeek
+            ? activeHide.approach
+            : undefined,
           visualExposureMultiplier: this.activeVisualExposureMultiplier(activeHide),
         },
         this.heldVisionRangeMultiplier >= 0.999

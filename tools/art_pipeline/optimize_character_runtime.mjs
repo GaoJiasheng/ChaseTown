@@ -25,6 +25,13 @@ const DEFAULT_REPORT = path.join(
   "reports",
   "character-runtime-meshopt.json",
 );
+const DEFAULT_KTX2_REPORT = path.join(
+  ROOT,
+  "docs",
+  "art_production",
+  "reports",
+  "runtime-ktx2.json",
+);
 const GLTFPACK = path.join(ROOT, "node_modules", ".bin", "gltfpack");
 const ROLES = ["kid", "villain", "police"];
 const FORMAT_VERSION = 1;
@@ -86,6 +93,7 @@ function parseArguments(argv) {
     sourceDirectory: DEFAULT_CHARACTER_DIRECTORY,
     outputDirectory: DEFAULT_CHARACTER_DIRECTORY,
     report: DEFAULT_REPORT,
+    ktx2Report: DEFAULT_KTX2_REPORT,
     check: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -99,6 +107,7 @@ function parseArguments(argv) {
     if (argument === "--source-dir") result.sourceDirectory = path.resolve(value);
     else if (argument === "--output-dir") result.outputDirectory = path.resolve(value);
     else if (argument === "--report") result.report = path.resolve(value);
+    else if (argument === "--ktx2-report") result.ktx2Report = path.resolve(value);
     else throw new Error(`Unknown argument: ${argument}`);
     index += 1;
   }
@@ -495,7 +504,12 @@ async function readExistingReport(filename) {
   }
 }
 
-async function verifyCurrentAsset(role, filename, reportEntry) {
+async function verifyCurrentAsset(
+  role,
+  filename,
+  reportEntry,
+  ktx2Entry,
+) {
   const asset = await loadGlb(filename);
   assert.ok(hasMeshopt(asset), `${filename} must be Meshopt-compressed`);
   assert.equal(
@@ -504,8 +518,27 @@ async function verifyCurrentAsset(role, filename, reportEntry) {
     `${filename} must retain authored floating-point geometry`,
   );
   const info = await stat(filename);
-  assert.equal(info.size, reportEntry.optimized.bytes, `${role} optimized byte count drifted`);
-  assert.equal(sha256(asset.buffer), reportEntry.optimized.sha256, `${role} optimized SHA-256 drifted`);
+  const hasKtx2 = asset.json.extensionsRequired?.includes("KHR_texture_basisu");
+  let expected = reportEntry.optimized;
+  if (hasKtx2) {
+    assert.ok(
+      ktx2Entry,
+      `${role} is KTX2-compressed but has no final runtime provenance entry`,
+    );
+    assert.equal(
+      ktx2Entry.source.bytes,
+      reportEntry.optimized.bytes,
+      `${role} KTX2 source byte count no longer matches its Meshopt stage`,
+    );
+    assert.equal(
+      ktx2Entry.source.sha256,
+      reportEntry.optimized.sha256,
+      `${role} KTX2 source hash no longer matches its Meshopt stage`,
+    );
+    expected = ktx2Entry.output;
+  }
+  assert.equal(info.size, expected.bytes, `${role} optimized byte count drifted`);
+  assert.equal(sha256(asset.buffer), expected.sha256, `${role} optimized SHA-256 drifted`);
   assert.ok(
     asset.json.bufferViews.some((view) => view.extensions?.EXT_meshopt_compression),
     `${role} has no compressed Meshopt buffer views`,
@@ -523,6 +556,14 @@ async function ensureExecutable(filename) {
 async function main() {
   const options = parseArguments(process.argv.slice(2));
   const existingReport = await readExistingReport(options.report);
+  const ktx2Report = options.check
+    ? await readExistingReport(options.ktx2Report)
+    : null;
+  const ktx2ByRole = new Map(
+    (ktx2Report?.assets ?? [])
+      .filter((entry) => entry.path?.includes("/models/characters/"))
+      .map((entry) => [path.basename(entry.path, ".glb"), entry]),
+  );
   const staged = [];
   const entries = [];
   let toolVersion = existingReport?.tool?.version ?? null;
@@ -539,7 +580,12 @@ async function main() {
       );
       const existingEntry = existingReport?.characters?.find((entry) => entry.role === role);
       assert.ok(existingEntry, `${role} is compressed but ${options.report} has no provenance entry`);
-      entries.push(await verifyCurrentAsset(role, outputFilename, existingEntry));
+      entries.push(await verifyCurrentAsset(
+        role,
+        outputFilename,
+        existingEntry,
+        ktx2ByRole.get(role),
+      ));
       continue;
     }
     assert.equal(options.check, false, `${sourceFilename} is not optimized`);

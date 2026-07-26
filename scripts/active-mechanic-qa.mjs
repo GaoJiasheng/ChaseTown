@@ -167,7 +167,7 @@ async function connect() {
       file,
       bytes: bytes.length,
       sha256: createHash("sha256").update(bytes).digest("hex"),
-      captureBackend: "headless-shell-surface",
+      captureBackend: "cdp-browser-surface",
     };
   };
   return { socket, events, send, evaluate, waitFor, screenshot };

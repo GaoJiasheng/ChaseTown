@@ -46,6 +46,8 @@ const GLB_BINARY_CHUNK = 0x004e4942;
 const KTX2_SIGNATURE = Buffer.from([
   0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
+const PINNED_GLTFPACK_SHA256 =
+  "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df";
 const COMPONENT_BYTES = new Map([
   [5120, 1], [5121, 1], [5122, 2], [5123, 2], [5125, 4], [5126, 4],
 ]);
@@ -350,7 +352,10 @@ function subtreeMeshIndexes(gltf, rootIndex) {
 }
 
 test("every shipped GLB is referenced, valid, and has all external textures", async () => {
-  const gameSource = await readFile(path.join(ROOT, "app", "chasing-game.tsx"), "utf8");
+  const gameSource = await Promise.all([
+    path.join(ROOT, "app", "chasing-game.tsx"),
+    path.join(ROOT, "app", "game", "runtime-assets.ts"),
+  ].map((filename) => readFile(filename, "utf8"))).then((sources) => sources.join("\n"));
   const referenced = new Set(
     [...gameSource.matchAll(/["'](\/models\/[^"'?]+\.glb)(?:\?[^"']*)?["']/gu)]
       .map((match) => match[1]),
@@ -466,6 +471,165 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
     [...referencedImages, ...reproducibleSourceImages].sort(),
     "public/models may only contain requested textures plus pinned atlas source PNGs",
   );
+});
+
+test("stealth corner mirrors are four themed, textured hard-surface assemblies", async () => {
+  const filename = path.join(
+    MODELS_ROOT,
+    "environment",
+    "stealth-corner-mirrors.glb",
+  );
+  const buffer = await readFile(filename);
+  assert.ok(
+    buffer.length <= 520_000,
+    `stealth corner mirror kit is ${buffer.length} bytes and exceeds its compact first-playable budget`,
+  );
+  const glb = readGlb(buffer, filename);
+  validateGlbStructure(glb, filename);
+  const { json: gltf } = glb;
+  assert.ok(
+    gltf.extensionsRequired?.includes("EXT_meshopt_compression"),
+    "stealth corner mirrors must retain Meshopt transport compression",
+  );
+  assert.ok(
+    gltf.extensionsRequired?.includes("KHR_mesh_quantization"),
+    "stealth corner mirrors must retain audited vertex quantization",
+  );
+  assert.ok(
+    gltf.extensionsRequired?.includes("KHR_texture_basisu"),
+    "stealth corner mirrors must retain embedded GPU-native KTX2 PBR textures",
+  );
+
+  const expectedRoots = [
+    "CampusCornerMirror",
+    "HospitalCornerMirror",
+    "FireStationCornerMirror",
+    "FactoryCornerMirror",
+  ];
+  const sceneRoots = gltf.scenes[gltf.scene ?? 0].nodes
+    .map((index) => gltf.nodes[index]?.name)
+    .sort();
+  assert.deepEqual(sceneRoots, [...expectedRoots].sort());
+  for (const rootName of expectedRoots) {
+    const root = gltf.nodes.find((node) => node.name === rootName);
+    assert.equal(root?.extras?.gltfpackVersion, "gltfpack 1.2");
+    assert.equal(root?.extras?.gltfpackBinarySha256, PINNED_GLTFPACK_SHA256);
+  }
+  const expectedRoles = [
+    "polished-corner-mirror-face",
+    "authored-corner-mirror-rim",
+    "corner-mirror-wall-plate",
+    "corner-mirror-articulated-arm",
+    "corner-mirror-fasteners",
+    "corner-mirror-status-led",
+  ];
+  const nodeIndexByName = new Map(
+    gltf.nodes.map((node, index) => [node.name, index]),
+  );
+  const descendantNames = (rootIndex) => {
+    const names = [];
+    const visit = (index) => {
+      const node = gltf.nodes[index];
+      if (node?.name) names.push(node.name);
+      for (const child of node?.children ?? []) visit(child);
+    };
+    visit(rootIndex);
+    return names;
+  };
+  for (const rootName of expectedRoots) {
+    const rootIndex = nodeIndexByName.get(rootName);
+    assert.notEqual(rootIndex, undefined, `${rootName} is missing`);
+    const descendants = descendantNames(rootIndex);
+    for (const role of expectedRoles) {
+      assert.equal(
+        descendants.filter((name) => name === role).length,
+        1,
+        `${rootName} must own exactly one ${role} assembly`,
+      );
+    }
+  }
+
+  const texturedMaterials = (gltf.materials ?? []).filter((material) => (
+    material.pbrMetallicRoughness?.baseColorTexture
+    || material.pbrMetallicRoughness?.metallicRoughnessTexture
+    || material.normalTexture
+    || material.occlusionTexture
+  ));
+  assert.ok(
+    texturedMaterials.length >= 4,
+    "each themed mirror needs an embedded textured PBR wall-plate finish",
+  );
+  assert.ok(
+    (gltf.images?.length ?? 0) >= 4,
+    "stealth mirror textures must remain embedded in the formal GLB",
+  );
+
+  const materiallyEmissive = (gltf.materials ?? []).filter((material) => (
+    (material.emissiveFactor ?? [0, 0, 0]).some((value) => value > 0.0001)
+  ));
+  assert.deepEqual(
+    materiallyEmissive.map(({ name }) => name),
+    ["M_CornerMirror_StatusLED_ApprovedEmissive"],
+    "only the tiny status LED may emit light",
+  );
+  const mirrorFaceNodes = gltf.nodes.filter(
+    ({ name }) => name === "polished-corner-mirror-face",
+  );
+  const mirrorRimNodes = gltf.nodes.filter(
+    ({ name }) => name === "authored-corner-mirror-rim",
+  );
+  const materialIndicesUnderNode = (node) => {
+    const indices = [];
+    const visit = (candidate) => {
+      if (candidate.mesh !== undefined) {
+        indices.push(
+          ...gltf.meshes[candidate.mesh].primitives
+            .map(({ material }) => material)
+            .filter((material) => material !== undefined),
+        );
+      }
+      for (const child of candidate.children ?? []) {
+        visit(gltf.nodes[child]);
+      }
+    };
+    visit(node);
+    return indices;
+  };
+  assert.equal(mirrorFaceNodes.length, 4);
+  assert.equal(mirrorRimNodes.length, 4);
+  for (const node of mirrorFaceNodes) {
+    const materialIndices = materialIndicesUnderNode(node);
+    assert.ok(materialIndices.length >= 1);
+    for (const materialIndex of materialIndices) {
+      const material = gltf.materials[materialIndex];
+      assert.ok(
+        material.pbrMetallicRoughness.metallicFactor >= 0.82,
+        "convex mirror lens must preserve a physical metallic response",
+      );
+      assert.ok(
+        material.pbrMetallicRoughness.roughnessFactor >= 0.05
+          && material.pbrMetallicRoughness.roughnessFactor <= 0.18,
+        "convex mirror lens must preserve its polished roughness range",
+      );
+      assert.equal(
+        (material.emissiveFactor ?? [0, 0, 0]).some(
+          (value) => value > 0.0001,
+        ),
+        false,
+        "convex mirror lens cannot use emissive as a readability shortcut",
+      );
+    }
+  }
+  for (const node of mirrorRimNodes) {
+    for (const materialIndex of materialIndicesUnderNode(node)) {
+      assert.equal(
+        (gltf.materials[materialIndex].emissiveFactor ?? [0, 0, 0])
+          .some((value) => value > 0.0001),
+        false,
+        "mirror rim cannot regress to a glowing halo",
+      );
+    }
+  }
 });
 
 const THEME_KIT_CONTRACTS = [

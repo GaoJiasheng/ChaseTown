@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -19,6 +20,12 @@ const KTX2_REPORT = path.join(
   "art_production",
   "reports",
   "runtime-ktx2.json",
+);
+const CHECKER = path.join(
+  ROOT,
+  "tools",
+  "art_pipeline",
+  "optimize_character_runtime.mjs",
 );
 const EXPECTED_ARGUMENTS = [
   "-c",
@@ -135,4 +142,30 @@ test("character runtime optimization report and shipped GLBs stay reproducible",
   assert.ok(report.totals.optimizedBytes <= 18_500_000, "character runtime payload exceeds 18.5 MB");
   assert.ok(report.totals.savedPercent >= 40, "character runtime compression regressed below 40%");
   assert.ok(shippedBytes <= 15_600_000, "KTX2 character runtime payload exceeds 15.6 MB");
+});
+
+test("character runtime check follows final KTX2 provenance without writing assets", async () => {
+  const trackedFiles = [
+    REPORT,
+    KTX2_REPORT,
+    ...[...ROLE_BUDGETS.keys()].map(
+      (role) => path.join(ROOT, "public", "models", "characters", `${role}.glb`),
+    ),
+  ];
+  const before = await Promise.all(
+    trackedFiles.map(async (filename) => sha256(await readFile(filename))),
+  );
+  const result = spawnSync(process.execPath, [CHECKER, "--check"], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  assert.equal(
+    result.status,
+    0,
+    result.stderr || result.stdout || "character runtime check failed",
+  );
+  const after = await Promise.all(
+    trackedFiles.map(async (filename) => sha256(await readFile(filename))),
+  );
+  assert.deepEqual(after, before, "character runtime check modified a pinned asset or report");
 });

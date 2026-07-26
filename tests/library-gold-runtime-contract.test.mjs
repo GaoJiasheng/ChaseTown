@@ -359,6 +359,34 @@ test("both library exits own doorway anchors, authored exit doors, and formal th
   );
 });
 
+test("library exterior ground covers every exit plaza without receiving wall-shadow seams", () => {
+  assert.match(
+    GAME,
+    /const\s+groundMarginCells\s*=\s*libraryGoldEnabled\s*\?\s*3\s*:\s*2/u,
+    "library ground needs the expanded authored margin that hides the maze-edge cutoff",
+  );
+  const plazaSetup = sliceBetween(
+    GAME,
+    "const plazaCenters = [",
+    "const authoredPlazaPlacements =",
+  );
+  assert.match(
+    plazaSetup,
+    /\.\.\.exitDoorwayAnchors\.map\(\(\{\s*point,\s*outward\s*\}\)\s*=>/u,
+    "every authored exit must extend the exterior ground plaza",
+  );
+  assert.match(
+    plazaSetup,
+    /\.\.\.exitDoorwayAnchors\.map\(\(\{\s*outward\s*\}\)\s*=>\s*outward\)/u,
+    "every exterior plaza needs the correct outward-facing tile orientation",
+  );
+  assert.match(
+    GAME,
+    /horizonGround\.receiveShadow\s*=\s*false/u,
+    "the horizon fill must not receive maze-wall shadows that expose its seam",
+  );
+});
+
 test("portable decoys are extracted only from the named books.glb notebook assembly", () => {
   assert.match(GAME, /books:\s*"\/models\/environment\/books\.glb\?v=\d+"/u);
   assert.match(
@@ -371,7 +399,12 @@ test("portable decoys are extracted only from the named books.glb notebook assem
     "function fitNamedStaticProp(",
     "function anchorAuthoredStatic(",
   );
-  assert.match(extractor, /object\.name\.startsWith\(namePrefix\)/u);
+  assert.match(extractor, /semanticRoot\.name\.startsWith\(namePrefix\)/u);
+  assert.match(
+    extractor,
+    /semanticRoot\.traverse\(\(object\)\s*=>[\s\S]*collectedMeshes\.has\(object\)/u,
+    "semantic GLTF groups must contribute their renderable mesh descendants once",
+  );
   assert.match(extractor, /throw\s+new\s+Error\(`正式美术资产缺少命名子组件\s+\$\{namePrefix\}`\)/u);
 
   const template = sliceBetween(

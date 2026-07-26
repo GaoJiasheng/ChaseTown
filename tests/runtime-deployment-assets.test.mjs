@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   DEPLOYMENT_SOURCE_ASSET_EXCLUDES,
+  FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS,
   FIRST_CAMPAIGN_PRELOAD_ASSETS,
   MAX_DEPLOYED_CLIENT_BYTES,
   RUNTIME_ASSET_MANIFEST_VERSION,
@@ -20,6 +21,8 @@ import {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC = path.join(ROOT, "public");
 const CLIENT_OUTPUT = path.join(ROOT, "dist", "client");
+const STEALTH_CORNER_MIRROR_PRELOAD =
+  "/models/environment/stealth-corner-mirrors.glb?v=2";
 
 async function treeBytes(directory) {
   let total = 0;
@@ -40,9 +43,26 @@ function publicPathForHref(href) {
 test("first-campaign preloads are unique runtime files retained in public", async () => {
   const hrefs = FIRST_CAMPAIGN_PRELOAD_ASSETS.map(({ href }) => href);
   assert.equal(new Set(hrefs).size, hrefs.length);
+  assert.ok(
+    hrefs.includes(STEALTH_CORNER_MIRROR_PRELOAD),
+    "the navigation-critical corner mirror must start before hydration",
+  );
+  for (const [role, href] of Object.entries(FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS)) {
+    const preload = FIRST_CAMPAIGN_PRELOAD_ASSETS.find((asset) => asset.href === href);
+    assert.ok(
+      preload,
+      `${role} blocks first playable but is missing from preload accounting`,
+    );
+    assert.equal(
+      preload.blocksFirstPlayable,
+      true,
+      `${role} must be budgeted by control-unlock authority`,
+    );
+  }
   for (const asset of FIRST_CAMPAIGN_PRELOAD_ASSETS) {
     assert.equal(asset.href.startsWith("/"), true);
     assert.equal(["high", "auto"].includes(asset.fetchPriority), true);
+    assert.equal(typeof asset.blocksFirstPlayable, "boolean");
     await access(publicPathForHref(asset.href));
     assert.equal(
       DEPLOYMENT_SOURCE_ASSET_EXCLUDES.some((excluded) => (
@@ -120,9 +140,18 @@ test("first-playable accounting includes every preload plus HTML, JS, CSS, WASM 
     );
     assert.equal(
       record.phase,
-      preload.fetchPriority === "high" ? "critical" : "eager",
+      preload.blocksFirstPlayable ? "critical" : "eager",
     );
   }
+  const mirrorPath = new URL(
+    STEALTH_CORNER_MIRROR_PRELOAD,
+    "https://runtime.invalid",
+  ).pathname;
+  assert.equal(
+    recordByPath.get(mirrorPath)?.kind,
+    "model",
+    "the preloaded mirror must remain inside the release transfer budget",
+  );
   for (const kind of ["html", "javascript", "css", "wasm", "model"]) {
     assert.ok(records.some((asset) => asset.kind === kind), `${kind} is unaccounted`);
   }
@@ -130,6 +159,11 @@ test("first-playable accounting includes every preload plus HTML, JS, CSS, WASM 
     records.filter((asset) => asset.kind === "html").length,
     1,
     "the dynamic document must have one explicit transfer reserve",
+  );
+  assert.equal(
+    manifest.firstPlayableBudget.criticalBytes,
+    manifest.firstPlayableBudget.eagerBytes,
+    "every current preload gates control unlock and must be counted as critical",
   );
 });
 

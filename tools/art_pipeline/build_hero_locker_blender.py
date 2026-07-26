@@ -13,6 +13,7 @@ the runtime GLB, and three temporary review renders.
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
 import json
 import math
 import os
@@ -30,6 +31,19 @@ BLEND_PATH = SOURCE_DIR / "Locker_Hero.blend"
 GLB_PATH = ROOT / "public" / "models" / "environment" / "locker.glb"
 TEXTURE_DIR = ROOT / "public" / "models" / "SharedTextures"
 REVIEW_DIR = Path(os.environ.get("CHASING_LOCKER_REVIEW_DIR", "/tmp/chasing-hero-locker-review"))
+GLTFPACK_CANDIDATES = (
+    os.environ.get("GLTFPACK_KTX2"),
+    os.environ.get("GLTFPACK_NATIVE"),
+    "/private/tmp/gltfpack-macos-v1.2/gltfpack",
+    "/opt/homebrew/bin/gltfpack",
+)
+GLTFPACK_VERSION = "gltfpack 1.2"
+GLTFPACK_BINARY_SHA256 = "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
+GLTFPACK_ARGUMENTS = (
+    "-cc", "-tr", "-kn", "-km", "-ke",
+    "-vp", "14", "-vn", "10", "-vt", "12",
+    "-ar", "16", "-af", "0", "-kv",
+)
 
 WIDTH = 0.92
 DEPTH = 0.62
@@ -907,6 +921,8 @@ def make_root_and_anchors() -> tuple[bpy.types.Object, bpy.types.Object]:
     root["frontAxisGlTF"] = "+Z"
     root["hasProductionGeometry"] = True
     root["hasRuntimePrimitiveFallback"] = False
+    root["gltfpackVersion"] = GLTFPACK_VERSION
+    root["gltfpackBinarySha256"] = GLTFPACK_BINARY_SHA256
 
     create_anchor("HideAnchor", (0.0, 0.055, 0.080), root, role="player_hidden_root")
     create_anchor("PeekAnchor", (0.205, FRONT_Y + 0.075, 1.265), root, role="player_peek_head")
@@ -1062,35 +1078,53 @@ def sanitize_exported_glb(path: Path) -> int:
     return repaired
 
 
+def resolve_native_gltfpack() -> Path:
+    rejected_hashes = []
+    for candidate in GLTFPACK_CANDIDATES:
+        if not candidate:
+            continue
+        executable = Path(candidate).expanduser().resolve()
+        if not executable.is_file():
+            continue
+        completed = subprocess.run(
+            [str(executable), "-v"],
+            cwd=ROOT,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if completed.returncode != 0 or completed.stdout.strip() != GLTFPACK_VERSION:
+            continue
+        binary_sha256 = hashlib.sha256(executable.read_bytes()).hexdigest()
+        if binary_sha256 != GLTFPACK_BINARY_SHA256:
+            rejected_hashes.append(f"{executable}={binary_sha256}")
+            continue
+        return executable
+    mismatch = f" Rejected unpinned binaries: {', '.join(rejected_hashes)}." if rejected_hashes else ""
+    raise FileNotFoundError(
+        "The pinned official native gltfpack 1.2 binary is required. Set "
+        "GLTFPACK_KTX2 or install it at "
+        f"/private/tmp/gltfpack-macos-v1.2/gltfpack.{mismatch}"
+    )
+
+
 def meshopt_compress_export(source_path: Path, destination_path: Path) -> None:
     """Produce the compact runtime GLB with the repository-pinned gltfpack.
 
     `-tr` is essential: the locker intentionally shares its six PBR images
     with the rest of the environment set. Embedding those images would undo
-    most of the geometry compression and duplicate deploy bytes. Precision is
-    kept above the visually lossless thresholds verified by the browser A/B
-    test, while named anchors/materials/extras remain available to runtime.
+    most of the geometry compression and duplicate deploy bytes. Native
+    compact transport plus 14-bit positions, 10-bit normals and 12-bit UVs
+    retain reviewed sub-pixel precision while named anchors, door animation,
+    materials and extras remain available to runtime.
     """
-    executable = ROOT / "node_modules" / ".bin" / "gltfpack"
-    if not executable.is_file():
-        raise FileNotFoundError(
-            "Pinned gltfpack is missing; run npm install before building the Hero Locker"
-        )
+    executable = resolve_native_gltfpack()
     command = [
         str(executable),
         "-i", str(source_path),
         "-o", str(destination_path),
-        "-c",
-        "-tr",
-        "-kn",
-        "-km",
-        "-ke",
-        "-vp", "16",
-        "-vn", "12",
-        "-vt", "14",
-        "-ar", "16",
-        "-af", "0",
-        "-kv",
+        *GLTFPACK_ARGUMENTS,
     ]
     completed = subprocess.run(
         command,

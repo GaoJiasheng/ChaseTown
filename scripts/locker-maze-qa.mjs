@@ -181,7 +181,7 @@ async function connect() {
       file,
       bytes: bytes.length,
       sha256: createHash("sha256").update(bytes).digest("hex"),
-      captureBackend: "headless-shell-surface",
+      captureBackend: "cdp-browser-surface",
       viewport: VIEWPORT,
     };
     screenshotProvenance.push(evidence);
@@ -223,6 +223,10 @@ const browser = await connect();
 try {
   await browser.send("Page.addScriptToEvaluateOnNewDocument", {
     source: QA_BOOTSTRAP_SOURCE,
+  });
+  await browser.send("Storage.clearDataForOrigin", {
+    origin: new URL(qaUrl()).origin,
+    storageTypes: "local_storage",
   });
   await browser.send("Page.navigate", { url: qaUrl() });
   await browser.waitFor("document.readyState === 'complete'", 20_000);

@@ -174,10 +174,11 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
 .cinematic-vignette::after {
   opacity: var(--hard-locker-peek);
   background:
-    linear-gradient(90deg, rgba(1, 3, 4, .99) 0 17%, rgba(11, 16, 17, .93) 27%, rgba(4, 7, 8, .32) 35%, transparent 40% 62%, rgba(4, 7, 8, .34) 67%, rgba(13, 18, 19, .94) 77%, rgba(1, 3, 4, .99) 87% 100%),
-    repeating-linear-gradient(177deg, transparent 0 14px, rgba(189, 202, 197, .045) 15px 16px, transparent 17px 29px),
-    radial-gradient(ellipse at 52% 47%, transparent 21%, rgba(1, 3, 5, .46) 68%, rgba(0, 1, 2, .94) 100%);
-  box-shadow: inset 0 0 80px rgba(0, 0, 0, .82);
+    linear-gradient(90deg, rgba(1, 3, 4, .98) 0 10%, rgba(11, 16, 17, .86) 19%, rgba(4, 7, 8, .18) 29%, transparent 36% 66%, rgba(4, 7, 8, .2) 73%, rgba(13, 18, 19, .88) 82%, rgba(1, 3, 4, .98) 90% 100%),
+    linear-gradient(180deg, rgba(1, 3, 4, .88) 0 8%, rgba(4, 7, 8, .18) 20%, transparent 31% 73%, rgba(4, 7, 8, .24) 84%, rgba(1, 3, 4, .86) 100%),
+    repeating-linear-gradient(177deg, transparent 0 19px, rgba(189, 202, 197, .035) 20px 21px, transparent 22px 38px),
+    radial-gradient(ellipse at 52% 47%, transparent 43%, rgba(1, 3, 5, .24) 76%, rgba(0, 1, 2, .82) 100%);
+  box-shadow: inset 0 0 62px rgba(0, 0, 0, .68);
 }
 .locker-interior .cinematic-vignette { filter: saturate(.72) contrast(1.08); }
 

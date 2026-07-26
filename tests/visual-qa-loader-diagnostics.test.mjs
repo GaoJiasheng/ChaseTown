@@ -89,6 +89,8 @@ test("storage reset happens before navigation instead of aborting a live art loa
   for (const harness of [
     "library-gold-visual-qa.mjs",
     "deep-gameplay-visual-qa.mjs",
+    "locker-maze-qa.mjs",
+    "environment-art-qa.mjs",
   ]) {
     const source = readFileSync(
       new URL(`../scripts/${harness}`, import.meta.url),
@@ -97,4 +99,13 @@ test("storage reset happens before navigation instead of aborting a live art loa
     assert.match(source, /Storage\.clearDataForOrigin/u, harness);
     assert.doesNotMatch(source, /localStorage\.clear\(\)/u, harness);
   }
+});
+
+test("environment art QA locks the highest render tier before renderer creation", () => {
+  const source = readFileSync(
+    new URL("../scripts/environment-art-qa.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /url\.searchParams\.set\("qaQuality", "high"\)/u);
+  assert.match(source, /fallbackUrl\.searchParams\.set\("qaQuality", "high"\)/u);
 });

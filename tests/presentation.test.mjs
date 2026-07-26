@@ -16,6 +16,7 @@ import {
   createFixedCameraFollowState,
   fixedCameraCompositionConstraints,
   gameplayCameraInsetsForViewport,
+  lockerCameraPoseBlend,
   lockerObservationExposureMultiplier,
   lockerVisionMix,
   minimumActorScreenHeightPixelsForViewport,
@@ -84,6 +85,13 @@ test("locker observation adapts exposure only through an opened peek slit", () =
   assert.equal(lockerObservationExposureMultiplier({ cover: 0, peek: 1 }), 1.18);
   const openingHalf = lockerObservationExposureMultiplier({ cover: 0.5, peek: 0.5 });
   assert.ok(Math.abs(openingHalf - 1.045) < 1e-12);
+});
+
+test("locker camera settles before overhead threat framing can pull it through the cabinet", () => {
+  assert.equal(lockerCameraPoseBlend(0), 0);
+  assert.equal(lockerCameraPoseBlend(0.9), 1);
+  assert.equal(lockerCameraPoseBlend(1), 1);
+  assert.ok(lockerCameraPoseBlend(0.7) > 0.85);
 });
 
 test("authored actor rim stays depth-honest and prioritizes an active pursuer", () => {

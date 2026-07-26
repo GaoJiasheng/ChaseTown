@@ -14,6 +14,7 @@
   "tool": {
     "name": "gltfpack",
     "version": "gltfpack 1.2",
+    "binarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
     "arguments": [
       "-c",
       "-kn",
@@ -69,16 +70,16 @@
     }
   },
   "totals": {
-    "originalGlbBytes": 3787384,
+    "originalGlbBytes": 2265652,
     "sourceTextureBytes": 8721102,
-    "originalRuntimeBytes": 12508486,
+    "originalRuntimeBytes": 10986754,
     "originalRuntimeRequests": 41,
-    "outputGlbBytes": 3840420,
+    "outputGlbBytes": 2318312,
     "atlasBytes": 1064908,
-    "outputRuntimeBytes": 4905328,
+    "outputRuntimeBytes": 3383220,
     "outputRuntimeRequests": 21,
-    "savedBytes": 7603158,
-    "savedPercent": 60.784,
+    "savedBytes": 7603534,
+    "savedPercent": 69.206,
     "requestsSaved": 20,
     "supersededNormalAtlasBytes": 2288853,
     "compactNormalAtlasBytes": 597993,
@@ -97,15 +98,15 @@
       "desk-chair.glb",
       "podium.glb"
     ],
-    "originalGlbBytes": 2893920,
+    "originalGlbBytes": 1825924,
     "sourceTextureBytes": 6161273,
-    "originalRuntimeBytes": 9055193,
+    "originalRuntimeBytes": 7987197,
     "originalRuntimeRequests": 26,
-    "outputGlbBytes": 2920560,
+    "outputGlbBytes": 1852280,
     "atlasBytes": 1064908,
-    "outputRuntimeBytes": 3985468,
+    "outputRuntimeBytes": 2917188,
     "outputRuntimeRequests": 12,
-    "savedBytes": 5069725,
+    "savedBytes": 5070009,
     "requestsSaved": 14
   },
   "sourceTextures": [
@@ -368,20 +369,20 @@
     {
       "path": "public/models/environment/backpack.glb",
       "original": {
-        "bytes": 59128,
-        "sha256": "136d3d995686d2d87ef96d8130ee662a5525a4dd29ef903fff6f4493107dbed6",
+        "bytes": 33924,
+        "sha256": "2a27d49165b83c43ad9c1de2785d43c59bfd96f4b042a4fc684fc2ead8514fdc",
         "externalPngRequests": 6
       },
       "output": {
-        "bytes": 61512,
-        "sha256": "65d9715045660ff167712fe98bb31a8ad964e2c64d4133d642b7eeaf2c9745b7",
+        "bytes": 36332,
+        "sha256": "6000bda494202641e8a668a8ecf60d61154a7be3270d4ddb1cca88d78f211e9c",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "488cffda3a26ab3759faaee831ce40540f9022b8dade67182d27a9bb5d9e6aab",
+      "geometryBinarySha256": "0989f582934f71902e1f6fae3f4087091a1a4363a3342110f2d0b27250747457",
       "structure": {
         "nodes": {
-          "count": 22,
-          "sha256": "6ebdb71c69b4c628dafd654062110907b70f0becefb294e580d4387805dc76e2"
+          "count": 43,
+          "sha256": "d2a53bc07438322d1e00f118f98d54d3c0c242bbb168efca6a8b233b0014002d"
         },
         "meshes": {
           "count": 12,
@@ -397,14 +398,14 @@
         },
         "accessors": {
           "count": 60,
-          "sha256": "3c41a25216c7bd3b65aa15bcf6c5ecac60faab583c24cf956fbb6afdd452ed65"
+          "sha256": "21b8c0ce8c76354ce507b5d7084de89049d53051fda4ac25ea3d1a1fe175a04c"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 22,
+      "nodes": 43,
       "meshes": 12,
       "materials": 3,
       "animations": [],
@@ -444,20 +445,20 @@
     {
       "path": "public/models/environment/basketball.glb",
       "original": {
-        "bytes": 145244,
-        "sha256": "82cff58d6d36c6fc434f4367e3d22544c0b10caaa269d14ab48a42e88cd6c5ca",
+        "bytes": 71272,
+        "sha256": "06193024a553dae4689a292b37eddf281f69fce89d522d9c6e688f0ae6bdd613",
         "externalPngRequests": 8
       },
       "output": {
-        "bytes": 148036,
-        "sha256": "2c9e51e0e345a9b24f19362c461be02d0f9260820d1eabac5f99df49b17be350",
+        "bytes": 74016,
+        "sha256": "1e1b5b8a84775d2f1629de0cae894ef496371bd5151224e477fab4c6c9bd1b6a",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "2e42e4c22f483d3927b88f6ae58d08c768f3761d4ec9322e3c3f53849cc85d4d",
+      "geometryBinarySha256": "244da326601dc3e4be175030e721c3dd0434205cb3855023f1a4b1181378f18a",
       "structure": {
         "nodes": {
-          "count": 37,
-          "sha256": "c6a6ed51201dfb93472920fbec0c42098b848d7bd9d6f8698f47e7fbe58ef73b"
+          "count": 73,
+          "sha256": "817fbdfe2c65b676191956f912f3f160c9a9a42b2bb0c7fad0c32d86f07cd454"
         },
         "meshes": {
           "count": 27,
@@ -473,14 +474,14 @@
         },
         "accessors": {
           "count": 135,
-          "sha256": "4ebdf8b6a7e1e8e8b930faeb401a8dac7b420918319070491410308e27ad50fe"
+          "sha256": "2953e465075cb94418b1891ed1b42e7eab823171270148e5317cb1162b8f3d5a"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 37,
+      "nodes": 73,
       "meshes": 27,
       "materials": 4,
       "animations": [],
@@ -530,20 +531,20 @@
     {
       "path": "public/models/environment/bench.glb",
       "original": {
-        "bytes": 86152,
-        "sha256": "760843abc5c9817db5b12aee9ea6de5f34415094be72e0442b052132ce00a31b",
+        "bytes": 45912,
+        "sha256": "5da440dc86fe7c0ef1285d2fb6796980099a2b3f3e291391abf5f5efb8d587cd",
         "externalPngRequests": 4
       },
       "output": {
-        "bytes": 88192,
-        "sha256": "91212404d9a800fd1ed5294c85896b1643af21f3cf517c69a63e594ba5a905a1",
+        "bytes": 47916,
+        "sha256": "a08a99e383bb6b1f8cdec69435d6cf360753b40a162ce569b39f002f2a6490de",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "e5731899fe12c79aff7867aaa679d5da57dc6a978278c2be12f5376eb30f7820",
+      "geometryBinarySha256": "8435fc6ab7ea1ba33d3e84cc793e45325ba19dfe1de5232262a0087b128e0dba",
       "structure": {
         "nodes": {
-          "count": 34,
-          "sha256": "b975c705bc06a62e8adb4417313409e98427d953f4ab650a8467a379b1f0e8bc"
+          "count": 67,
+          "sha256": "d1473cf9d4fbb128cdbfe18ede6f365059377c194fdac4820959be3cecabe7ef"
         },
         "meshes": {
           "count": 15,
@@ -559,14 +560,14 @@
         },
         "accessors": {
           "count": 75,
-          "sha256": "1c91c10b9d13383284238aaab673d816b195b651375897797b6ea9039462a99d"
+          "sha256": "db0fe958849201b55ab28ddfd153b1d2c5bd6c3fc7f7ed11e5937ada44b3079a"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 34,
+      "nodes": 67,
       "meshes": 15,
       "materials": 2,
       "animations": [],
@@ -596,20 +597,20 @@
     {
       "path": "public/models/environment/blackboard.glb",
       "original": {
-        "bytes": 66584,
-        "sha256": "5181601c883709cb856d643c6a425fcd7b4ec54d16cf3840eea1bdec9538a09e",
+        "bytes": 32816,
+        "sha256": "ac06eec09d8be5fe874650a9d0f95a8e0e1f975e861d1947e22e676d8e5b5926",
         "externalPngRequests": 8
       },
       "output": {
-        "bytes": 69300,
-        "sha256": "46d8dee376d75431ac2d2de2167a75135f976e3e3f216b128fa91932f8b82a54",
+        "bytes": 35484,
+        "sha256": "f0296fc3f40de91d80d18a15608e55f71f2cd4802f40af18003c3dd974538ec6",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "6c8e8da031ffaf7ff6f4e7778e0a8014b269e7084249d7e54081c6279cab305b",
+      "geometryBinarySha256": "d5e7d3954d29da931818c9de599cb3d6185c4ac8ff13c26281f9c6b8fba0488f",
       "structure": {
         "nodes": {
-          "count": 15,
-          "sha256": "ea8318bb771d6b38e265f5307c117953032180ae63db7685c67a4f154c9acffa"
+          "count": 29,
+          "sha256": "bbf9ee6e1d8a8e162e14d0a076f0b6ab49ddb6df211fe71074de073dc996a227"
         },
         "meshes": {
           "count": 10,
@@ -625,14 +626,14 @@
         },
         "accessors": {
           "count": 50,
-          "sha256": "a0f7b2a3c21334bf6f8c2b8e98d413efc7b05b6e8e0ac8ad26761bbe926ede80"
+          "sha256": "2803ff2ef7883016a6cd44d2e6fc6027fb49cb83e7008b22f99f2f6dfaf705ad"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 15,
+      "nodes": 29,
       "meshes": 10,
       "materials": 4,
       "animations": [],
@@ -682,20 +683,20 @@
     {
       "path": "public/models/environment/books.glb",
       "original": {
-        "bytes": 289632,
-        "sha256": "07ce39352bc78878ff61982b2b8e13bfb4d4bace0eee1faf0ff8d36b8fa29c73",
+        "bytes": 131044,
+        "sha256": "9fd726db5c96520e659bfc6cd94bb65ccf3f815eb139d46bd03eb42fa6d5a9af",
         "externalPngRequests": 10
       },
       "output": {
-        "bytes": 292804,
-        "sha256": "fec50806cbd19458e5ad5d4ca6d5652765432784023a7932ddccc49f1df7a2e3",
+        "bytes": 134308,
+        "sha256": "a77d15163fecd4cf3e4e3b170eed61ca38ef5b557b466ddea1bce708836b4d01",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "d5ed3f290c57141f80d28681f2b5d1167f4f21e9be41dca7b36b5503ea16c288",
+      "geometryBinarySha256": "d71fcf98b68ce445d74b80a8bbf3a493da0d07f407cbce05dd3d8db919997696",
       "structure": {
         "nodes": {
-          "count": 49,
-          "sha256": "e32f849bba16cabe040c2d336eee0c7589e0b1cffea6f99f294d84b1b3f90211"
+          "count": 97,
+          "sha256": "64436ff8d5bbf57a0340462db6cb906450f6ea206b863302869c2652cbc9dc1d"
         },
         "meshes": {
           "count": 38,
@@ -711,14 +712,14 @@
         },
         "accessors": {
           "count": 190,
-          "sha256": "8f46354ebfe3e83269c1f38936b938f014ce63a59c2f7071df0f6d457b07d417"
+          "sha256": "ab8a8414245a85f82bf9865a3e02054baae87a84e1be49cf8be21e94e439bd8a"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 49,
+      "nodes": 97,
       "meshes": 38,
       "materials": 5,
       "animations": [],
@@ -778,20 +779,20 @@
     {
       "path": "public/models/environment/bulletin.glb",
       "original": {
-        "bytes": 75136,
-        "sha256": "09449aef7d6bb2ffa875f0611abc90ecb5443a2bcd918251964f308fb23517a8",
+        "bytes": 38808,
+        "sha256": "1c1a749ebdf43c7d3e2fb7f0cb0e2f31f6d77e88f9150306d8ebccf4a7d9d60a",
         "externalPngRequests": 10
       },
       "output": {
-        "bytes": 78216,
-        "sha256": "86cdf1a3e628bea6ca68336edee37e8e0640918f1ddf80db2c64420b9c6e464b",
+        "bytes": 41896,
+        "sha256": "2887d03d2a8f52dfa8252b15094c51b5b225e0331015d6f930b71eb6cc43fc5d",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "b2a3b00e47e84e3770950a9a423d6ade4f148a14696ab38039facfcbe3c215f2",
+      "geometryBinarySha256": "67ceeb99d8beb58b7513e071e870b22b991eb061974627ae21c70d59f0ddccad",
       "structure": {
         "nodes": {
-          "count": 22,
-          "sha256": "5ab3c979b8cd2df92acf09413908c4db6de14f4e1aa19e01ca2f0f3876ae40cc"
+          "count": 43,
+          "sha256": "69bbb53b3e0b2ae04e5633ed90de2266786f26364435512356322be070137da0"
         },
         "meshes": {
           "count": 10,
@@ -807,14 +808,14 @@
         },
         "accessors": {
           "count": 50,
-          "sha256": "77b80c001a8681b1859f574a7934f8b37bff92f8f0b1e158c14faf5a456442d8"
+          "sha256": "ec0125519682002817e135ced12a80af2f334a7a85fcfbe14a399510d927ab1d"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 22,
+      "nodes": 43,
       "meshes": 10,
       "materials": 5,
       "animations": [],
@@ -874,20 +875,20 @@
     {
       "path": "public/models/environment/ceiling-light.glb",
       "original": {
-        "bytes": 37164,
-        "sha256": "587e11a8bbddb1ed8c967b9a08bda0b6ab369f69940c2998c2d85b7693fdd596",
+        "bytes": 20784,
+        "sha256": "4468edd1a45d2921e542631e80ec1f76350262aad800a0a3cdfc312dc3cc4d5b",
         "externalPngRequests": 4
       },
       "output": {
-        "bytes": 39660,
-        "sha256": "7c0e3e0265b8ec091e21f4b82a9477bc08d7e48e6ea2d99768a9dd1610da2d0a",
+        "bytes": 23260,
+        "sha256": "5b00870c3ab5e538711d1556cdf38249f1e77186738b6c4bf95918603d230f62",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "b6bc2cfd59208d906f2bba14ff7879a7e6c554533b24bbe5403cbcfd69b18b19",
+      "geometryBinarySha256": "76a54c3aa6be7e379c8a6df33dd905c88f499d660207b8582c65773dc1e40e73",
       "structure": {
         "nodes": {
-          "count": 10,
-          "sha256": "4be87d1b660095633a5157e7f9dbf8fb8143969a70b6022747e63cf9e0ea6a60"
+          "count": 19,
+          "sha256": "4b80636ae97a8cdcddb03704ed14c06ec74a58484d8a7d03aab854bbdce6dba5"
         },
         "meshes": {
           "count": 7,
@@ -903,14 +904,14 @@
         },
         "accessors": {
           "count": 35,
-          "sha256": "9d35b6dae48a60efd2bdceb7905f6e80fcae6c71dd72a60cb5e88de27760ab31"
+          "sha256": "b8d64742a11188777084e4bcb49a8ebd9b5515e77aa084feebd2ced23599186d"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 10,
+      "nodes": 19,
       "meshes": 7,
       "materials": 3,
       "animations": [],
@@ -950,20 +951,20 @@
     {
       "path": "public/models/environment/classroom-door.glb",
       "original": {
-        "bytes": 69104,
-        "sha256": "6c03e160de172156ecb05a4041b9187233635f855a55fe3242b0efb74d11c710",
+        "bytes": 34628,
+        "sha256": "eebc65bd2d6a5559e434d91a50fcb6fea502a4ba2d01cfeea7142034b0303d20",
         "externalPngRequests": 8
       },
       "output": {
-        "bytes": 71820,
-        "sha256": "26f9e06f9359b030c3dab2fad41a11d5fff81a5c8e9910e0cda9b0ece96ac2ee",
+        "bytes": 37300,
+        "sha256": "4a34edaafe824625d2d58c364fad02e2c1e76642e186e93ec58e01c70d274e70",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "f2306f6ef935eaca197a2d411c2cbb5ed96c32b4ef9faa87639a70486f4a3945",
+      "geometryBinarySha256": "78a688d6ca565602002b162157cd7ed7945cb50f73fa77ca780a805305e91f7d",
       "structure": {
         "nodes": {
-          "count": 17,
-          "sha256": "4525b7e311442d35368e1cb5091d5c4d1924a95f29774bfbabae50029303b3da"
+          "count": 33,
+          "sha256": "5bdd1819c3fbdaf2472b7871b5b754fc6a626fc44da4a5c2bba2922af66b40a0"
         },
         "meshes": {
           "count": 10,
@@ -979,14 +980,14 @@
         },
         "accessors": {
           "count": 50,
-          "sha256": "0a1fcaaf8c276b7f21b26065d7d9395605976a99563a6a11c584356d3449804e"
+          "sha256": "d87caf0eebcd5e5c77da5e16007f0e990ebd127c9379cd894376b7a06994849b"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 17,
+      "nodes": 33,
       "meshes": 10,
       "materials": 4,
       "animations": [],
@@ -1036,20 +1037,20 @@
     {
       "path": "public/models/environment/desk-chair.glb",
       "original": {
-        "bytes": 189268,
-        "sha256": "f1115c2553057eab375f118e322c517187647739696382f75f356efadb41a445",
+        "bytes": 93760,
+        "sha256": "f1e1328f6d6a2d350d7ce83613c9d133101c7af63efbfc76141db0c0112ebc59",
         "externalPngRequests": 12
       },
       "output": {
-        "bytes": 192832,
-        "sha256": "b61a65c65fa0a270658680f4dab11d895101fe103ac9c80cc1dbdae7a514c90d",
+        "bytes": 97416,
+        "sha256": "b557c143b59c67efa5e85ece9a3f4bc6feee44078e295a91649ad8310fd983d4",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "907ca8552f26de6381f8cda1ea9b775df3099c709a72175f9077b5e863b04e77",
+      "geometryBinarySha256": "5f37e7eb0195768d9585d780819a4f31f89ac39e3c19b8ceac878f92b6ebb1f1",
       "structure": {
         "nodes": {
-          "count": 51,
-          "sha256": "9f498ddb150bd2cc698cd8570c7ce0d499690e82de373012acecaeb7dbef49f2"
+          "count": 101,
+          "sha256": "c2aff87331a81b57227f2cee099e261eb43cabff6016a0039c48069cfd4d10c1"
         },
         "meshes": {
           "count": 29,
@@ -1065,14 +1066,14 @@
         },
         "accessors": {
           "count": 145,
-          "sha256": "1c35fb865cdb9b321566b38ff5531f0da68bfe26c5e260da7a15e17f7c9e0fd4"
+          "sha256": "70016accd4b5dc26f5c3c0ac94b7603124ff781db570aad87c95df5a4f4b6c19"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 51,
+      "nodes": 101,
       "meshes": 29,
       "materials": 6,
       "animations": [],
@@ -1142,20 +1143,20 @@
     {
       "path": "public/models/environment/exit.glb",
       "original": {
-        "bytes": 69136,
-        "sha256": "276c22ed31fa7cf4b6fdc497cf6a8be05d2f1ddda103c283d2c11711a4bce06d",
+        "bytes": 34660,
+        "sha256": "88c22237dc86fd1d5c26e95491ad56f2c1af34114ecc1ffe21b7ee972ff28392",
         "externalPngRequests": 8
       },
       "output": {
-        "bytes": 71856,
-        "sha256": "bcef307170dd552b79cfdc637f9c770c50fa2ef76a8252f1d47236abb69511e4",
+        "bytes": 37336,
+        "sha256": "b54b385a1ffb93a720ecb5ba7d1ebe06ae6535010d813381dacc4f983757936a",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "f2306f6ef935eaca197a2d411c2cbb5ed96c32b4ef9faa87639a70486f4a3945",
+      "geometryBinarySha256": "78a688d6ca565602002b162157cd7ed7945cb50f73fa77ca780a805305e91f7d",
       "structure": {
         "nodes": {
-          "count": 17,
-          "sha256": "4525b7e311442d35368e1cb5091d5c4d1924a95f29774bfbabae50029303b3da"
+          "count": 33,
+          "sha256": "5bdd1819c3fbdaf2472b7871b5b754fc6a626fc44da4a5c2bba2922af66b40a0"
         },
         "meshes": {
           "count": 10,
@@ -1171,14 +1172,14 @@
         },
         "accessors": {
           "count": 50,
-          "sha256": "0a1fcaaf8c276b7f21b26065d7d9395605976a99563a6a11c584356d3449804e"
+          "sha256": "d87caf0eebcd5e5c77da5e16007f0e990ebd127c9379cd894376b7a06994849b"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 17,
+      "nodes": 33,
       "meshes": 10,
       "materials": 4,
       "animations": [],
@@ -1228,20 +1229,20 @@
     {
       "path": "public/models/environment/extinguisher.glb",
       "original": {
-        "bytes": 53148,
-        "sha256": "4f0586fba3ea484517301bb301ebce70f4442fe3122c013995782e326be06d34",
+        "bytes": 27644,
+        "sha256": "320d2d576d86e450c2c77438db0764233b387d4e2d3e2ee5147bc6003d0ed103",
         "externalPngRequests": 8
       },
       "output": {
-        "bytes": 55844,
-        "sha256": "da717f0c3b859b0fa47ed7877d79ad86eeeb2581ab340adc5b89a7ab4adf26d4",
+        "bytes": 30320,
+        "sha256": "018305a1f9ccd8ebba2d44e2dcb94cf18057fbb1020cfbc92e5a037d980d8b56",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "52b5bb8ec14d42efa4a3d5ebdc6e315316a473c9ff7621caa64f6bc07607dc91",
+      "geometryBinarySha256": "491ed0aca67cef7da28d6c4f9b937a9d69b3e81544fc7e300cdf261158735049",
       "structure": {
         "nodes": {
-          "count": 11,
-          "sha256": "64301906292dfa37b1fe1f7843067515a0176d6d123e80b8087f6c94ddcc3037"
+          "count": 21,
+          "sha256": "69ad8f870a855acb17aca35a804e00fba2149f38647c6bbd16bf9798631e1f3a"
         },
         "meshes": {
           "count": 9,
@@ -1257,14 +1258,14 @@
         },
         "accessors": {
           "count": 45,
-          "sha256": "9f888655ecbed571da68d9bccef523bf966c5e1b0d77b18691bda0506da1bd0d"
+          "sha256": "162efb4e1c12e1fd87afbdd7f4107b999aea3d99838d84428f57ca3d23b69e73"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 11,
+      "nodes": 21,
       "meshes": 9,
       "materials": 4,
       "animations": [],
@@ -1314,20 +1315,20 @@
     {
       "path": "public/models/environment/front-gate.glb",
       "original": {
-        "bytes": 75768,
-        "sha256": "9eaf4ca15615b5d75537515f88fcfb9d37f36389ec8aa1daae94979862ece886",
+        "bytes": 38188,
+        "sha256": "e1b5f5bca9f56ddaca931ffd73564ae9aa28f01ba1effedb5d0075158eed896e",
         "externalPngRequests": 8
       },
       "output": {
-        "bytes": 78500,
-        "sha256": "d5d118208ac9dfb1d9b5960d107df39c648e3329c9f69493a4157ecb91f85962",
+        "bytes": 40876,
+        "sha256": "6bcd6862b38fdb21ffd9b5ee9b256252ddbbeac8142e0f47ce29600d5458f60e",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "39363789edc984bdaf1b9836dc90b907dfbd8c5a101271760b4f5abc62ecdcd2",
+      "geometryBinarySha256": "a94b25b7bab906f45a6babd77740651fb7d25a6bbf0bf8ce69de31497d47ce58",
       "structure": {
         "nodes": {
-          "count": 20,
-          "sha256": "19f88e5b55a729c7cfff747e33b6967e193f3f5b2e876c01b6f83562b3cbad27"
+          "count": 39,
+          "sha256": "8606ef7a2dca19311fc15f5a088bf2a9010ee3b4ae561727bba0dda55042be96"
         },
         "meshes": {
           "count": 11,
@@ -1343,14 +1344,14 @@
         },
         "accessors": {
           "count": 55,
-          "sha256": "fd69286e127ee16392199a4428f34c6137ab82d4e40ec92e948973b5de68fb31"
+          "sha256": "f78f84bcbf8ad5487d547991c7f3d24a63e20ece2f729215364589ae68e3f7ec"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 20,
+      "nodes": 39,
       "meshes": 11,
       "materials": 4,
       "animations": [],
@@ -1400,16 +1401,16 @@
     {
       "path": "public/models/environment/locker.glb",
       "original": {
-        "bytes": 1602276,
-        "sha256": "6442702bb232543e2c9aad680b7a9ffccc1de2a09707a7dbf77ed9f41f5fbf04",
+        "bytes": 1211620,
+        "sha256": "b53e81785a7d803a55f0abf0b8b93c6ab691bf6379f61c1ace33b6a432c1db14",
         "externalPngRequests": 6
       },
       "output": {
-        "bytes": 1604392,
-        "sha256": "a48288662f52db924b4fa6a0cce34dd533e00320d44f3cc2a36dd002ddcf0421",
+        "bytes": 1213672,
+        "sha256": "4f9e9aaf5d0cb8683be34630d5fffb7e0999476020852c8e87a2c81723d09554",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "6e792a42786678c79fd8b1d1698a613adc36b72f3cee50fa0083c98cfb4257e4",
+      "geometryBinarySha256": "7d033df88c8740f6de721859a054d1eafbb6367d89b96188e1d50cd20ab9140e",
       "structure": {
         "nodes": {
           "count": 43,
@@ -1429,7 +1430,7 @@
         },
         "accessors": {
           "count": 102,
-          "sha256": "c110fb8f7d51f88447f3fdeec0f922c4db33b19bfde89e1d4e4cf23a996db562"
+          "sha256": "dcd4a7f6c59f8234b24f087c39ca124ef135218f61e9e65f9c9976808f8637f4"
         },
         "skins": {
           "count": 0,
@@ -1483,20 +1484,20 @@
     {
       "path": "public/models/environment/podium.glb",
       "original": {
-        "bytes": 75936,
-        "sha256": "c53bfeb102766096366a7d1b7fd5f21d1f09944fca6483d4740af61867ace822",
+        "bytes": 36524,
+        "sha256": "4d1d0e04a1d025deee7b0ca07e1de00134432b6b660fa32eab3d4d85d5e0eafb",
         "externalPngRequests": 8
       },
       "output": {
-        "bytes": 78644,
-        "sha256": "12b7acb94b86ceaab4a57b1d812edd518888e5ffd2dd904023a1c1dfde1b79e5",
+        "bytes": 39184,
+        "sha256": "02b348399de7f55f658825fe8a2675dfb86f14e0c7db2ec947efc6b0cf5c1055",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "1c997359a7f9ebf1a7c2a758a1f04affd7a0a9c41124d3f6525821d8e5b46282",
+      "geometryBinarySha256": "ba6529668bb4ee1739af6716f34f970389ce111a710eb884cb95c09182441f7d",
       "structure": {
         "nodes": {
-          "count": 16,
-          "sha256": "e37aa7f164a75b35417a5eb92b4cec932a53bf10da73d70e60ee3a7bf10baf13"
+          "count": 31,
+          "sha256": "b6200d477df8b5a411567ff8203f53a2e92fcfa2d2c1964ef68739bd6a76b89a"
         },
         "meshes": {
           "count": 10,
@@ -1512,14 +1513,14 @@
         },
         "accessors": {
           "count": 50,
-          "sha256": "1430cf3f4d1d5b07673e85d817464c2f3fec5e8e10965a9686e003273c6e5c51"
+          "sha256": "66f5948aa21a2bd3972961b12f393b1c22fabbaf7ca0db230106d5874cbd75f4"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 16,
+      "nodes": 31,
       "meshes": 10,
       "materials": 4,
       "animations": [],
@@ -1569,20 +1570,20 @@
     {
       "path": "public/models/environment/police-car.glb",
       "original": {
-        "bytes": 163456,
-        "sha256": "38b6d34dca8e898946a75e7c679af3993d1b4e062ad0d04ee5b66538ab80de95",
+        "bytes": 82716,
+        "sha256": "1f8406dd89d1dd73823416927554f44b13999e05328adb4b8acba8cf666721da",
         "externalPngRequests": 12
       },
       "output": {
-        "bytes": 167004,
-        "sha256": "d1ed7abfc999ea1f367d474591ad4bf681af93b637fe22ffbcda2cae0d624baf",
+        "bytes": 86200,
+        "sha256": "a4d3b3a1b078d39a368c82d55a79e01257b64e93127da40d59e7d65d077fe66f",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "607ab7bede45761c3a750029956e414224fecd7df690c08c8a5a0c1809f90209",
+      "geometryBinarySha256": "7512b2109043006082ff778bf3c8ab9a4205ad79f75510bd110fd6a9fe11107d",
       "structure": {
         "nodes": {
-          "count": 48,
-          "sha256": "07e78266305cc0b8a1d9061fb2f93d32db94a9536a9d580b17793e8d2537e6b1"
+          "count": 95,
+          "sha256": "aa3a7f176cbc41a9e6a0a2f0cf55757a0c1a388c4b5630ef67f0c7fa980dadd2"
         },
         "meshes": {
           "count": 26,
@@ -1598,14 +1599,14 @@
         },
         "accessors": {
           "count": 125,
-          "sha256": "75e1c9447dd910d94b743088347cf59f2ae8baf7e7e3e2b9fce5080487b7d2ad"
+          "sha256": "5baa5b56a7ed8e1b704a8df141b719d99b619ff54bc8801a0728e4d6fd603a9a"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 48,
+      "nodes": 95,
       "meshes": 26,
       "materials": 6,
       "animations": [],
@@ -1675,20 +1676,20 @@
     {
       "path": "public/models/environment/shrub.glb",
       "original": {
-        "bytes": 230424,
-        "sha256": "f43cf5a4f0db7e1e85fc1161b3d4decbac7370743391e5f3976f785b9f68ae2a",
+        "bytes": 93888,
+        "sha256": "5f5e3f82b438c8428424be828798406600b47189c114936bc73951319db33542",
         "externalPngRequests": 6
       },
       "output": {
-        "bytes": 232788,
-        "sha256": "7b2ccc55d82322e8b12e6a248c297ecbf8952d51ecf49b5bc97850eafaeefe92",
+        "bytes": 96252,
+        "sha256": "6aab68330da24469113221e85c0a77ca8b6710f50f37b1b4879548a7bdbf75d0",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "3d5435e623814e54bdec826070d8181d249396954b84b2bd809113c9cb06e215",
+      "geometryBinarySha256": "cd760545d6bfb463a2f132d0cc5d0418c2bfb2477080df2a97310df1337f570e",
       "structure": {
         "nodes": {
-          "count": 16,
-          "sha256": "8d24192524ba065a74775daec8e5c2358233ad461961f86144ce6ae4936deeb2"
+          "count": 31,
+          "sha256": "1795c68e1ade031f3a155d204f0bfc3a4133e827afed7e1832b7fed2c6951520"
         },
         "meshes": {
           "count": 15,
@@ -1704,14 +1705,14 @@
         },
         "accessors": {
           "count": 75,
-          "sha256": "8806a08f76c9bc4b9e48073f118311dc1f15448f6bb1e17df3226e0111879663"
+          "sha256": "b174fb062b54f7de900a8110189a39c2dc71cec6827ffcc88ac5addc0058aef1"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 16,
+      "nodes": 31,
       "meshes": 15,
       "materials": 3,
       "animations": [],
@@ -1751,20 +1752,20 @@
     {
       "path": "public/models/environment/station.glb",
       "original": {
-        "bytes": 184976,
-        "sha256": "1ee9145154bcf93c6a4c574f838cd6dd3a1d94b626596dc7593d4ba1560543f5",
+        "bytes": 90104,
+        "sha256": "f6ca05db8036aa138feef390da9fed6b9bf3e41a94b3873daf6b3e5ec106782f",
         "externalPngRequests": 14
       },
       "output": {
-        "bytes": 189404,
-        "sha256": "1cd06355bd3e20ad433e420f5164df5e12b78e482e7ba8aaab3ea4afe2fd7e72",
+        "bytes": 94460,
+        "sha256": "ce5fe91cd5380cbee3da00ceff814baa733a074b15be666a9dc98bb2eb3745bb",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "597c19d7e25d832dc22bec09981b66e8937d95b2f289be34ded64a15415c55f8",
+      "geometryBinarySha256": "a4dcf79127abba7056b7c1e4e98fccbd05c27ab04e1f7437886b6ec70184e99b",
       "structure": {
         "nodes": {
-          "count": 44,
-          "sha256": "1cac5a8c400224fb40b3a0b8538737200d83ef6e0d7b444108c8b51ec8efe82f"
+          "count": 87,
+          "sha256": "183adafef92355904e265011ddfc1f9a59bde3011b6955d0006fd6342deda01f"
         },
         "meshes": {
           "count": 29,
@@ -1780,14 +1781,14 @@
         },
         "accessors": {
           "count": 145,
-          "sha256": "eb9815af2c60bd7fc9138363e21c77babba2fe0f59435c60b2b770d39f5f341f"
+          "sha256": "d7291727403f13a1956efab118219a821429e69691c3fc6cc84ee3f9235095f0"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 44,
+      "nodes": 87,
       "meshes": 29,
       "materials": 8,
       "animations": [],
@@ -1877,20 +1878,20 @@
     {
       "path": "public/models/environment/trash.glb",
       "original": {
-        "bytes": 58592,
-        "sha256": "c29f1ea19a0c5e41190bdee1b7d248c2e2922d8d9bef0eea646ddc7f55d0b722",
+        "bytes": 29976,
+        "sha256": "546a876475a85edb0fb89beb8aa58d4970108a2dead6cd3e3011aa98408119bf",
         "externalPngRequests": 8
       },
       "output": {
-        "bytes": 61300,
-        "sha256": "6711f8ebad8be09ed3cede4c6a561fd85c6590ff4897ab03d7da5d82bbe1f8a1",
+        "bytes": 32672,
+        "sha256": "efde034193fe92a4f1d04d2593918d5a1c5107120a970b56fbdaf78efa63a10c",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "89eeadf23af95930e9b65dc90acd8882df1ad150a6660f69ba54944f3878e530",
+      "geometryBinarySha256": "5aff6a04161762209f07ff5e4533390b155ae0ab9543d794c6cd93d11a269a8b",
       "structure": {
         "nodes": {
-          "count": 13,
-          "sha256": "c410dca856bf867e5ca0beb31e3568ab980281c5c45d4aa75894ca943954d06e"
+          "count": 25,
+          "sha256": "03d61fd9880f4b37feea6aa262202f3ea5cec69bf06611a4b320d875d78a5ada"
         },
         "meshes": {
           "count": 8,
@@ -1906,14 +1907,14 @@
         },
         "accessors": {
           "count": 40,
-          "sha256": "acc598bf76961a5c527b2b059c5707e5ec15998a81c0b609bed789f8a3a428e2"
+          "sha256": "61ff508e872295efd302f2e3d176b7c1589b7e7d2adc42dba4f9ac77b0700a1d"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 13,
+      "nodes": 25,
       "meshes": 8,
       "materials": 4,
       "animations": [],
@@ -1963,20 +1964,20 @@
     {
       "path": "public/models/environment/tree.glb",
       "original": {
-        "bytes": 256260,
-        "sha256": "0f5841b377206589b917818c9b3f46963765599f084f08f08b27b3c3b78decce",
+        "bytes": 117384,
+        "sha256": "0e4fdc369e163ed3ad312fc2157f09d107a370fad0eb73ac083a3d402f7f52e8",
         "externalPngRequests": 4
       },
       "output": {
-        "bytes": 258316,
-        "sha256": "423b18518d28c862bb370ed95b5fb27244b0997f9b7911d673d6be1ed090896b",
+        "bytes": 119412,
+        "sha256": "35ac4813973506856dcd7feeebefc3928417e0d731d225d06976ee6d92af30f3",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "032d22ef680c8cb0e24d96d837529e96467170d294f3333e6369caeced42b32a",
+      "geometryBinarySha256": "6c9f14449f44c0a6ce666a5c37c48417f837ccb61f0415b992079f06c6e651ef",
       "structure": {
         "nodes": {
-          "count": 37,
-          "sha256": "b4520190e475c7d5d2187baaab71c972deb8afd64f94e8bda45936f1565d539c"
+          "count": 73,
+          "sha256": "a9b66025f37a4cb75da8eb0cb0bbd567115f5327c638d64ad4bae95bc985e4b6"
         },
         "meshes": {
           "count": 36,
@@ -1992,14 +1993,14 @@
         },
         "accessors": {
           "count": 180,
-          "sha256": "80b254ef553139738c5b2da6b28f87c3bc8d2dbd54be35b6f8b25b80269c08f2"
+          "sha256": "ffdccbac704e5b5d94cace09e696b631cd8204e8fc8a3d63296cab15fd5df60d"
         },
         "skins": {
           "count": 0,
           "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
         }
       },
-      "nodes": 37,
+      "nodes": 73,
       "meshes": 36,
       "materials": 2,
       "animations": [],

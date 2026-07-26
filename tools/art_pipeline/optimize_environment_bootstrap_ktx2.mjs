@@ -48,6 +48,9 @@ const FORMAT_VERSION = 1;
 const PIPELINE_CONTRACT_KEY = "chasing_environment_bootstrap";
 const SHARED_DIRECTORY = "SharedTexturesBootstrapKTX2";
 const SOURCE_TEXTURE_DIRECTORY = path.posix.join("models", "SharedTextures");
+const GLTFPACK_VERSION = "gltfpack 1.2";
+const GLTFPACK_BINARY_SHA256 =
+  "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df";
 const KTX2_SIGNATURE = Buffer.from([
   0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
@@ -136,6 +139,7 @@ function parseArguments(argv) {
     gltfpack: process.env.GLTFPACK_KTX2
       ? path.resolve(process.env.GLTFPACK_KTX2)
       : null,
+    normalReferenceOut: null,
     check: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -149,6 +153,9 @@ function parseArguments(argv) {
     if (argument === "--public-root") result.publicRoot = path.resolve(value);
     else if (argument === "--report") result.report = path.resolve(value);
     else if (argument === "--gltfpack") result.gltfpack = path.resolve(value);
+    else if (argument === "--normal-reference-out") {
+      result.normalReferenceOut = path.resolve(value);
+    }
     else throw new Error(`Unknown argument: ${argument}`);
     index += 1;
   }
@@ -156,6 +163,9 @@ function parseArguments(argv) {
     throw new Error(
       "Atlas encoding needs native gltfpack 1.2: pass --gltfpack PATH or set GLTFPACK_KTX2.",
     );
+  }
+  if (result.check && result.normalReferenceOut) {
+    throw new Error("--normal-reference-out is available only while rebuilding atlases");
   }
   return result;
 }
@@ -475,11 +485,17 @@ function rewriteWithAtlases(asset, atlasUris) {
 
 async function verifyTool(gltfpack) {
   await access(gltfpack);
+  const binarySha256 = sha256(await readFile(gltfpack));
+  assert.equal(
+    binarySha256,
+    GLTFPACK_BINARY_SHA256,
+    "Native gltfpack is not the pinned official v1.2 macOS arm64 binary",
+  );
   const result = spawnSync(gltfpack, ["-v"], { cwd: ROOT, encoding: "utf8" });
   if (result.status !== 0) throw new Error(result.stderr || result.stdout || "gltfpack -v failed");
   const version = result.stdout.trim();
-  assert.equal(version, "gltfpack 1.2", `Expected native gltfpack 1.2, received ${version}`);
-  return version;
+  assert.equal(version, GLTFPACK_VERSION, `Expected native gltfpack 1.2, received ${version}`);
+  return { version, binarySha256 };
 }
 
 async function textureSourceMetadata(publicRoot) {
@@ -706,6 +722,7 @@ async function encodeAtlases(gltfpack, temporaryRoot, publicRoot) {
     },
     sourceEntries,
     supersededNormalAtlas: {
+      payload: atlases.normal.payload,
       bytes: atlases.normal.bytes,
       sha256: atlases.normal.sha256,
       width: atlases.normal.width,
@@ -813,7 +830,7 @@ function uniqueSourceUris(contracts) {
 }
 
 async function build(options) {
-  const toolVersion = await verifyTool(options.gltfpack);
+  const tool = await verifyTool(options.gltfpack);
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), "chasing-environment-bootstrap-"));
   const environmentRoot = path.join(options.publicRoot, "models", "environment");
   const sharedRoot = path.join(environmentRoot, SHARED_DIRECTORY);
@@ -824,6 +841,15 @@ async function build(options) {
       temporaryRoot,
       options.publicRoot,
     );
+    if (options.normalReferenceOut) {
+      await mkdir(path.dirname(options.normalReferenceOut), { recursive: true });
+      await writeFile(options.normalReferenceOut, supersededNormalAtlas.payload);
+      assert.equal(
+        sha256(await readFile(options.normalReferenceOut)),
+        supersededNormalAtlas.sha256,
+        "Normal-atlas visual reference changed while writing",
+      );
+    }
     const atlasUris = {
       baseColor: atlasUri(atlases.baseColor),
       normal: atlasUri(atlases.normal),
@@ -954,7 +980,8 @@ async function build(options) {
       },
       tool: {
         name: "gltfpack",
-        version: toolVersion,
+        version: tool.version,
+        binarySha256: tool.binarySha256,
         arguments: GLTFPACK_ARGUMENTS,
         nativeBinaryCommitted: false,
       },

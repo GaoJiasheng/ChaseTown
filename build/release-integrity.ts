@@ -122,10 +122,11 @@ async function fileRecord(
 
 /**
  * Builds a conservative cold-start transfer budget. Every emitted client JS
- * and CSS file is counted, not only the entry chunk, and every eager level-one
- * preload is counted even when it does not gate control unlock. The HTML route
- * is rendered dynamically by vinext, so a hard 32 KiB identity-encoded reserve
- * makes that cost explicit and fails closed if the document later grows.
+ * and CSS file is counted, not only the entry chunk. `blocksFirstPlayable` is
+ * the phase authority; fetch priority remains only a browser scheduling hint.
+ * The HTML route is rendered dynamically by vinext, so a hard 32 KiB
+ * identity-encoded reserve makes that cost explicit and fails closed if the
+ * document later grows.
  */
 export async function createFirstPlayableBudget(
   clientOutputDirectory: string,
@@ -170,7 +171,7 @@ export async function createFirstPlayableBudget(
       pathname,
       `/${relativePath}`,
       runtimeKind(preload),
-      preload.fetchPriority === "high" ? "critical" : "eager",
+      preload.blocksFirstPlayable ? "critical" : "eager",
     ));
   }
 

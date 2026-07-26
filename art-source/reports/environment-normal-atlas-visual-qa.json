@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-07-23T12:11:46.429Z",
+  "generatedAt": "2026-07-26T17:10:27.332Z",
   "method": "Chromium WebGL2; same GLB/BaseColor/UV with only the external Normal atlas URI changed.",
-  "url": "http://localhost:4173/",
+  "url": "http://127.0.0.1:4173/",
   "viewport": {
     "width": 1440,
     "height": 1050,
@@ -36,47 +36,47 @@
   "assets": {
     "locker": {
       "path": "public/models/environment/locker.glb",
-      "bytes": 1604392,
-      "sha256": "a48288662f52db924b4fa6a0cce34dd533e00320d44f3cc2a36dd002ddcf0421"
+      "bytes": 1213672,
+      "sha256": "4f9e9aaf5d0cb8683be34630d5fffb7e0999476020852c8e87a2c81723d09554"
     },
     "tree": {
       "path": "public/models/environment/tree.glb",
-      "bytes": 258316,
-      "sha256": "423b18518d28c862bb370ed95b5fb27244b0997f9b7911d673d6be1ed090896b"
+      "bytes": 119412,
+      "sha256": "35ac4813973506856dcd7feeebefc3928417e0d731d225d06976ee6d92af30f3"
     },
     "desk-chair": {
       "path": "public/models/environment/desk-chair.glb",
-      "bytes": 192832,
-      "sha256": "b61a65c65fa0a270658680f4dab11d895101fe103ac9c80cc1dbdae7a514c90d"
+      "bytes": 97416,
+      "sha256": "b557c143b59c67efa5e85ece9a3f4bc6feee44078e295a91649ad8310fd983d4"
     },
     "police-car": {
       "path": "public/models/environment/police-car.glb",
-      "bytes": 167004,
-      "sha256": "d1ed7abfc999ea1f367d474591ad4bf681af93b637fe22ffbcda2cae0d624baf"
+      "bytes": 86200,
+      "sha256": "a4d3b3a1b078d39a368c82d55a79e01257b64e93127da40d59e7d65d077fe66f"
     }
   },
   "result": {
     "locker": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.028871971185330712
+      "rgbMeanAbsoluteError": 0.02803631214033709
     },
     "tree": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.403353332403144
+      "rgbMeanAbsoluteError": 0.4018161312451312
     },
     "desk-chair": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.23914521498569888
+      "rgbMeanAbsoluteError": 0.23781895753484064
     },
     "police-car": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.17972811310494835
+      "rgbMeanAbsoluteError": 0.18069603045133226
     }
   },
   "gates": {
     "minimumSilhouetteIou": 0.9999,
     "maximumRgbMeanAbsoluteError": 1
   },
-  "screenshotSha256": "6c1d56eafe288360d5f7c85b9c0f962674f41de96673b6bae868dd655367bd8f",
+  "screenshotSha256": "88e3f360060af8c335981f4f64bd082dc49c292492046915649cf372bbc2f7ea",
   "screenshot": "/tmp/chasing-environment-normal-visual-qa-final/environment-normal-atlas-comparison.png"
 }

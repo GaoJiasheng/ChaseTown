@@ -96,6 +96,57 @@ function fartherAnchor(anchor, state) {
   ), candidates[0]);
 }
 
+function hardLockerPeekStaging(spot, state) {
+  assert.ok(
+    Array.isArray(state.campaign.walkable),
+    "QA bridge must expose the authored walkability grid for peek staging",
+  );
+  const directions = [
+    { x: 0, y: 1 },
+    { x: 1, y: 0 },
+    { x: 0, y: -1 },
+    { x: -1, y: 0 },
+  ];
+  const origin = {
+    x: Math.round(spot.approach.x),
+    y: Math.round(spot.approach.y),
+  };
+  const sight = directions
+    .filter((direction) => (
+      direction.x * spot.facing.x + direction.y * spot.facing.y >= -0.1
+    ))
+    .map((direction) => {
+      let visibleCells = 0;
+      for (let step = 1; step <= 8; step += 1) {
+        const x = origin.x + direction.x * step;
+        const y = origin.y + direction.y * step;
+        if (!state.campaign.walkable[y]?.[x]) break;
+        visibleCells += 1;
+      }
+      return {
+        direction,
+        visibleCells,
+        score:
+          visibleCells * 10
+          + direction.x * spot.facing.x
+          + direction.y * spot.facing.y,
+      };
+    })
+    .sort((first, second) => second.score - first.score)[0];
+  assert.ok(
+    sight?.visibleCells >= 2,
+    `${spot.id} has no two-cell observation corridor for a readable pursuer`,
+  );
+  const distanceCells = Math.min(3.25, sight.visibleCells - 0.25);
+  return {
+    sightDirection: sight.direction,
+    chaser: {
+      x: spot.approach.x + sight.direction.x * distanceCells,
+      y: spot.approach.y + sight.direction.y * distanceCells,
+    },
+  };
+}
+
 function assertActorViewport(actor, label, { inset = 0.025 } = {}) {
   assert.ok(actor, `${label} has no viewport sample`);
   assert.equal(actor.centerInFrustum, true, `${label} is outside the camera frustum`);
@@ -318,7 +369,7 @@ async function connect() {
       file,
       bytes: bytes.length,
       sha256: createHash("sha256").update(bytes).digest("hex"),
-      captureBackend: "headless-shell-surface",
+      captureBackend: "cdp-browser-surface",
       viewport,
     });
     return bytes.length;
@@ -511,11 +562,16 @@ async function exerciseHardLocker(browser, viewport, screenshotEvidence) {
     (spot) => (spot.archetype ?? "hard-locker") === "hard-locker",
   );
   assert.ok(hardSpot, "Level 1 has no hard locker");
-  const chaser = fartherAnchor(hardSpot.approach, opening);
+  const peekStaging = hardLockerPeekStaging(hardSpot, opening);
   await browser.evaluate(
     `window.__CHASING_QA__.setScenario(${JSON.stringify({
       player: hardSpot.approach,
-      chaser,
+      chaser: peekStaging.chaser,
+      chaserHeading: {
+        x: -peekStaging.sightDirection.x,
+        y: -peekStaging.sightDirection.y,
+      },
+      spawnDelaySeconds: 6,
     })})`,
   );
   await browser.waitFor(`(() => {
@@ -558,12 +614,126 @@ async function exerciseHardLocker(browser, viewport, screenshotEvidence) {
   await browser.dispatchKey("q", "KeyQ", 81, "keyDown");
   await browser.waitFor(`(() => {
     const state = window.__CHASING_QA__?.getState();
+    const playfield = document.querySelector('.playfield');
+    const style = playfield instanceof HTMLElement ? getComputedStyle(playfield) : null;
+    const number = (value) => Number.parseFloat(value ?? '') || 0;
     return state?.game?.player?.mode === 'peeking'
-      && state?.camera?.occlusion?.maxStrength < 0.03;
+      && state?.camera?.occlusion?.maxStrength < 0.03
+      && state?.camera?.fov >= 66.5
+      && state?.camera?.position?.y >= 1.58
+      && number(style?.getPropertyValue('--hard-locker-peek')) >= 0.98
+      && number(style?.getPropertyValue('--hard-locker-cover')) <= 0.02;
   })()`, 12_000);
   const peek = await browser.evaluate("window.__CHASING_QA__.getState()");
   assert.equal(peek.activeHideArchetype?.archetype, "hard-locker");
   assert.equal(peek.lockers[hardSpot.id].peeking, true);
+  assert.equal(
+    peek.knowledge.chaserObservable,
+    true,
+    "hard-locker peek must expose the staged pursuer through authored line of sight",
+  );
+  assert.equal(
+    peek.visibility.villain.rootVisible,
+    true,
+    "hard-locker peek staged a pursuer but its formal model is hidden",
+  );
+  assert.equal(
+    peek.visibility.villain.worldRendered,
+    true,
+    "hard-locker peek must render the pursuer while the player is exposed",
+  );
+  assert.ok(
+    peek.visibility.villain.alpha >= 0.95,
+    `hard-locker pursuer is not visually opaque: ${peek.visibility.villain.alpha}`,
+  );
+  assert.ok(
+    peek.visibility.villain.viewport.pixelHeight >= 70,
+    `hard-locker pursuer is too small to read: ${
+      JSON.stringify(peek.visibility.villain.viewport)
+    }`,
+  );
+  assert.equal(
+    peek.visibility.villain.cameraClearance.headClear,
+    true,
+    `hard-locker pursuer head is blocked by rendered geometry: ${
+      JSON.stringify(peek.visibility.villain.cameraClearance)
+    }`,
+  );
+  assert.equal(
+    peek.visibility.villain.cameraClearance.torsoClear,
+    true,
+    `hard-locker pursuer torso is blocked by rendered geometry: ${
+      JSON.stringify(peek.visibility.villain.cameraClearance)
+    }`,
+  );
+  assert.ok(
+    peek.visibility.villain.cameraClearance.visibleSampleRatio >= 0.6,
+    `hard-locker pursuer silhouette is mostly blocked: ${
+      JSON.stringify(peek.visibility.villain.cameraClearance)
+    }`,
+  );
+  assertActorViewport(peek.visibility.villain.viewport, "hard-locker peek pursuer");
+  assert.ok(
+    peek.visibility.villain.viewport.x >= 0.36
+      && peek.visibility.villain.viewport.x <= 0.66,
+    `hard-locker pursuer is outside the useful horizontal observation aperture: ${
+      JSON.stringify(peek.visibility.villain.viewport)
+    }`,
+  );
+  assert.ok(
+    peek.visibility.villain.viewport.y >= 0.31
+      && peek.visibility.villain.viewport.y <= 0.73,
+    `hard-locker pursuer is outside the useful vertical observation aperture: ${
+      JSON.stringify(peek.visibility.villain.viewport)
+    }`,
+  );
+  for (let sampleIndex = 0; sampleIndex < 3; sampleIndex += 1) {
+    const stable = await browser.evaluate(`(() => {
+      const state = window.__CHASING_QA__.getState();
+      const playfield = document.querySelector('.playfield');
+      const vignette = document.querySelector('.cinematic-vignette');
+      const awareness = document.querySelector('.awareness');
+      const style = playfield instanceof HTMLElement ? getComputedStyle(playfield) : null;
+      const after = vignette instanceof HTMLElement
+        ? getComputedStyle(vignette, '::after')
+        : null;
+      const number = (value) => Number.parseFloat(value ?? '') || 0;
+      return {
+        phase: state.game.phase,
+        mode: state.game.player.mode,
+        observable: state.knowledge.chaserObservable,
+        rootVisible: state.visibility.villain.rootVisible,
+        worldRendered: state.visibility.villain.worldRendered,
+        alpha: state.visibility.villain.alpha,
+        viewport: state.visibility.villain.viewport,
+        clearance: state.visibility.villain.cameraClearance,
+        hardPeek: number(style?.getPropertyValue('--hard-locker-peek')),
+        hardCover: number(style?.getPropertyValue('--hard-locker-cover')),
+        afterOpacity: number(after?.opacity),
+        awarenessUnknown: awareness?.classList.contains('awareness-unknown') ?? true,
+        awarenessText: awareness?.textContent ?? '',
+      };
+    })()`);
+    assert.equal(stable.phase, "playing");
+    assert.equal(stable.mode, "peeking");
+    assert.equal(stable.observable, true);
+    assert.equal(stable.rootVisible, true);
+    assert.equal(stable.worldRendered, true);
+    assert.ok(stable.alpha >= 0.95);
+    assert.ok(stable.hardPeek >= 0.98 && stable.hardCover <= 0.02);
+    assert.ok(stable.afterOpacity >= 0.98);
+    assert.equal(stable.awarenessUnknown, false);
+    assert.doesNotMatch(stable.awarenessText, /位置未确认/);
+    assert.equal(stable.clearance.headClear, true);
+    assert.equal(stable.clearance.torsoClear, true);
+    assert.ok(stable.clearance.visibleSampleRatio >= 0.6);
+    assert.ok(
+      Math.abs(stable.viewport.x - peek.visibility.villain.viewport.x) < 0.04
+        && Math.abs(stable.viewport.y - peek.visibility.villain.viewport.y) < 0.04,
+      `hard-locker pursuer drifted before capture: ${JSON.stringify(stable.viewport)}`,
+    );
+    await sleep(50);
+  }
   const peekFile = path.join(OUTPUT, "desktop-level-01-hard-locker-peek.png");
   screenshotEvidence.push({
     file: path.basename(peekFile),
@@ -599,6 +769,8 @@ async function exerciseHardLocker(browser, viewport, screenshotEvidence) {
     finalPosition: exited.game.player.position,
     approach: hardSpot.approach,
     hiddenTreatment,
+    peekStaging,
+    peekPursuerViewport: peek.visibility.villain.viewport,
     passed: true,
   };
 }

@@ -16,6 +16,7 @@ const REQUIRED_BLEND_MASTERS = [
   "Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Villain_PrecisionRemodel_v21.blend",
   "Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Villain_PrecisionRemodel_v21_Rigged.blend",
   "Environment/Interactive/Locker_Hero.blend",
+  "Environment/Interactive/Stealth_Corner_Mirrors.blend",
   "Environment/Premium/Chasing_Premium_Common_Environment.blend",
   "Environment/ThemeKits/Chasing_Theme_Environment_Kits.blend",
 ];

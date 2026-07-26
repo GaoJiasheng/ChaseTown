@@ -13,6 +13,12 @@ const BASE_URL = process.env.CHASING_QA_URL ?? "http://127.0.0.1:4173/";
 const DEBUG_PORT = Number(process.env.CHROME_DEBUG_PORT ?? 9223);
 const OUTPUT = path.resolve(process.env.CHASING_QA_OUT ?? "/tmp/chasing-environment-art-qa");
 const VIEWPORT = { width: 1512, height: 982, deviceScaleFactor: 1, mobile: false };
+const SHADER_PROGRAM_CEILING_BY_THEME = Object.freeze({
+  campus: 77,
+  hospital: 80,
+  "fire-station": 77,
+  factory: 76,
+});
 
 const LEVELS = [
   {
@@ -306,10 +312,16 @@ function assertRuntimeIntegrity(state, level, { fallback = false } = {}) {
   assert.ok(state.render.memory.textures <= 256, `${level.id} texture count exceeded 256`);
   // Rich PBR surfaces, depth/shadow variants, camera-occlusion passes and the
   // depth-honest actor readability rim share a strict, cross-theme ceiling.
-  // Chrome 150 compiles up to 60 driver-specific variants for the same bounded
-  // scene. A ceiling of 72 leaves cross-driver headroom while still failing the
+  // The formal stealth-art prewarm intentionally compiles all three deployable
+  // tool families before play. A clean Chrome 150 census measures campus 68–76,
+  // hospital 75–77, fire-station 72–74 and factory 71–73. Theme-local ceilings
+  // preserve narrow driver headroom while the campus ceiling still rejects the
   // measured 78-program duplicate-light regression.
-  assert.ok(state.render.programs <= 72, `${level.id} shader program count exceeded 72`);
+  const shaderProgramCeiling = SHADER_PROGRAM_CEILING_BY_THEME[level.theme];
+  assert.ok(
+    state.render.programs <= shaderProgramCeiling,
+    `${level.id} shader program count exceeded ${shaderProgramCeiling}: ${state.render.programs}`,
+  );
   assert.ok(state.render.sceneTextures <= 80, `${level.id} live scene texture count exceeded 80`);
   if (fallback) assert.equal(state.render.batching, "instanced-mesh", `${level.id} did not enter the no-multi-draw fallback`);
 }
@@ -363,10 +375,20 @@ try {
   await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
   const url = new URL(BASE_URL);
   url.searchParams.set("qa", "environment-art");
+  url.searchParams.set("qaQuality", "high");
+  await cdp.send("Storage.clearDataForOrigin", {
+    origin: url.origin,
+    storageTypes: "local_storage",
+  });
   await cdp.navigate(url.href);
   await cdp.waitFor(`(() => {
     const state = window.__CHASING_QA__?.getState();
-    return state?.ready === true && state.assets?.decorativeReady === true;
+    return state?.ready === true
+      && state.assets?.decorativeReady === true
+      && state.assets?.deferredDressingSettled === true
+      && state.assets?.qaDecorativeSceneCompiled === true
+      && state.assets?.qaDecorativeSceneCompileCount === 1
+      && state.assets?.qaTransientArtPrewarmCount === 1;
   })()`);
 
   const clickByLabel = async (label) => {
@@ -430,6 +452,10 @@ try {
       const state=window.__CHASING_QA__?.getState();
       return state?.ready
         && state.assets?.decorativeReady
+        && state.assets?.deferredDressingSettled === true
+        && state.assets?.qaDecorativeSceneCompiled === true
+        && state.assets?.qaDecorativeSceneCompileCount === 1
+        && state.assets?.qaTransientArtPrewarmCount === 1
         && state.campaign.number===${level.number}
         && state.campaign.propSet===${JSON.stringify(level.propSet)};
     })()`);
@@ -491,10 +517,14 @@ try {
       p99Ms: percentile(intervals, 0.99),
       over33MsRatio: intervals.filter((value) => value > 33.4).length / Math.max(1, intervals.length),
     };
+    const chaseState = await state();
+    await saveState(
+      `${String(level.number).padStart(2, "0")}-${level.propSet}-chase-probe`,
+      { framePerformance, state: chaseState },
+    );
     assert.ok(framePerformance.p95Ms <= 25, `${level.id} chase p95 exceeded 25ms`);
     assert.ok(framePerformance.p99Ms <= 40, `${level.id} chase p99 exceeded 40ms`);
     assert.ok(framePerformance.over33MsRatio <= 0.02, `${level.id} has too many frames below 30 FPS`);
-    const chaseState = await state();
     assertRuntimeIntegrity(chaseState, level);
     assert.equal(chaseState.visibility.kid.viewport.centerInFrustum, true);
     assert.equal(chaseState.visibility.villain.viewport.centerInFrustum, true);
@@ -577,11 +607,17 @@ try {
 
   const fallbackUrl = new URL(BASE_URL);
   fallbackUrl.searchParams.set("qa", "environment-art-fallback");
+  fallbackUrl.searchParams.set("qaQuality", "high");
   fallbackUrl.searchParams.set("no-multi-draw", "1");
   await cdp.navigate(fallbackUrl.href);
   await cdp.waitFor(`(() => {
     const state = window.__CHASING_QA__?.getState();
-    return state?.ready === true && state.assets?.decorativeReady === true;
+    return state?.ready === true
+      && state.assets?.decorativeReady === true
+      && state.assets?.deferredDressingSettled === true
+      && state.assets?.qaDecorativeSceneCompiled === true
+      && state.assets?.qaDecorativeSceneCompileCount === 1
+      && state.assets?.qaTransientArtPrewarmCount === 1;
   })()`);
   for (const level of REPRESENTATIVES) {
     await selectAndStart(level);

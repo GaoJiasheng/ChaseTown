@@ -8,6 +8,11 @@ import {
   isThreeLoaderAssetFailure,
   protocolDiagnosticText,
 } from "./qa-protocol-diagnostics.mjs";
+import {
+  CAPTURE_HOLD_COMMAND_TIMEOUT_MILLISECONDS,
+  CAPTURE_HOLD_LEASE_MILLISECONDS,
+  createRenewableCaptureHoldController,
+} from "./qa-capture-hold.mjs";
 import { collectQaSourceProvenance } from "./qa-source-provenance.mjs";
 
 const BASE_URL = process.env.CHASING_QA_URL ?? "http://127.0.0.1:3000/";
@@ -62,10 +67,19 @@ const MINIMUM_TOOL_PROJECTION_PIXELS = Object.freeze({
   width: 18,
   height: 18,
 });
+const MINIMUM_CORNER_MIRROR_PROJECTION_PIXELS = Object.freeze({
+  width: 60,
+  height: 85,
+});
 const MINIMUM_FOOTPRINT_PROJECTION_PIXELS = Object.freeze({
   width: 8,
   height: 6,
 });
+const minimumToolProjectionPixels = (tool) => (
+  tool === "corner-mirror"
+    ? MINIMUM_CORNER_MIRROR_PROJECTION_PIXELS
+    : MINIMUM_TOOL_PROJECTION_PIXELS
+);
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 function qaUrl() {
@@ -85,6 +99,26 @@ function rectanglesOverlap(left, right) {
     Math.min(left.right, right.right) - Math.max(left.left, right.left) > 0.5
     && Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top) > 0.5
   );
+}
+
+function normalizedRectanglesOverlap(left, right) {
+  if (!left || !right) return false;
+  return (
+    Math.min(left.right, right.right) > Math.max(left.left, right.left)
+    && Math.min(left.bottom, right.bottom) > Math.max(left.top, right.top)
+  );
+}
+
+function normalizedIntersectionRatio(left, right) {
+  if (!normalizedRectanglesOverlap(left, right)) return 0;
+  const intersectionWidth =
+    Math.min(left.right, right.right) - Math.max(left.left, right.left);
+  const intersectionHeight =
+    Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top);
+  const leftArea = (left.right - left.left) * (left.bottom - left.top);
+  const rightArea = (right.right - right.left) * (right.bottom - right.top);
+  return intersectionWidth * intersectionHeight
+    / Math.max(1e-6, Math.min(leftArea, rightArea));
 }
 
 function assertMeaningfulWorldProjection(projection, label, minimumPixels) {
@@ -188,13 +222,61 @@ function assertStealthArtSemantics(view, label, options) {
     );
   }
   if (options.tool === "corner-mirror") {
+    const requiredParts = [
+      "polished-corner-mirror-face",
+      "authored-corner-mirror-rim",
+      "corner-mirror-wall-plate",
+      "corner-mirror-articulated-arm",
+      "corner-mirror-fasteners",
+      "corner-mirror-status-led",
+    ];
+    for (const part of requiredParts) {
+      assert.ok(
+        semanticChildren.includes(part),
+        `${label} is missing authored hard-surface part ${part}`,
+      );
+    }
+    assert.equal(
+      source.assetId,
+      "stealth-kit:corner-mirrors",
+      `${label} is not sourced from the dedicated mirror kit`,
+    );
+    assert.equal(
+      new URL(source.sourceUrl, BASE_URL).pathname,
+      "/models/environment/stealth-corner-mirrors.glb",
+      `${label} source is not the formal stealth mirror GLB`,
+    );
+    assert.match(
+      source.node,
+      /^(?:Campus|Hospital|FireStation|Factory)CornerMirror$/u,
+      `${label} does not use a theme-specific mirror assembly`,
+    );
+    const partByName = new Map(
+      (view.parts ?? []).map((part) => [part.name, part]),
+    );
+    for (const part of requiredParts) {
+      assert.ok(
+        partByName.has(part),
+        `${label} has no QA projection/material telemetry for ${part}`,
+      );
+    }
+    const face = partByName.get("polished-corner-mirror-face");
+    const rim = partByName.get("authored-corner-mirror-rim");
     assert.ok(
-      semanticChildren.includes("polished-corner-mirror-face"),
-      `${label} is missing its dedicated polished mirror face`,
+      (face?.effectiveEmissive ?? Number.POSITIVE_INFINITY) <= 0.001,
+      `${label} mirror face is faking readability with permanent emissive`,
     );
     assert.ok(
-      semanticChildren.includes("authored-corner-mirror-rim"),
-      `${label} is missing its authored mirror housing rim`,
+      (rim?.effectiveEmissive ?? Number.POSITIVE_INFINITY) <= 0.001,
+      `${label} mirror rim is faking readability with permanent emissive`,
+    );
+    assert.ok(
+      face?.metalness?.some((value) => value >= 0.82),
+      `${label} mirror face lacks a physical reflective metal response`,
+    );
+    assert.ok(
+      face?.roughness?.some((value) => value >= 0.05 && value <= 0.18),
+      `${label} mirror face roughness is outside the polished-convex range`,
     );
   }
   if (options.tool === "temporary-blackout") {
@@ -347,6 +429,7 @@ function compactToolSnapshot(state, tool) {
     sample: state.stealth.toolbelt.sample.tools[tool],
     receipt,
     view: state.stealth.toolbelt.views.find((candidate) => candidate.tool === tool),
+    playerViewport: state.visibility.kid.viewport,
     evidence: state.stealth.evidence.records.find(
       (candidate) => candidate.kind === TOOL_EVIDENCE_KINDS[tool],
     ),
@@ -455,12 +538,18 @@ async function connect() {
     else waiter.resolve(message.result);
   });
 
-  const send = (method, params = {}) => new Promise((resolve, reject) => {
+  const send = (
+    method,
+    params = {},
+    timeoutMilliseconds = 30_000,
+  ) => new Promise((resolve, reject) => {
     const id = ++requestId;
     const timeout = setTimeout(() => {
       pending.delete(id);
-      reject(new Error(`CDP ${method} timed out after 30000ms`));
-    }, 30_000);
+      reject(new Error(
+        `CDP ${method} timed out after ${timeoutMilliseconds}ms`,
+      ));
+    }, timeoutMilliseconds);
     pending.set(id, { resolve, reject, timeout });
     socket.send(JSON.stringify({ id, method, params }));
   });
@@ -490,6 +579,49 @@ async function connect() {
     return responseValue.result.value;
   };
 
+  const setBrowserCaptureHold = async (
+    held,
+    leaseMilliseconds = CAPTURE_HOLD_LEASE_MILLISECONDS,
+  ) => {
+    const expression = held
+      ? `(() => {
+          const qa = window.__CHASING_QA__;
+          const before = qa?.getStealthProbe();
+          if (!qa || !before) return null;
+          qa.setCaptureHold(true, ${JSON.stringify(leaseMilliseconds)});
+          const after = qa.getStealthProbe();
+          return {
+            tick: before.tick,
+            renderedFrameCount: before.captureHold.renderedFrameCount,
+            leaseRemainingMilliseconds:
+              after.captureHold.leaseRemainingMilliseconds
+          };
+        })()`
+      : `(() => {
+          const qa = window.__CHASING_QA__;
+          if (!qa) return false;
+          qa.setCaptureHold(false);
+          return true;
+        })()`;
+    const responseValue = await send("Runtime.evaluate", {
+      expression,
+      awaitPromise: true,
+      returnByValue: true,
+    }, CAPTURE_HOLD_COMMAND_TIMEOUT_MILLISECONDS);
+    if (responseValue.exceptionDetails) {
+      throw new Error(
+        responseValue.exceptionDetails.exception?.description
+          ?? responseValue.exceptionDetails.text
+          ?? "Capture-hold evaluation failed",
+      );
+    }
+    const value = responseValue.result.value;
+    if (held && !value) {
+      throw new Error("QA capture-hold bridge is unavailable");
+    }
+    return value;
+  };
+
   const waitFor = async (expression, timeout = 30_000, interval = 50) => {
     const startedAt = Date.now();
     let lastForegroundAt = 0;
@@ -502,7 +634,13 @@ async function connect() {
         }
         last = await evaluate(expression);
         if (last) return last;
-      } catch {
+      } catch (error) {
+        if (
+          error instanceof Error
+          && /^(?:CDP .+ timed out|Chrome DevTools socket)/u.test(error.message)
+        ) {
+          throw error;
+        }
         // React intentionally replaces runtime state during scenario resets.
       }
       await sleep(interval);
@@ -543,12 +681,169 @@ async function connect() {
     assert.equal(blockers.canvases, 1, `${name} must contain exactly one WebGL canvas`);
     assert.equal(blockers.phase, "playing", `${name} was not captured during real play`);
     await send("Page.bringToFront");
-    await sleep(120);
-    const result = await send("Page.captureScreenshot", {
-      format: "png",
-      fromSurface: true,
-      captureBeyondViewport: false,
+    const captureHold = createRenewableCaptureHoldController({
+      renew: (leaseMilliseconds) => (
+        setBrowserCaptureHold(true, leaseMilliseconds)
+      ),
+      release: () => setBrowserCaptureHold(false),
     });
+    let preCapture = null;
+    let result = null;
+    let gpuFence = null;
+    let captureError = null;
+    try {
+      preCapture = await captureHold.start();
+      assert.ok(preCapture, `${name} has no QA capture-hold bridge`);
+      await waitFor(`(() => {
+        const hold = window.__CHASING_QA__?.getStealthProbe()?.captureHold;
+        return hold?.requested === true
+          && hold?.acknowledged === true
+          && hold?.leaseRemainingMilliseconds > 0;
+      })()`, 3_000);
+      gpuFence = await evaluate(`new Promise((resolve) => {
+        const canvas = document.querySelector(".playfield canvas");
+        const gl = canvas?.getContext("webgl2");
+        if (
+          !gl
+          || typeof gl.fenceSync !== "function"
+          || typeof gl.clientWaitSync !== "function"
+        ) {
+          resolve({
+            ready: false,
+            reason: "WebGL2 sync primitives unavailable",
+            waitMs: 0,
+            polls: 0
+          });
+          return;
+        }
+        if (gl.isContextLost()) {
+          resolve({
+            ready: false,
+            reason: "WebGL2 context lost before fence",
+            waitMs: 0,
+            polls: 0
+          });
+          return;
+        }
+        const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+        const startedAt = performance.now();
+        let settled = false;
+        let polls = 0;
+        const finish = (ready, reason) => {
+          if (settled) return;
+          settled = true;
+          try {
+            gl.deleteSync(sync);
+          } catch {
+            // Context replacement is reported by the returned readiness state.
+          }
+          resolve({
+            ready,
+            reason,
+            waitMs: performance.now() - startedAt,
+            polls
+          });
+        };
+        gl.flush();
+        const poll = () => {
+          if (settled) return;
+          polls += 1;
+          if (gl.isContextLost()) {
+            finish(false, "WebGL2 context lost while waiting for fence");
+            return;
+          }
+          let status = gl.WAIT_FAILED;
+          try {
+            status = gl.clientWaitSync(sync, 0, 0);
+          } catch {
+            finish(false, "WebGL2 clientWaitSync threw");
+            return;
+          }
+          if (
+            status === gl.ALREADY_SIGNALED
+            || status === gl.CONDITION_SATISFIED
+          ) {
+            finish(true, "signaled");
+            return;
+          }
+          if (status === gl.WAIT_FAILED) {
+            finish(false, "WebGL2 fence wait failed");
+            return;
+          }
+          if (performance.now() - startedAt >= 1_000) {
+            finish(false, "WebGL2 fence timed out");
+            return;
+          }
+          setTimeout(poll, 16);
+        };
+        setTimeout(poll, 0);
+      })`);
+      assert.equal(
+        gpuFence.ready,
+        true,
+        `${name} GPU fence did not settle before capture: ${JSON.stringify(gpuFence)}`,
+      );
+      const frozen = await evaluate(`(() => {
+        const probe = window.__CHASING_QA__?.getStealthProbe();
+        return probe ? {
+          phase: probe.phase,
+          tick: probe.tick,
+          captureHold: probe.captureHold
+        } : null;
+      })()`);
+      assert.ok(frozen, `${name} lost its QA probe while capture-held`);
+      assert.equal(frozen.phase, "playing", `${name} left play before capture`);
+      assert.equal(frozen.tick, preCapture.tick, `${name} simulation advanced during capture hold`);
+      assert.equal(
+        frozen.captureHold.renderedFrameCount,
+        preCapture.renderedFrameCount,
+        `${name} rendered a new WebGL frame during capture hold`,
+      );
+      assert.ok(
+        frozen.captureHold.leaseRemainingMilliseconds > 0,
+        `${name} capture hold lost its browser-side lease`,
+      );
+      captureHold.assertHealthy();
+      result = await send("Page.captureScreenshot", {
+        format: "png",
+        fromSurface: true,
+        captureBeyondViewport: false,
+        optimizeForSpeed: true,
+      }, 90_000);
+      captureHold.assertHealthy();
+      // Keep the presentation loop held until the full-resolution readback
+      // and fast lossless PNG encoding have both returned to the client.
+      await sleep(650);
+      captureHold.assertHealthy();
+    } catch (error) {
+      captureError = error;
+    }
+    try {
+      await captureHold.stop();
+    } catch (error) {
+      if (!captureError) captureError = error;
+    }
+    if (captureError) throw captureError;
+    assert.ok(result, `${name} did not return screenshot data`);
+    const liveness = await waitFor(`(() => {
+      const probe = window.__CHASING_QA__?.getStealthProbe();
+      if (
+        !probe
+        || probe.captureHold.requested
+        || probe.captureHold.acknowledged
+        || probe.captureHold.renderedFrameCount
+          <= ${JSON.stringify(preCapture.renderedFrameCount)}
+        || probe.tick <= ${JSON.stringify(preCapture.tick)}
+      ) return null;
+      return {
+        phase: probe.phase,
+        tick: probe.tick,
+        renderedFrameCount: probe.captureHold.renderedFrameCount,
+        canvasCount: document.querySelectorAll(".playfield canvas").length
+      };
+    })()`, 5_000);
+    assert.equal(liveness.phase, "playing", `${name} renderer stopped after capture`);
+    assert.equal(liveness.canvasCount, 1, `${name} lost its WebGL surface after capture`);
     const bytes = Buffer.from(result.data, "base64");
     const minimumBytes = viewportState.mobile ? 35_000 : 90_000;
     assert.ok(bytes.length >= minimumBytes, `${name} is suspiciously small`);
@@ -559,7 +854,9 @@ async function connect() {
       bytes: bytes.length,
       sha256: createHash("sha256").update(bytes).digest("hex"),
       viewport: viewportState,
-      captureBackend: "headless-shell-surface",
+      captureBackend: "cdp-browser-surface",
+      gpuFence,
+      resume: liveness,
     };
   };
 
@@ -988,7 +1285,7 @@ try {
     assertMeaningfulWorldProjection(
       compact.view.viewport,
       `${tool} authored 3D world view`,
-      MINIMUM_TOOL_PROJECTION_PIXELS,
+      minimumToolProjectionPixels(tool),
     );
     const ui = await browser.evaluate(`(() => {
       const root = document.querySelector(".stealth-toolbelt-status");
@@ -1000,7 +1297,10 @@ try {
         buttonCount: buttons.length,
         selectedCount: buttons.filter((button) => button.getAttribute("aria-pressed") === "true").length,
         selectedTitle: buttons.find((button) => button.getAttribute("aria-pressed") === "true")?.title ?? null,
-        blackoutClass: document.querySelector(".playfield")?.classList.contains("stealth-blackout-active") ?? false
+        blackoutClass: document.querySelector(".playfield")?.classList.contains("stealth-blackout-active") ?? false,
+        themeMechanicHudVisible: Boolean(document.querySelector(".theme-mechanic")),
+        interactionPromptText: document.querySelector(".interaction-prompt")?.textContent?.trim() ?? "",
+        touchInteractionText: document.querySelector(".action-controls > button")?.textContent?.trim() ?? ""
       };
     })()`);
     assert.equal(ui.rootVisible, true, `${tool} toolbelt UI is hidden`);
@@ -1008,9 +1308,107 @@ try {
     assert.equal(ui.selectedCount, 1, `${tool} tool selection is ambiguous`);
     if (tool === "temporary-blackout") {
       assert.equal(ui.blackoutClass, true, "temporary blackout has no runtime visual treatment");
+      await browser.waitFor(
+        "window.__CHASING_QA__?.getState()?.themeMechanic?.view?.beaconVisible === false",
+        2_000,
+      );
+      const blackoutMechanicView = await browser.evaluate(
+        "window.__CHASING_QA__.getState().themeMechanic.view",
+      );
+      assert.equal(
+        blackoutMechanicView?.beaconVisible,
+        false,
+        "temporary blackout leaves the unrelated theme-console world prompt visible",
+      );
+      assert.equal(
+        blackoutMechanicView?.beaconOpacity,
+        0,
+        "temporary blackout leaves a latent theme-console prompt opacity",
+      );
+      assert.equal(
+        ui.themeMechanicHudVisible,
+        false,
+        "temporary blackout leaves the ready theme-console HUD visible",
+      );
+      assert.equal(
+        ui.interactionPromptText.includes("启动"),
+        false,
+        "temporary blackout leaves the keyboard theme-console prompt visible",
+      );
+      assert.equal(
+        ui.touchInteractionText.includes("启动机关"),
+        false,
+        "temporary blackout leaves the touch theme-console prompt visible",
+      );
+      const beforeBlockedInteraction = await browser.evaluate(
+        "window.__CHASING_QA__.getState()",
+      );
+      assert.equal(
+        beforeBlockedInteraction.themeMechanic.sample.phase,
+        "ready",
+        "blackout interaction arbitration requires a ready mechanic",
+      );
+      await browser.evaluate("window.__CHASING_QA__.interact()");
+      await browser.waitFor(
+        `window.__CHASING_QA__.getState().game.tick
+          > ${beforeBlockedInteraction.game.tick + 1}`,
+        2_000,
+      );
+      const afterBlockedInteraction = await browser.evaluate(
+        "window.__CHASING_QA__.getState()",
+      );
+      assert.equal(
+        afterBlockedInteraction.themeMechanic.sample.phase,
+        "ready",
+        "temporary blackout allowed the theme mechanic to activate",
+      );
     }
     const screenshot = await browser.screenshot(screenshotName);
     report.screenshots.push(screenshot);
+    if (tool === "corner-mirror") {
+      const face = compact.view.parts.find(
+        (part) => part.name === "polished-corner-mirror-face",
+      );
+      assertMeaningfulWorldProjection(
+        face?.viewport,
+        "corner mirror lens",
+        { width: 40, height: 58 },
+      );
+      const actorOverlapRatio = normalizedIntersectionRatio(
+        face?.viewport?.bounds,
+        compact.playerViewport?.bounds,
+      );
+      // Axis-aligned boxes conservatively include the transparent corners of
+      // both the circular lens and the human silhouette. Permit no more than
+      // the tiny diagonal-corner contact verified by the visual review.
+      assert.ok(
+        actorOverlapRatio <= 0.05,
+        `corner mirror lens overlap ratio ${actorOverlapRatio} is too high: ${JSON.stringify({
+          mirror: face?.viewport?.bounds,
+          player: compact.playerViewport?.bounds,
+        })}`,
+      );
+      const lensCenterSeparationPixels = Math.hypot(
+        (face.viewport.x - compact.playerViewport.x) * 1512,
+        (face.viewport.y - compact.playerViewport.y) * 982,
+      );
+      assert.ok(
+        lensCenterSeparationPixels >= 44,
+        `corner mirror lens and player centers are only ${lensCenterSeparationPixels}px apart`,
+      );
+      const centerSeparationPixels = Math.hypot(
+        (
+          compact.view.viewport.x - compact.playerViewport.x
+        ) * 1512,
+        (
+          compact.view.viewport.y - compact.playerViewport.y
+        ) * 982,
+      );
+      assert.ok(
+        centerSeparationPixels >= 48,
+        `corner mirror and player centers are only ${centerSeparationPixels}px apart`,
+      );
+    }
     return {
       ...compact,
       ui,
@@ -1486,7 +1884,7 @@ try {
       assertMeaningfulWorldProjection(
         view?.viewport,
         `${representative.theme} ${tool} art`,
-        MINIMUM_TOOL_PROJECTION_PIXELS,
+        minimumToolProjectionPixels(tool),
       );
       themeToolViews.push(view);
     }
@@ -1503,6 +1901,9 @@ try {
     );
     const footprint = await createFootprintViaKeyboard();
     const combined = footprint.state;
+    const themeBlackoutActive =
+      combined.stealth.toolbelt.sample.tools["temporary-blackout"].phase
+      === "active";
     const toolView = combined.stealth.toolbelt.views.find(
       (view) => view.tool === "temporary-blackout",
     );
@@ -1548,8 +1949,8 @@ try {
     );
     assert.equal(
       themeUi.themeMechanicVisible,
-      true,
-      `${representative.theme} mechanic HUD is not visible`,
+      !themeBlackoutActive,
+      `${representative.theme} mechanic HUD did not follow blackout arbitration`,
     );
     assert.equal(
       themeUi.stealthNoticeVisible,
@@ -1569,6 +1970,7 @@ try {
       sourceNodes: themeSources.map(({ node }) => node),
       geometrySignatures: themeSources.map(({ geometrySignature }) => geometrySignature),
       footprintView: footprint.view,
+      themeBlackoutActive,
       ui: themeUi,
       screenshot,
     });

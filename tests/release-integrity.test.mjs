@@ -38,12 +38,14 @@ test("release budgeting measures emitted text and every declared runtime preload
     {
       href: "/models/kid.glb?v=1",
       type: "model/gltf-binary",
-      fetchPriority: "high",
+      fetchPriority: "auto",
+      blocksFirstPlayable: true,
     },
     {
       href: "/basis/basis_transcoder.wasm",
       type: "application/wasm",
       fetchPriority: "high",
+      blocksFirstPlayable: true,
     },
   ]);
   assertFirstPlayableBudget(budget);
@@ -65,6 +67,7 @@ test("release budgeting rejects duplicate or missing runtime preloads", async (t
     href: "/models/kid.glb?v=1",
     type: "model/gltf-binary",
     fetchPriority: "high",
+    blocksFirstPlayable: true,
   };
 
   await assert.rejects(

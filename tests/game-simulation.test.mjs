@@ -10,7 +10,12 @@ import {
 } from "../app/game/chaser-fsm.ts";
 import { createDefaultLevel, createLevel, DEFAULT_GAME_CONFIG } from "../app/game/level.ts";
 import { distanceBetween, findPath, GridPathPlanner, hasLineOfSight, isWalkable, moveAlongGridPath, moveWithCollision } from "../app/game/navigation.ts";
-import { isPlayerVisuallyExposed, samplePlayerPerception, sampleSoundPerception } from "../app/game/perception.ts";
+import {
+  isPlayerVisuallyExposed,
+  playerVisualObservationPosition,
+  samplePlayerPerception,
+  sampleSoundPerception,
+} from "../app/game/perception.ts";
 import { chaserSpeedForMode, GameSimulation } from "../app/game/simulation.ts";
 
 function testLevel(rows, options = {}) {
@@ -1390,6 +1395,74 @@ test("peek exposure begins only after the door gap opens and ends only after it 
   state = runFor(simulation, simulation.config.peekExitSeconds + simulation.config.fixedStepSeconds, 1 / 60, { peekHeld: false });
   assert.equal(state.player.mode, "hidden");
   assert.equal(isPlayerVisuallyExposed(state.player, simulation.config), false);
+});
+
+test("an open locker peek exposes the doorway viewpoint instead of sight-testing through the cabinet wall", () => {
+  const locker = {
+    id: "corner-peek",
+    approach: { x: 2, y: 1 },
+    concealed: { x: 2, y: 0 },
+    facing: { x: 0, y: 1 },
+  };
+  const level = testLevel([
+    "##.##",
+    ".....",
+  ], {
+    playerStart: locker.approach,
+    chaserStart: { x: 0, y: 1 },
+    chaserStartHeading: { x: 1, y: 0 },
+    exit: { x: 4, y: 1 },
+    hideSpots: [locker],
+  });
+  assert.equal(
+    hasLineOfSight(level, level.chaserStart, locker.concealed),
+    false,
+    "fixture must put the concealed point behind the cabinet wall",
+  );
+  assert.equal(
+    hasLineOfSight(level, level.chaserStart, locker.approach),
+    true,
+    "fixture must leave the doorway viewpoint visible",
+  );
+  assert.deepEqual(
+    playerVisualObservationPosition({
+      position: locker.concealed,
+      mode: "peeking",
+      peekPosition: locker.approach,
+    }),
+    locker.approach,
+  );
+
+  const simulation = new GameSimulation({
+    level,
+    autoStart: true,
+    initialPlayerHeading: locker.facing,
+    config: config({
+      spawnDelaySeconds: 1,
+      aiTickSeconds: 1 / 60,
+      chaserSpeed: 0,
+      catchRange: 0.05,
+      visionRange: 10,
+      hideEnterSeconds: 0.1,
+    }),
+  });
+  simulation.advance(1 / 60, { interactPressed: true });
+  let state = runFor(simulation, 1.1, 1 / 60);
+  assert.equal(state.player.mode, "hidden");
+  assert.equal(state.chaser.memory.lastKnownPosition, null);
+
+  state = runFor(
+    simulation,
+    simulation.config.peekEnterSeconds + simulation.config.fixedStepSeconds * 2,
+    1 / 60,
+    { peekHeld: true },
+  );
+  assert.equal(state.player.mode, "peeking");
+  assert.deepEqual(
+    state.chaser.memory.lastKnownPosition,
+    locker.approach,
+    "visible peek must give the AI the same doorway position shown to the player",
+  );
 });
 
 test("a zero-open quick peek cannot leak evidence through a visually closed locker", () => {

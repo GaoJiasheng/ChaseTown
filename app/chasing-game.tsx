@@ -32,6 +32,7 @@ import {
   type QaAssetFaultInjector,
 } from "./game/asset-loading.ts";
 import { runtimeAtmosphereForLevel } from "./game/atmosphere.ts";
+import { FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS } from "./game/runtime-assets.ts";
 import {
   CAMPAIGN_LEVELS,
   createPlayerKnowledge,
@@ -211,7 +212,10 @@ import {
   type TensionDirectorState,
   type TensionTier,
 } from "./game/tension-director.ts";
-import { isPlayerVisuallyExposed } from "./game/perception.ts";
+import {
+  isPlayerVisuallyExposed,
+  playerVisualObservationPosition,
+} from "./game/perception.ts";
 import {
   EMERGENCY_RENDER_POLICIES,
   INITIAL_EMERGENCY_DEGRADATION_STATE,
@@ -243,6 +247,7 @@ import {
   chaserAnimationForMode,
   fixedCameraCompositionConstraints,
   gameplayCameraInsetsForViewport,
+  lockerCameraPoseBlend,
   lockerObservationExposureMultiplier,
   lockerVisionMix,
   minimumActorScreenHeightPixelsForViewport,
@@ -315,7 +320,7 @@ const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
 
 const ACTOR_SPECS = {
   kid: {
-    bootstrapUrl: "/models/characters/kid-bootstrap.glb?v=1",
+    bootstrapUrl: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.player,
     height: 1.52,
     aliases: {
       idle: "Idle",
@@ -334,7 +339,7 @@ const ACTOR_SPECS = {
     required: ["idle", "walk", "run", "turnLeft", "turnRight", "enterHide", "hideIdle", "peekLeft", "exitHide", "caught", "celebrate", "point"] as AnimationState[],
   },
   villain: {
-    bootstrapUrl: "/models/characters/villain-bootstrap.glb?v=1",
+    bootstrapUrl: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.threat,
     height: 1.88,
     aliases: {
       idle: "Idle",
@@ -363,36 +368,44 @@ const ACTOR_SPECS = {
 } as const;
 
 const STRUCTURE_ASSETS = {
-  frontGate: "/models/environment/front-gate.glb?v=4",
-  exit: "/models/environment/exit.glb?v=4",
+  frontGate: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.frontGate,
+  exit: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.exit,
 } as const;
 
 const DETAIL_ASSETS = {
-  locker: "/models/environment/locker.glb?v=31",
-  bench: "/models/environment/bench.glb?v=4",
-  car: "/models/environment/police-car.glb?v=4",
-  tree: "/models/environment/tree.glb?v=4",
-  classroomDoor: "/models/environment/classroom-door.glb?v=4",
-  ceilingLight: "/models/environment/ceiling-light.glb?v=4",
-  basketball: "/models/environment/basketball.glb?v=4",
-  deskChair: "/models/environment/desk-chair.glb?v=4",
-  blackboard: "/models/environment/blackboard.glb?v=4",
-  bulletin: "/models/environment/bulletin.glb?v=4",
-  podium: "/models/environment/podium.glb?v=4",
-  extinguisher: "/models/environment/extinguisher.glb?v=4",
-  trash: "/models/environment/trash.glb?v=4",
-  books: "/models/environment/books.glb?v=4",
-  backpack: "/models/environment/backpack.glb?v=4",
-  shrub: "/models/environment/shrub.glb?v=4",
-  station: "/models/environment/station.glb?v=4",
+  locker: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.locker,
+  bench: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.bench,
+  car: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.policeCar,
+  tree: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.tree,
+  classroomDoor: "/models/environment/classroom-door.glb?v=5",
+  ceilingLight: "/models/environment/ceiling-light.glb?v=5",
+  basketball: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.basketball,
+  deskChair: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.deskChair,
+  blackboard: "/models/environment/blackboard.glb?v=5",
+  bulletin: "/models/environment/bulletin.glb?v=5",
+  podium: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.podium,
+  extinguisher: "/models/environment/extinguisher.glb?v=5",
+  trash: "/models/environment/trash.glb?v=5",
+  books: "/models/environment/books.glb?v=5",
+  backpack: "/models/environment/backpack.glb?v=5",
+  shrub: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.shrub,
+  station: "/models/environment/station.glb?v=5",
 } as const;
 
 const THEME_KIT_ASSETS: Readonly<Record<CampaignTheme, string>> = {
-  campus: "/models/environment/themes/campus-kit-bootstrap.glb?v=1",
+  campus: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.theme,
   hospital: "/models/environment/themes/hospital-kit-bootstrap.glb?v=1",
   "fire-station": "/models/environment/themes/fire-station-kit-bootstrap.glb?v=1",
   factory: "/models/environment/themes/factory-kit-bootstrap.glb?v=1",
 };
+
+const STEALTH_CORNER_MIRROR_ASSET =
+  FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.cornerMirror;
+// Screenshot controllers renew this deliberately short browser-owned lease.
+// If the controller is killed or its CDP socket drops, animation resumes
+// without waiting for the controller's much longer screenshot timeout.
+const QA_CAPTURE_HOLD_DEFAULT_LEASE_MS = 5_000;
+const QA_CAPTURE_HOLD_MAX_LEASE_MS = 8_000;
 
 type ThemePropSpec = { node: string; height: number };
 
@@ -535,6 +548,7 @@ type StealthToolArtSpec = {
   readonly label: string;
   readonly indicatorAnchor?: readonly [number, number, number];
   readonly wallOffsetCells?: number;
+  readonly runtimeScale?: number;
 };
 
 const THEME_STEALTH_TOOL_ART: Readonly<
@@ -548,10 +562,12 @@ const THEME_STEALTH_TOOL_ART: Readonly<
       indicatorAnchor: [0, 0.27, 0.11],
     },
     "corner-mirror": {
-      node: "CampusWaterFountain",
-      height: 0.72,
-      label: "饮水台转角镜",
-      indicatorAnchor: [0, 0.58, 0.18],
+      node: "CampusCornerMirror",
+      height: 1.72,
+      label: "校园墙角凸面观察镜",
+      // Campus opens on the widest exploration camera of the four themes.
+      // Preserve an inspection-readable silhouette at its far deployment.
+      runtimeScale: 1.1,
     },
     "temporary-blackout": {
       node: "CampusWayfinding",
@@ -569,10 +585,10 @@ const THEME_STEALTH_TOOL_ART: Readonly<
       indicatorAnchor: [0, 0.45, 0.16],
     },
     "corner-mirror": {
-      node: "HospitalIVStation",
-      height: 0.8,
-      label: "输液架转角镜",
-      indicatorAnchor: [0, 0.66, 0.18],
+      node: "HospitalCornerMirror",
+      height: 1.72,
+      label: "病区墙角凸面观察镜",
+      runtimeScale: 1.02,
     },
     "temporary-blackout": {
       node: "HospitalWayfinding",
@@ -590,10 +606,10 @@ const THEME_STEALTH_TOOL_ART: Readonly<
       indicatorAnchor: [0, 0.28, 0.22],
     },
     "corner-mirror": {
-      node: "FireHoseReel",
-      height: 0.72,
-      label: "水带盘转角镜",
-      indicatorAnchor: [0, 0.4, 0.2],
+      node: "FireStationCornerMirror",
+      height: 1.72,
+      label: "消防站墙角凸面观察镜",
+      runtimeScale: 1.08,
     },
     "temporary-blackout": {
       node: "FireStationWayfinding",
@@ -611,10 +627,12 @@ const THEME_STEALTH_TOOL_ART: Readonly<
       indicatorAnchor: [0, 0.32, 0.13],
     },
     "corner-mirror": {
-      node: "FactoryPipeAssembly",
-      height: 0.72,
-      label: "管线转角镜",
-      indicatorAnchor: [-0.18, 0.66, 0.23],
+      node: "FactoryCornerMirror",
+      height: 1.72,
+      label: "工厂墙角凸面观察镜",
+      // The factory's wider surveillance camera framing needs the physically
+      // larger industrial mirror variant to preserve the same HUD-safe read.
+      runtimeScale: 1.3,
     },
     "temporary-blackout": {
       node: "FactoryControlConsole",
@@ -868,9 +886,10 @@ const LOCKER_CLIPS = [
   "Locker_Door_Check_Close",
 ] as const;
 
-// Kid, villain and the active theme are the only core bootstrap payloads.
-// The police resolution actor is streamed after play becomes available.
-const BOOTSTRAP_ASSET_COUNT = 3;
+// Kid, villain, the active theme and the compact four-theme stealth mirror
+// kit are the only core bootstrap payloads. The police resolution actor is
+// streamed after play becomes available.
+const BOOTSTRAP_ASSET_COUNT = 4;
 
 function world(point: Point, level: LevelDefinition) {
   return new THREE.Vector3(
@@ -1475,15 +1494,20 @@ function fitNamedStaticProp(
   source.updateMatrixWorld(true);
   const selected = new THREE.Group();
   selected.name = `${namePrefix}-authored-source`;
-  source.traverse((object) => {
-    if (!(object instanceof THREE.Mesh) || !object.name.startsWith(namePrefix)) return;
-    const mesh = new THREE.Mesh(
-      object.geometry,
-      Array.isArray(object.material) ? [...object.material] : object.material,
-    );
-    mesh.name = object.name;
-    object.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);
-    selected.add(mesh);
+  const collectedMeshes = new Set<THREE.Mesh>();
+  source.traverse((semanticRoot) => {
+    if (!semanticRoot.name.startsWith(namePrefix)) return;
+    semanticRoot.traverse((object) => {
+      if (!(object instanceof THREE.Mesh) || collectedMeshes.has(object)) return;
+      collectedMeshes.add(object);
+      const mesh = new THREE.Mesh(
+        object.geometry,
+        Array.isArray(object.material) ? [...object.material] : object.material,
+      );
+      mesh.name = object.name || `${semanticRoot.name}-mesh`;
+      object.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);
+      selected.add(mesh);
+    });
   });
   if (!selected.children.length) {
     throw new Error(`正式美术资产缺少命名子组件 ${namePrefix}`);
@@ -2540,6 +2564,24 @@ function disposeObjectResources(
   const materials = new Set<THREE.Material>();
   const textures = new Set<THREE.Texture>();
   const skeletons = new Set<THREE.Skeleton>();
+  const imageBitmaps = new Set<ImageBitmap>();
+  const preservedImageBitmaps = new Set<ImageBitmap>();
+  const collectImageBitmaps = (
+    value: unknown,
+    target: Set<ImageBitmap>,
+  ) => {
+    if (typeof ImageBitmap === "undefined") return;
+    if (value instanceof ImageBitmap) {
+      target.add(value);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((entry) => collectImageBitmaps(entry, target));
+    }
+  };
+  for (const texture of preservedTextures) {
+    collectImageBitmaps(texture.source?.data, preservedImageBitmaps);
+  }
   for (const root of roots) {
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line || object instanceof THREE.Sprite)) return;
@@ -2564,7 +2606,10 @@ function disposeObjectResources(
         if (materials.has(material)) continue;
         for (const value of Object.values(material)) {
           if (value instanceof THREE.Texture && !textures.has(value)) {
-            if (!preservedTextures.has(value)) value.dispose();
+            if (!preservedTextures.has(value)) {
+              collectImageBitmaps(value.source?.data, imageBitmaps);
+              value.dispose();
+            }
             textures.add(value);
           }
         }
@@ -2572,6 +2617,13 @@ function disposeObjectResources(
         materials.add(material);
       }
     });
+  }
+  // GLTFLoader uses ImageBitmapLoader in Chromium. Texture.dispose() releases
+  // GPU state but deliberately does not close the decoded native bitmap.
+  // Close each unique owned source only after the complete shared-material
+  // graph has been traversed, while protecting sources retained by callers.
+  for (const imageBitmap of imageBitmaps) {
+    if (!preservedImageBitmaps.has(imageBitmap)) imageBitmap.close();
   }
 }
 
@@ -2708,8 +2760,15 @@ function canPlayerObserveChaser(state: GameState, level: LevelDefinition, config
   if (state.phase === "won") return false;
   if (state.phase === "lost" || state.phase === "ready") return true;
   if (!isPlayerVisuallyExposed(state.player, config)) return false;
-  return distanceBetween(state.player.position, state.chaser.position) <= PLAYER_OBSERVATION_RANGE
-    && hasLineOfSight(level, state.player.position, state.chaser.position);
+  const hideSpot = state.player.hideSpotId
+    ? level.hideSpots.find((spot) => spot.id === state.player.hideSpotId)
+    : undefined;
+  const observationPosition = playerVisualObservationPosition({
+    ...state.player,
+    peekPosition: hideSpot?.approach,
+  });
+  return distanceBetween(observationPosition, state.chaser.position) <= PLAYER_OBSERVATION_RANGE
+    && hasLineOfSight(level, observationPosition, state.chaser.position);
 }
 
 export function ChasingGame() {
@@ -3332,6 +3391,10 @@ export function ChasingGame() {
     let qaDecorativeSceneCompileCount = 0;
     let qaTransientArtPrewarmCount = 0;
     let qaDirectorEnabled = true;
+    let qaCaptureHoldRequested = false;
+    let qaCaptureHoldAcknowledged = false;
+    let qaCaptureHoldDeadline = 0;
+    let qaRenderedFrameCount = 0;
     let textureDeduplication: TextureDeduplication = {
       sourceTextures: 0,
       canonicalTextures: 0,
@@ -3969,7 +4032,10 @@ export function ChasingGame() {
       light.intensity = 0;
       light.visible = false;
     };
-    const buildThemeMechanicView = (themeKit: GLTF): MechanicView => {
+    const buildThemeMechanicView = (
+      themeKit: GLTF,
+      cornerMirrorKit: GLTF,
+    ): MechanicView => {
       const art = THEME_MECHANIC_ART[campaignLevel.campaign.theme];
       const source = resolveThemeNode(
         themeKit.scene,
@@ -3982,8 +4048,11 @@ export function ChasingGame() {
       const toolArt = THEME_STEALTH_TOOL_ART[campaignLevel.campaign.theme];
       for (const tool of STEALTH_TOOL_KINDS) {
         const toolSpec = toolArt[tool];
+        const toolAsset = tool === "corner-mirror"
+          ? cornerMirrorKit
+          : themeKit;
         const toolSource = resolveThemeNode(
-          themeKit.scene,
+          toolAsset.scene,
           campaignLevel.campaign.theme,
           [toolSpec.node],
         );
@@ -3996,20 +4065,80 @@ export function ChasingGame() {
         // and texture images remain shared, while source-kit materials cannot
         // be mutated by a transient gameplay presentation.
         const styledToolSource = toolSource.clone(true);
-        applyThemeSurface(styledToolSource, campaignLevel.campaign.palette.accent, {
-          blend: tool === "temporary-blackout" ? 0.16 : 0.08,
-          emissive: campaignLevel.campaign.palette.emissive,
-          emissiveIntensity: tool === "temporary-blackout" ? 0.36 : 0.2,
-          roughnessShift: tool === "corner-mirror" ? -0.14 : -0.06,
-        });
-        const template = fitProp(styledToolSource, toolSpec.height, true);
+        if (tool !== "corner-mirror") {
+          applyThemeSurface(
+            styledToolSource,
+            campaignLevel.campaign.palette.accent,
+            {
+              blend: tool === "temporary-blackout" ? 0.16 : 0.08,
+              emissive: campaignLevel.campaign.palette.emissive,
+              emissiveIntensity: tool === "temporary-blackout" ? 0.36 : 0.2,
+              roughnessShift: -0.06,
+            },
+          );
+        }
+        // The dedicated mirror kit is authored at true metric scale with its
+        // lens, rim, articulated arm and wall plate proportioned separately.
+        // Do not fit or tint the complete assembly as one prop: that was the
+        // source of the oversized glowing-halo silhouette in the first pass.
+        const template = tool === "corner-mirror"
+          ? (() => {
+              const authoredAssembly = new THREE.Group();
+              authoredAssembly.add(styledToolSource);
+              return authoredAssembly;
+            })()
+          : fitProp(styledToolSource, toolSpec.height, true);
+        if (tool === "corner-mirror") {
+          const authoredMirrorPartNames = [
+            "polished-corner-mirror-face",
+            "authored-corner-mirror-rim",
+            "corner-mirror-wall-plate",
+            "corner-mirror-articulated-arm",
+            "corner-mirror-fasteners",
+            "corner-mirror-status-led",
+          ] as const;
+          template.traverse((object) => {
+            // GLTFLoader uniquifies repeated node names across the four
+            // assemblies (`…_1`, `…_2`, and so on). Restore the formal role
+            // name inside this isolated theme clone so runtime telemetry and
+            // accessibility/debug tooling retain stable semantic identities.
+            const authoredPartName = authoredMirrorPartNames.find(
+              (name) => (
+                object.name === name
+                || object.name.startsWith(`${name}_`)
+                || object.name.startsWith(`${name}.`)
+              ),
+            );
+            if (authoredPartName) object.name = authoredPartName;
+            if (!(object instanceof THREE.Mesh)) return;
+            object.castShadow =
+              object.name !== "polished-corner-mirror-face";
+            object.receiveShadow = true;
+            object.frustumCulled = true;
+            const materials = Array.isArray(object.material)
+              ? object.material
+              : [object.material];
+            for (const material of materials) {
+              if (material instanceof THREE.MeshStandardMaterial) {
+                material.envMapIntensity = Math.max(
+                  material.envMapIntensity,
+                  1.35,
+                );
+              }
+            }
+          });
+        } else {
+          tuneMeshes(template);
+        }
         template.name = `${campaignLevel.campaign.theme}-authored-${tool}-template`;
         template.userData.authoredToolSource = toolSpec.node;
         template.userData.authoredToolLabel = toolSpec.label;
-        template.userData.authoredToolAssetId =
-          `theme-kit:${campaignLevel.campaign.theme}`;
-        template.userData.authoredToolSourceUrl =
-          THEME_KIT_ASSETS[campaignLevel.campaign.theme];
+        template.userData.authoredToolAssetId = tool === "corner-mirror"
+          ? "stealth-kit:corner-mirrors"
+          : `theme-kit:${campaignLevel.campaign.theme}`;
+        template.userData.authoredToolSourceUrl = tool === "corner-mirror"
+          ? STEALTH_CORNER_MIRROR_ASSET
+          : THEME_KIT_ASSETS[campaignLevel.campaign.theme];
         template.userData.authoredToolGeometrySignature =
           authoredGeometrySignature(toolSource);
         template.userData.authoredToolFallbackUsed = false;
@@ -4017,6 +4146,8 @@ export function ChasingGame() {
           toolSpec.indicatorAnchor ? [...toolSpec.indicatorAnchor] : null;
         template.userData.authoredToolWallOffsetCells =
           toolSpec.wallOffsetCells ?? null;
+        template.userData.authoredToolRuntimeScale =
+          toolSpec.runtimeScale ?? 1;
         stealthToolModelTemplates[tool] = template;
       }
       const root = fitProp(source, art.height, true);
@@ -4656,6 +4787,7 @@ export function ChasingGame() {
         "authoredToolFallbackUsed",
         "authoredToolIndicatorAnchor",
         "authoredToolWallOffsetCells",
+        "authoredToolRuntimeScale",
       ]) {
         root.userData[key] = template.userData[key];
       }
@@ -4711,55 +4843,155 @@ export function ChasingGame() {
           0.82,
         );
       } else if (receipt.tool === "corner-mirror") {
-        root.position.add(new THREE.Vector3(
-          receipt.effect.heading.x * 0.2,
-          0,
-          receipt.effect.heading.y * 0.2,
+        const corner = receipt.effect.origin;
+        const solidDirections = [
+          { x: -1, y: 0 },
+          { x: 1, y: 0 },
+          { x: 0, y: -1 },
+          { x: 0, y: 1 },
+        ].filter((direction) => (
+          !campaignLevel.walkable[corner.y + direction.y]?.[
+            corner.x + direction.x
+          ]
         ));
-        root.position.y = 0.035;
-        root.scale.setScalar(1);
-        root.rotation.y = Math.atan2(
-          receipt.effect.heading.x,
-          receipt.effect.heading.y,
+        const toPlayer = {
+          x: latestState.player.position.x - corner.x,
+          y: latestState.player.position.y - corner.y,
+        };
+        const toPlayerLength = Math.hypot(toPlayer.x, toPlayer.y);
+        const mountSelectionApproach = toPlayerLength > 0.1
+          ? {
+              x: toPlayer.x / toPlayerLength,
+              y: toPlayer.y / toPlayerLength,
+            }
+          : receipt.effect.heading;
+        const orthogonalSolidPairs = solidDirections.flatMap(
+          (left, leftIndex) => solidDirections
+            .slice(leftIndex + 1)
+            .filter((right) => (
+              left.x * right.x + left.y * right.y === 0
+            ))
+            .map((right) => [left, right] as const),
         );
-        const mirrorMaterial = new THREE.MeshPhysicalMaterial({
-          color: 0xd9edf3,
-          metalness: 0.92,
-          roughness: 0.035,
-          clearcoat: 1,
-          clearcoatRoughness: 0.04,
-          envMapIntensity: 1.8,
-          emissive: 0x27434b,
-          emissiveIntensity: 0.18,
-          side: THREE.DoubleSide,
-        });
-        const mirrorFace = new THREE.Mesh(
-          new THREE.CircleGeometry(0.17, 48),
-          mirrorMaterial,
+        const mountPairScore = (
+          pair: readonly [Point, Point],
+        ) => {
+          const length = Math.SQRT2;
+          const bisector = {
+            x: (pair[0].x + pair[1].x) / length,
+            y: (pair[0].y + pair[1].y) / length,
+          };
+          // Prefer the opaque corner behind the approach, then break
+          // dead-end ties away from the corridor the mirror is observing.
+          return (
+            bisector.x * -mountSelectionApproach.x
+            + bisector.y * -mountSelectionApproach.y
+            + (
+              bisector.x * -receipt.effect.heading.x
+              + bisector.y * -receipt.effect.heading.y
+            ) * 0.35
+          );
+        };
+        const mountPair = orthogonalSolidPairs.reduce<
+          readonly [Point, Point] | null
+        >(
+          (best, candidate) => (
+            !best || mountPairScore(candidate) > mountPairScore(best)
+              ? candidate
+              : best
+          ),
+          null,
         );
-        mirrorFace.name = "polished-corner-mirror-face";
-        mirrorFace.position.fromArray(authoredIndicatorAnchor ?? [0, 0.58, 0.18]);
-        mirrorFace.userData.transientStealthOwned = true;
-        ownedGeometries.add(mirrorFace.geometry);
-        ownedMaterials.add(mirrorMaterial);
-        root.add(mirrorFace);
-        const mirrorRimMaterial = new THREE.MeshStandardMaterial({
-          color: campaignLevel.campaign.palette.accent,
-          metalness: 0.86,
-          roughness: 0.2,
-          emissive: campaignLevel.campaign.palette.emissive,
-          emissiveIntensity: 0.16,
-        });
-        const mirrorRim = new THREE.Mesh(
-          new THREE.TorusGeometry(0.175, 0.014, 12, 48),
-          mirrorRimMaterial,
+        const fallbackSolidDirection = solidDirections.reduce<Point | null>(
+          (best, candidate) => {
+            if (!best) return candidate;
+            const candidateScore =
+              candidate.x * -mountSelectionApproach.x
+              + candidate.y * -mountSelectionApproach.y;
+            const bestScore =
+              best.x * -mountSelectionApproach.x
+              + best.y * -mountSelectionApproach.y;
+            return candidateScore > bestScore ? candidate : best;
+          },
+          null,
+        ) ?? nearestExteriorDirection(corner, campaignLevel);
+        const summedSolid = mountPair
+          ? {
+              x: mountPair[0].x + mountPair[1].x,
+              y: mountPair[0].y + mountPair[1].y,
+            }
+          : fallbackSolidDirection;
+        const solidLength = Math.hypot(summedSolid.x, summedSolid.y);
+        const mountDirection = {
+          x: summedSolid.x / Math.max(solidLength, 1),
+          y: summedSolid.y / Math.max(solidLength, 1),
+        };
+        const approachDirection = toPlayerLength > 0.1
+          ? mountSelectionApproach
+          : {
+              x: -mountDirection.x,
+              y: -mountDirection.y,
+            };
+        // A convex observation mirror faces the optical bisector between the
+        // player's approach and the corridor it reveals. This keeps the full
+        // lens readable to the player while the public observation cone still
+        // points around the authored corner.
+        const faceBisector = {
+          x: approachDirection.x + receipt.effect.heading.x,
+          y: approachDirection.y + receipt.effect.heading.y,
+        };
+        const faceBisectorLength = Math.hypot(
+          faceBisector.x,
+          faceBisector.y,
         );
-        mirrorRim.name = "authored-corner-mirror-rim";
-        mirrorRim.position.copy(mirrorFace.position);
-        mirrorRim.userData.transientStealthOwned = true;
-        ownedGeometries.add(mirrorRim.geometry);
-        ownedMaterials.add(mirrorRimMaterial);
-        root.add(mirrorRim);
+        const faceDirection = faceBisectorLength > 0.1
+          ? {
+              x: faceBisector.x / faceBisectorLength,
+              y: faceBisector.y / faceBisectorLength,
+            }
+          : approachDirection;
+        // Mount the authored wall plate into the real opaque corner. Its lens
+        // and articulated arm protrude back into the open diagonal, keeping
+        // the player capsule and the prop bounds physically separated.
+        root.position.add(new THREE.Vector3(
+          mountDirection.x * CELL * 0.88,
+          0,
+          mountDirection.y * CELL * 0.88,
+        ));
+        let wallTangent = {
+          x: -mountDirection.y,
+          y: mountDirection.x,
+        };
+        const awayFromPlayer = {
+          x: -approachDirection.x,
+          y: -approachDirection.y,
+        };
+        if (
+          wallTangent.x * awayFromPlayer.x
+            + wallTangent.y * awayFromPlayer.y
+          < 0
+        ) {
+          wallTangent = {
+            x: -wallTangent.x,
+            y: -wallTangent.y,
+          };
+        }
+        // Slide along the wall—not out into the route—so the lens and player
+        // silhouettes retain a clean visual gap at the fixed gameplay bearing.
+        root.position.add(new THREE.Vector3(
+          wallTangent.x * 0.32,
+          0,
+          wallTangent.y * 0.32,
+        ));
+        root.position.y = 0;
+        // Preserve a release-safe 85 px inspection silhouette across the
+        // small projection differences between themes and camera layouts.
+        root.scale.setScalar(
+          typeof template.userData.authoredToolRuntimeScale === "number"
+            ? template.userData.authoredToolRuntimeScale
+            : 1,
+        );
+        root.rotation.y = Math.atan2(faceDirection.x, faceDirection.y);
       } else {
         const adjacentWallDirection = [
           { x: -1, y: 0 },
@@ -4916,7 +5148,18 @@ export function ChasingGame() {
       nowMilliseconds: number,
     ) => {
       const beaconMaterial = view.beacon.material as THREE.SpriteMaterial;
-      const promptVisible = sample.phase === "ready" && sample.canActivate;
+      const blackoutReceipt =
+        stealthToolbeltState.activeEffects["temporary-blackout"]?.receipt;
+      const stealthBlackoutActive =
+        blackoutReceipt?.tool === "temporary-blackout"
+        && latestState.tick < blackoutReceipt.expiresAtTick;
+      // A deployed stealth blackout already owns the local interaction and
+      // status lanes. Suppress the nearby theme-console prompt until it ends
+      // so two unrelated calls to action never stack over the actor.
+      const promptVisible =
+        sample.phase === "ready"
+        && sample.canActivate
+        && !stealthBlackoutActive;
       const worldFeedback = sampleMechanicWorldFeedback(
         campaignLevel.campaign.theme,
         {
@@ -6421,6 +6664,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         .map((name) => [name, DETAIL_ASSETS[name]] as const);
       const essentialActorEntries = (Object.entries(ACTOR_SPECS) as [ActorName, (typeof ACTOR_SPECS)[ActorName]][])
         .filter(([name]) => name !== "police");
+      if (campaignLevel.campaign.levelNumber === 1) {
+        const expectedBlockingUrls = [...new Set(
+          Object.values(FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS),
+        )].sort();
+        const actualBlockingUrls = [...new Set([
+          ...essentialActorEntries.map(([, spec]) => (
+            "bootstrapUrl" in spec ? spec.bootstrapUrl : spec.url
+          )),
+          THEME_KIT_ASSETS[campaignLevel.campaign.theme],
+          STEALTH_CORNER_MIRROR_ASSET,
+          ...structureEntries.map(([, url]) => url),
+          ...essentialDetailEntries.map(([, url]) => url),
+        ])].sort();
+        if (
+          expectedBlockingUrls.length !== actualBlockingUrls.length
+          || expectedBlockingUrls.some((url, index) => url !== actualBlockingUrls[index])
+        ) {
+          throw new Error(
+            "首关阻塞素材与服务端预载预算不一致；请同步 FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS",
+          );
+        }
+      }
       const total = BOOTSTRAP_ASSET_COUNT + structureEntries.length + essentialDetailEntries.length;
       const mark = (message: string) => {
         done += 1;
@@ -6431,6 +6696,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const detailAssets: Partial<Record<DetailAssetName, GLTF>> = {};
       const loadedAssets: LoadedAsset[] = [];
       let themeKitAsset: GLTF | undefined;
+      let cornerMirrorAsset: GLTF | undefined;
       if (!disposed) {
         setLoadProgress({
           done,
@@ -6467,6 +6733,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           registerFirstPlayableAsset(id, themeUrl, "theme");
           mark(`${campaignLevel.campaign.themeLabel}高精度主题模型`);
         })(),
+        (async () => {
+          const asset = await loadGlbWithRetry(STEALTH_CORNER_MIRROR_ASSET);
+          cornerMirrorAsset = asset;
+          const id = "stealth:corner-mirrors";
+          loadedAssets.push({ id, asset });
+          loadedAssetIds.add(id);
+          registerFirstPlayableAsset(
+            id,
+            STEALTH_CORNER_MIRROR_ASSET,
+            "theme",
+          );
+          mark("四主题墙角凸面观察镜");
+        })(),
         ...structureEntries.map(async ([name, url]) => {
           const asset = await loadGlbWithRetry(url);
           structureAssets[name] = asset;
@@ -6498,13 +6777,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         return;
       }
       if (!themeKitAsset) throw new Error(`${campaignLevel.campaign.themeLabel}主题模型未载入`);
+      if (!cornerMirrorAsset) throw new Error("四主题墙角观察镜模型未载入");
       latestFirstPlayableAudit = auditFirstPlayableAssetBudget(firstPlayableManifest);
 
       configureAssetTextures(loadedAssets, renderer);
       textureDeduplication = deduplicateAssetTextures(loadedAssets);
       buildCampus(structureAssets, themeKitAsset, campus);
       buildPerformanceLighting();
-      buildThemeMechanicView(themeKitAsset);
+      buildThemeMechanicView(themeKitAsset, cornerMirrorAsset);
+      // The formal mirror kit is converted into the active theme's authored
+      // corner-mirror template and prewarmed before play. Register the loaded
+      // source itself so provenance distinguishes it from transient receipts.
+      placedAssetIds.add("stealth:corner-mirrors");
       buildThemeMissionViews(themeKitAsset);
       if (libraryGoldEnabled) {
         const booksAsset = detailAssets.books;
@@ -6677,7 +6961,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         a: [], b: [], c: [], wide: [], end: [], corner: [], doorway: [], junction: [],
       };
       const junctionCandidates: Array<ModulePlacement & { degree: number; hash: number }> = [];
-      const groundMarginCells = 2;
+      const groundMarginCells = libraryGoldEnabled ? 3 : 2;
       const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
       const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
       const exitDoorwayAnchors = libraryGoldEnabled
@@ -7012,7 +7296,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       groundMaterial.emissiveMap = null;
 
       // A giant rectangular plane made the maze read like a model sitting on
-      // an empty white exhibition table. Build a two-cell, maze-shaped
+      // an empty white exhibition table. Build a compact, maze-shaped
       // exterior patch instead: it follows the navigable silhouette, leaves
       // no enormous unused slab in concave voids, and costs only two instanced
       // draws (main paving plus a darker perimeter transition).
@@ -7022,12 +7306,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           x: campaignLevel.playerStart.x + entranceDirection.x * 3.15,
           y: campaignLevel.playerStart.y + entranceDirection.y * 3.15,
         },
-        {
-          x: campaignLevel.exit.x + exitDirection.x * 3.05,
-          y: campaignLevel.exit.y + exitDirection.y * 3.05,
-        },
+        ...exitDoorwayAnchors.map(({ point, outward }) => ({
+          x: point.x + outward.x * 3.05,
+          y: point.y + outward.y * 3.05,
+        })),
       ];
-      const plazaDirections = [entranceDirection, exitDirection];
+      const plazaDirections = [
+        entranceDirection,
+        ...exitDoorwayAnchors.map(({ outward }) => outward),
+      ];
       const authoredPlazaPlacements = plazaCenters.map((center, index) => {
         const position = world(center, campaignLevel);
         // The authored slab includes its own curb, cracks and markings. Sink
@@ -7044,6 +7331,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       ], new THREE.Vector3(CELL * 2, 0.18, CELL * 2), parent, false, `${theme}-authored-plaza`, supportsMultiDraw);
       placedAssetIds.add(`theme-node:${authoredGround.name}:entrance-plaza`);
       placedAssetIds.add(`theme-node:${authoredGround.name}:exit-plaza`);
+      if (exitDoorwayAnchors.length > 1) {
+        placedAssetIds.add(
+          `theme-node:${authoredGround.name}:exit-plazas:${exitDoorwayAnchors.length}`,
+        );
+      }
       const groundSearchMargin = 7;
       for (let y = -groundSearchMargin; y < campaignLevel.height + groundSearchMargin; y += 1) {
         for (let x = -groundSearchMargin; x < campaignLevel.width + groundSearchMargin; x += 1) {
@@ -7192,7 +7484,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       horizonGround.name = `${theme}-fog-horizon-ground`;
       horizonGround.rotation.x = -Math.PI / 2;
       horizonGround.position.y = -0.16;
-      horizonGround.receiveShadow = true;
+      // A 224 m background plane must not receive local wall shadows: those
+      // read as giant cross-shaped stains where the detailed courtyard ends.
+      horizonGround.receiveShadow = false;
       parent.add(horizonGround);
 
       const edgePlan = environmentComposition.edgeClosure;
@@ -9489,6 +9783,22 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     const animate = (now: number) => {
       const delta = boundedFrameDeltaSeconds(last, now, simulation.config.maxFrameDeltaSeconds);
       last = now;
+      if (
+        qaCaptureHoldRequested
+        && now >= qaCaptureHoldDeadline
+      ) {
+        // A browser-side lease keeps an interrupted CDP harness from leaving
+        // the QA page permanently frozen after the controller disconnects.
+        qaCaptureHoldRequested = false;
+        qaCaptureHoldAcknowledged = false;
+        qaCaptureHoldDeadline = 0;
+      }
+      if (qaCaptureHoldRequested) {
+        qaCaptureHoldAcknowledged = true;
+        frame = requestAnimationFrame(animate);
+        return;
+      }
+      qaCaptureHoldAcknowledged = false;
       if (ready && !pausedRef.current) {
         if (!qaRenderQualityLocked) {
           qualitySamples.push(delta * 1_000);
@@ -9744,9 +10054,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         );
         const missionInteractionReserved = missionCanActivate
           || missionCommitment !== null;
+        const activeBlackoutReceipt =
+          stealthToolbeltState.activeEffects["temporary-blackout"]?.receipt;
+        const toolBlackoutInteractionLocked =
+          activeBlackoutReceipt?.tool === "temporary-blackout"
+          && latestState.tick < activeBlackoutReceipt.expiresAtTick;
+        const activeDirectorInteractionEvent =
+          tensionDirectorState.activeEvent;
+        const directorBlackoutInteractionLocked = Boolean(
+          activeDirectorInteractionEvent?.phase === "active"
+          && activeDirectorInteractionEvent.suggestion.kind === "blackout"
+          && latestState.tick
+            < activeDirectorInteractionEvent.suggestion.endsAtTick,
+        );
+        const stealthBlackoutInteractionLocked =
+          toolBlackoutInteractionLocked
+          || directorBlackoutInteractionLocked;
         const mechanicConsumesInteraction = beforeMechanic.canActivate
           && hideInteractionBeforeStep === null
           && !missionInteractionReserved
+          && !stealthBlackoutInteractionLocked
           && !hasPlayerActionCommitment();
         const missionConsumesInteraction = interactionEdge
           && hideInteractionBeforeStep === null
@@ -10660,6 +10987,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           desiredLockerCameraBlend > lockerCameraBlend ? 7.8 : 9.5,
           delta,
         );
+        const lockerPoseBlend = lockerCameraPoseBlend(lockerCameraBlend);
         if (activeLocker?.archetype === "hard-locker" && lockerCameraBlend > 0.002) {
           activeLocker.cameraAnchor.getWorldPosition(lockerCameraPosition);
           activeLocker.peekAnchor.getWorldPosition(lockerPeekPosition);
@@ -10676,10 +11004,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           // eye just beyond the door skin and let the diegetic slat mask below
           // restore the feeling of looking through the locker vents.
           lockerCameraPosition.add(new THREE.Vector3(
-            outward.x * 0.48,
+            outward.x * 0.38,
             0.04,
-            outward.y * 0.48,
+            outward.y * 0.38,
           ));
+          lockerCameraPosition.y = Math.max(lockerCameraPosition.y, 1.5);
           if (hideSpot) {
             // Authored locker anchors are ideal for the door animation but can
             // sit centimetres behind a neighbouring wall once a cabinet is
@@ -10688,11 +11017,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             // little into the longest visible corridor. This keeps every
             // cabinet useful without detaching the covered view from its model.
             const approachCamera = world(hideSpot.approach, campaignLevel);
-            approachCamera.y = lockerPeekPosition.y + 0.06;
+            approachCamera.y = Math.max(lockerPeekPosition.y + 0.06, 1.62);
             approachCamera.add(new THREE.Vector3(
-              outward.x * 0.78 + sightDirection.x * 0.16,
+              outward.x * 0.24 + sightDirection.x * 0.1,
               0,
-              outward.y * 0.78 + sightDirection.y * 0.16,
+              outward.y * 0.24 + sightDirection.y * 0.1,
             ));
             lockerPeekPosition.copy(approachCamera);
           } else {
@@ -10707,18 +11036,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             THREE.MathUtils.clamp(lockerListening.peek, 0, 1),
           );
           lockerCameraTarget.copy(lockerCameraPosition).add(new THREE.Vector3(
-            sightDirection.x * CELL * 4,
-            -0.08,
-            sightDirection.y * CELL * 4,
+            sightDirection.x * CELL * 5,
+            -0.03,
+            sightDirection.y * CELL * 5,
           ));
-          camera.position.lerp(lockerCameraPosition, lockerCameraBlend);
+          camera.position.lerp(lockerCameraPosition, lockerPoseBlend);
           const blendedLookTarget = cameraFocus.clone().lerp(
             lockerCameraTarget,
-            lockerCameraBlend,
+            lockerPoseBlend,
           );
           camera.lookAt(blendedLookTarget);
         }
-        const targetFov = THREE.MathUtils.lerp(56, 62, lockerCameraBlend);
+        const targetFov = THREE.MathUtils.lerp(56, 67, lockerPoseBlend);
         if (Math.abs(camera.fov - targetFov) > 0.01) {
           camera.fov = targetFov;
           camera.updateProjectionMatrix();
@@ -10900,6 +11229,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         camera.layers.set(0);
         renderer.clear(true, true, true);
         renderer.render(scene, camera);
+        qaRenderedFrameCount += 1;
         compileSettledQaScene();
       }
       frame = requestAnimationFrame(animate);
@@ -10940,11 +11270,43 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ? view.root.position.clone().add(new THREE.Vector3(0, 0.92, 0))
         : bounds.getCenter(new THREE.Vector3());
       const projected = actorCenter.project(camera);
+      const projectedCorners = bounds.isEmpty()
+        ? []
+        : [
+            new THREE.Vector3(bounds.min.x, bounds.min.y, bounds.min.z),
+            new THREE.Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
+            new THREE.Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
+            new THREE.Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
+            new THREE.Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
+            new THREE.Vector3(bounds.max.x, bounds.min.y, bounds.max.z),
+            new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
+            new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.max.z),
+          ].map((corner) => corner.project(camera));
+      const minimumX = projectedCorners.length
+        ? Math.min(...projectedCorners.map(({ x }) => x))
+        : projected.x;
+      const maximumX = projectedCorners.length
+        ? Math.max(...projectedCorners.map(({ x }) => x))
+        : projected.x;
+      const minimumY = projectedCorners.length
+        ? Math.min(...projectedCorners.map(({ y }) => y))
+        : projected.y;
+      const maximumY = projectedCorners.length
+        ? Math.max(...projectedCorners.map(({ y }) => y))
+        : projected.y;
       return {
         x: (projected.x + 1) / 2,
         y: (1 - projected.y) / 2,
         depth: projected.z,
         worldHeight: size.y,
+        pixelWidth: (maximumX - minimumX) * cameraViewportWidth / 2,
+        pixelHeight: (maximumY - minimumY) * cameraViewportHeight / 2,
+        bounds: {
+          left: (minimumX + 1) / 2,
+          right: (maximumX + 1) / 2,
+          top: (1 - maximumY) / 2,
+          bottom: (1 - minimumY) / 2,
+        },
         centerInFrustum: Math.abs(projected.x) <= 1
           && Math.abs(projected.y) <= 1
           && projected.z >= -1
@@ -10977,16 +11339,81 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         depth: center.z,
         pixelWidth: (maximumX - minimumX) * cameraViewportWidth / 2,
         pixelHeight: (maximumY - minimumY) * cameraViewportHeight / 2,
+        bounds: {
+          left: (minimumX + 1) / 2,
+          right: (maximumX + 1) / 2,
+          top: (1 - maximumY) / 2,
+          bottom: (1 - minimumY) / 2,
+        },
         centerInFrustum: Math.abs(center.x) <= 1
           && Math.abs(center.y) <= 1
           && center.z >= -1
           && center.z <= 1,
       };
     };
+    const inspectActorCameraClearance = (view: ActorView | undefined) => {
+      if (!view) return null;
+      camera.updateMatrixWorld();
+      view.root.updateWorldMatrix(true, true);
+      const bounds = staticMeshBounds(view.root);
+      if (bounds.isEmpty()) return null;
+      const center = bounds.getCenter(new THREE.Vector3());
+      const height = Math.max(0.1, bounds.max.y - bounds.min.y);
+      const screenRight = new THREE.Vector3();
+      camera.getWorldDirection(screenRight);
+      screenRight.cross(camera.up).normalize();
+      const samples = [
+        { label: "head", point: center.clone().setY(bounds.max.y - height * 0.1) },
+        { label: "torso", point: center.clone().setY(bounds.min.y + height * 0.62) },
+        { label: "hips", point: center.clone().setY(bounds.min.y + height * 0.34) },
+        {
+          label: "left-shoulder",
+          point: center.clone()
+            .setY(bounds.min.y + height * 0.7)
+            .addScaledVector(screenRight, -0.22),
+        },
+        {
+          label: "right-shoulder",
+          point: center.clone()
+            .setY(bounds.min.y + height * 0.7)
+            .addScaledVector(screenRight, 0.22),
+        },
+      ].map(({ label, point }) => {
+        const direction = point.clone().sub(camera.position);
+        const distance = direction.length();
+        direction.multiplyScalar(1 / Math.max(distance, 1e-6));
+        occlusionRaycaster.set(camera.position, direction);
+        occlusionRaycaster.near = 0.12;
+        occlusionRaycaster.far = Math.max(0.13, distance - 0.12);
+        const hit = occlusionRaycaster.intersectObjects(occlusionMeshes, false)[0];
+        return {
+          label,
+          clear: !hit,
+          hit: hit?.object.name || hit?.object.parent?.name || null,
+          hitDistance: hit?.distance ?? null,
+        };
+      });
+      const clearCount = samples.filter(({ clear }) => clear).length;
+      return {
+        headClear: samples.find(({ label }) => label === "head")?.clear ?? false,
+        torsoClear: samples.find(({ label }) => label === "torso")?.clear ?? false,
+        visibleSampleRatio: clearCount / samples.length,
+        samples,
+      };
+    };
     const inspectStealthArtSemantics = (root: THREE.Object3D) => {
       let meshCount = 0;
       const materials = new Map<string, THREE.Material>();
       const semanticNames: string[] = [];
+      const semanticPartObjects: THREE.Object3D[] = [];
+      const auditedPartNames = new Set([
+        "polished-corner-mirror-face",
+        "authored-corner-mirror-rim",
+        "corner-mirror-wall-plate",
+        "corner-mirror-articulated-arm",
+        "corner-mirror-fasteners",
+        "corner-mirror-status-led",
+      ]);
       const authoredSources = new Map<string, {
         readonly node: string;
         readonly label: string | null;
@@ -10997,6 +11424,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }>();
       root.traverse((object) => {
         if (object.name.trim()) semanticNames.push(object.name);
+        if (auditedPartNames.has(object.name)) {
+          semanticPartObjects.push(object);
+        }
         if (typeof object.userData.authoredToolSource === "string") {
           const node = object.userData.authoredToolSource;
           authoredSources.set(node, {
@@ -11031,11 +11461,58 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           (value) => value instanceof THREE.Texture,
         ),
       ).length;
+      const parts = semanticPartObjects.map((object) => {
+        const worldPosition = object.getWorldPosition(new THREE.Vector3());
+        const objectMaterials: THREE.Material[] = [];
+        object.traverse((descendant) => {
+          if (!(descendant instanceof THREE.Mesh)) return;
+          objectMaterials.push(
+            ...(Array.isArray(descendant.material)
+              ? descendant.material
+              : [descendant.material]),
+          );
+        });
+        const standardMaterials = objectMaterials.filter(
+          (material): material is THREE.MeshStandardMaterial => (
+            material instanceof THREE.MeshStandardMaterial
+          ),
+        );
+        return {
+          name: object.name,
+          worldPosition: {
+            x: worldPosition.x,
+            y: worldPosition.y,
+            z: worldPosition.z,
+          },
+          viewport: projectObjectToViewport(object),
+          emissiveIntensity: standardMaterials.reduce(
+            (maximum, material) => Math.max(
+              maximum,
+              material.emissiveIntensity,
+            ),
+            0,
+          ),
+          effectiveEmissive: standardMaterials.reduce(
+            (maximum, material) => Math.max(
+              maximum,
+              Math.max(
+                material.emissive.r,
+                material.emissive.g,
+                material.emissive.b,
+              ) * material.emissiveIntensity,
+            ),
+            0,
+          ),
+          roughness: standardMaterials.map((material) => material.roughness),
+          metalness: standardMaterials.map((material) => material.metalness),
+        };
+      });
       return {
         meshCount,
         materialCount: materials.size,
         texturedMaterialCount,
         semanticNames,
+        parts,
         authoredSources: [...authoredSources.values()].sort(
           (left, right) => left.node.localeCompare(right.node),
         ),
@@ -11053,8 +11530,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         useStealthTool: () => void;
         eraseEvidence: () => void;
         togglePause: () => void;
+        setCaptureHold: (
+          held: boolean,
+          leaseMilliseconds?: number,
+        ) => void;
         inspectScene: () => unknown;
-        setScenario: (positions: { player: Point; chaser: Point }) => void;
+        setScenario: (positions: {
+          player: Point;
+          chaser: Point;
+          chaserHeading?: Point;
+          spawnDelaySeconds?: number;
+        }) => void;
         completeMission: () => void;
         selectLevel: (level: number | string) => void;
         selectLayout: (layoutNumber: number | null) => void;
@@ -11109,6 +11595,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             state: tensionDirectorState,
             safeTicks: directorSafeTicks,
           },
+          captureHold: {
+            requested: qaCaptureHoldRequested,
+            acknowledged: qaCaptureHoldAcknowledged,
+            leaseRemainingMilliseconds: qaCaptureHoldRequested
+              ? Math.max(0, qaCaptureHoldDeadline - performance.now())
+              : 0,
+            renderedFrameCount: qaRenderedFrameCount,
+          },
         }),
         getState: () => ({
           ready,
@@ -11126,6 +11620,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             playerStart: campaignLevel.playerStart,
             exit: campaignLevel.exit,
             chaserStart: campaignLevel.chaserStart,
+            walkable: campaignLevel.walkable,
             hideSpots: campaignLevel.hideSpots,
           },
           certifiedRemix: {
@@ -11165,6 +11660,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               )
               : undefined,
             viewport: projectActorToViewport(view),
+            cameraClearance: inspectActorCameraClearance(view),
           }])),
           knowledge: {
             chaserObservable: canRuntimeObserveChaser(latestState),
@@ -11181,6 +11677,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               mechanicInstance,
               latestState.player.position,
             ),
+            view: mechanicView
+              ? {
+                  beaconVisible: mechanicView.beacon.visible,
+                  beaconOpacity: (
+                    mechanicView.beacon.material as THREE.SpriteMaterial
+                  ).opacity,
+                  viewport: projectObjectToViewport(mechanicView.root),
+                }
+              : null,
           },
           themeMission: {
             definition: missionDefinition,
@@ -11305,6 +11810,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 rootName: view.root.name,
                 createdAtTick: view.createdAtTick,
                 expiresAtTick: view.expiresAtTick,
+                worldPosition: {
+                  x: view.root.position.x,
+                  y: view.root.position.y,
+                  z: view.root.position.z,
+                },
                 ...inspectStealthArtSemantics(view.root),
                 viewport: projectObjectToViewport(view.root),
               })),
@@ -11551,6 +12061,27 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             progress: 0,
           });
         },
+        setCaptureHold: (
+          held,
+          leaseMilliseconds = QA_CAPTURE_HOLD_DEFAULT_LEASE_MS,
+        ) => {
+          if (held) {
+            const requestedLease = Number.isFinite(leaseMilliseconds)
+              ? leaseMilliseconds
+              : QA_CAPTURE_HOLD_DEFAULT_LEASE_MS;
+            const boundedLease = THREE.MathUtils.clamp(
+              requestedLease,
+              250,
+              QA_CAPTURE_HOLD_MAX_LEASE_MS,
+            );
+            qaCaptureHoldRequested = true;
+            qaCaptureHoldDeadline = performance.now() + boundedLease;
+          } else {
+            qaCaptureHoldRequested = false;
+            qaCaptureHoldAcknowledged = false;
+            qaCaptureHoldDeadline = 0;
+          }
+        },
         completeMission: () => {
           if (libraryMissionState) {
             for (const objective of runtimeMissionObjectives) {
@@ -11586,13 +12117,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           }
           updateThemeMissionViews(performance.now());
         },
-        setScenario: ({ player, chaser }) => {
+        setScenario: ({
+          player,
+          chaser,
+          chaserHeading,
+          spawnDelaySeconds = 0,
+        }) => {
           simulation = new GameSimulation({
             level: campaignLevel,
             autoStart: true,
             initialPlayerPosition: player,
             initialChaserPosition: chaser,
-            config: { ...gameplayConfig, spawnDelaySeconds: 0 },
+            initialChaserHeading: chaserHeading,
+            config: { ...gameplayConfig, spawnDelaySeconds },
             chaserArchetypeProfile,
           });
           latestState = simulation.getState();
@@ -11719,6 +12256,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
   const danger = chaserObservable
     ? threatForMode(chaserMode)
     : publicThreat === "active" ? 0.52 : publicThreat === "caution" ? 0.28 : 0;
+  const stealthBlackoutActive = Boolean(
+    stealthSystems?.toolbelt.tools["temporary-blackout"].phase === "active"
+    || (
+      tensionDirector?.phase === "active"
+      && tensionDirector.kind === "blackout"
+    ),
+  );
   const themeEventActivity = themeMechanic?.phase === "active"
     ? Math.sin(themeMechanic.progress * Math.PI)
     : 0;
@@ -11726,8 +12270,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     themeMechanic
     && (
       themeMechanic.phase !== "ready"
-      || themeMechanic.canActivate
-      || themeMechanic.distanceMeters <= 10
+      || (
+        !stealthBlackoutActive
+        && (
+          themeMechanic.canActivate
+          || themeMechanic.distanceMeters <= 10
+        )
+      )
     ),
   );
   const activeMissionObjective = themeMission?.activeObjective ?? null;
@@ -11827,7 +12376,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ? missionInteractionInProgress
           ? `操作中 ${Math.ceil((themeMission?.commitmentRemainingSeconds ?? 0) * 10) / 10}s`
           : activeMissionObjective.interactionPrompt
-      : themeMechanic?.canActivate
+      : themeMechanic?.canActivate && !stealthBlackoutActive
         ? `启动${themeMechanic.label}`
       : playerMode === "entering-hide"
         ? "正在藏好…"
@@ -11844,7 +12393,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
   const touchInteractAvailable = Boolean(interaction)
     || missionCanInteract
     || missionInteractionInProgress
-    || Boolean(themeMechanic?.canActivate)
+    || Boolean(themeMechanic?.canActivate && !stealthBlackoutActive)
     || playerMode === "aligning-hide";
   const portableDecoyActionAvailable = Boolean(
     libraryGoldEnabled
@@ -11912,13 +12461,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ?? (stealthSystems?.mirrorThreatVisible
           ? "镜面已捕捉追捕者 · 可安全判断出柜时机"
           : `${selectedToolMeta.label} · ${selectedToolPhaseLabel}`);
-  const stealthBlackoutActive = Boolean(
-    stealthSystems?.toolbelt.tools["temporary-blackout"].phase === "active"
-    || (
-      tensionDirector?.phase === "active"
-      && tensionDirector.kind === "blackout"
-    ),
-  );
   const primaryAction = phase === "won" && hasNextLevel
     ? () => chooseLevel(selectedLevelIndex + 1)
     : begin;
@@ -12090,7 +12632,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 }
               </small>
               <strong>{themeMechanic.hudHint}</strong>
-              {themeMechanic.canActivate && <em>{themeMechanic.activationCostLabel}</em>}
+              {themeMechanic.canActivate
+                && !stealthBlackoutActive
+                && <em>{themeMechanic.activationCostLabel}</em>}
             </div>
           </div>
         )}
@@ -12293,7 +12837,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             {missionCanInteract && activeMissionObjective && (
               <small>{activeMissionObjective.completionHint}</small>
             )}
-            {themeMechanic?.canActivate && !interaction && !missionCanInteract && (
+            {themeMechanic?.canActivate
+              && !stealthBlackoutActive
+              && !interaction
+              && !missionCanInteract && (
               <small>{themeMechanic.activationCostLabel}；预警结束后效果才会生效</small>
             )}
             {playerMode === "aligning-hide" && <small>移动或再次互动可立即取消</small>}
@@ -12737,7 +13284,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                     ? `执行中 ${Math.max(0, themeMission?.commitmentRemainingSeconds ?? 0).toFixed(1)}s`
                   : missionCanInteract && activeMissionObjective
                     ? activeMissionObjective.label
-                  : themeMechanic?.canActivate && !interaction
+                  : themeMechanic?.canActivate
+                    && !stealthBlackoutActive
+                    && !interaction
                     ? "启动机关"
                   : interaction?.kind === "enter"
                     ? `进入${hideArchetypeLabel}`

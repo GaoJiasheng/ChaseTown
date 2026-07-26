@@ -2,7 +2,41 @@ export type RuntimePreloadAsset = Readonly<{
   href: string;
   type: string;
   fetchPriority: "high" | "auto";
+  /** Budget authority; fetchPriority is only a browser scheduling hint. */
+  blocksFirstPlayable: boolean;
 }>;
+
+/**
+ * Single source of truth for every model that blocks the first campaign's
+ * first playable frame. The scene loader imports these exact URLs, while the
+ * release manifest derives its preload accounting from the same object.
+ */
+export const FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS = Object.freeze({
+  player: "/models/characters/kid-bootstrap.glb?v=1",
+  threat: "/models/characters/villain-bootstrap.glb?v=1",
+  theme: "/models/environment/themes/campus-kit-bootstrap.glb?v=1",
+  locker: "/models/environment/locker.glb?v=32",
+  cornerMirror: "/models/environment/stealth-corner-mirrors.glb?v=2",
+  frontGate: "/models/environment/front-gate.glb?v=5",
+  exit: "/models/environment/exit.glb?v=5",
+  bench: "/models/environment/bench.glb?v=5",
+  tree: "/models/environment/tree.glb?v=5",
+  shrub: "/models/environment/shrub.glb?v=5",
+  policeCar: "/models/environment/police-car.glb?v=5",
+  basketball: "/models/environment/basketball.glb?v=5",
+  deskChair: "/models/environment/desk-chair.glb?v=5",
+  podium: "/models/environment/podium.glb?v=5",
+} as const);
+
+const blockingModelPreload = (
+  key: keyof typeof FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS,
+  fetchPriority: RuntimePreloadAsset["fetchPriority"],
+): RuntimePreloadAsset => Object.freeze({
+  href: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS[key],
+  type: "model/gltf-binary",
+  fetchPriority,
+  blocksFirstPlayable: true,
+});
 
 /**
  * The first campaign is deterministic, so these requests can start from the
@@ -11,77 +45,55 @@ export type RuntimePreloadAsset = Readonly<{
  * satisfy the controlled scene loader without a second transfer.
  */
 export const FIRST_CAMPAIGN_PRELOAD_ASSETS: readonly RuntimePreloadAsset[] = Object.freeze([
-  Object.freeze({
-    href: "/models/characters/kid-bootstrap.glb?v=1",
-    type: "model/gltf-binary",
-    fetchPriority: "high",
-  }),
-  Object.freeze({
-    href: "/models/characters/villain-bootstrap.glb?v=1",
-    type: "model/gltf-binary",
-    fetchPriority: "high",
-  }),
-  Object.freeze({
-    href: "/models/environment/themes/campus-kit-bootstrap.glb?v=1",
-    type: "model/gltf-binary",
-    fetchPriority: "high",
-  }),
+  blockingModelPreload("player", "high"),
+  blockingModelPreload("threat", "high"),
+  blockingModelPreload("theme", "high"),
   Object.freeze({
     href: "/basis/basis_transcoder.wasm",
     type: "application/wasm",
     fetchPriority: "high",
+    blocksFirstPlayable: true,
   }),
   Object.freeze({
     href: "/basis/basis_transcoder.js",
     type: "text/javascript",
     fetchPriority: "auto",
+    blocksFirstPlayable: true,
   }),
   Object.freeze({
     href: "/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
     type: "image/ktx2",
     fetchPriority: "high",
+    blocksFirstPlayable: true,
   }),
   Object.freeze({
     href: "/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
     type: "image/ktx2",
     fetchPriority: "high",
+    blocksFirstPlayable: true,
   }),
   Object.freeze({
     href: "/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
     type: "image/ktx2",
     fetchPriority: "auto",
+    blocksFirstPlayable: true,
   }),
-  Object.freeze({
-    href: "/models/environment/locker.glb?v=31",
-    type: "model/gltf-binary",
-    fetchPriority: "high",
-  }),
-  Object.freeze({
-    href: "/models/environment/front-gate.glb?v=4",
-    type: "model/gltf-binary",
-    fetchPriority: "auto",
-  }),
-  Object.freeze({
-    href: "/models/environment/exit.glb?v=4",
-    type: "model/gltf-binary",
-    fetchPriority: "auto",
-  }),
-  // Level one renders seven authored collision props before controls unlock.
-  // Starting them here prevents a second fetch wave after the client chunk
-  // discovers the level's movement-blocker contract.
+  blockingModelPreload("locker", "high"),
+  blockingModelPreload("cornerMirror", "high"),
   ...[
+    "frontGate",
+    "exit",
     "bench",
     "tree",
     "shrub",
-    "police-car",
+    "policeCar",
     "basketball",
-    "desk-chair",
+    "deskChair",
     "podium",
-  ].map((name) => Object.freeze({
-    href: `/models/environment/${name}.glb?v=4`,
-    type: "model/gltf-binary",
-    fetchPriority: "auto" as const,
-  })),
+  ].map((key) => blockingModelPreload(
+    key as keyof typeof FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS,
+    "auto",
+  )),
 ]);
 
 /**

@@ -6,6 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = await readFile(path.join(ROOT, "app", "chasing-game.tsx"), "utf8");
+const RUNTIME_ASSETS_SOURCE = await readFile(
+  path.join(ROOT, "app", "game", "runtime-assets.ts"),
+  "utf8",
+);
 const INTEGRATION = await readFile(
   path.join(ROOT, "app", "game", "INTEGRATION.md"),
   "utf8",
@@ -120,6 +124,29 @@ test("scene loading is cancellable, retryable, concurrency-limited and KTX2 awar
   );
 });
 
+test("scene disposal closes each owned ImageBitmap exactly once", () => {
+  const disposal = SOURCE.match(
+    /function disposeObjectResources\([\s\S]*?\n\}/u,
+  )?.[0] ?? "";
+  assert.ok(disposal, "the scene-resource disposal boundary is missing");
+  assert.match(
+    disposal,
+    /const imageBitmaps = new Set<ImageBitmap>\(\)/u,
+    "decoded bitmaps must be deduplicated before native cleanup",
+  );
+  assert.match(disposal, /const preservedImageBitmaps = new Set<ImageBitmap>\(\)/u);
+  assert.match(
+    disposal,
+    /collectImageBitmaps\([^,]+,\s*imageBitmaps\)/u,
+    "owned decoded sources must flow into the unique bitmap set",
+  );
+  assert.match(
+    disposal,
+    /for \(const imageBitmap of imageBitmaps\)[\s\S]*!preservedImageBitmaps\.has\(imageBitmap\)[\s\S]*imageBitmap\.close\(\)/u,
+    "only unique, non-preserved ImageBitmaps may be closed",
+  );
+});
+
 test("mobile controls, pause and theme mechanics drive the real simulation", () => {
   assert.match(SOURCE, /sampleVirtualStick\(/);
   assert.match(SOURCE, /combineScreenMove\(/);
@@ -137,7 +164,7 @@ test("mobile controls, pause and theme mechanics drive the real simulation", () 
   assert.doesNotMatch(SOURCE, /setJoystickThumb/);
   assert.match(
     SOURCE,
-    /touchInteractAvailable = Boolean\(interaction\)[\s\S]*Boolean\(themeMechanic\?\.canActivate\)[\s\S]*playerMode === "aligning-hide"/,
+    /touchInteractAvailable = Boolean\(interaction\)[\s\S]*Boolean\(themeMechanic\?\.canActivate && !stealthBlackoutActive\)[\s\S]*playerMode === "aligning-hide"/,
   );
   assert.match(SOURCE, /setPointerCapture\(event\.pointerId\)/);
   assert.match(SOURCE, /ready && !pausedRef\.current/);
@@ -256,7 +283,7 @@ test("stealth presentation keeps cabinets readable and gives Director blackouts 
   );
 });
 
-test("stealth tools use three distinct formal theme-kit subassemblies with auditable provenance", () => {
+test("stealth tools use distinct formal themed subassemblies with auditable provenance", () => {
   const manifest = SOURCE.match(
     /const THEME_STEALTH_TOOL_ART:[\s\S]*?\n\};\n\ntype HideArchetypeArtSpec/u,
   )?.[0] ?? "";
@@ -270,12 +297,57 @@ test("stealth tools use three distinct formal theme-kit subassemblies with audit
     "a formal source subassembly is reused across theme/tool bindings",
   );
   assert.match(SOURCE, /for \(const tool of STEALTH_TOOL_KINDS\)/u);
-  assert.match(SOURCE, /resolveThemeNode\([\s\S]*\[toolSpec\.node\]/u);
+  assert.match(
+    SOURCE,
+    /const toolAsset = tool === "corner-mirror"[\s\S]*\? cornerMirrorKit[\s\S]*: themeKit/u,
+  );
+  assert.match(SOURCE, /resolveThemeNode\([\s\S]*toolAsset\.scene[\s\S]*\[toolSpec\.node\]/u);
   assert.match(SOURCE, /authoredGeometrySignature\(toolSource\)/u);
   assert.match(SOURCE, /authoredToolFallbackUsed = false/u);
+  assert.match(
+    SOURCE,
+    /const STEALTH_CORNER_MIRROR_ASSET\s*=\s*[\s\S]*FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS\.cornerMirror/u,
+  );
+  assert.match(
+    RUNTIME_ASSETS_SOURCE,
+    /cornerMirror:\s*"\/models\/environment\/stealth-corner-mirrors\.glb\?v=2"/u,
+  );
   assert.match(SOURCE, /const template = stealthToolModelTemplates\[receipt\.tool\]/u);
   assert.match(SOURCE, /authored-blackout-status-lens/u);
   assert.match(SOURCE, /polished-corner-mirror-face/u);
+  assert.match(
+    SOURCE,
+    /const authoredMirrorPartNames = \[[\s\S]*object\.name\.startsWith\(`\$\{name\}_`\)[\s\S]*object\.name = authoredPartName/u,
+    "theme clones must restore GLTFLoader-uniquified mirror part roles",
+  );
+  const mirrorPlacement = SOURCE.match(
+    /\} else if \(receipt\.tool === "corner-mirror"\) \{[\s\S]*?\n      \} else \{/u,
+  )?.[0] ?? "";
+  assert.ok(mirrorPlacement, "dedicated corner-mirror placement is missing");
+  assert.match(mirrorPlacement, /const solidDirections =/u);
+  assert.match(
+    mirrorPlacement,
+    /const orthogonalSolidPairs =/u,
+    "mirror mounting must select a real corner pair",
+  );
+  assert.match(
+    mirrorPlacement,
+    /left\.x \* right\.x \+ left\.y \* right\.y === 0/u,
+    "opposite walls must never collapse the mirror mount bisector",
+  );
+  assert.doesNotMatch(
+    mirrorPlacement,
+    /solidDirections\.slice\(0,\s*2\)/u,
+    "array order must not choose an opposite pair at a three-sided dead end",
+  );
+  assert.match(mirrorPlacement, /mountDirection\.x \* CELL \* 0\.88/u);
+  assert.match(mirrorPlacement, /wallTangent\.x \* 0\.32/u);
+  assert.match(mirrorPlacement, /authoredToolRuntimeScale/u);
+  assert.doesNotMatch(
+    mirrorPlacement,
+    /new THREE\.(?:CircleGeometry|TorusGeometry|BoxGeometry|CylinderGeometry)/u,
+    "the formal mirror must not regress to runtime primitive geometry",
+  );
   assert.doesNotMatch(
     SOURCE,
     /\bstealthToolModelTemplate\b/u,
@@ -305,7 +377,23 @@ test("resource QA locks render quality before renderer creation and compiles one
   );
   assert.match(
     SOURCE,
-    /renderer\.render\(scene, camera\);\s*compileSettledQaScene\(\);/u,
+    /renderer\.render\(scene, camera\);\s*qaRenderedFrameCount \+= 1;\s*compileSettledQaScene\(\);/u,
+  );
+  assert.match(SOURCE, /let qaCaptureHoldDeadline = 0/u);
+  assert.match(
+    SOURCE,
+    /if \(\s*qaCaptureHoldRequested\s*&& now >= qaCaptureHoldDeadline\s*\) \{[\s\S]*qaCaptureHoldRequested = false;[\s\S]*qaCaptureHoldDeadline = 0;[\s\S]*\}[\s\S]*if \(qaCaptureHoldRequested\) \{/u,
+    "an abandoned CDP capture must release its browser-side render hold",
+  );
+  assert.match(
+    SOURCE,
+    /setCaptureHold:\s*\(\s*held,\s*leaseMilliseconds = QA_CAPTURE_HOLD_DEFAULT_LEASE_MS,\s*\) => \{/u,
+    "the QA controller must expose a renewable finite lease",
+  );
+  assert.match(
+    SOURCE,
+    /if \(held\) \{[\s\S]*qaCaptureHoldRequested = true;[\s\S]*qaCaptureHoldDeadline = performance\.now\(\) \+ boundedLease;[\s\S]*\} else \{[\s\S]*qaCaptureHoldRequested = false;[\s\S]*qaCaptureHoldDeadline = 0;/u,
+    "every capture hold request must renew or clear its finite lease",
   );
   assert.match(SOURCE, /qaDecorativeSceneCompileCount \+= 1/u);
   assert.match(SOURCE, /const prewarmTransientArtResources = \(\) =>/u);
@@ -383,6 +471,62 @@ test("player action commitments arbitrate every cross-system fixed-tick entry po
   assert.match(
     SOURCE,
     /const mechanicConsumesInteraction = beforeMechanic\.canActivate[\s\S]*?&& !hasPlayerActionCommitment\(\);/u,
+  );
+  const mechanicActivation = SOURCE.match(
+    /const mechanicConsumesInteraction = beforeMechanic\.canActivate[\s\S]*?;/u,
+  )?.[0] ?? "";
+  assert.match(
+    SOURCE,
+    /const activeBlackoutReceipt =\s*stealthToolbeltState\.activeEffects\["temporary-blackout"\]\?\.receipt;[\s\S]*const stealthBlackoutInteractionLocked =\s*toolBlackoutInteractionLocked\s*\|\| directorBlackoutInteractionLocked;/u,
+    "the fixed-step host must derive blackout authority from the toolbelt receipt",
+  );
+  assert.match(
+    mechanicActivation,
+    /&& !stealthBlackoutInteractionLocked/u,
+    "temporary blackout must block authoritative theme-mechanic activation",
+  );
+});
+
+test("temporary blackout suppresses every React theme-mechanic affordance", () => {
+  const blackoutDeclaration = SOURCE.indexOf(
+    "const stealthBlackoutActive = Boolean(",
+  );
+  const themeVisibility = SOURCE.match(
+    /const themeEventVisible = Boolean\([\s\S]*?\n  \);/u,
+  )?.[0] ?? "";
+  const interactionText = SOURCE.match(
+    /const interactionText =[\s\S]*?\n          : null;/u,
+  )?.[0] ?? "";
+  const touchAvailability = SOURCE.match(
+    /const touchInteractAvailable =[\s\S]*?;/u,
+  )?.[0] ?? "";
+  assert.ok(blackoutDeclaration >= 0, "the React blackout state is missing");
+  assert.ok(
+    blackoutDeclaration < SOURCE.indexOf("const themeEventVisible = Boolean("),
+    "blackout state must be available before mechanic HUD derivation",
+  );
+  assert.match(
+    themeVisibility,
+    /!stealthBlackoutActive/u,
+    "ready mechanic HUD must disappear during blackout",
+  );
+  assert.match(
+    interactionText,
+    /themeMechanic\?\.canActivate\s*&& !stealthBlackoutActive/u,
+    "keyboard interaction copy must not advertise a blocked mechanic",
+  );
+  assert.match(
+    touchAvailability,
+    /themeMechanic\?\.canActivate\s*&& !stealthBlackoutActive/u,
+    "touch interaction must not expose a blocked mechanic",
+  );
+});
+
+test("the loaded corner-mirror kit is represented in placed-asset telemetry", () => {
+  assert.match(
+    SOURCE,
+    /buildThemeMechanicView\(themeKitAsset, cornerMirrorAsset\);[\s\S]{0,400}placedAssetIds\.add\("stealth:corner-mirrors"\);/u,
+    "the formal mirror kit must not be reported as loaded-but-unused",
   );
 });
 

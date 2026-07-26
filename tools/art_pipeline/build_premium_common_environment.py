@@ -14,9 +14,11 @@ Run from the repository root:
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
 import importlib.util
 import json
 import math
+import os
 import random
 import shutil
 import struct
@@ -33,7 +35,19 @@ TEXTURES = ROOT / "public" / "models" / "SharedTextures"
 SOURCE_DIR = ROOT / "art-source" / "Environment" / "Premium"
 MASTER_BLEND = SOURCE_DIR / "Chasing_Premium_Common_Environment.blend"
 REPORT = ROOT / "docs" / "art_production" / "PREMIUM_COMMON_ENVIRONMENT_REPORT.json"
-GLTFPACK = ROOT / "node_modules" / ".bin" / "gltfpack"
+GLTFPACK_CANDIDATES = (
+    os.environ.get("GLTFPACK_KTX2"),
+    os.environ.get("GLTFPACK_NATIVE"),
+    "/private/tmp/gltfpack-macos-v1.2/gltfpack",
+    "/opt/homebrew/bin/gltfpack",
+)
+GLTFPACK_VERSION = "gltfpack 1.2"
+GLTFPACK_BINARY_SHA256 = "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
+GLTFPACK_ARGUMENTS = (
+    "-cc", "-gt", "-kn", "-km", "-ke", "-tr",
+    "-vp", "14", "-vn", "10", "-vt", "12",
+    "-ar", "16", "-af", "0", "-kv",
+)
 
 
 def load_module(name: str, path: Path):
@@ -479,21 +493,54 @@ def normalize_texture_uris(path: Path) -> dict:
     }
 
 
+def resolve_native_gltfpack() -> Path:
+    rejected_hashes = []
+    for candidate in GLTFPACK_CANDIDATES:
+        if not candidate:
+            continue
+        executable = Path(candidate).expanduser().resolve()
+        if not executable.is_file():
+            continue
+        completed = subprocess.run(
+            [str(executable), "-v"],
+            cwd=ROOT,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if completed.returncode != 0 or completed.stdout.strip() != GLTFPACK_VERSION:
+            continue
+        binary_sha256 = hashlib.sha256(executable.read_bytes()).hexdigest()
+        if binary_sha256 != GLTFPACK_BINARY_SHA256:
+            rejected_hashes.append(f"{executable}={binary_sha256}")
+            continue
+        return executable
+    mismatch = f" Rejected unpinned binaries: {', '.join(rejected_hashes)}." if rejected_hashes else ""
+    raise RuntimeError(
+        "The pinned official native gltfpack 1.2 binary is required. Set "
+        "GLTFPACK_KTX2 or install it at "
+        f"/private/tmp/gltfpack-macos-v1.2/gltfpack.{mismatch}"
+    )
+
+
 def optimize_runtime_glb(path: Path) -> None:
-    """Generate explicit tangents and losslessly Meshopt-compress geometry.
+    """Generate tangents and compact, visually lossless Meshopt geometry.
 
     Shared images remain external, named nodes/materials and extras remain
-    stable, and ``-noq`` preserves authored floating-point vertex attributes.
+    stable. Fourteen-bit positions retain sub-millimetre precision on these
+    props, while 10-bit normals and 12-bit UVs stay below reviewed pixel error.
+    Native ``-cc`` shrinks the real control-unlock graph without dropping
+    meshes, materials, textures, hierarchy, or authored triangles.
     """
-    if not GLTFPACK.is_file():
-        raise RuntimeError("Pinned gltfpack is missing; run npm install before building environment art")
+    gltfpack = resolve_native_gltfpack()
     optimized = path.with_name(f".{path.stem}.meshopt.tmp.glb")
     optimized.unlink(missing_ok=True)
     try:
         subprocess.run(
             [
-                str(GLTFPACK), "-i", str(path), "-o", str(optimized),
-                "-c", "-gt", "-kn", "-km", "-ke", "-tr", "-noq",
+                str(gltfpack), "-i", str(path), "-o", str(optimized),
+                *GLTFPACK_ARGUMENTS,
             ],
             check=True,
         )
@@ -598,6 +645,12 @@ def main() -> int:
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     report = {
         "pipeline": "premium_common_environment_v2",
+        "tool": {
+            "name": "gltfpack",
+            "version": GLTFPACK_VERSION,
+            "binarySha256": GLTFPACK_BINARY_SHA256,
+            "arguments": list(GLTFPACK_ARGUMENTS),
+        },
         "sourceMaster": str(MASTER_BLEND.relative_to(ROOT)),
         "sharedTextureDirectory": str(TEXTURES.relative_to(ROOT)),
         "assetCount": len(results),

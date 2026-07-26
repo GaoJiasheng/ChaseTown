@@ -895,6 +895,14 @@ export function lockerObservationExposureMultiplier(
 }
 
 /**
+ * Settles the final ten percent of an immersive locker camera before the
+ * ordinary overhead threat framing can pull it back through nearby geometry.
+ */
+export function lockerCameraPoseBlend(smoothedBlend: number): number {
+  return smoothstep(clamp01(smoothedBlend), 0, 0.9);
+}
+
+/**
  * Frame-rate-independent attack/release used by camera occluders. Entering an
  * obstruction clears the player quickly, while recovery is deliberately
  * slower so a ray grazing a wall corner cannot make the material flicker.

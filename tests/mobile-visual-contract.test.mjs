@@ -67,6 +67,11 @@ test("hard locker mask cannot leak into soft and traversal cover", () => {
     css,
     /\.hide-traversal-hide \.cinematic-vignette::before\s*\{[^}]*var\(--locker-cover\)\s*\*\s*\.52/s,
   );
+  assert.match(
+    css,
+    /\.cinematic-vignette::after\s*\{[\s\S]*transparent 43%[\s\S]*rgba\(0,\s*1,\s*2,\s*\.82\) 100%/,
+    "open locker peek must retain a broad, readable observation aperture",
+  );
 });
 
 test("deep visual QA measures viewport visibility and both narrow phone sizes", () => {
@@ -80,6 +85,9 @@ test("deep visual QA measures viewport visibility and both narrow phone sizes", 
   );
   assert.match(deepQa, /hudCoverageRatio <= 0\.18/);
   assert.match(deepQa, /playerCore\.occlusionRatio <= 0\.12/);
+  assert.match(deepQa, /function hardLockerPeekStaging/);
+  assert.match(deepQa, /peek\.knowledge\.chaserObservable/);
+  assert.match(deepQa, /hard-locker peek pursuer/);
 });
 
 test("library Gold QA covers 360/390 interaction-ready and mid-commit layouts", () => {
