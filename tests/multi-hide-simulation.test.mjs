@@ -158,7 +158,7 @@ test("simulation emits the quieter soft-cover entry through legal sound percepti
   assert.equal(soft.chaser.memory.lastKnownEvidence, null);
 });
 
-test("soft cover exposes a bounded nearby disturbance while hard cover stays fully shut", () => {
+test("soft cover can expose its occupant nearby while every used hide exposes only public object disturbance", () => {
   const runHidden = (archetype, approachX) => {
     const { level, spot } = openHideLevel({
       id: `visibility-${archetype}-${approachX}`,
@@ -185,8 +185,22 @@ test("soft cover exposes a bounded nearby disturbance while hard cover stays ful
   const softNear = runHidden("soft-cover", 2);
   const softFar = runHidden("soft-cover", 3);
   assert.equal(hardNear.state.chaser.memory.lastKnownEvidence, null);
+  assert.equal(hardNear.state.chaser.memory.lastSeenAtSeconds, null);
+  assert.equal(
+    hardNear.state.chaser.memory.evidenceTrail?.some(
+      (entry) => entry.sourceType === "door-disturbance",
+    ),
+    true,
+  );
   assert.equal(softNear.state.chaser.memory.lastKnownEvidence, "visual");
   assert.equal(softFar.state.chaser.memory.lastKnownEvidence, null);
+  assert.equal(softFar.state.chaser.memory.lastSeenAtSeconds, null);
+  assert.equal(
+    softFar.state.chaser.memory.evidenceTrail?.some(
+      (entry) => entry.sourceType === "door-disturbance",
+    ),
+    true,
+  );
   assert.equal(
     softNear.simulation.getActiveHideSpotArchetype().profile.evidence.occupiedVisualDisturbance,
     0.24,

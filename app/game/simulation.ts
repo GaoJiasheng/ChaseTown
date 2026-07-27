@@ -5,6 +5,7 @@ import type {
   GameState,
   ChaserMode,
   HideExitKind,
+  HideExitStyle,
   HideSpotDefinition,
   LevelDefinition,
   MoveIntent,
@@ -32,8 +33,11 @@ import {
   stepChaserBrain,
 } from "./chaser-fsm.ts";
 import {
+  applyHideDisturbance,
   auditHideArchetypeBindings,
+  decayHideDisturbance,
   hideExitOptions,
+  hideExitStyleProfile,
   hideTransitionEvidence,
   queryLegalHideCandidates,
   type HideExitOption,
@@ -80,6 +84,7 @@ export type HideInteraction =
 export interface HideExitSelection {
   readonly hideSpotId: string;
   readonly selected: HideExitKind;
+  readonly style: HideExitStyle;
   readonly options: readonly HideExitOption[];
 }
 
@@ -111,6 +116,7 @@ const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 type WorldClueEvidence = Extract<PerceptionEvidence, { kind: "world-clue" }>;
 const WORLD_CLUE_PENDING_CAPACITY = 24;
 const WORLD_CLUE_RECENT_ID_CAPACITY = 96;
+const HIDE_DISTURBANCE_DECAY_SECONDS = 12;
 
 /**
  * Movement cadence is part of the gameplay/animation contract. Chase keeps
@@ -176,7 +182,10 @@ export class GameSimulation {
   private heldChaserSpeedMultiplier = 1;
   private heldExitEnabled = true;
   private heldHideExitChoice: HideExitKind = "origin";
+  private heldHideExitStyle: HideExitStyle = "standard";
   private pendingSound: SoundStimulus | null = null;
+  /** Direction captured when a public footstep was emitted, never at AI-read time. */
+  private pendingSoundDirection: Point | null = null;
   private readonly pendingWorldSounds: Array<{
     readonly stimulus: SoundStimulus;
     readonly notBeforeTick: number;
@@ -206,6 +215,7 @@ export class GameSimulation {
   private campusPatrolArrivalArmed = true;
   private campusPatrolArrivalSequence = 0;
   private selectedHideExit: HideExitKind | null = null;
+  private selectedHideExitStyle: HideExitStyle | null = null;
   private hideTurnPlan: {
     startYaw: number;
     segmentRadians: number;
@@ -260,7 +270,9 @@ export class GameSimulation {
     this.heldChaserSpeedMultiplier = 1;
     this.heldExitEnabled = true;
     this.heldHideExitChoice = "origin";
+    this.heldHideExitStyle = "standard";
     this.pendingSound = null;
+    this.pendingSoundDirection = null;
     this.pendingWorldSounds.length = 0;
     this.pendingWorldClues.length = 0;
     this.recentWorldClueIds.clear();
@@ -274,6 +286,7 @@ export class GameSimulation {
     this.lastDeliveredWorldSoundTick = null;
     this.playerSoundCooldownSeconds = 0;
     this.selectedHideExit = null;
+    this.selectedHideExitStyle = null;
     this.hideTurnPlan = null;
     this.chaserArchetypeState = createInitialChaserArchetypeState();
     this.activeChaserArchetypeAction = null;
@@ -312,6 +325,12 @@ export class GameSimulation {
       }
       this.heldHideExitChoice = input.hideExitChoice;
     }
+    if (input.hideExitStyle !== undefined) {
+      if (!["standard", "quick", "careful"].includes(input.hideExitStyle)) {
+        throw new Error(`Unknown hide exit style: ${String(input.hideExitStyle)}`);
+      }
+      this.heldHideExitStyle = input.hideExitStyle;
+    }
     this.pendingInteract ||= input.interactPressed ?? false;
     this.accumulatorSeconds += Math.min(realDeltaSeconds, this.config.maxFrameDeltaSeconds);
     const frameEvents: SimulationEvent[] = [];
@@ -324,6 +343,7 @@ export class GameSimulation {
         interactPressed: this.pendingInteract,
         exitEnabled: this.heldExitEnabled,
         hideExitChoice: this.heldHideExitChoice,
+        hideExitStyle: this.heldHideExitStyle,
       }));
       this.pendingInteract = false;
       this.accumulatorSeconds -= this.config.fixedStepSeconds;
@@ -360,6 +380,7 @@ export class GameSimulation {
     return Object.freeze({
       hideSpotId: active.hideSpotId,
       selected: this.selectedHideExit ?? "origin",
+      style: this.selectedHideExitStyle ?? this.heldHideExitStyle,
       options: hideExitOptions(active),
     });
   }
@@ -425,21 +446,37 @@ export class GameSimulation {
         position: copyPoint(this.state.chaser.position),
         heading: copyPoint(this.state.chaser.heading),
         scanOriginHeading: copyPoint(this.state.chaser.scanOriginHeading),
+        searchPlan: this.state.chaser.searchPlan.map(copyPoint),
         inspectedHideSpotIds: [...this.state.chaser.inspectedHideSpotIds],
         memory: {
           ...this.state.chaser.memory,
           lastKnownPosition: this.state.chaser.memory.lastKnownPosition
             ? copyPoint(this.state.chaser.memory.lastKnownPosition)
             : null,
+          lastKnownDirection: this.state.chaser.memory.lastKnownDirection
+            ? copyPoint(this.state.chaser.memory.lastKnownDirection)
+            : null,
           deferredSoundEvidence: this.state.chaser.memory.deferredSoundEvidence
             ? {
                 ...this.state.chaser.memory.deferredSoundEvidence,
                 position: copyPoint(this.state.chaser.memory.deferredSoundEvidence.position),
+                ...(this.state.chaser.memory.deferredSoundEvidence.direction
+                  ? {
+                      direction: copyPoint(
+                        this.state.chaser.memory.deferredSoundEvidence.direction,
+                      ),
+                    }
+                  : {}),
               }
             : null,
           evidenceTrail: this.state.chaser.memory.evidenceTrail?.map((entry) => ({
             ...entry,
             position: copyPoint(entry.position),
+            direction: entry.direction ? copyPoint(entry.direction) : null,
+          })),
+          regionSuspicion: this.state.chaser.memory.regionSuspicion.map((entry) => ({
+            ...entry,
+            anchor: copyPoint(entry.anchor),
           })),
         },
       },
@@ -538,6 +575,13 @@ export class GameSimulation {
       || evidence.observedAtSeconds < 0
       || !Number.isFinite(evidence.confidence)
       || evidence.confidence <= 0
+      || (
+        evidence.direction !== undefined
+        && (
+          !Number.isFinite(evidence.direction.x)
+          || !Number.isFinite(evidence.direction.y)
+        )
+      )
     ) return false;
     if (
       this.recentWorldClueIds.has(evidence.clueId)
@@ -552,6 +596,9 @@ export class GameSimulation {
     this.pendingWorldClues.push(Object.freeze({
       ...evidence,
       position: Object.freeze(copyPoint(evidence.position)),
+      ...(evidence.direction
+        ? { direction: Object.freeze(copyPoint(evidence.direction)) }
+        : {}),
       confidence: clamp01(evidence.confidence),
       decayPerSecond: Math.max(0, evidence.decayPerSecond ?? 0.06),
     }));
@@ -637,9 +684,18 @@ export class GameSimulation {
         hideTurnDirection: 0,
         hideTurnCycle: -1,
         hideTurnSegmentDurationSeconds: 0,
+        hideExitStyle: null,
       },
       chaser: createInitialChaser(this.level, this.config, this.initialChaserPosition, this.initialChaserHeading),
-      hideSpots: Object.fromEntries(this.level.hideSpots.map((spot) => [spot.id, { id: spot.id, occupiedByPlayer: false }])),
+      hideSpots: Object.fromEntries(this.level.hideSpots.map((spot) => [spot.id, {
+        id: spot.id,
+        occupiedByPlayer: false,
+        disturbanceLevel: 0,
+        disturbanceRevision: 0,
+        disturbanceUpdatedAtTick: 0,
+        useCount: 0,
+        peekCount: 0,
+      }])),
       aiAccumulatorSeconds: 0,
       events: [],
     };
@@ -648,7 +704,13 @@ export class GameSimulation {
   private fixedStep(
     input: Required<Pick<
       SimulationInput,
-      "move" | "peekHeld" | "sneakHeld" | "interactPressed" | "exitEnabled" | "hideExitChoice"
+      | "move"
+      | "peekHeld"
+      | "sneakHeld"
+      | "interactPressed"
+      | "exitEnabled"
+      | "hideExitChoice"
+      | "hideExitStyle"
     >>,
   ): SimulationEvent[] {
     const events: SimulationEvent[] = [];
@@ -657,6 +719,7 @@ export class GameSimulation {
     const delta = this.config.fixedStepSeconds;
     this.state.elapsedSeconds += delta;
     this.state.tick += 1;
+    this.decayHideSpotDisturbance();
     this.playerSoundCooldownSeconds = Math.max(0, this.playerSoundCooldownSeconds - delta);
     const playerBefore = copyPoint(this.state.player.position);
     const modeBefore = this.state.player.mode;
@@ -681,13 +744,52 @@ export class GameSimulation {
     return events;
   }
 
-  private hideTiming(resolved: ResolvedHideSpotArchetype) {
+  private decayHideSpotDisturbance() {
+    const ticksPerLevel = Math.max(
+      1,
+      Math.round(HIDE_DISTURBANCE_DECAY_SECONDS / this.config.fixedStepSeconds),
+    );
+    for (const spot of Object.values(this.state.hideSpots)) {
+      this.state.hideSpots[spot.id] = decayHideDisturbance(
+        spot,
+        this.state.tick,
+        ticksPerLevel,
+      );
+    }
+  }
+
+  private applyHideSpotDisturbance(
+    hideSpotId: string,
+    cause: Parameters<typeof applyHideDisturbance>[1],
+  ) {
+    const runtime = this.state.hideSpots[hideSpotId];
+    if (!runtime) return;
+    this.state.hideSpots[hideSpotId] = applyHideDisturbance(
+      runtime,
+      cause,
+      this.state.tick,
+    );
+  }
+
+  private hideTiming(
+    resolved: ResolvedHideSpotArchetype,
+    exitStyle: HideExitStyle = this.state.player.hideExitStyle
+      ?? this.selectedHideExitStyle
+      ?? "standard",
+  ) {
     const timing = resolved.profile.timing;
+    const exit = hideExitStyleProfile(exitStyle);
     return {
       enterSeconds: this.config.hideEnterSeconds * timing.enterDurationMultiplier,
       enterExposureSeconds: this.config.hideEnterExposureSeconds * timing.enterDurationMultiplier,
-      exitSeconds: this.config.hideExitSeconds * timing.exitDurationMultiplier,
-      exitExposureSeconds: this.config.hideExitExposureSeconds * timing.exitDurationMultiplier,
+      exitSeconds:
+        this.config.hideExitSeconds
+        * timing.exitDurationMultiplier
+        * exit.durationMultiplier,
+      exitExposureSeconds:
+        this.config.hideExitExposureSeconds
+        * timing.exitDurationMultiplier
+        * exit.exposureDelayMultiplier,
       peekEnterSeconds: this.config.peekEnterSeconds * timing.peekDurationMultiplier,
       peekExitSeconds: this.config.peekExitSeconds * timing.peekDurationMultiplier,
     };
@@ -748,15 +850,24 @@ export class GameSimulation {
     if (!resolved) throw new Error(`Missing resolved hide spot ${spot.id}`);
     this.state.player.transitionRemainingSeconds = this.hideTiming(resolved).enterSeconds;
     this.state.hideSpots[spot.id].occupiedByPlayer = true;
+    this.applyHideSpotDisturbance(spot.id, "enter");
     this.selectedHideExit = "origin";
+    this.selectedHideExitStyle = null;
+    this.state.player.hideExitStyle = null;
     this.heldHideExitChoice = "origin";
+    this.heldHideExitStyle = "standard";
     setPlayerMode(this.state, "entering-hide", events);
   }
 
   private updatePlayer(
     input: Required<Pick<
       SimulationInput,
-      "move" | "peekHeld" | "sneakHeld" | "interactPressed" | "hideExitChoice"
+      | "move"
+      | "peekHeld"
+      | "sneakHeld"
+      | "interactPressed"
+      | "hideExitChoice"
+      | "hideExitStyle"
     >>,
     delta: number,
     events: SimulationEvent[],
@@ -774,7 +885,10 @@ export class GameSimulation {
             player.hideTurnSegmentDurationSeconds = 0;
             this.hideTurnPlan = null;
             this.selectedHideExit = "origin";
+            this.selectedHideExitStyle = null;
+            player.hideExitStyle = null;
             this.heldHideExitChoice = "origin";
+            this.heldHideExitStyle = "standard";
             setPlayerMode(this.state, "aligning-hide", events);
             return;
           }
@@ -803,7 +917,10 @@ export class GameSimulation {
           player.hideTurnSegmentDurationSeconds = 0;
           this.hideTurnPlan = null;
           this.selectedHideExit = null;
+          this.selectedHideExitStyle = null;
+          player.hideExitStyle = null;
           this.heldHideExitChoice = "origin";
+          this.heldHideExitStyle = "standard";
           setPlayerMode(this.state, "free", events);
           break;
         }
@@ -814,7 +931,10 @@ export class GameSimulation {
           player.hideSpotId = null;
           this.hideTurnPlan = null;
           this.selectedHideExit = null;
+          this.selectedHideExitStyle = null;
+          player.hideExitStyle = null;
           this.heldHideExitChoice = "origin";
+          this.heldHideExitStyle = "standard";
           setPlayerMode(this.state, "free", events);
           break;
         }
@@ -895,16 +1015,29 @@ export class GameSimulation {
         if (!resolved) {
           player.hideSpotId = null;
           this.selectedHideExit = null;
+          this.selectedHideExitStyle = null;
+          player.hideExitStyle = null;
           this.heldHideExitChoice = "origin";
+          this.heldHideExitStyle = "standard";
           setPlayerMode(this.state, "free", events);
           break;
         }
         this.selectedHideExit = this.selectedExitFor(resolved, input.hideExitChoice);
+        this.selectedHideExitStyle = input.hideExitStyle;
         if (input.interactPressed) {
-          player.transitionRemainingSeconds = this.hideTiming(resolved).exitSeconds;
+          player.hideExitStyle = this.selectedHideExitStyle;
+          player.transitionRemainingSeconds = this.hideTiming(
+            resolved,
+            this.selectedHideExitStyle,
+          ).exitSeconds;
+          this.applyHideSpotDisturbance(
+            resolved.hideSpotId,
+            `exit-${this.selectedHideExitStyle}`,
+          );
           setPlayerMode(this.state, "exiting-hide", events);
         } else if (input.peekHeld && resolved.profile.capabilities.canPeek) {
           player.transitionRemainingSeconds = this.hideTiming(resolved).peekEnterSeconds;
+          this.applyHideSpotDisturbance(resolved.hideSpotId, "peek");
           setPlayerMode(this.state, "entering-peek", events);
         }
         break;
@@ -947,6 +1080,7 @@ export class GameSimulation {
           const enterSeconds = timing?.peekEnterSeconds || this.config.peekEnterSeconds;
           const openFraction = player.transitionRemainingSeconds / exitSeconds;
           player.transitionRemainingSeconds = enterSeconds * (1 - clamp01(openFraction));
+          if (resolved) this.applyHideSpotDisturbance(resolved.hideSpotId, "peek");
           setPlayerMode(this.state, "entering-peek", events);
           break;
         }
@@ -980,7 +1114,10 @@ export class GameSimulation {
           }
           player.hideSpotId = null;
           this.selectedHideExit = null;
+          this.selectedHideExitStyle = null;
+          player.hideExitStyle = null;
           this.heldHideExitChoice = "origin";
+          this.heldHideExitStyle = "standard";
           setPlayerMode(this.state, "free", events);
         }
         break;
@@ -997,6 +1134,7 @@ export class GameSimulation {
     sourceId?: string,
     confidence?: number,
     decayPerSecond?: number,
+    publicDirection?: Point,
   ) {
     const normalized = Math.min(
       1,
@@ -1012,13 +1150,18 @@ export class GameSimulation {
       confidence: confidence ?? (sourceType === "hide-interaction" ? 0.85 : 0.72),
       decayPerSecond: decayPerSecond ?? (sourceType === "hide-interaction" ? 0.16 : 0.2),
     };
+    this.pendingSoundDirection = publicDirection
+      && Math.hypot(publicDirection.x, publicDirection.y) > 1e-9
+      ? normalizeVector(publicDirection)
+      : null;
   }
 
   private queueHideTransitionSound(
     resolved: ResolvedHideSpotArchetype,
     transition: "enter" | "exit-origin" | "exit-alternate" | "peek",
+    exitStyle: HideExitStyle = "standard",
   ) {
-    const sound = hideTransitionEvidence(resolved, transition).sound;
+    const sound = hideTransitionEvidence(resolved, transition, exitStyle).sound;
     if (!sound) return;
     this.queuePlayerSound(
       sound.position,
@@ -1043,6 +1186,11 @@ export class GameSimulation {
       this.queuePlayerSound(
         this.state.player.position,
         modeBefore === "aligning-hide" ? 0.24 : input.sneakHeld ? 0.1 : 0.46,
+        "player-movement",
+        undefined,
+        undefined,
+        undefined,
+        this.state.player.heading,
       );
       this.playerSoundCooldownSeconds = modeBefore === "free" && input.sneakHeld ? 0.56 : 0.32;
     } else if (
@@ -1070,6 +1218,7 @@ export class GameSimulation {
           this.queueHideTransitionSound(
             resolved,
             this.selectedHideExit === "alternate" ? "exit-alternate" : "exit-origin",
+            this.state.player.hideExitStyle ?? this.selectedHideExitStyle ?? "standard",
           );
         }
         this.playerSoundCooldownSeconds = Math.max(this.playerSoundCooldownSeconds, 0.42);
@@ -1326,6 +1475,47 @@ export class GameSimulation {
     return evidence;
   }
 
+  private canChaserObservePublicPoint(point: Point): boolean {
+    const distance = distanceBetween(this.state.chaser.position, point);
+    const visionRange = this.config.visionRange * this.heldVisionRangeMultiplier;
+    if (
+      distance > visionRange
+      || !hasLineOfSight(this.level, this.state.chaser.position, point)
+    ) return false;
+    if (distance <= this.config.proximitySenseRange) return true;
+    const direction = normalizeVector({
+      x: point.x - this.state.chaser.position.x,
+      y: point.y - this.state.chaser.position.y,
+    });
+    const forward = normalizeVector(this.state.chaser.heading);
+    const threshold = Math.cos((this.config.visionConeDegrees * Math.PI) / 360);
+    return forward.x * direction.x + forward.y * direction.y >= threshold;
+  }
+
+  private queueObservableHideDisturbanceClues() {
+    if (this.state.chaser.mode === "spawn-delay") return;
+    for (const spot of this.level.hideSpots) {
+      const runtime = this.state.hideSpots[spot.id];
+      if (
+        !runtime
+        || runtime.disturbanceLevel <= 0
+        || !this.canChaserObservePublicPoint(spot.approach)
+      ) continue;
+      this.emitWorldClue({
+        kind: "world-clue",
+        clueId: `hide-disturbance:${spot.id}:${runtime.disturbanceRevision}`,
+        position: copyPoint(spot.approach),
+        observedAtSeconds: this.state.elapsedSeconds,
+        // Levels one and two are readable suspicion, not a free exact route.
+        // Only a slammed/rapidly reused level-three hide becomes strong enough
+        // to interrupt the current investigation.
+        confidence: [0, 0.18, 0.27, 0.78][runtime.disturbanceLevel],
+        sourceType: "door-disturbance",
+        decayPerSecond: 0.045,
+      });
+    }
+  }
+
   private updateChaserBrain(delta: number, events: SimulationEvent[]) {
     this.state.aiAccumulatorSeconds += delta;
     if (this.state.chaser.mode === "scan-last-known") {
@@ -1363,6 +1553,13 @@ export class GameSimulation {
             },
         this.state.elapsedSeconds,
       );
+      if (evidence.kind === "player-visible" || evidence.kind === "hide-entry-visible") {
+        evidence = {
+          ...evidence,
+          direction: copyPoint(this.state.player.heading),
+        };
+      }
+      this.queueObservableHideDisturbanceClues();
       const sampleSound = (stimulus: SoundStimulus) => {
         const sampled = sampleSoundPerception(
           this.level,
@@ -1396,9 +1593,19 @@ export class GameSimulation {
           || left.entry.sequence - right.entry.sequence
         ));
       const selectedWorldSound = dueWorldSounds[0] ?? null;
-      const sampledPlayerSound = this.pendingSound
-        ? sampleSound(this.pendingSound)
+      const pendingPlayerSound = this.pendingSound;
+      const pendingPlayerSoundDirection = this.pendingSoundDirection;
+      const sampledPlayerSoundBase = pendingPlayerSound
+        ? sampleSound(pendingPlayerSound)
         : null;
+      const sampledPlayerSound = sampledPlayerSoundBase
+        && pendingPlayerSound?.sourceType === "player-movement"
+        && pendingPlayerSoundDirection
+        ? {
+            ...sampledPlayerSoundBase,
+            direction: copyPoint(pendingPlayerSoundDirection),
+          }
+        : sampledPlayerSoundBase;
       const audibleSounds = [
         ...(sampledPlayerSound
           ? [{ source: "player" as const, evidence: sampledPlayerSound }]
@@ -1491,6 +1698,7 @@ export class GameSimulation {
       // A step or door edge is a transient. Consuming it once prevents a
       // single sound from resetting the search timer on every AI tick.
       this.pendingSound = null;
+      this.pendingSoundDirection = null;
       const reachedPublicTarget = hasReachedChaserTarget(this.state.chaser, this.level);
       evidence = this.stepChaserArchetypeController(
         evidence,
@@ -1506,7 +1714,7 @@ export class GameSimulation {
         ...(secondarySoundEvidence ? { secondarySoundEvidence } : {}),
         reachedTarget: blocksBaseTargetResolution
           ? false
-          : hasReachedChaserTarget(this.state.chaser, this.level),
+          : reachedPublicTarget,
         nowSeconds: this.state.elapsedSeconds,
         deltaSeconds: this.config.aiTickSeconds,
       });
@@ -1635,9 +1843,12 @@ export class GameSimulation {
     this.state.player.hideTurnDirection = 0;
     this.state.player.hideTurnCycle = -1;
     this.state.player.hideTurnSegmentDurationSeconds = 0;
+    this.state.player.hideExitStyle = null;
     this.hideTurnPlan = null;
     this.selectedHideExit = null;
+    this.selectedHideExitStyle = null;
     this.heldHideExitChoice = "origin";
+    this.heldHideExitStyle = "standard";
     this.state.captureReason = reason;
     events.push({ type: "player-captured", reason });
     setPlayerMode(this.state, "caught", events);

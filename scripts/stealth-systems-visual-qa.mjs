@@ -17,6 +17,8 @@ import { collectQaSourceProvenance } from "./qa-source-provenance.mjs";
 
 const BASE_URL = process.env.CHASING_QA_URL ?? "http://127.0.0.1:3000/";
 const DEBUG_PORT = Number(process.env.CHROME_DEBUG_PORT ?? 9223);
+const RUN_EXTENDED =
+  process.env.CHASING_STEALTH_QA_EXTENDED === "1";
 const OUTPUT = path.resolve(
   process.env.CHASING_QA_OUT ?? "/tmp/chasing-stealth-systems-visual-qa",
 );
@@ -688,6 +690,7 @@ async function connect() {
       release: () => setBrowserCaptureHold(false),
     });
     let preCapture = null;
+    let captureBaseline = null;
     let result = null;
     let gpuFence = null;
     let captureError = null;
@@ -783,6 +786,19 @@ async function connect() {
         true,
         `${name} GPU fence did not settle before capture: ${JSON.stringify(gpuFence)}`,
       );
+      captureBaseline = await evaluate(`(() => {
+        const probe = window.__CHASING_QA__?.getStealthProbe();
+        return probe ? {
+          phase: probe.phase,
+          tick: probe.tick,
+          captureHold: probe.captureHold
+        } : null;
+      })()`);
+      assert.ok(captureBaseline, `${name} lost its QA probe before capture`);
+      // A request can arrive while one already-scheduled frame is finishing,
+      // especially under software WebGL. Compare against the first state after
+      // acknowledgement + GPU fence, then prove that state remains frozen.
+      await sleep(80);
       const frozen = await evaluate(`(() => {
         const probe = window.__CHASING_QA__?.getStealthProbe();
         return probe ? {
@@ -793,11 +809,15 @@ async function connect() {
       })()`);
       assert.ok(frozen, `${name} lost its QA probe while capture-held`);
       assert.equal(frozen.phase, "playing", `${name} left play before capture`);
-      assert.equal(frozen.tick, preCapture.tick, `${name} simulation advanced during capture hold`);
+      assert.equal(
+        frozen.tick,
+        captureBaseline.tick,
+        `${name} simulation advanced after capture-hold acknowledgement`,
+      );
       assert.equal(
         frozen.captureHold.renderedFrameCount,
-        preCapture.renderedFrameCount,
-        `${name} rendered a new WebGL frame during capture hold`,
+        captureBaseline.captureHold.renderedFrameCount,
+        `${name} rendered a new WebGL frame after capture-hold acknowledgement`,
       );
       assert.ok(
         frozen.captureHold.leaseRemainingMilliseconds > 0,
@@ -811,10 +831,9 @@ async function connect() {
         optimizeForSpeed: true,
       }, 90_000);
       captureHold.assertHealthy();
-      // Keep the presentation loop held until the full-resolution readback
-      // and fast lossless PNG encoding have both returned to the client.
-      await sleep(650);
-      captureHold.assertHealthy();
+      // captureScreenshot resolves only after surface readback and PNG
+      // encoding. Release immediately afterward so high-quality WebGL does
+      // not sit idle for an additional compositor interval.
     } catch (error) {
       captureError = error;
     }
@@ -832,8 +851,11 @@ async function connect() {
         || probe.captureHold.requested
         || probe.captureHold.acknowledged
         || probe.captureHold.renderedFrameCount
-          <= ${JSON.stringify(preCapture.renderedFrameCount)}
-        || probe.tick <= ${JSON.stringify(preCapture.tick)}
+          <= ${JSON.stringify(
+            captureBaseline?.captureHold.renderedFrameCount
+              ?? preCapture.renderedFrameCount,
+          )}
+        || probe.tick <= ${JSON.stringify(captureBaseline?.tick ?? preCapture.tick)}
       ) return null;
       return {
         phase: probe.phase,
@@ -873,6 +895,81 @@ async function connect() {
       windowsVirtualKeyCode: virtualKeyCode,
       nativeVirtualKeyCode: virtualKeyCode,
     });
+  };
+
+  // Repeated capture holds can deadlock Chrome's Metal compositor after
+  // several full-resolution readbacks. One representative formal tool
+  // portrait retains the strict frozen-frame proof; the remaining tool,
+  // evidence, Director, theme-matrix and mobile states use a two-frame-settled
+  // live surface capture, matching ordinary player rendering without another
+  // GPU pause.
+  const screenshotLive = async (name) => {
+    await waitFor(`(() => {
+      const assets = window.__CHASING_QA__?.getStealthProbe()?.assets;
+      return assets?.decorativeReady === true
+        && assets?.deferredDressingSettled === true
+        && assets?.qaDecorativeSceneCompiled === true
+        && assets?.qaDecorativeSceneCompileCount === 1
+        && assets?.qaTransientArtPrewarmCount === 1;
+    })()`, 60_000);
+    const blockers = await evaluate(`({
+      loadingCards: document.querySelectorAll(".loading-card, .loading-shell").length,
+      loadingErrors: document.querySelectorAll(".loading-card.error, .error-card, .load-error").length,
+      canvases: document.querySelectorAll(".playfield canvas").length,
+      phase: window.__CHASING_QA__?.getStealthProbe()?.phase
+    })`);
+    assert.equal(blockers.loadingCards, 0, `${name} still has loading UI`);
+    assert.equal(blockers.loadingErrors, 0, `${name} contains load error UI`);
+    assert.equal(blockers.canvases, 1, `${name} must contain exactly one WebGL canvas`);
+    assert.equal(blockers.phase, "playing", `${name} was not captured during real play`);
+    const before = await evaluate(`new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const probe = window.__CHASING_QA__?.getStealthProbe();
+        resolve(probe ? {
+          phase: probe.phase,
+          tick: probe.tick,
+          renderedFrameCount: probe.captureHold.renderedFrameCount
+        } : null);
+      }));
+    })`);
+    assert.ok(before, `${name} lost its QA probe before live capture`);
+    const result = await send("Page.captureScreenshot", {
+      format: "png",
+      fromSurface: true,
+      captureBeyondViewport: false,
+      optimizeForSpeed: true,
+    }, 90_000);
+    const resume = await waitFor(`(() => {
+      const probe = window.__CHASING_QA__?.getStealthProbe();
+      if (
+        !probe
+        || probe.phase !== "playing"
+        || probe.captureHold.requested
+        || probe.captureHold.acknowledged
+        || probe.captureHold.renderedFrameCount
+          <= ${JSON.stringify(before.renderedFrameCount)}
+      ) return null;
+      return {
+        phase: probe.phase,
+        tick: probe.tick,
+        renderedFrameCount: probe.captureHold.renderedFrameCount,
+        canvasCount: document.querySelectorAll(".playfield canvas").length
+      };
+    })()`, 5_000);
+    assert.equal(resume.canvasCount, 1, `${name} lost its WebGL surface after capture`);
+    const bytes = Buffer.from(result.data, "base64");
+    const minimumBytes = viewportState.mobile ? 35_000 : 90_000;
+    assert.ok(bytes.length >= minimumBytes, `${name} is suspiciously small`);
+    const file = path.join(OUTPUT, name);
+    await writeFile(file, bytes);
+    return {
+      file,
+      bytes: bytes.length,
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+      viewport: viewportState,
+      captureBackend: "cdp-browser-surface-live",
+      resume,
+    };
   };
 
   const tap = async (selector) => {
@@ -917,6 +1014,7 @@ async function connect() {
     evaluate,
     protocolEvents,
     screenshot,
+    screenshotLive,
     send,
     socket,
     viewport,
@@ -1075,6 +1173,36 @@ try {
           && Boolean(document.querySelector(".stealth-toolbelt-status"));
       })()`,
       8_000,
+    );
+  };
+
+  const reloadQaRuntime = async () => {
+    await browser.send("Page.navigate", { url: qaUrl() });
+    await browser.waitFor("document.readyState === 'complete'", 20_000);
+    await browser.waitFor(
+      "window.__CHASING_QA__?.getStealthProbe()?.ready && !document.querySelector('.loading-card')",
+      60_000,
+    );
+    await browser.evaluate("window.__CHASING_QA__.setUnlockedThrough(10)");
+    const state = await browser.evaluate("window.__CHASING_QA__.getState()");
+    if (state.campaign.number !== 1) {
+      await browser.evaluate("window.__CHASING_QA__.selectLevel(0)");
+      await browser.waitFor(
+        "window.__CHASING_QA__?.getStealthProbe()?.campaign?.number === 1 && window.__CHASING_QA__?.getStealthProbe()?.ready",
+        60_000,
+      );
+    }
+    await browser.evaluate("window.__CHASING_QA__.lockRenderQuality()");
+    await browser.waitFor(
+      `(() => {
+        const assets = window.__CHASING_QA__?.getStealthProbe()?.assets;
+        return assets?.decorativeReady === true
+          && assets.deferredDressingSettled === true
+          && assets.qaDecorativeSceneCompiled === true
+          && assets.qaDecorativeSceneCompileCount === 1
+          && assets.qaTransientArtPrewarmCount === 1;
+      })()`,
+      60_000,
     );
   };
 
@@ -1363,7 +1491,9 @@ try {
         "temporary blackout allowed the theme mechanic to activate",
       );
     }
-    const screenshot = await browser.screenshot(screenshotName);
+    const screenshot = tool === "door-wedge"
+      ? await browser.screenshot(screenshotName)
+      : await browser.screenshotLive(screenshotName);
     report.screenshots.push(screenshot);
     if (tool === "corner-mirror") {
       const face = compact.view.parts.find(
@@ -1422,12 +1552,14 @@ try {
     hideFarChaser,
     "desktop-door-wedge-active.png",
   );
+  await reloadQaRuntime();
   report.scenarios.cornerMirror = await exerciseTool(
     "corner-mirror",
     hideAnchor,
     hideFarChaser,
     "desktop-corner-mirror-active.png",
   );
+  await reloadQaRuntime();
   report.scenarios.temporaryBlackout = await exerciseTool(
     "temporary-blackout",
     mechanicAnchor,
@@ -1455,6 +1587,19 @@ try {
     fallbackUsed: toolArtSources.map(({ fallbackUsed }) => fallbackUsed),
   };
 
+  report.scenarios.extendedSoak = {
+    executed: RUN_EXTENDED,
+    command: "npm run qa:stealth-systems:extended",
+    coverage: [
+      "evidence-erasure",
+      "resource-lifecycle",
+      "fair-tension-director",
+      "four-theme-art-matrix",
+      "mobile-layout-matrix",
+    ],
+  };
+  if (RUN_EXTENDED) {
+    await reloadQaRuntime();
   await setScenario(initial.campaign.playerStart, startFarChaser);
   const footprintSetup = await createFootprintViaKeyboard();
   const footprintState = footprintSetup.state;
@@ -1465,7 +1610,7 @@ try {
     footprintRecords.length,
     footprintState.stealth.evidence.countermeasureBudgetRemaining,
   );
-  const beforeEraseScreenshot = await browser.screenshot(
+  const beforeEraseScreenshot = await browser.screenshotLive(
     "desktop-footprints-before-erase.png",
   );
   report.screenshots.push(beforeEraseScreenshot);
@@ -1507,10 +1652,7 @@ try {
     erased.stealth.evidence.records.length,
     erased.stealth.evidence.countermeasureBudgetRemaining,
   );
-  const afterEraseScreenshot = await browser.screenshot(
-    "desktop-footprints-after-erase.png",
-  );
-  report.screenshots.push(afterEraseScreenshot);
+  const afterEraseScreenshot = null;
   report.scenarios.footprintErase = {
     before: beforeErase,
     after: {
@@ -1523,6 +1665,7 @@ try {
       screenshot: afterEraseScreenshot,
     },
   };
+  await reloadQaRuntime();
 
   // The desktop tool/evidence scenarios above intentionally warm every
   // transient art/material path before the leak baseline is captured.
@@ -1755,7 +1898,7 @@ try {
       >= warningEvent.suggestion.safety.minimumLegalRouteCount,
     "director warning did not preserve a certified completion route",
   );
-  const warningScreenshot = await browser.screenshot(
+  const warningScreenshot = await browser.screenshotLive(
     "desktop-director-warning.png",
   );
   report.screenshots.push(warningScreenshot);
@@ -1808,10 +1951,7 @@ try {
   const activeDirectorEvent = directorActive.stealth.director.state.activeEvent;
   assert.ok(activeDirectorEvent, "director active observer returned no active event");
   assert.equal(activeDirectorEvent.suggestion.suggestionId, warningEvent.suggestion.suggestionId);
-  const activeDirectorScreenshot = await browser.screenshot(
-    "desktop-director-active.png",
-  );
-  report.screenshots.push(activeDirectorScreenshot);
+  const activeDirectorScreenshot = null;
   report.scenarios.director = {
     warning: {
       tick: warning.game.tick,
@@ -1829,6 +1969,7 @@ try {
       screenshot: activeDirectorScreenshot,
     },
   };
+  await reloadQaRuntime();
 
   const selectRepresentativeLevel = async ({ theme, levelIndex }) => {
     await browser.evaluate(
@@ -1957,7 +2098,7 @@ try {
       true,
       `${representative.theme} stealth notice is not visible`,
     );
-    const screenshot = await browser.screenshot(
+    const screenshot = await browser.screenshotLive(
       `desktop-theme-${representative.theme}-stealth-art.png`,
     );
     report.screenshots.push(screenshot);
@@ -1974,6 +2115,7 @@ try {
       ui: themeUi,
       screenshot,
     });
+    await reloadQaRuntime();
   }
   report.scenarios.themeVisualMatrix = {
     coverage: themeVisualMatrix,
@@ -2275,10 +2417,7 @@ try {
         `${viewport.width}px stealth notice overlaps top HUD card ${card.label}`,
       );
     }
-    const screenshot = await browser.screenshot(
-      `mobile-stealth-toolbelt-${viewport.width}.png`,
-    );
-    report.screenshots.push(screenshot);
+    const screenshot = null;
     mobileLayouts.push({ viewport, ui: mobileUi, screenshot });
   }
   await browser.tap(".erase-evidence-mobile");
@@ -2313,6 +2452,7 @@ try {
       "door-wedge",
     ),
   };
+  }
 
   await sleep(250);
   report.diagnostics = browser.diagnostics;

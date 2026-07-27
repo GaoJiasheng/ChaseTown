@@ -23,12 +23,44 @@ import {
   maximumCameraDistanceForActorReadability,
   projectPointToFixedCameraNdc,
   projectedActorScreenHeightPixels,
+  reconcileHideExitSelection,
   requiredCameraDistanceForFraming,
   shouldFrameChaser,
   shouldRenderChaserModel,
   smoothOcclusionStrength,
   stepFixedCameraFollow,
 } from "../app/game/presentation.ts";
+
+test("an immediate alternate-exit choice survives a stale HUD refresh", () => {
+  const runtimeSelection = Object.freeze({
+    hideSpotId: "traversal-hide",
+    selected: "origin",
+    style: "careful",
+    options: Object.freeze([
+      Object.freeze({ kind: "origin", position: Object.freeze({ x: 1, y: 2 }) }),
+      Object.freeze({ kind: "alternate", position: Object.freeze({ x: 3, y: 4 }) }),
+    ]),
+  });
+
+  const reconciled = reconcileHideExitSelection(runtimeSelection, "alternate");
+  assert.equal(reconciled.selected, "alternate");
+  assert.equal(reconciled.hideSpotId, "traversal-hide");
+  assert.notEqual(reconciled, runtimeSelection);
+  assert.equal(Object.isFrozen(runtimeSelection), true);
+
+  assert.equal(
+    reconcileHideExitSelection(runtimeSelection, "origin"),
+    runtimeSelection,
+  );
+  assert.equal(
+    reconcileHideExitSelection(
+      { ...runtimeSelection, options: runtimeSelection.options.slice(0, 1) },
+      "alternate",
+    ).selected,
+    "origin",
+  );
+  assert.equal(reconcileHideExitSelection(null, "alternate"), null);
+});
 
 test("last-known pursuit and arrival scan use authored locomotion and search performances", () => {
   assert.equal(chaserAnimationForMode("lost-sight", 1.8, false), "run");

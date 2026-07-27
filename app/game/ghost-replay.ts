@@ -12,7 +12,13 @@ const FLAG_PEEK = 1;
 const FLAG_SNEAK = 2;
 const FLAG_INTERACT = 4;
 const FLAG_ALTERNATE_EXIT = 8;
-const HELD_FLAGS = FLAG_PEEK | FLAG_SNEAK | FLAG_ALTERNATE_EXIT;
+const FLAG_QUICK_EXIT = 16;
+const FLAG_CAREFUL_EXIT = 32;
+const HELD_FLAGS = FLAG_PEEK
+  | FLAG_SNEAK
+  | FLAG_ALTERNATE_EXIT
+  | FLAG_QUICK_EXIT
+  | FLAG_CAREFUL_EXIT;
 
 /** [tick, signed move x, signed move y, input flags]. */
 export type GhostKeyframe = readonly [
@@ -114,12 +120,15 @@ function inputFlags(input: Readonly<SimulationInput>): number {
   return (input.peekHeld ? FLAG_PEEK : 0)
     | (input.sneakHeld ? FLAG_SNEAK : 0)
     | (input.hideExitChoice === "alternate" ? FLAG_ALTERNATE_EXIT : 0)
+    | (input.hideExitStyle === "quick" ? FLAG_QUICK_EXIT : 0)
+    | (input.hideExitStyle === "careful" ? FLAG_CAREFUL_EXIT : 0)
     | (input.interactPressed ? FLAG_INTERACT : 0);
 }
 
 function copySimulationInput(
   input: Readonly<SimulationInput>,
   interactPressed = Boolean(input.interactPressed),
+  heldHideExitStyle = input.hideExitStyle,
 ): Readonly<SimulationInput> {
   return Object.freeze({
     ...(input.move
@@ -140,6 +149,9 @@ function copySimulationInput(
     ...(input.hideExitChoice === undefined
       ? {}
       : { hideExitChoice: input.hideExitChoice }),
+    ...(heldHideExitStyle === undefined
+      ? {}
+      : { hideExitStyle: heldHideExitStyle }),
   });
 }
 
@@ -152,6 +164,7 @@ function copySimulationInput(
  */
 export class GhostFixedStepInputBuffer {
   private pending: BufferedGhostInput | null = null;
+  private heldHideExitStyle: SimulationInput["hideExitStyle"];
 
   stage(tick: number, input: Readonly<SimulationInput>): void {
     if (!Number.isInteger(tick) || tick < 0) {
@@ -160,11 +173,15 @@ export class GhostFixedStepInputBuffer {
     if (this.pending && this.pending.tick !== tick) {
       throw new Error("Ghost input buffer must be consumed before staging a new tick");
     }
+    if (input.hideExitStyle !== undefined) {
+      this.heldHideExitStyle = input.hideExitStyle;
+    }
     this.pending = Object.freeze({
       tick,
       input: copySimulationInput(
         input,
         Boolean(this.pending?.input.interactPressed) || Boolean(input.interactPressed),
+        this.heldHideExitStyle,
       ),
     });
   }
@@ -181,6 +198,7 @@ export class GhostFixedStepInputBuffer {
 
   reset(): void {
     this.pending = null;
+    this.heldHideExitStyle = undefined;
   }
 }
 
@@ -217,7 +235,11 @@ function checksumPayload(payload: Readonly<GhostReplayPayload>): string {
 function validKeyframe(value: unknown, previousTick: number, durationTicks: number): value is GhostKeyframe {
   if (!Array.isArray(value) || value.length !== 4) return false;
   const [tick, moveX, moveY, flags] = value;
-  return Number.isInteger(tick)
+  const hasConflictingExitStyles = Number.isInteger(flags)
+    && (flags & FLAG_QUICK_EXIT) !== 0
+    && (flags & FLAG_CAREFUL_EXIT) !== 0;
+  return !hasConflictingExitStyles
+    && Number.isInteger(tick)
     && tick > previousTick
     && tick >= 0
     && tick <= durationTicks
@@ -537,6 +559,11 @@ export class GhostInputRecorder {
 }
 
 function decodeFrame(frame: GhostKeyframe, requestedTick: number): SimulationInput {
+  const exitStyle = frame[3] & FLAG_QUICK_EXIT
+    ? "quick"
+    : frame[3] & FLAG_CAREFUL_EXIT
+      ? "careful"
+      : "standard";
   return {
     move: {
       x: decodeMove(frame[1]),
@@ -545,6 +572,7 @@ function decodeFrame(frame: GhostKeyframe, requestedTick: number): SimulationInp
     peekHeld: Boolean(frame[3] & FLAG_PEEK),
     sneakHeld: Boolean(frame[3] & FLAG_SNEAK),
     hideExitChoice: frame[3] & FLAG_ALTERNATE_EXIT ? "alternate" : "origin",
+    hideExitStyle: exitStyle,
     interactPressed: frame[0] === requestedTick && Boolean(frame[3] & FLAG_INTERACT),
   };
 }

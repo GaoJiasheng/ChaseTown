@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   createInitialChaser,
   evidenceRankedHideCandidates,
+  generateSearchWaypoints,
   getChaserTarget,
   hasReachedChaserTarget,
   stepChaserBrain,
@@ -935,15 +936,25 @@ test("search order is evidence-seeded, deterministic, and advances only after an
   });
   const cfg = config({ spawnDelaySeconds: 0, searchSeconds: 20, searchWaypointSeconds: 0.75 });
   const initial = createInitialChaser(level, cfg);
-  const makeSearch = (searchSeed) => ({
-    ...initial,
-    mode: "search",
-    modeElapsedSeconds: 0,
-    searchSeed,
-    searchIndex: 0,
-    searchWaypointElapsedSeconds: 0,
-    memory: { lastKnownPosition: { x: 3, y: 3 }, lastSeenAtSeconds: 1.2, witnessedHideSpotId: null },
-  });
+  const makeSearch = (searchSeed) => {
+    const memory = {
+      ...initial.memory,
+      lastKnownPosition: { x: 3, y: 3 },
+      lastSeenAtSeconds: 1.2,
+      lastKnownEvidence: "visual",
+      witnessedHideSpotId: null,
+    };
+    return {
+      ...initial,
+      mode: "search",
+      modeElapsedSeconds: 0,
+      searchSeed,
+      searchPlan: generateSearchWaypoints(level, memory.lastKnownPosition, searchSeed),
+      searchIndex: 0,
+      searchWaypointElapsedSeconds: 0,
+      memory,
+    };
+  };
   const sequence = (searchSeed) => Array.from({ length: 9 }, (_, searchIndex) =>
     getChaserTarget({ ...makeSearch(searchSeed), searchIndex }, level));
   assert.deepEqual(sequence(7), sequence(7), "the same evidence seed must replay exactly");
@@ -1449,7 +1460,15 @@ test("an open locker peek exposes the doorway viewpoint instead of sight-testing
   simulation.advance(1 / 60, { interactPressed: true });
   let state = runFor(simulation, 1.1, 1 / 60);
   assert.equal(state.player.mode, "hidden");
-  assert.equal(state.chaser.memory.lastKnownPosition, null);
+  assert.equal(state.chaser.memory.lastKnownEvidence, null);
+  assert.equal(state.chaser.memory.lastSeenAtSeconds, null);
+  assert.equal(
+    state.chaser.memory.evidenceTrail?.some((entry) => (
+      entry.kind === "world-clue"
+      && entry.sourceType === "door-disturbance"
+    )),
+    true,
+  );
 
   state = runFor(
     simulation,
@@ -1463,6 +1482,7 @@ test("an open locker peek exposes the doorway viewpoint instead of sight-testing
     locker.approach,
     "visible peek must give the AI the same doorway position shown to the player",
   );
+  assert.equal(state.chaser.memory.lastKnownEvidence, "visual");
 });
 
 test("a zero-open quick peek cannot leak evidence through a visually closed locker", () => {
@@ -1489,7 +1509,15 @@ test("a zero-open quick peek cannot leak evidence through a visually closed lock
   simulation.advance(1 / 60, { interactPressed: true });
   let state = runFor(simulation, 0.65, 1 / 60);
   assert.equal(state.player.mode, "hidden");
-  assert.equal(state.chaser.memory.lastKnownPosition, null);
+  assert.equal(state.chaser.memory.lastKnownEvidence, null);
+  assert.equal(state.chaser.memory.lastSeenAtSeconds, null);
+  assert.equal(
+    state.chaser.memory.evidenceTrail?.some((entry) => (
+      entry.kind === "world-clue"
+      && entry.sourceType === "door-disturbance"
+    )),
+    true,
+  );
 
   state = simulation.advance(1 / 60, { peekHeld: true });
   assert.equal(state.player.mode, "entering-peek");
@@ -1497,7 +1525,12 @@ test("a zero-open quick peek cannot leak evidence through a visually closed lock
   assert.equal(state.player.mode, "exiting-peek");
   assert.equal(state.player.transitionRemainingSeconds, 0);
   assert.equal(isPlayerVisuallyExposed(state.player, simulation.config), false);
-  assert.equal(state.chaser.memory.lastKnownPosition, null, "a fully closed visual frame must not become AI evidence");
+  assert.equal(state.chaser.memory.lastSeenAtSeconds, null, "a fully closed visual frame must not become visual AI evidence");
+  assert.equal(state.chaser.memory.lastKnownEvidence, null);
+  assert.equal(
+    state.chaser.memory.evidenceTrail?.some((entry) => entry.kind === "visual"),
+    false,
+  );
 });
 
 test("exit exposure waits for the authored door-opening marker", () => {

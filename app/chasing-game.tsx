@@ -60,13 +60,23 @@ import type {
   GameState,
   HideArchetypeKind,
   HideExitKind,
+  HideExitStyle,
   HideSpotDefinition,
   LevelDefinition,
   PlayerMode,
   Point,
   SimulationInput,
+  SimulationEvent,
 } from "./game/contracts.ts";
 import { failureFeedback } from "./game/failure-feedback.ts";
+import {
+  buildFailureCausalReplay,
+  type FailureCausalReplay,
+  type FailurePlayerAction,
+  type FailureReplayIconToken,
+  type FailureSemanticTrackSample,
+  type TimedPublicSimulationEvent,
+} from "./game/failure-causal-replay.ts";
 import {
   advanceFixedStepHostFrame,
   createFixedStepHost,
@@ -82,6 +92,7 @@ import {
   type HideGuidanceTargetState,
   type PlayerKnownChaserEvidence,
 } from "./game/hide-guidance.ts";
+import { hideExitStyleProfile } from "./game/hide-archetypes.ts";
 import { pairedHidePresentationPoint } from "./game/hide-performance.ts";
 import {
   FIXED_CAMERA_GROUND_DIRECTION,
@@ -168,6 +179,30 @@ import {
   type LibraryMissionState,
 } from "./game/library-branching-mission.ts";
 import {
+  HOSPITAL_BRANCHING_MISSION,
+  HOSPITAL_BRANCHING_MISSION_TOPOLOGY,
+  HOSPITAL_BRANCHING_MISSION_VERSION,
+  HOSPITAL_TOOL_LOADOUT,
+  adaptHospitalMissionToThemeMissionState,
+  adaptHospitalMissionTransitionToThemeMission,
+  auditHospitalMissionSoftlocks,
+  availableHospitalObjectiveIds,
+  createHospitalToolLoadoutSelection,
+  createInitialHospitalMissionState,
+  hospitalMissionCommitmentWindow,
+  hospitalMissionExposureActiveAtTick,
+  hospitalMissionExposureWindow,
+  hospitalMissionEventsToGhostRuleEvents,
+  hospitalMissionLevelForPlan,
+  hospitalMissionMasteryRoute,
+  stepHospitalBranchingMission,
+  type HospitalLoadoutToolId,
+  type HospitalMissionEvent,
+  type HospitalMissionExposureWindow,
+  type HospitalMissionPlanId,
+  type HospitalMissionState,
+} from "./game/hospital-branching-mission.ts";
+import {
   LIBRARY_PORTABLE_DECOY_DEFINITION,
   acknowledgePortableDecoySound,
   createPortableDecoyState,
@@ -251,6 +286,7 @@ import {
   lockerObservationExposureMultiplier,
   lockerVisionMix,
   minimumActorScreenHeightPixelsForViewport,
+  reconcileHideExitSelection,
   shouldFrameChaser,
   shouldRenderChaserModel,
   createFixedCameraFollowState,
@@ -306,6 +342,41 @@ const HIDE_PROP_FORWARD_OFFSET_CELLS = 0.18;
 const POLICE_PREFETCH_DISTANCE_CELLS = 7.5;
 const DEFERRED_DRESSING_FADE_SECONDS = 0.48;
 const PORTABLE_DECOY_RELEASE_FRACTION = 0.32;
+const FAILURE_REPLAY_RETENTION_SECONDS = 12.25;
+const FAILURE_REPLAY_GLYPHS: Readonly<
+  Record<FailureReplayIconToken, string>
+> = Object.freeze({
+  capture: "抓",
+  eye: "视",
+  footsteps: "步",
+  hide: "藏",
+  door: "门",
+  peek: "窥",
+  search: "搜",
+  alert: "警",
+  decoy: "饵",
+  mechanic: "机",
+  route: "路",
+  action: "行",
+  advice: "策",
+});
+
+function failureSemanticTrackCoordinates(
+  samples: readonly FailureSemanticTrackSample[],
+) {
+  if (!samples.length) return [];
+  const minimumX = Math.min(...samples.map(({ position }) => position.x));
+  const maximumX = Math.max(...samples.map(({ position }) => position.x));
+  const minimumY = Math.min(...samples.map(({ position }) => position.y));
+  const maximumY = Math.max(...samples.map(({ position }) => position.y));
+  const spanX = Math.max(1, maximumX - minimumX);
+  const spanY = Math.max(1, maximumY - minimumY);
+  return samples.map((sample) => ({
+    sample,
+    x: 8 + (sample.position.x - minimumX) / spanX * 84,
+    y: 42 - (sample.position.y - minimumY) / spanY * 34,
+  }));
+}
 
 const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
   walk: Object.freeze([
@@ -404,8 +475,8 @@ const STEALTH_CORNER_MIRROR_ASSET =
 // Screenshot controllers renew this deliberately short browser-owned lease.
 // If the controller is killed or its CDP socket drops, animation resumes
 // without waiting for the controller's much longer screenshot timeout.
-const QA_CAPTURE_HOLD_DEFAULT_LEASE_MS = 5_000;
-const QA_CAPTURE_HOLD_MAX_LEASE_MS = 8_000;
+const QA_CAPTURE_HOLD_DEFAULT_LEASE_MS = 10_000;
+const QA_CAPTURE_HOLD_MAX_LEASE_MS = 10_000;
 
 type ThemePropSpec = { node: string; height: number };
 
@@ -1876,6 +1947,13 @@ type LockerView = {
   delayRemaining: number;
   playbackRate: number;
   owner: "idle" | "player" | "chaser";
+  disturbanceLevel: 0 | 1 | 2 | 3;
+  disturbanceRevision: number;
+  disturbanceMaterials: Array<{
+    material: THREE.MeshStandardMaterial;
+    baseEmissive: THREE.Color;
+    baseEmissiveIntensity: number;
+  }>;
 };
 
 type MechanicView = {
@@ -1979,7 +2057,9 @@ type RuntimeMissionObjective = Pick<
   "id" | "label" | "interactionPrompt" | "completionHint" | "commitmentSeconds"
 > & {
   readonly unlocksExit: boolean;
-  readonly planId?: LibraryMissionPlanId;
+  readonly planId?: LibraryMissionPlanId | HospitalMissionPlanId;
+  readonly publicNoiseStrength?: number;
+  readonly exposureSeconds?: number;
 };
 
 type GhostRaceUiState = GhostRaceSnapshot & {
@@ -2030,6 +2110,21 @@ function libraryG2RunIdentity(
 const LIBRARY_G2_RECORD_IDS = Object.freeze(
   LIBRARY_BRANCHING_MISSION.plans.map((plan) => (
     libraryG2RunIdentity(LIBRARY_BRANCHING_MISSION.levelId, plan.id)
+  )),
+);
+
+function hospitalG2RunIdentity(
+  levelId: string,
+  planId: HospitalMissionPlanId,
+): string {
+  return `${levelId}#${CERTIFIED_REMIX_MISSION_VERSION}:hospital-g2-v${
+    HOSPITAL_BRANCHING_MISSION_VERSION
+  }:${planId}`;
+}
+
+const HOSPITAL_G2_RECORD_IDS = Object.freeze(
+  HOSPITAL_BRANCHING_MISSION.plans.map((plan) => (
+    hospitalG2RunIdentity(HOSPITAL_BRANCHING_MISSION.levelId, plan.id)
   )),
 );
 
@@ -2720,7 +2815,11 @@ function playerPresentationPose(
       const destination = selection === "alternate" && resolved.alternateExit
         ? resolved.alternateExit
         : resolved.approach;
-      const duration = config.hideExitSeconds * resolved.profile.timing.exitDurationMultiplier;
+      const duration = config.hideExitSeconds
+        * resolved.profile.timing.exitDurationMultiplier
+        * hideExitStyleProfile(
+          state.player.hideExitStyle ?? "standard",
+        ).durationMultiplier;
       const progress = 1 - state.player.transitionRemainingSeconds / Math.max(duration, 1e-6);
       return {
         point: interpolatePoint(concealed, destination, progress),
@@ -2749,7 +2848,9 @@ function playerPresentationPose(
       facing: spot.facing,
       transitionRemainingSeconds: state.player.transitionRemainingSeconds,
       transitionDurationSeconds: state.player.mode === "exiting-hide"
-        ? config.hideExitSeconds
+        ? config.hideExitSeconds * hideExitStyleProfile(
+            state.player.hideExitStyle ?? "standard",
+          ).durationMultiplier
         : config.hideEnterSeconds,
     }),
     heading: state.player.heading,
@@ -2775,6 +2876,7 @@ export function ChasingGame() {
   const mount = useRef<HTMLDivElement>(null);
   const keyboardKeys = useRef(new Set<string>());
   const touchKeys = useRef(new Set<string>());
+  const touchQuietModeLatchedRef = useRef(false);
   const analogueMove = useRef({ x: 0, y: 0 });
   const joystickControl = useRef<HTMLDivElement>(null);
   const joystickBase = useRef<HTMLDivElement>(null);
@@ -2791,8 +2893,10 @@ export function ChasingGame() {
   const evidenceErasePressed = useRef(false);
   const selectedStealthToolRef = useRef<StealthToolKind>("door-wedge");
   const preferredHideExit = useRef<HideExitKind>("origin");
+  const preferredHideExitStyle = useRef<HideExitStyle>("careful");
   const pausedRef = useRef(false);
   const resumeButton = useRef<HTMLButtonElement>(null);
+  const resultPrimaryButton = useRef<HTMLButtonElement>(null);
   const pauseReturnFocus = useRef<HTMLElement | null>(null);
   const commands = useRef<GameCommands>(NOOP_COMMANDS);
   const qaAssetFaultInjector = useRef<QaAssetFaultInjector | null>(null);
@@ -2800,6 +2904,12 @@ export function ChasingGame() {
   const [selectedRemixVariant, setSelectedRemixVariant] = useState<0 | 1 | 2 | null>(null);
   const [selectedLibraryPlan, setSelectedLibraryPlan] =
     useState<LibraryMissionPlanId>("access-authorization");
+  const [selectedHospitalPlan, setSelectedHospitalPlan] =
+    useState<HospitalMissionPlanId>("pharmacy-authorization");
+  const [selectedHospitalLoadout, setSelectedHospitalLoadout] =
+    useState<readonly HospitalLoadoutToolId[]>(
+      () => HOSPITAL_TOOL_LOADOUT.recommendedToolIds,
+    );
   const [sceneRevision, setSceneRevision] = useState(0);
   const [preferences, setPreferences] = useState<GameplayPreferences>(
     () => DEFAULT_GAMEPLAY_PREFERENCES,
@@ -2823,11 +2933,27 @@ export function ChasingGame() {
   );
   const libraryGoldEnabled = sourceCampaignLevel.id === LIBRARY_BRANCHING_MISSION.levelId
     && selectedRemixContract === null;
+  const hospitalGoldEnabled = sourceCampaignLevel.id === HOSPITAL_BRANCHING_MISSION.levelId
+    && selectedRemixContract === null;
+  const hospitalLoadoutSelection = useMemo(
+    () => createHospitalToolLoadoutSelection(selectedHospitalLoadout),
+    [selectedHospitalLoadout],
+  );
+  const hospitalLoadoutSelectionRef = useRef(hospitalLoadoutSelection);
+  useEffect(() => {
+    hospitalLoadoutSelectionRef.current = hospitalLoadoutSelection;
+  }, [hospitalLoadoutSelection]);
   // The original library layout is the G2 gold slice. Certified remixes retain
   // their frozen v1 mission identity until they receive separately certified
   // branching anchors; this avoids silently changing recorded seed topology.
   const campaignLevel = useMemo(() => {
     const resolvedLevel = resolvedRemix.level as CampaignLevelDefinition;
+    if (hospitalGoldEnabled) {
+      return hospitalMissionLevelForPlan(
+        resolvedLevel,
+        selectedHospitalPlan,
+      ) as CampaignLevelDefinition;
+    }
     if (!libraryGoldEnabled) return resolvedLevel;
     const selectedExitId = LIBRARY_BRANCHING_MISSION.plans
       .find((plan) => plan.id === selectedLibraryPlan)?.exitId;
@@ -2853,18 +2979,28 @@ export function ChasingGame() {
       exit: Object.freeze({ ...selectedExit }),
       hideSpots: Object.freeze(hideSpots),
     });
-  }, [libraryGoldEnabled, resolvedRemix.level, selectedLibraryPlan]);
+  }, [
+    hospitalGoldEnabled,
+    libraryGoldEnabled,
+    resolvedRemix.level,
+    selectedHospitalPlan,
+    selectedLibraryPlan,
+  ]);
   const chaserArchetypeProfile: ChaserArchetypeProfile =
     CHASER_ARCHETYPE_PROFILES[campaignLevel.campaign.theme];
   const runReplayLevelId = selectedRemixContract
     ? remixReplayLevelId(selectedRemixContract, preferences.ruleset)
     : libraryGoldEnabled
       ? libraryG2RunIdentity(campaignLevel.id, selectedLibraryPlan)
+      : hospitalGoldEnabled
+        ? hospitalG2RunIdentity(campaignLevel.id, selectedHospitalPlan)
       : `${campaignLevel.id}#${CERTIFIED_REMIX_MISSION_VERSION}`;
   const runRecordLevelId = selectedRemixContract
     ? runReplayLevelId
     : libraryGoldEnabled
       ? runReplayLevelId
+      : hospitalGoldEnabled
+        ? runReplayLevelId
       : campaignLevel.id;
   const remixRecord = selectedRemixContract && typeof window !== "undefined"
     ? loadCertifiedRemixRecord(localStorage, selectedRemixContract, preferences.ruleset)
@@ -2890,6 +3026,12 @@ export function ChasingGame() {
       theme: campaignLevel.campaign.theme,
       ruleset: preferences.ruleset,
     });
+    if (hospitalGoldEnabled) {
+      return Object.freeze({
+        context,
+        mission: hospitalMissionMasteryRoute(selectedHospitalPlan),
+      });
+    }
     if (!libraryGoldEnabled) return Object.freeze({ context });
     const plan = LIBRARY_BRANCHING_MISSION.plans.find(
       (candidate) => candidate.id === selectedLibraryPlan,
@@ -2922,8 +3064,10 @@ export function ChasingGame() {
   }, [
     campaignLevel.campaign.theme,
     campaignLevel.id,
+    hospitalGoldEnabled,
     libraryGoldEnabled,
     preferences.ruleset,
+    selectedHospitalPlan,
     selectedLibraryPlan,
   ]);
   const masteryPreview = useMemo(() => previewRunMastery(
@@ -2967,6 +3111,8 @@ export function ChasingGame() {
   const [interaction, setInteraction] = useState<HideInteraction | null>(null);
   const [activeHideArchetype, setActiveHideArchetype] = useState<HideArchetypeKind | null>(null);
   const [hideExitSelection, setHideExitSelection] = useState<HideExitSelection | null>(null);
+  const [hideExitStyle, setHideExitStyle] = useState<HideExitStyle>("careful");
+  const [touchQuietModeLatched, setTouchQuietModeLatched] = useState(false);
   const keyboardPresentationRef = useRef({
     phase,
     selectedLevelIndex,
@@ -2998,6 +3144,8 @@ export function ChasingGame() {
   const [ghostRace, setGhostRace] = useState<GhostRaceUiState | null>(null);
   const [lastCaptureReason, setLastCaptureReason] = useState<CaptureReason | null>(null);
   const [lastRunSummary, setLastRunSummary] = useState<LastRunSummary | null>(null);
+  const [lastFailureReplay, setLastFailureReplay] =
+    useState<FailureCausalReplay | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -3024,6 +3172,7 @@ export function ChasingGame() {
         [
           ...CAMPAIGN_LEVELS.map((level) => level.id),
           ...LIBRARY_G2_RECORD_IDS,
+          ...HOSPITAL_G2_RECORD_IDS,
         ],
       );
       queueMicrotask(() => {
@@ -3049,8 +3198,20 @@ export function ChasingGame() {
     }));
   }, []);
 
-  const begin = useCallback(() => commands.current.begin(), []);
-  const restart = useCallback(() => commands.current.restart(), []);
+  const updateTouchQuietMode = useCallback((active: boolean) => {
+    touchQuietModeLatchedRef.current = active;
+    setTouchQuietModeLatched(active);
+    if (active) touchKeys.current.add("q");
+    else touchKeys.current.delete("q");
+  }, []);
+  const begin = useCallback(() => {
+    updateTouchQuietMode(false);
+    commands.current.begin();
+  }, [updateTouchQuietMode]);
+  const restart = useCallback(() => {
+    updateTouchQuietMode(false);
+    commands.current.restart();
+  }, [updateTouchQuietMode]);
   const interact = useCallback(() => commands.current.interact(), []);
   const deployDecoy = useCallback(() => commands.current.deployDecoy(), []);
   const chooseStealthTool = useCallback((tool: StealthToolKind) => {
@@ -3193,6 +3354,52 @@ export function ChasingGame() {
     setSelectedLibraryPlan(nextPlan.id);
   }, [libraryGoldEnabled, loading, phase, selectedLibraryPlan]);
 
+  const chooseHospitalPlan = useCallback((planId: HospitalMissionPlanId) => {
+    if (planId === selectedHospitalPlan || phase !== "ready") return;
+    setLoading(true);
+    setLoadError("");
+    setLoadProgress({
+      done: 0,
+      total: BOOTSTRAP_ASSET_COUNT,
+      message: planId === "pharmacy-authorization"
+        ? "正在布置安静的药房授权与救护车入口路线…"
+        : "正在布置高风险的应急供电与维护通道路线…",
+    });
+    setSelectedHospitalPlan(planId);
+  }, [phase, selectedHospitalPlan]);
+
+  const switchHospitalPlanAfterRun = useCallback(() => {
+    if (
+      !hospitalGoldEnabled
+      || (phase !== "won" && phase !== "lost")
+      || loading
+    ) return;
+    const nextPlan = HOSPITAL_BRANCHING_MISSION.plans.find(
+      (plan) => plan.id !== selectedHospitalPlan,
+    );
+    if (!nextPlan) return;
+    setResultVisible(true);
+    setPhase("ready");
+    setLoading(true);
+    setLoadError("");
+    setLoadProgress({
+      done: 0,
+      total: BOOTSTRAP_ASSET_COUNT,
+      message: nextPlan.id === "pharmacy-authorization"
+        ? "正在从结算页改走药房授权路线…"
+        : "正在从结算页改走应急供电路线…",
+    });
+    setSelectedHospitalPlan(nextPlan.id);
+  }, [hospitalGoldEnabled, loading, phase, selectedHospitalPlan]);
+
+  const chooseHospitalLoadoutTool = useCallback((toolId: HospitalLoadoutToolId) => {
+    if (!hospitalGoldEnabled || phase !== "ready") return;
+    setSelectedHospitalLoadout((current) => {
+      if (current.includes(toolId)) return current;
+      return Object.freeze([current[1] ?? current[0], toolId]);
+    });
+  }, [hospitalGoldEnabled, phase]);
+
   useEffect(() => {
     chooseLevelRef.current = chooseLevel;
   }, [chooseLevel]);
@@ -3229,6 +3436,34 @@ export function ChasingGame() {
   }, [paused]);
 
   useEffect(() => {
+    const terminalResultVisible = !loading
+      && resultVisible
+      && (phase === "won" || phase === "lost");
+    if (!terminalResultVisible) return;
+    const frame = requestAnimationFrame(() => resultPrimaryButton.current?.focus());
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const card = resultPrimaryButton.current?.closest(".overlay-card");
+      if (!card) return;
+      const focusable = [...card.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])",
+      )];
+      if (!focusable.length) return;
+      const currentIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      const nextIndex = event.shiftKey
+        ? currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1
+        : currentIndex < 0 || currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1;
+      event.preventDefault();
+      focusable[nextIndex].focus();
+    };
+    document.addEventListener("keydown", trapFocus);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", trapFocus);
+    };
+  }, [loading, phase, resultVisible]);
+
+  useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       const target = event.target instanceof Element ? event.target : null;
@@ -3260,6 +3495,16 @@ export function ChasingGame() {
       // by one commit; gating here made the first real key press disappear.
       else if (key === "g") commands.current.useStealthTool();
       else if (key === "c") commands.current.eraseEvidence();
+      else if (
+        key === "z"
+        && keyboardPresentationRef.current.phase === "playing"
+      ) {
+        const nextStyle = preferredHideExitStyle.current === "quick"
+          ? "careful"
+          : "quick";
+        preferredHideExitStyle.current = nextStyle;
+        setHideExitStyle(nextStyle);
+      }
       else if (
         key === "x"
         && keyboardPresentationRef.current.hideExitSelection?.options.some(
@@ -3301,7 +3546,7 @@ export function ChasingGame() {
       portableDecoyPressed.current = false;
       stealthToolPressed.current = false;
       evidenceErasePressed.current = false;
-      preferredHideExit.current = "origin";
+      updateTouchQuietMode(false);
       resetAnalogueMove();
     };
     const qaRun = new URLSearchParams(location.search).has("qa");
@@ -3334,7 +3579,7 @@ export function ChasingGame() {
       removeEventListener("blur", clearBlurInput);
       document.removeEventListener("visibilitychange", clearHiddenInput);
     };
-  }, [resetAnalogueMove]);
+  }, [resetAnalogueMove, updateTouchQuietMode]);
 
   useEffect(() => {
     const host = mount.current;
@@ -3363,6 +3608,7 @@ export function ChasingGame() {
     setElapsed(0);
     setLastCaptureReason(null);
     setLastRunSummary(null);
+    setLastFailureReplay(null);
     setObjectiveDistance(objectiveDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
     setObjectiveTurnHint(null);
     setHideDistance(nearestHideDistanceMeters(campaignLevel.playerStart, campaignLevel, objectivePaths));
@@ -3373,6 +3619,8 @@ export function ChasingGame() {
     setActiveHideArchetype(null);
     setHideExitSelection(null);
     preferredHideExit.current = "origin";
+    preferredHideExitStyle.current = "careful";
+    setHideExitStyle("careful");
 
     const scorePrewarmAbort = new AbortController();
     let scorePrewarmStarted = false;
@@ -3410,7 +3658,9 @@ export function ChasingGame() {
     const missionPerformanceOrigin = new THREE.Vector3();
     let resultTimer: ReturnType<typeof setTimeout> | null = null;
     let lastCheckSpot: string | null = null;
+    let activeHideExitFoleyStyle: HideExitStyle = "standard";
     let renderedHideArchetype: HideArchetypeKind | null = null;
+    let renderedChaserObservable = true;
     let guidedLockerId: string | null = null;
     let guidedLockerRisk: HideGuidanceRisk = "medium";
     let guidedTargetState: HideGuidanceTargetState | null = null;
@@ -3419,10 +3669,43 @@ export function ChasingGame() {
     let lastScoreThreat = Number.NaN;
     let captureStageRemaining = 0;
     let capturePerformanceStarted = false;
+    let failurePublicEvents: TimedPublicSimulationEvent[] = [];
+    let failurePlayerActions: FailurePlayerAction[] = [];
+    const trimFailureReplayBuffers = (nowSeconds: number) => {
+      const minimumSeconds = Math.max(
+        0,
+        nowSeconds - FAILURE_REPLAY_RETENTION_SECONDS,
+      );
+      failurePublicEvents = failurePublicEvents.filter(
+        (sample) => sample.atSeconds >= minimumSeconds,
+      );
+      failurePlayerActions = failurePlayerActions.filter(
+        (sample) => sample.atSeconds >= minimumSeconds,
+      );
+    };
+    const recordFailurePlayerAction = (
+      action: FailurePlayerAction["action"],
+      atSeconds: number,
+      position?: Point,
+    ) => {
+      const previous = failurePlayerActions.at(-1);
+      if (
+        previous
+        && previous.action === action
+        && atSeconds - previous.atSeconds < 0.22
+      ) return;
+      failurePlayerActions.push(Object.freeze({
+        atSeconds,
+        action,
+        ...(position ? { position: Object.freeze({ ...position }) } : {}),
+      }));
+      trimFailureReplayBuffers(atSeconds);
+    };
     const artLayout = levelArtLayout(
       campaignLevel.campaign.theme,
       campaignLevel.campaign.atmosphere.propSet,
     );
+    const hideDisturbanceEmissive = new THREE.Color(0xffa85c);
     const environmentComposition = buildEnvironmentCompositionPlan(campaignLevel);
     const missionDefinition = themeMissionDefinition(campaignLevel.campaign.theme);
     const legacyMissionPlacementPlan = planThemeMissionPlacements(
@@ -3434,8 +3717,30 @@ export function ChasingGame() {
     const selectedLibraryPlanDefinition = libraryGoldEnabled
       ? LIBRARY_BRANCHING_MISSION.plans.find((plan) => plan.id === selectedLibraryPlan) ?? null
       : null;
+    const selectedHospitalPlanDefinition = hospitalGoldEnabled
+      ? HOSPITAL_BRANCHING_MISSION.plans.find(
+          (plan) => plan.id === selectedHospitalPlan,
+        ) ?? null
+      : null;
     const runtimeMissionObjectives: readonly RuntimeMissionObjective[] =
-      selectedLibraryPlanDefinition
+      selectedHospitalPlanDefinition
+        ? selectedHospitalPlanDefinition.objectiveIds.map((objectiveId) => {
+            const objective = HOSPITAL_BRANCHING_MISSION.objectives
+              .find((candidate) => candidate.id === objectiveId);
+            if (!objective) throw new Error(`医院路线缺少任务 ${objectiveId}`);
+            return Object.freeze({
+              id: objective.id,
+              label: objective.label,
+              interactionPrompt: objective.interactionPrompt,
+              completionHint: objective.completionHint,
+              commitmentSeconds: objective.cost.commitmentSeconds,
+              unlocksExit: objective.unlocksExitId !== null,
+              planId: objective.planId,
+              publicNoiseStrength: objective.cost.noiseStrength,
+              exposureSeconds: objective.cost.exposureSeconds,
+            });
+          })
+        : selectedLibraryPlanDefinition
         ? selectedLibraryPlanDefinition.objectiveIds.map((objectiveId) => {
             const objective = LIBRARY_BRANCHING_MISSION.objectives
               .find((candidate) => candidate.id === objectiveId);
@@ -3452,7 +3757,19 @@ export function ChasingGame() {
           })
         : missionDefinition.objectives;
     const missionPlacements: readonly MissionObjectivePlacement[] =
-      selectedLibraryPlanDefinition
+      selectedHospitalPlanDefinition
+        ? selectedHospitalPlanDefinition.objectiveIds.map((objectiveId) => {
+            const placement = HOSPITAL_BRANCHING_MISSION_TOPOLOGY
+              .objectivePlacements.find(
+                (candidate) => candidate.objectiveId === objectiveId,
+              );
+            if (!placement) throw new Error(`医院路线缺少任务锚点 ${objectiveId}`);
+            return Object.freeze({
+              objectiveId,
+              position: Object.freeze({ ...placement.position }),
+            });
+          })
+        : selectedLibraryPlanDefinition
         ? selectedLibraryPlanDefinition.objectiveIds.map((objectiveId) => {
             const placement = LIBRARY_BRANCHING_MISSION_TOPOLOGY.objectivePlacements
               .find((candidate) => candidate.objectiveId === objectiveId);
@@ -3463,9 +3780,11 @@ export function ChasingGame() {
             });
           })
         : legacyMissionPlacements;
-    const missionAudit = libraryGoldEnabled
-      ? auditLibraryMissionSoftlocks(campaignLevel)
-      : auditThemeMissionSoftlock(
+    const missionAudit = hospitalGoldEnabled
+      ? auditHospitalMissionSoftlocks(campaignLevel)
+      : libraryGoldEnabled
+        ? auditLibraryMissionSoftlocks(campaignLevel)
+        : auditThemeMissionSoftlock(
           campaignLevel,
           missionDefinition,
           missionPlacements,
@@ -3501,12 +3820,28 @@ export function ChasingGame() {
           { type: "select-plan", planId: selectedLibraryPlan },
         ).state
       : null;
+    const initialHospitalMissionState = hospitalGoldEnabled
+      ? stepHospitalBranchingMission(
+          HOSPITAL_BRANCHING_MISSION,
+          createInitialHospitalMissionState(),
+          { type: "select-plan", planId: selectedHospitalPlan },
+        ).state
+      : null;
     let libraryMissionState: LibraryMissionState | null = initialLibraryMissionState;
-    let missionState = libraryMissionState
-      ? adaptLibraryMissionToThemeMissionState(libraryMissionState)
-      : createInitialThemeMissionState(missionDefinition);
+    let hospitalMissionState: HospitalMissionState | null =
+      initialHospitalMissionState;
+    let missionState = hospitalMissionState
+      ? adaptHospitalMissionToThemeMissionState(hospitalMissionState)
+      : libraryMissionState
+        ? adaptLibraryMissionToThemeMissionState(libraryMissionState)
+        : createInitialThemeMissionState(missionDefinition);
     const availableRuntimeMissionObjectiveIds = () => (
-      libraryMissionState
+      hospitalMissionState
+        ? availableHospitalObjectiveIds(
+            HOSPITAL_BRANCHING_MISSION,
+            hospitalMissionState,
+          )
+        : libraryMissionState
         ? availableLibraryObjectiveIds(
             LIBRARY_BRANCHING_MISSION,
             libraryMissionState,
@@ -3521,12 +3856,26 @@ export function ChasingGame() {
       remainingSeconds: number;
       totalSeconds: number;
     } | null = null;
+    let hospitalExposureWindow: HospitalMissionExposureWindow | null = null;
+    const hospitalExposureActiveAtTick = (tick: number) => Boolean(
+      hospitalExposureWindow
+      && hospitalMissionExposureActiveAtTick(hospitalExposureWindow, tick),
+    );
     let missionPerformanceObjectiveId: string | null = null;
     const missionViews = new Map<string, MissionObjectiveView>();
     const ghostRunLevelId = runReplayLevelId;
     const mechanicPosition = themeMechanicPlacement(
       campaignLevel,
-      libraryGoldEnabled
+      hospitalGoldEnabled
+        ? [
+            ...HOSPITAL_BRANCHING_MISSION_TOPOLOGY.objectivePlacements.map(
+              (placement) => placement.position,
+            ),
+            ...HOSPITAL_BRANCHING_MISSION_TOPOLOGY.exitPlacements.map(
+              (placement) => placement.position,
+            ),
+          ]
+        : libraryGoldEnabled
         ? [
             ...LIBRARY_BRANCHING_MISSION_TOPOLOGY.objectivePlacements.map(
               (placement) => placement.position,
@@ -3641,7 +3990,8 @@ export function ChasingGame() {
     let portableDecoyBeaconTextureDisposedCount = 0;
     let portableDecoyBeaconMaterialDisposedCount = 0;
     let portableDecoyResetCount = 0;
-    let pendingRouteSelectionTelemetry = libraryGoldEnabled;
+    let pendingRouteSelectionTelemetry =
+      libraryGoldEnabled || hospitalGoldEnabled;
     const initialExitRouteDistanceMeters = objectiveDistanceMeters(
       campaignLevel.playerStart,
       campaignLevel,
@@ -3725,6 +4075,20 @@ export function ChasingGame() {
       tick: number,
     ) => {
       for (const event of events) {
+        if (event.type === "objective-completed" || event.type === "exit-unlocked") {
+          recordPlayerRuleEvent({
+            tick,
+            type: event.type,
+            objectiveId: event.objectiveId,
+          });
+        }
+      }
+    };
+    const recordHospitalMissionRuleEvents = (
+      events: readonly HospitalMissionEvent[],
+      tick: number,
+    ) => {
+      for (const event of hospitalMissionEventsToGhostRuleEvents(events)) {
         if (event.type === "objective-completed" || event.type === "exit-unlocked") {
           recordPlayerRuleEvent({
             tick,
@@ -3888,6 +4252,7 @@ export function ChasingGame() {
       touchKeys.current.clear();
       interactPressed.current = false;
       preferredHideExit.current = "origin";
+      preferredHideExitStyle.current = "careful";
       if (!disposed) {
         setLoading(true);
         setLoadError("3D 渲染上下文已中断；恢复后将在当前关卡原地重建。");
@@ -4222,6 +4587,33 @@ export function ChasingGame() {
         "library:prime-fire-door-linkage": ["CampusLibraryHideDressing"],
         "library:release-loading-fire-door": ["CampusLibraryExitCluster"],
       };
+      const hospitalObjectiveArt: Readonly<Record<string, readonly string[]>> = {
+        "hospital:recover-pharmacy-authorization": [
+          "HospitalPharmacyCluster",
+          "HospitalCrashCart",
+        ],
+        "hospital:write-ambulance-egress-permit": [
+          "HospitalTriageCluster",
+          "HospitalWayfinding",
+        ],
+        "hospital:release-ambulance-entrance": [
+          "HospitalOutpatientExitCluster",
+          "HospitalWayfinding",
+        ],
+        "hospital:restore-emergency-power": [
+          "HospitalWayfinding",
+          "HospitalIVStation",
+        ],
+        "hospital:bypass-maintenance-interlock": [
+          "HospitalCrashCart",
+          "HospitalIVStation",
+        ],
+        "hospital:release-maintenance-passage": [
+          "HospitalAirlockCluster",
+          "HospitalOutpatientExitCluster",
+          "HospitalWayfinding",
+        ],
+      };
       for (const [index, objective] of runtimeMissionObjectives.entries()) {
         const beat = environmentComposition.landmarkBeats[
           Math.min(index, environmentComposition.landmarkBeats.length - 1)
@@ -4229,6 +4621,7 @@ export function ChasingGame() {
         const position = missionPlacementById.get(objective.id);
         if (!position) throw new Error(`主题任务 ${objective.id} 缺少运行态位置`);
         const candidates = libraryObjectiveArt[objective.id]
+          ?? hospitalObjectiveArt[objective.id]
           ?? (objective.unlocksExit
             ? [
                 ...environmentComposition.profile.exitNodeCandidates,
@@ -5104,7 +5497,8 @@ export function ChasingGame() {
         availableRuntimeMissionObjectiveIds(),
       );
       const completed = new Set(
-        libraryMissionState?.completedObjectiveIds
+        hospitalMissionState?.completedObjectiveIds
+          ?? libraryMissionState?.completedObjectiveIds
           ?? missionState.completedObjectiveIds,
       );
       for (const [id, view] of missionViews) {
@@ -5713,6 +6107,20 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     const updatePhasePresentation = (next: GamePhase) => {
       setPhase(next);
       if (next === "won") {
+        setLastFailureReplay(null);
+        if (hospitalMissionState && selectedHospitalPlanDefinition) {
+          hospitalMissionState = stepHospitalBranchingMission(
+            HOSPITAL_BRANCHING_MISSION,
+            hospitalMissionState,
+            {
+              type: "escape",
+              exitId: selectedHospitalPlanDefinition.exitId,
+            },
+          ).state;
+          missionState = adaptHospitalMissionToThemeMissionState(
+            hospitalMissionState,
+          );
+        }
         if (libraryMissionState && selectedLibraryPlanDefinition) {
           libraryMissionState = stepLibraryBranchingMission(
             LIBRARY_BRANCHING_MISSION,
@@ -5806,7 +6214,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           return updated;
         });
       }
+      if (next === "lost") {
+        const replay = buildFailureCausalReplay({
+          capturedAtSeconds: latestState.elapsedSeconds,
+          publicEvents: failurePublicEvents,
+          playerActions: failurePlayerActions,
+          legacyCaptureReason: latestState.captureReason,
+          includeSemanticTrack: true,
+        });
+        setLastFailureReplay(replay);
+      }
       if (next === "won" || next === "lost") {
+        updateTouchQuietMode(false);
         touchKeys.current.clear();
         interactPressed.current = false;
         portableDecoyPressed.current = false;
@@ -5818,7 +6237,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       }
     };
 
-    const resetPresentation = (state: GameState) => {
+    const resetPresentation = (
+      state: GameState,
+      retainedMission?: {
+        readonly library: LibraryMissionState | null;
+        readonly hospital: HospitalMissionState | null;
+        readonly theme: ThemeMissionState;
+      },
+    ) => {
       portableDecoyResetCount += 1;
       if (resultTimer) {
         clearTimeout(resultTimer);
@@ -5830,9 +6256,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       portableDecoyPressed.current = false;
       stealthToolPressed.current = false;
       evidenceErasePressed.current = false;
+      updateTouchQuietMode(false);
       preferredHideExit.current = "origin";
+      preferredHideExitStyle.current = "careful";
+      setHideExitStyle("careful");
       resetAnalogueMove();
+      failurePublicEvents = [];
+      failurePlayerActions = [];
+      setLastFailureReplay(null);
       lastCheckSpot = null;
+      activeHideExitFoleyStyle = "standard";
+      missionCommitment = null;
+      hospitalExposureWindow = null;
+      missionPerformanceObjectiveId = null;
       guidedLockerId = null;
       guidedLockerRisk = "medium";
       guidedTargetState = null;
@@ -5852,17 +6288,32 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       );
       ghostInputBuffer.reset();
       fixedStepHost = resetFixedStepHost(fixedStepHost, state.tick);
-      libraryMissionState = libraryGoldEnabled
-        ? stepLibraryBranchingMission(
-            LIBRARY_BRANCHING_MISSION,
-            createInitialLibraryMissionState(),
-            { type: "select-plan", planId: selectedLibraryPlan },
-          ).state
-        : null;
-      missionState = libraryMissionState
-        ? adaptLibraryMissionToThemeMissionState(libraryMissionState)
-        : createInitialThemeMissionState(missionDefinition);
+      libraryMissionState = retainedMission
+        ? retainedMission.library
+        : libraryGoldEnabled
+          ? stepLibraryBranchingMission(
+              LIBRARY_BRANCHING_MISSION,
+              createInitialLibraryMissionState(),
+              { type: "select-plan", planId: selectedLibraryPlan },
+            ).state
+          : null;
+      hospitalMissionState = retainedMission
+        ? retainedMission.hospital
+        : hospitalGoldEnabled
+          ? stepHospitalBranchingMission(
+              HOSPITAL_BRANCHING_MISSION,
+              createInitialHospitalMissionState(),
+              { type: "select-plan", planId: selectedHospitalPlan },
+            ).state
+          : null;
+      missionState = hospitalMissionState
+        ? adaptHospitalMissionToThemeMissionState(hospitalMissionState)
+        : libraryMissionState
+          ? adaptLibraryMissionToThemeMissionState(libraryMissionState)
+          : retainedMission?.theme
+            ?? createInitialThemeMissionState(missionDefinition);
       missionCommitment = null;
+      hospitalExposureWindow = null;
       missionPerformanceObjectiveId = null;
       for (const view of portableDecoyViews.values()) {
         disposePortableDecoyView(view);
@@ -5882,11 +6333,27 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ? "F 投掷精装笔记本，制造一次可追查的公开声源"
         : null;
       portableDecoyFeedbackUntilSeconds = libraryGoldEnabled ? 4 : 0;
-      pendingRouteSelectionTelemetry = libraryGoldEnabled;
+      pendingRouteSelectionTelemetry =
+        libraryGoldEnabled || hospitalGoldEnabled;
       setPortableDecoy(portableDecoyState
         ? samplePortableDecoy(portableDecoyState, 0)
         : null);
       setPortableDecoyNotice(portableDecoyFeedback);
+      if (
+        hospitalGoldEnabled
+        && !hospitalLoadoutSelectionRef.current.selectedToolIds.includes(
+          selectedStealthToolRef.current,
+        )
+      ) {
+        const firstDeployable = hospitalLoadoutSelectionRef.current
+          .selectedToolIds.find(
+            (tool): tool is StealthToolKind => tool !== "evidence-erasure",
+          );
+        if (firstDeployable) {
+          selectedStealthToolRef.current = firstDeployable;
+          setSelectedStealthTool(firstDeployable);
+        }
+      }
       stealthEvidenceState = createStealthEvidenceState();
       stealthToolbeltState = createStealthToolbeltState();
       tensionDirectorState =
@@ -5931,9 +6398,31 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       playerRuleProgressTracker = new GhostRuleProgressTracker(
         missionObjectiveIds,
       );
+      const retainedRuntimeObjectiveIds =
+        hospitalMissionState?.completedObjectiveIds
+        ?? libraryMissionState?.completedObjectiveIds
+        ?? missionState.completedObjectiveIds;
+      const retainedUnlockObjectiveId = missionState.exitUnlocked
+        ? selectedHospitalPlanDefinition?.unlockObjectiveId
+          ?? selectedLibraryPlanDefinition?.unlockObjectiveId
+          ?? retainedRuntimeObjectiveIds.at(-1)
+        : undefined;
+      const retainedRuleEvents: GhostRuleEventInput[] = [
+        ...retainedRuntimeObjectiveIds.map((objectiveId) => ({
+          type: "objective-completed" as const,
+          objectiveId,
+        })),
+        ...(retainedUnlockObjectiveId
+          ? [{
+              type: "exit-unlocked" as const,
+              objectiveId: retainedUnlockObjectiveId,
+            }]
+          : []),
+      ];
       playerRuleProgress = playerRuleProgressTracker.update({
         tick: 0,
         routeProgress: 0,
+        events: retainedRuleEvents,
       });
       pendingPlayerRuleEvents = [];
       ghostRuleEventCursor = 0;
@@ -6009,7 +6498,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       setPlayerMode(state.player.mode);
       setChaserMode(state.chaser.mode);
       setChaserConfirming(state.chaser.visualConfirmationSeconds !== null);
-      setChaserObservable(canPlayerObserveChaser(state, campaignLevel, simulation.config));
+      renderedChaserObservable = canPlayerObserveChaser(
+        state,
+        campaignLevel,
+        simulation.config,
+      );
+      setChaserObservable(renderedChaserObservable);
       setChaserArchetypeRuntime(simulation.getChaserArchetypeRuntime());
       setElapsed(Math.floor(state.elapsedSeconds));
       setLastCaptureReason(state.captureReason);
@@ -6066,9 +6560,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         locker.delayRemaining = 0;
         locker.playbackRate = LOCKER_PLAYBACK_RATE;
         locker.owner = "idle";
+        locker.disturbanceLevel = 0;
+        locker.disturbanceRevision = 0;
         locker.root.position.copy(locker.basePosition);
         locker.root.rotation.set(0, locker.baseRotationY, 0);
         locker.root.scale.copy(locker.baseScale);
+        locker.root.userData.hideDisturbanceLevel = 0;
+        locker.root.userData.hideDisturbanceRevision = 0;
+        for (const materialState of locker.disturbanceMaterials) {
+          materialState.material.emissive.copy(materialState.baseEmissive);
+          materialState.material.emissiveIntensity =
+            materialState.baseEmissiveIntensity;
+        }
         locker.beacon.visible = false;
         locker.beaconLight.intensity = 0;
         locker.root.getObjectByName("DoorPivot")?.quaternion.identity();
@@ -6337,6 +6840,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     const attemptStealthToolUse = () => {
       const selected = selectedStealthToolRef.current;
       if (
+        hospitalGoldEnabled
+        && !hospitalLoadoutSelectionRef.current.selectedToolIds.includes(
+          selected,
+        )
+      ) {
+        publishStealthNotice("这项工具没有装入本局的两个战术位", 180);
+        return false;
+      }
+      if (
         latestState.phase !== "playing"
         || latestState.player.mode !== "free"
         || hasPlayerActionCommitment()
@@ -6407,6 +6919,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
     const attemptEvidenceErase = () => {
       if (
+        hospitalGoldEnabled
+        && !hospitalLoadoutSelectionRef.current.selectedToolIds.includes(
+          "evidence-erasure",
+        )
+      ) {
+        publishStealthNotice("本局未携带证据抹除能力", 180);
+        return false;
+      }
+      if (
         latestState.player.mode !== "free"
         || hasPlayerActionCommitment()
       ) {
@@ -6471,6 +6992,34 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ),
       );
     };
+    const isFailureReplayEventPublic = (
+      event: Readonly<SimulationEvent>,
+      state: GameState,
+    ) => {
+      switch (event.type) {
+        case "player-mode-changed":
+        case "player-captured":
+        case "phase-changed":
+          return true;
+        case "chaser-mode-changed":
+        case "chaser-archetype-telegraph-started":
+        case "chaser-archetype-action-started":
+        case "chaser-archetype-action-finished":
+        case "evidence-investigation-completed":
+        case "hide-check-completed":
+          return canRuntimeObserveChaser(state);
+      }
+    };
+    const recordFailurePublicEvents = (state: GameState) => {
+      for (const event of state.events) {
+        if (!isFailureReplayEventPublic(event, state)) continue;
+        failurePublicEvents.push(Object.freeze({
+          atSeconds: state.elapsedSeconds,
+          event,
+        }));
+      }
+      trimFailureReplayBuffers(state.elapsedSeconds);
+    };
 
     const setPauseState = (nextPaused: boolean) => {
       if (nextPaused === pausedRef.current) return;
@@ -6482,6 +7031,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       portableDecoyPressed.current = false;
       stealthToolPressed.current = false;
       evidenceErasePressed.current = false;
+      updateTouchQuietMode(false);
       fixedStepHost = resetFixedStepHost(
         fixedStepHost,
         latestState.tick,
@@ -6520,6 +7070,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         portableDecoyPressed.current = true;
       },
       selectStealthTool(tool) {
+        if (
+          hospitalGoldEnabled
+          && !hospitalLoadoutSelectionRef.current.selectedToolIds.includes(tool)
+        ) return;
         selectedStealthToolRef.current = tool;
         setSelectedStealthTool(tool);
         setStealthSystems((current) => current
@@ -6962,6 +7516,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       };
       const junctionCandidates: Array<ModulePlacement & { degree: number; hash: number }> = [];
       const groundMarginCells = libraryGoldEnabled ? 3 : 2;
+      const branchGroundMarginCells = hospitalGoldEnabled
+        ? 3
+        : groundMarginCells;
       const entranceDirection = nearestExteriorDirection(campaignLevel.playerStart, campaignLevel);
       const exitDirection = nearestExteriorDirection(campaignLevel.exit, campaignLevel);
       const exitDoorwayAnchors = libraryGoldEnabled
@@ -6969,7 +7526,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             point: placement.position,
             outward: nearestExteriorDirection(placement.position, campaignLevel),
           }))
-        : [{ point: campaignLevel.exit, outward: exitDirection }];
+        : hospitalGoldEnabled
+          ? HOSPITAL_BRANCHING_MISSION_TOPOLOGY.exitPlacements.map((placement) => ({
+              point: placement.position,
+              outward: nearestExteriorDirection(placement.position, campaignLevel),
+            }))
+          : [{ point: campaignLevel.exit, outward: exitDirection }];
       // Every authored wall faces local +Z. Opposite maze edges therefore need
       // opposite rotations; the previous axis-only rotation showed the back of
       // roughly half of every asymmetric wall kit.
@@ -7340,16 +7902,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       for (let y = -groundSearchMargin; y < campaignLevel.height + groundSearchMargin; y += 1) {
         for (let x = -groundSearchMargin; x < campaignLevel.width + groundSearchMargin; x += 1) {
           if (campaignLevel.walkable[y]?.[x]) continue;
-          let nearest = groundMarginCells + 1;
-          for (let oy = -groundMarginCells; oy <= groundMarginCells; oy += 1) {
-            for (let ox = -groundMarginCells; ox <= groundMarginCells; ox += 1) {
+          let nearest = branchGroundMarginCells + 1;
+          for (
+            let oy = -branchGroundMarginCells;
+            oy <= branchGroundMarginCells;
+            oy += 1
+          ) {
+            for (
+              let ox = -branchGroundMarginCells;
+              ox <= branchGroundMarginCells;
+              ox += 1
+            ) {
               if (!campaignLevel.walkable[y + oy]?.[x + ox]) continue;
               nearest = Math.min(nearest, Math.max(Math.abs(ox), Math.abs(oy)));
             }
           }
           const plazaDistance = Math.min(...plazaCenters.map((center) => Math.hypot(x - center.x, y - center.y)));
           const inPlaza = plazaDistance <= 3.25;
-          if (nearest <= groundMarginCells || inPlaza) {
+          if (nearest <= branchGroundMarginCells || inPlaza) {
             groundPatch.push({ point: { x, y } });
           }
         }
@@ -7581,13 +8151,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       exitMissionLight = exitLight;
       exitLight.color.set(0xff5b62);
       exitLight.intensity = 6.5;
-      if (libraryGoldEnabled) {
-        const secondaryExit = LIBRARY_BRANCHING_MISSION_TOPOLOGY.exitPlacements
+      if (libraryGoldEnabled || hospitalGoldEnabled) {
+        const branchExitPlacements = hospitalGoldEnabled
+          ? HOSPITAL_BRANCHING_MISSION_TOPOLOGY.exitPlacements
+          : LIBRARY_BRANCHING_MISSION_TOPOLOGY.exitPlacements;
+        const secondaryExit = branchExitPlacements
           .find((placement) => (
             Math.abs(placement.position.x - campaignLevel.exit.x) > 1e-6
             || Math.abs(placement.position.y - campaignLevel.exit.y) > 1e-6
           ));
-        if (!secondaryExit) throw new Error("图书楼双路线缺少第二个实体出口");
+        if (!secondaryExit) throw new Error("黄金章节双路线缺少第二个实体出口");
         const secondaryDirection = nearestExteriorDirection(
           secondaryExit.position,
           campaignLevel,
@@ -7595,7 +8168,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const secondaryDoor = authoredExit
           ? anchorAuthoredModule(authoredExit)
           : fitModule(requireStructure("exit"), new THREE.Vector3(1.9, 2.55, 0.42));
-        secondaryDoor.name = `library-secondary-exit-${secondaryExit.exitId}`;
+        const branchPrefix = hospitalGoldEnabled ? "hospital" : "library";
+        if (libraryGoldEnabled) {
+          secondaryDoor.name = `library-secondary-exit-${secondaryExit.exitId}`;
+        } else {
+          secondaryDoor.name = `hospital-secondary-exit-${secondaryExit.exitId}`;
+        }
         secondaryDoor.rotation.y = Math.atan2(
           -secondaryDirection.x,
           -secondaryDirection.y,
@@ -7614,8 +8192,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             emissiveIntensity: 0.12,
           });
         }
-        const secondaryExitDefinition = LIBRARY_BRANCHING_MISSION.exits
-          .find((exit) => exit.id === secondaryExit.exitId);
+        const secondaryExitDefinition = (
+          hospitalGoldEnabled
+            ? HOSPITAL_BRANCHING_MISSION.exits
+            : LIBRARY_BRANCHING_MISSION.exits
+        ).find((exit) => String(exit.id) === String(secondaryExit.exitId));
         const routeBeacon = new THREE.Sprite(new THREE.SpriteMaterial({
           map: createMechanicBeaconTexture(
             "#75818b",
@@ -7631,9 +8212,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         routeBeacon.scale.set(2.15, 0.8, 1);
         secondaryDoor.add(routeBeacon);
         parent.add(secondaryDoor);
-        placedAssetIds.add(`gameplay:library-secondary-exit:${secondaryExit.exitId}`);
+        placedAssetIds.add(
+          `gameplay:${branchPrefix}-secondary-exit:${secondaryExit.exitId}`,
+        );
         registerCameraOccluder(
-          `library-secondary-exit-${secondaryExit.exitId}`,
+          `${branchPrefix}-secondary-exit-${secondaryExit.exitId}`,
           [secondaryDoor],
         );
         const secondaryLight = new THREE.SpotLight(
@@ -7832,6 +8415,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           emissive: campaignLevel.campaign.palette.emissive,
           emissiveIntensity: archetype === "hard-locker" ? 0.035 : 0.075,
         });
+        const disturbanceMaterials: LockerView["disturbanceMaterials"] = [];
+        const capturedDisturbanceMaterials = new Set<string>();
+        root.traverse((object) => {
+          if (!(object instanceof THREE.Mesh)) return;
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
+          for (const material of materials) {
+            if (
+              !(material instanceof THREE.MeshStandardMaterial)
+              || capturedDisturbanceMaterials.has(material.uuid)
+            ) continue;
+            capturedDisturbanceMaterials.add(material.uuid);
+            disturbanceMaterials.push({
+              material,
+              baseEmissive: material.emissive.clone(),
+              baseEmissiveIntensity: material.emissiveIntensity,
+            });
+          }
+        });
         const beaconMaterial = new THREE.SpriteMaterial({
           map: archetype === "hard-locker"
             ? hideBeaconTexture
@@ -7895,6 +8498,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           delayRemaining: 0,
           playbackRate: LOCKER_PLAYBACK_RATE,
           owner: "idle",
+          disturbanceLevel: 0,
+          disturbanceRevision: 0,
+          disturbanceMaterials,
         };
         lockerViews.set(spot.id, view);
         if (hideDressingSource && archetype === "hard-locker") {
@@ -8159,7 +8765,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               exitId: placement.exitId,
               anchor: exteriorAnchor(placement.position, 3.1, 0),
             }))
-        : [];
+        : hospitalGoldEnabled
+          ? HOSPITAL_BRANCHING_MISSION_TOPOLOGY.exitPlacements
+              .filter((placement) => (
+                Math.abs(placement.position.x - campaignLevel.exit.x) > 1e-6
+                || Math.abs(placement.position.y - campaignLevel.exit.y) > 1e-6
+              ))
+              .map((placement) => ({
+                exitId: placement.exitId,
+                anchor: exteriorAnchor(placement.position, 3.1, 0),
+              }))
+          : [];
       const propContactGeometry = new THREE.PlaneGeometry(2.45, 1.65);
       propContactGeometry.rotateX(-Math.PI / 2);
       const propContactMaterial = new THREE.MeshBasicMaterial({
@@ -8635,7 +9251,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               locker.holdFinal = event.occupied;
             }
           }
-          if (!event.occupied) soundscape.trigger("locker-close");
+          if (canRuntimeObserveChaser(state)) {
+            soundscape.trigger(
+              "locker-close",
+              soundPanForWorldPoints(
+                state.player.position,
+                state.chaser.position,
+              ),
+            );
+          }
           continue;
         }
         if (event.type === "player-captured") {
@@ -8680,7 +9304,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           continue;
         }
         if (event.type === "chaser-mode-changed") {
-          if (event.to === "check-hide") soundscape.trigger("locker-check");
+          if (event.to === "check-hide" && canRuntimeObserveChaser(state)) {
+            soundscape.trigger(
+              "locker-check",
+              soundPanForWorldPoints(
+                state.player.position,
+                state.chaser.position,
+              ),
+            );
+          }
           if (event.to === "chase" && event.from !== "lost-sight") {
             playHapticCue(
               "detected",
@@ -8754,20 +9386,58 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           );
           requestAnimation(actors.kid!, "hideIdle", { fade: 0.18 });
         } else if (event.to === "exiting-hide" && locker) {
+          activeHideExitFoleyStyle =
+            state.player.hideExitStyle ?? "standard";
+          const exitStyle = hideExitStyleProfile(activeHideExitFoleyStyle);
           soundscape.trigger("locker-open");
+          if (activeHideExitFoleyStyle !== "standard") {
+            soundscape.triggerWorldSound({
+              listenerPosition: state.player.position,
+              sourcePosition: locker.approach,
+              kind: "theme-event",
+              maxDistance: 5,
+              baseGain: activeHideExitFoleyStyle === "quick" ? 0.24 : 0.085,
+              occlusion: 0,
+              foleySet: activeHideExitFoleyStyle === "quick"
+                ? "metal-hit"
+                : "cloth",
+              playbackRate: activeHideExitFoleyStyle === "quick" ? 1.22 : 0.82,
+            });
+          }
           if (locker.archetype === "hard-locker") {
             setLockerPeek(locker, false);
-            playLockerSequence(locker, ["Locker_Door_Open_Exit", "Locker_Door_Close_Exit"]);
+            playLockerSequence(
+              locker,
+              ["Locker_Door_Open_Exit", "Locker_Door_Close_Exit"],
+              "player",
+              LOCKER_PLAYBACK_RATE / exitStyle.durationMultiplier,
+            );
           } else {
             locker.owner = "player";
           }
           requestAnimation(actors.kid!, "exitHide", {
             fade: 0.1,
             duration: simulation.config.hideExitSeconds
-              * (resolvedHide?.profile.timing.exitDurationMultiplier ?? 1),
+              * (resolvedHide?.profile.timing.exitDurationMultiplier ?? 1)
+              * exitStyle.durationMultiplier,
           });
         } else if (event.from === "exiting-hide" && event.to === "free") {
           soundscape.trigger("locker-close");
+          if (activeHideExitFoleyStyle !== "standard") {
+            soundscape.triggerWorldSound({
+              listenerPosition: state.player.position,
+              sourcePosition: locker?.approach ?? state.player.position,
+              kind: "theme-event",
+              maxDistance: 4,
+              baseGain: activeHideExitFoleyStyle === "quick" ? 0.18 : 0.06,
+              occlusion: 0,
+              foleySet: activeHideExitFoleyStyle === "quick"
+                ? "metal-hit"
+                : "cloth",
+              playbackRate: activeHideExitFoleyStyle === "quick" ? 1.08 : 0.74,
+            });
+          }
+          activeHideExitFoleyStyle = "standard";
         }
       }
     };
@@ -9049,6 +9719,40 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       const hideExitSelection = simulation.getHideExitSelection();
       for (const locker of lockers.values()) {
         updateLocker(locker, delta);
+        const disturbanceState = state.hideSpots[locker.id];
+        const disturbanceLevel = disturbanceState?.disturbanceLevel ?? 0;
+        const disturbanceRevision =
+          disturbanceState?.disturbanceRevision ?? 0;
+        const disturbanceRatio = disturbanceLevel / 3;
+        if (
+          disturbanceLevel !== locker.disturbanceLevel
+          || disturbanceRevision !== locker.disturbanceRevision
+        ) {
+          locker.disturbanceLevel = disturbanceLevel;
+          locker.disturbanceRevision = disturbanceRevision;
+          locker.root.userData.hideDisturbanceLevel = disturbanceLevel;
+          locker.root.userData.hideDisturbanceRevision =
+            disturbanceRevision;
+        }
+        for (const materialState of locker.disturbanceMaterials) {
+          materialState.material.emissive
+            .copy(materialState.baseEmissive)
+            .lerp(hideDisturbanceEmissive, disturbanceRatio * 0.22);
+          materialState.material.emissiveIntensity =
+            materialState.baseEmissiveIntensity
+            + disturbanceRatio * 0.085;
+        }
+        if (locker.archetype === "hard-locker" && !locker.action) {
+          const doorPivot = locker.root.getObjectByName("DoorPivot");
+          if (doorPivot) {
+            doorPivot.rotation.y = THREE.MathUtils.damp(
+              doorPivot.rotation.y,
+              -disturbanceRatio * 0.14,
+              12,
+              delta,
+            );
+          }
+        }
         if (locker.archetype !== "hard-locker") {
           const active = state.player.hideSpotId === locker.id;
           const playerOccupying = active && !["free", "escaped", "caught"].includes(state.player.mode);
@@ -9060,12 +9764,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           const targetScale = locker.baseScale.clone();
           if (locker.archetype === "soft-cover") {
             targetScale.multiply(new THREE.Vector3(
-              1 + motionGain * 0.012,
-              1 - motionGain * 0.022,
-              1 + motionGain * 0.008,
+              1 + motionGain * 0.012 + disturbanceRatio * 0.018,
+              1 - motionGain * 0.022 - disturbanceRatio * 0.026,
+              1 + motionGain * 0.008 + disturbanceRatio * 0.012,
             ));
           } else {
-            targetScale.multiplyScalar(1 + motionGain * 0.009);
+            targetScale.multiplyScalar(
+              1 + motionGain * 0.009 + disturbanceRatio * 0.006,
+            );
           }
           locker.root.scale.lerp(
             targetScale,
@@ -9077,11 +9783,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : 1;
           const motionOffset = locker.archetype === "traversal-hide"
             ? new THREE.Vector3(
-                -Math.cos(locker.baseRotationY) * motionGain * 0.055 * exitSide,
+                -Math.cos(locker.baseRotationY)
+                  * (motionGain * 0.055 * exitSide + disturbanceRatio * 0.09),
                 0,
-                Math.sin(locker.baseRotationY) * motionGain * 0.055 * exitSide,
+                Math.sin(locker.baseRotationY)
+                  * (motionGain * 0.055 * exitSide + disturbanceRatio * 0.09),
               )
-            : new THREE.Vector3(0, 0, 0);
+            : new THREE.Vector3(
+                Math.cos(locker.baseRotationY) * disturbanceRatio * 0.025,
+                0,
+                -Math.sin(locker.baseRotationY) * disturbanceRatio * 0.025,
+              );
           locker.root.position.lerp(
             locker.basePosition.clone().add(motionOffset),
             1 - Math.exp(-11 * delta),
@@ -9092,7 +9804,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : 0;
           locker.root.rotation.y = THREE.MathUtils.damp(
             locker.root.rotation.y,
-            locker.baseRotationY + checkShake + coverSway,
+            locker.baseRotationY
+              + checkShake
+              + coverSway
+              + disturbanceRatio * (locker.archetype === "soft-cover"
+                ? 0.045
+                : -0.028),
             13,
             delta,
           );
@@ -9262,8 +9979,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             preferences.ruleset,
           )
         : null;
+      const legacyHospitalRecord = hospitalGoldEnabled
+        ? getCampaignRunRecord(
+            campaignProgressRef.current,
+            campaignLevel.id,
+            preferences.ruleset,
+          )
+        : null;
       const firstClear = !routeRecord.bestSeconds
-        && !legacyLibraryRecord?.bestSeconds;
+        && !legacyLibraryRecord?.bestSeconds
+        && !legacyHospitalRecord?.bestSeconds;
       const guidance = planHideGuidance(campaignLevel, {
         playerPosition: state.player.position,
         nowSeconds: state.elapsedSeconds,
@@ -9952,10 +10677,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const fixedStepSeconds = simulation.config.fixedStepSeconds;
         const causalEvents: RunCausalEvent[] = [];
         const presentationEffects: Array<() => void> = [];
-        if (pendingRouteSelectionTelemetry && selectedLibraryPlanDefinition) {
+        const selectedBranchPlan =
+          selectedHospitalPlanDefinition ?? selectedLibraryPlanDefinition;
+        if (pendingRouteSelectionTelemetry && selectedBranchPlan) {
           causalEvents.push({
             type: "route-selected",
-            routeId: selectedLibraryPlanDefinition.id,
+            routeId: selectedBranchPlan.id,
           });
           pendingRouteSelectionTelemetry = false;
         }
@@ -9998,6 +10725,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           )
         ) {
           missionCommitment = null;
+          hospitalExposureWindow = null;
         }
         portableDecoyThrowRemainingSeconds = Math.max(
           0,
@@ -10083,11 +10811,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           && missionCanActivate
           && activeMissionObjective
         ) {
-          const commitmentWindow = libraryMissionCommitmentWindow(
-            latestState.tick,
-            activeMissionObjective.objective.commitmentSeconds,
-            simulation.config.fixedStepSeconds,
-          );
+          const commitmentWindow = hospitalMissionState
+            ? hospitalMissionCommitmentWindow(
+                latestState.tick,
+                activeMissionObjective.objective.commitmentSeconds,
+                simulation.config.fixedStepSeconds,
+              )
+            : libraryMissionCommitmentWindow(
+                latestState.tick,
+                activeMissionObjective.objective.commitmentSeconds,
+                simulation.config.fixedStepSeconds,
+              );
           missionCommitment = {
             objectiveId: activeMissionObjective.objective.id,
             startedAtTick: commitmentWindow.startedAtTick,
@@ -10096,6 +10830,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             remainingSeconds: commitmentWindow.durationSeconds,
             totalSeconds: commitmentWindow.durationSeconds,
           };
+          hospitalExposureWindow = hospitalMissionState
+            ? hospitalMissionExposureWindow(
+                commitmentWindow,
+                activeMissionObjective.objective.exposureSeconds ?? 0,
+                simulation.config.fixedStepSeconds,
+              )
+            : null;
           presentationEffects.push(() => {
             playHapticCue(
               "theme-warning",
@@ -10105,7 +10846,70 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           });
         }
         if (completedMissionObjective) {
-          if (libraryMissionState) {
+          if (hospitalMissionState) {
+            const previousHospitalState = hospitalMissionState;
+            const hospitalStep = stepHospitalBranchingMission(
+              HOSPITAL_BRANCHING_MISSION,
+              hospitalMissionState,
+              {
+                type: "attempt-objective",
+                objectiveId: completedMissionObjective.objective.id,
+                outcome: "completed",
+              },
+            );
+            hospitalMissionState = hospitalStep.state;
+            missionState = adaptHospitalMissionTransitionToThemeMission(
+              previousHospitalState,
+              hospitalMissionState,
+            ).state;
+            recordHospitalMissionRuleEvents(
+              hospitalStep.events,
+              ruleEventTick,
+            );
+            const noiseStrength =
+              completedMissionObjective.objective.publicNoiseStrength ?? 0;
+            if (noiseStrength > 0) {
+              const sourceId =
+                `hospital-route:${completedMissionObjective.objective.id}:${
+                  ruleEventTick
+                }`;
+              simulation.emitWorldSound({
+                position: completedMissionObjective.position,
+                strength: noiseStrength,
+                sourceType: "environment-hazard",
+                sourceId,
+                confidence: Math.min(0.98, 0.58 + noiseStrength * 0.42),
+                decayPerSecond: noiseStrength >= 0.7 ? 0.08 : 0.16,
+              });
+              const listenerPosition = { ...latestState.player.position };
+              const objectivePosition = { ...completedMissionObjective.position };
+              const loudRoute =
+                completedMissionObjective.objective.planId
+                  === "emergency-maintenance";
+              presentationEffects.push(() => {
+                soundscape.triggerWorldSound({
+                  listenerPosition,
+                  sourcePosition: objectivePosition,
+                  kind: "objective",
+                  maxDistance: Math.max(
+                    10,
+                    simulation.config.hearingRange
+                      * (loudRoute ? 1.8 : 1.05),
+                  ),
+                  baseGain: loudRoute
+                    ? 0.38 + noiseStrength * 0.2
+                    : 0.16 + noiseStrength * 0.12,
+                  occlusion: hasLineOfSight(
+                    campaignLevel,
+                    listenerPosition,
+                    objectivePosition,
+                  ) ? 0 : 0.48,
+                  foleySet: loudRoute ? "metal-hit" : "cloth",
+                  playbackRate: loudRoute ? 0.78 : 1.08,
+                });
+              });
+            }
+          } else if (libraryMissionState) {
             const previousLibraryState = libraryMissionState;
             const libraryStep = stepLibraryBranchingMission(
               LIBRARY_BRANCHING_MISSION,
@@ -10480,6 +11284,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           const blackoutSoundMasking = blackoutIsActive
             ? activeBlackout.effect.ambientSoundMasking
             : 0;
+          const hospitalInteractionVisibilityMultiplier =
+            hospitalGoldEnabled
+              ? hospitalExposureActiveAtTick(nextTick)
+                ? 1
+                : 0.64
+              : 1;
           const activeDoorWedge =
             stealthToolbeltState.activeEffects["door-wedge"]?.receipt;
           let wedgeSpeedMultiplier = 1;
@@ -10546,6 +11356,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               environment.visionRangeMultiplier,
               blackoutVisionMultiplier,
               directorModifiers.visionRangeMultiplier,
+              hospitalInteractionVisibilityMultiplier,
             ),
             chaserSpeedMultiplier:
               wedgeSpeedMultiplier * directorModifiers.chaserSpeedMultiplier,
@@ -10555,13 +11366,61 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             sneakHeld: movementCommitted ? false : held("q"),
             exitEnabled: missionState.exitUnlocked,
             hideExitChoice: preferredHideExit.current,
+            hideExitStyle: preferredHideExitStyle.current,
           };
         };
 
-          const recordingTick = latestState.tick;
           const simulationInput = buildSimulationInput(
             simulationInteract,
           );
+          const failureMoveMagnitude = Math.hypot(
+            simulationInput.move?.x ?? 0,
+            simulationInput.move?.y ?? 0,
+          );
+          if (failureMoveMagnitude > 0.02) {
+            recordFailurePlayerAction(
+              simulationInput.sneakHeld
+                ? "sneak"
+                : failureMoveMagnitude >= 0.72
+                  ? "sprint"
+                  : "move",
+              latestState.elapsedSeconds,
+              latestState.player.position,
+            );
+          }
+          if (simulationInput.peekHeld) {
+            recordFailurePlayerAction(
+              "peek",
+              latestState.elapsedSeconds,
+              latestState.player.position,
+            );
+          }
+          if (interactionEdge) {
+            recordFailurePlayerAction(
+              hideInteractionBeforeStep?.kind === "enter"
+                ? "hide-enter"
+                : hideInteractionBeforeStep?.kind === "exit"
+                  ? "hide-exit"
+                  : "interact",
+              latestState.elapsedSeconds,
+              latestState.player.position,
+            );
+          }
+          if (portableDecoyEdge) {
+            recordFailurePlayerAction(
+              "decoy-deploy",
+              latestState.elapsedSeconds,
+              latestState.player.position,
+            );
+          }
+          if (stealthToolEdge || evidenceEraseEdge) {
+            recordFailurePlayerAction(
+              "interact",
+              latestState.elapsedSeconds,
+              latestState.player.position,
+            );
+          }
+          const recordingTick = latestState.tick;
           if (latestState.phase === "playing") {
             ghostInputBuffer.stage(recordingTick, simulationInput);
           }
@@ -10579,6 +11438,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 }`,
               );
             }
+            recordFailurePublicEvents(latestState);
             simulationFrameEvents.push(...latestState.events);
             processStealthFixedStep(latestState, simulationInput);
             const committedGhostInput = ghostInputBuffer.consumeIfAdvanced(
@@ -10665,6 +11525,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           runtimePlayfield.classList.toggle(
             "director-active",
             activeDirectorEvent?.phase === "active",
+          );
+          runtimePlayfield.classList.toggle(
+            "hospital-mission-exposed",
+            hospitalGoldEnabled
+              && hospitalExposureActiveAtTick(latestState.tick),
           );
           const directorProgress = activeDirectorEvent
             ? activeDirectorEvent.phase === "warning"
@@ -10753,6 +11618,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : 0;
         const playerActuallyVisible = playerPresentationAlpha > 0.01;
         const chaserKnowledgeObservable = canRuntimeObserveChaser(latestState);
+        if (chaserKnowledgeObservable !== renderedChaserObservable) {
+          renderedChaserObservable = chaserKnowledgeObservable;
+          setChaserObservable(chaserKnowledgeObservable);
+        }
         if (latestState.phase === "playing" && chaserKnowledgeObservable) {
           playerKnownChaser = {
             position: { ...latestState.chaser.position },
@@ -11214,7 +12083,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           }
           lastObjectiveGuidanceSeconds = latestState.elapsedSeconds;
           setInteraction(simulation.getHideInteraction());
-          setHideExitSelection(simulation.getHideExitSelection());
+          setHideExitSelection(reconcileHideExitSelection(
+            simulation.getHideExitSelection(),
+            preferredHideExit.current,
+          ));
           updateHideGuideProjection(latestState, held("q"));
           lastHudUpdate = now;
         }
@@ -11540,11 +12412,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           chaser: Point;
           chaserHeading?: Point;
           spawnDelaySeconds?: number;
+          preserveMissionProgress?: boolean;
         }) => void;
         completeMission: () => void;
         selectLevel: (level: number | string) => void;
         selectLayout: (layoutNumber: number | null) => void;
         selectLibraryPlan: (planId: LibraryMissionPlanId) => void;
+        selectHospitalPlan: (planId: HospitalMissionPlanId) => void;
+        selectHospitalLoadout: (
+          toolIds: readonly HospitalLoadoutToolId[],
+        ) => void;
         setUnlockedThrough: (levelNumber: number) => void;
         lockRenderQuality: () => void;
         setDirectorEnabled: (enabled: boolean) => void;
@@ -11647,6 +12524,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           game: latestState,
           interaction: simulation.getHideInteraction(),
           activeHideArchetype: simulation.getActiveHideSpotArchetype(),
+          hideVisuals: [...lockers.values()].map((locker) => ({
+            id: locker.id,
+            archetype: locker.archetype,
+            disturbanceLevel: locker.disturbanceLevel,
+            disturbanceRevision: locker.disturbanceRevision,
+            doorPivotRadians:
+              locker.root.getObjectByName("DoorPivot")?.rotation.y ?? null,
+            rootOffset: {
+              x: locker.root.position.x - locker.basePosition.x,
+              y: locker.root.position.y - locker.basePosition.y,
+              z: locker.root.position.z - locker.basePosition.z,
+            },
+            emissiveLift: Math.max(
+              0,
+              ...locker.disturbanceMaterials.map((state) => (
+                state.material.emissiveIntensity
+                - state.baseEmissiveIntensity
+              )),
+            ),
+          })),
           hideExitSelection: simulation.getHideExitSelection(),
           animations: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, view?.animator.snapshot()])),
           visibility: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, {
@@ -11701,11 +12598,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             commitment: missionCommitment
               ? { ...missionCommitment }
               : null,
+            exposureWindow: hospitalExposureWindow
+              ? {
+                  ...hospitalExposureWindow,
+                  active: hospitalExposureActiveAtTick(latestState.tick),
+                }
+              : null,
             library: libraryMissionState
               ? {
                   definition: LIBRARY_BRANCHING_MISSION,
                   state: libraryMissionState,
                   selectedPlan: selectedLibraryPlanDefinition,
+                }
+              : null,
+            hospital: hospitalMissionState
+              ? {
+                  definition: HOSPITAL_BRANCHING_MISSION,
+                  state: hospitalMissionState,
+                  selectedPlan: selectedHospitalPlanDefinition,
+                  loadout: hospitalLoadoutSelectionRef.current,
+                  worldSoundDelivery: simulation.getWorldSoundQueueSnapshot(),
                 }
               : null,
             placements: missionPlacements,
@@ -11783,6 +12695,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             : null,
           stealth: {
             selectedTool: selectedStealthToolRef.current,
+            hospitalLoadout: hospitalGoldEnabled
+              ? hospitalLoadoutSelectionRef.current
+              : null,
             evidence: {
               tick: stealthEvidenceState.tick,
               countermeasureBudgetRemaining:
@@ -12024,6 +12939,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           setLoadError("");
           setSelectedLibraryPlan(planId);
         },
+        selectHospitalPlan: (planId) => {
+          if (
+            latestState.phase !== "ready"
+            || planId === selectedHospitalPlan
+            || !HOSPITAL_BRANCHING_MISSION.plans.some(
+              (plan) => plan.id === planId,
+            )
+          ) return;
+          setLoading(true);
+          setLoadError("");
+          setSelectedHospitalPlan(planId);
+        },
+        selectHospitalLoadout: (toolIds) => {
+          if (latestState.phase !== "ready" || !hospitalGoldEnabled) return;
+          const selection = createHospitalToolLoadoutSelection(toolIds);
+          hospitalLoadoutSelectionRef.current = selection;
+          setSelectedHospitalLoadout(selection.selectedToolIds);
+        },
         setUnlockedThrough: (levelNumber) => {
           setCampaignProgress((current) => ({
             ...current,
@@ -12083,7 +13016,29 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           }
         },
         completeMission: () => {
-          if (libraryMissionState) {
+          if (hospitalMissionState) {
+            for (const objective of runtimeMissionObjectives) {
+              const previous = hospitalMissionState;
+              const hospitalStep = stepHospitalBranchingMission(
+                HOSPITAL_BRANCHING_MISSION,
+                hospitalMissionState,
+                {
+                  type: "attempt-objective",
+                  objectiveId: objective.id,
+                  outcome: "completed",
+                },
+              );
+              hospitalMissionState = hospitalStep.state;
+              recordHospitalMissionRuleEvents(
+                hospitalStep.events,
+                latestState.tick,
+              );
+              missionState = adaptHospitalMissionTransitionToThemeMission(
+                previous,
+                hospitalMissionState,
+              ).state;
+            }
+          } else if (libraryMissionState) {
             for (const objective of runtimeMissionObjectives) {
               const previous = libraryMissionState;
               const libraryStep = stepLibraryBranchingMission(
@@ -12122,7 +13077,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           chaser,
           chaserHeading,
           spawnDelaySeconds = 0,
+          preserveMissionProgress = false,
         }) => {
+          const retainedMission = preserveMissionProgress
+            ? {
+                library: libraryMissionState,
+                hospital: hospitalMissionState,
+                theme: missionState,
+              }
+            : undefined;
           simulation = new GameSimulation({
             level: campaignLevel,
             autoStart: true,
@@ -12137,7 +13100,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             fixedStepHost,
             latestState.tick,
           );
-          resetPresentation(latestState);
+          resetPresentation(latestState, retainedMission);
           // Idempotent: a settled QA scene compiles exactly once, whether the
           // harness waits at the briefing or immediately installs a scenario.
           compileSettledQaScene();
@@ -12179,6 +13142,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           "mirror-threat-visible",
           "director-warning",
           "director-active",
+          "hospital-mission-exposed",
         );
         runtimePlayfield.style.removeProperty("--director-progress");
       }
@@ -12233,6 +13197,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     chooseRemixVariant,
     gameplayConfig,
     hideGuidancePolicy.tutorialHideSpotId,
+    hospitalGoldEnabled,
     libraryGoldEnabled,
     masteryTargetOptions,
     objectivePaths,
@@ -12244,8 +13209,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     runRecordLevelId,
     runReplayLevelId,
     sceneRevision,
+    selectedHospitalPlan,
     selectedLibraryPlan,
     selectedRemixContract,
+    updateTouchQuietMode,
   ]);
 
   const touch = (key: string, active: boolean) => {
@@ -12291,18 +13258,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     runRecordLevelId,
     preferences.ruleset,
   );
-  const legacyLibraryRunRecord = libraryGoldEnabled
+  const legacyBranchRunRecord = libraryGoldEnabled || hospitalGoldEnabled
     ? getCampaignRunRecord(
         campaignProgress,
         campaignLevel.id,
         preferences.ruleset,
       )
     : null;
-  const branchRecordOrLegacy = libraryGoldEnabled
+  const branchRecordOrLegacy = (libraryGoldEnabled || hospitalGoldEnabled)
     && !storedCurrentRunRecord.bestSeconds
     && !storedCurrentRunRecord.mastery
-    && legacyLibraryRunRecord
-    ? legacyLibraryRunRecord
+    && legacyBranchRunRecord
+    ? legacyBranchRunRecord
     : storedCurrentRunRecord;
   const currentRunRecord = selectedRemixContract
     ? {
@@ -12337,7 +13304,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     ? LIBRARY_BRANCHING_MISSION.plans
       .find((plan) => plan.id === selectedLibraryPlan) ?? null
     : null;
-  const displayedMissionObjectives = selectedLibraryPlanDefinition
+  const selectedHospitalPlanDefinition = hospitalGoldEnabled
+    ? HOSPITAL_BRANCHING_MISSION.plans
+      .find((plan) => plan.id === selectedHospitalPlan) ?? null
+    : null;
+  const displayedMissionObjectives = selectedHospitalPlanDefinition
+    ? selectedHospitalPlanDefinition.objectiveIds.map((objectiveId) => {
+        const objective = HOSPITAL_BRANCHING_MISSION.objectives
+          .find((candidate) => candidate.id === objectiveId);
+        if (!objective) throw new Error(`医院任务简报缺少 ${objectiveId}`);
+        return objective;
+      })
+    : selectedLibraryPlanDefinition
     ? selectedLibraryPlanDefinition.objectiveIds.map((objectiveId) => {
         const objective = LIBRARY_BRANCHING_MISSION.objectives
           .find((candidate) => candidate.id === objectiveId);
@@ -12345,14 +13323,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         return objective;
       })
     : themeMissionDefinition(campaignLevel.campaign.theme).objectives;
-  const displayedMissionTitle = selectedLibraryPlanDefinition
+  const displayedMissionTitle = selectedHospitalPlanDefinition
+    ? `${HOSPITAL_BRANCHING_MISSION.title} · ${selectedHospitalPlanDefinition.label}`
+    : selectedLibraryPlanDefinition
     ? `${LIBRARY_BRANCHING_MISSION.title} · ${selectedLibraryPlanDefinition.label}`
     : themeMissionDefinition(campaignLevel.campaign.theme).title;
   const readyCampaignBriefing = selectedRemixContract
     ? `${campaignLevel.campaign.briefing} ${layoutLabel}已按固定认证方案重编路线连通、巡逻顺序、任务位置与藏点组合；它不是临场随机生成，每次挑战都可学习、可复盘。`
     : `${campaignLevel.campaign.briefing}${
-        selectedLibraryPlanDefinition
-          ? ` 本次采用「${selectedLibraryPlanDefinition.label}」：${selectedLibraryPlanDefinition.strategy}`
+        selectedHospitalPlanDefinition
+          ? ` 本次采用「${selectedHospitalPlanDefinition.label}」：${selectedHospitalPlanDefinition.strategy}`
+          : selectedLibraryPlanDefinition
+            ? ` 本次采用「${selectedLibraryPlanDefinition.label}」：${selectedLibraryPlanDefinition.strategy}`
           : ""
       }`;
   const readyBriefing = `${readyCampaignBriefing} 本关追捕者为「${chaserArchetypeProfile.label}」：${chaserArchetypeProfile.readableRule}`;
@@ -12370,8 +13352,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     ? `进入${hideArchetypeLabel}`
     : interaction?.kind === "exit"
       ? interactionArchetype === "traversal-hide"
-        ? `${hideExitSelection?.selected === "alternate" ? "从另一侧" : "从原入口"}离开`
-        : publicThreat === "calm" ? `离开${hideArchetypeLabel}` : `冒险离开${hideArchetypeLabel}`
+        ? `${hideExitStyle === "quick" ? "快速" : "谨慎"} · ${
+            hideExitSelection?.selected === "alternate"
+              ? "从另一侧"
+              : "从原入口"
+          }离开`
+        : `${hideExitStyle === "quick" ? "快速" : "谨慎"}离开${hideArchetypeLabel}`
       : missionCanInteract && activeMissionObjective
         ? missionInteractionInProgress
           ? `操作中 ${Math.ceil((themeMission?.commitmentRemainingSeconds ?? 0) * 10) / 10}s`
@@ -12418,6 +13404,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         : portableDecoy?.phase === "depleted"
           ? "本局已用完"
           : "可投掷";
+  const availableStealthTools = hospitalGoldEnabled
+    ? STEALTH_TOOL_KINDS.filter((tool) => (
+        hospitalLoadoutSelection.selectedToolIds.includes(tool)
+      ))
+    : STEALTH_TOOL_KINDS;
+  const evidenceEraseEquipped = !hospitalGoldEnabled
+    || hospitalLoadoutSelection.selectedToolIds.includes("evidence-erasure");
   const selectedToolMeta = STEALTH_TOOL_UI[selectedStealthTool];
   const selectedToolSample =
     stealthSystems?.toolbelt.tools[selectedStealthTool] ?? null;
@@ -12450,6 +13443,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     && stealthSystems.evidenceCount > 0
     && stealthSystems.countermeasureBudget > 0
     && !stealthSystems.countermeasureBusy
+    && evidenceEraseEquipped
     && phase === "playing"
     && playerMode === "free",
   );
@@ -12574,10 +13568,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 <em>
                   {missionInteractionInProgress
                     ? `保持位置 ${Math.max(0, themeMission.commitmentRemainingSeconds ?? 0).toFixed(1)}s`
-                    : libraryGoldEnabled
+                    : libraryGoldEnabled || hospitalGoldEnabled
                       ? `${themeMission.activeDistanceMeters}m · 按所选计划依次完成目标`
                       : `${themeMission.activeDistanceMeters}m · 可按任意顺序完成准备目标`}
                 </em>
+              )}
+              {hospitalGoldEnabled
+                && missionInteractionInProgress
+                && (activeMissionObjective?.exposureSeconds ?? 0) > 0 && (
+                <span
+                  className="visually-hidden"
+                  role="status"
+                  aria-live="assertive"
+                >
+                  医院任务高风险操作已开始；本次操作包含公开暴露窗口。
+                </span>
               )}
             </div>
           </div>
@@ -12682,7 +13687,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <div>
                 <small data-stealth-evidence-summary="desktop">
                   TACTICAL STEALTH · 线索 {stealthSystems.evidenceCount} · 反侦察 {
-                    stealthSystems.countermeasureBudget
+                    evidenceEraseEquipped
+                      ? stealthSystems.countermeasureBudget
+                      : "未携带"
                   }
                 </small>
                 <strong
@@ -12700,16 +13707,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                   {stealthRuntimeMessage}
                 </strong>
               </div>
-              <button
-                type="button"
-                className="erase-evidence"
-                disabled={phase !== "playing" || paused || playerMode !== "free"}
-                data-evidence-ready={evidenceEraseAvailable ? "true" : "false"}
-                onClick={eraseEvidence}
-                aria-label={`抹除附近公开线索，反侦察次数剩余 ${stealthSystems.countermeasureBudget}`}
-              >
-                抹迹 <kbd className="desktop-key">C</kbd>
-              </button>
+              {evidenceEraseEquipped && (
+                <button
+                  type="button"
+                  className="erase-evidence"
+                  disabled={phase !== "playing" || paused || playerMode !== "free"}
+                  data-evidence-ready={evidenceEraseAvailable ? "true" : "false"}
+                  onClick={eraseEvidence}
+                  aria-label={`抹除附近公开线索，反侦察次数剩余 ${stealthSystems.countermeasureBudget}`}
+                >
+                  抹迹 <kbd className="desktop-key">C</kbd>
+                </button>
+              )}
             </div>
             <div
               className="stealth-mobile-notice"
@@ -12720,33 +13729,34 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <strong data-stealth-mobile-message>{stealthRuntimeMessage}</strong>
               <small data-stealth-evidence-summary="compact">
                 线索 {stealthSystems.evidenceCount} · 反侦察 {
-                  stealthSystems.countermeasureBudget
+                  evidenceEraseEquipped
+                    ? stealthSystems.countermeasureBudget
+                    : "未携带"
                 }
               </small>
             </div>
-            <div className="stealth-tool-row">
-              <button
-                type="button"
-                className="erase-evidence-mobile"
-                disabled={phase !== "playing" || paused || playerMode !== "free"}
-                data-evidence-ready={evidenceEraseAvailable ? "true" : "false"}
-                onClick={eraseEvidence}
-                aria-label={`抹除附近公开线索，反侦察次数剩余 ${stealthSystems.countermeasureBudget}`}
-                title="抹除附近公开线索"
-              >
-                <i aria-hidden="true">抹</i>
-                <span>
-                  <b>抹迹</b>
-                  <small>{stealthSystems.countermeasureBudget} 次</small>
-                </span>
-              </button>
-              {([
-                "door-wedge",
-                "corner-mirror",
-                "temporary-blackout",
-              ] as const).map((tool, index) => {
+            <div className={`stealth-tool-row${hospitalGoldEnabled ? " compact-loadout" : ""}`}>
+              {evidenceEraseEquipped && (
+                <button
+                  type="button"
+                  className="erase-evidence-mobile"
+                  disabled={phase !== "playing" || paused || playerMode !== "free"}
+                  data-evidence-ready={evidenceEraseAvailable ? "true" : "false"}
+                  onClick={eraseEvidence}
+                  aria-label={`抹除附近公开线索，反侦察次数剩余 ${stealthSystems.countermeasureBudget}`}
+                  title="抹除附近公开线索"
+                >
+                  <i aria-hidden="true">抹</i>
+                  <span>
+                    <b>抹迹</b>
+                    <small>{stealthSystems.countermeasureBudget} 次</small>
+                  </span>
+                </button>
+              )}
+              {availableStealthTools.map((tool) => {
                 const sample = stealthSystems.toolbelt.tools[tool];
                 const selected = selectedStealthTool === tool;
+                const keyNumber = STEALTH_TOOL_KINDS.indexOf(tool) + 1;
                 return (
                   <button
                     type="button"
@@ -12754,19 +13764,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                     data-stealth-tool={tool}
                     className={`${selected ? "selected" : ""} phase-${sample.phase}`}
                     aria-pressed={selected}
+                    aria-label={`${STEALTH_TOOL_UI[tool].label}，库存 ${
+                      sample.inventoryRemaining
+                    }，${selected
+                      ? stealthToolActionAvailable
+                        ? "已选中，点按部署"
+                        : "已选中，当前不可部署"
+                      : "点按选择"}`}
                     disabled={selected && !stealthToolActionAvailable}
                     onClick={() => {
                       if (selected) deployStealthTool();
                       else chooseStealthTool(tool);
                     }}
-                    title={`${STEALTH_TOOL_UI[tool].hint}；按 ${index + 1} 选择，G 使用`}
+                    title={`${STEALTH_TOOL_UI[tool].hint}；按 ${keyNumber} 选择，G 使用`}
                   >
                     <i aria-hidden="true">{STEALTH_TOOL_UI[tool].glyph}</i>
                     <span>
                       <b>{STEALTH_TOOL_UI[tool].label}</b>
                       <small>{sample.inventoryRemaining} 剩余</small>
                     </span>
-                    <kbd className="desktop-key">{index + 1}</kbd>
+                    <kbd className="desktop-key">{keyNumber}</kbd>
                   </button>
                 );
               })}
@@ -12844,6 +13861,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               <small>{themeMechanic.activationCostLabel}；预警结束后效果才会生效</small>
             )}
             {playerMode === "aligning-hide" && <small>移动或再次互动可立即取消</small>}
+            {interaction?.kind === "exit" && (
+              <small>
+                {hideExitStyle === "quick"
+                  ? "快速离开缩短动作，但会制造 3 级扰动与更明显声响"
+                  : "谨慎离开动作更长，但只留下轻微公开扰动"}
+              </small>
+            )}
             {interaction?.kind === "exit" && publicThreat !== "calm" && (
               <small>外面仍有威胁声；建议等提示恢复绿色后再离柜</small>
             )}
@@ -12861,34 +13885,62 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
 
         {phase === "playing"
           && !paused
-          && activeHideArchetype === "traversal-hide"
-          && hideExitSelection?.options.some((option) => option.kind === "alternate")
+          && interaction?.kind === "exit"
           && (
-            <div className="hide-exit-selector" role="group" aria-label="选择穿行藏点出口">
+            <div className="hide-exit-selector" role="group" aria-label="选择藏点离开方式">
+              <small>离开方式</small>
               <button
                 type="button"
-                aria-pressed={hideExitSelection.selected === "origin"}
+                aria-pressed={hideExitStyle === "careful"}
                 onClick={() => {
-                  preferredHideExit.current = "origin";
-                  setHideExitSelection((current) => current
-                    ? { ...current, selected: "origin" }
-                    : current);
+                  preferredHideExitStyle.current = "careful";
+                  setHideExitStyle("careful");
                 }}
               >
-                原入口
+                谨慎 · 低扰动
               </button>
               <button
                 type="button"
-                aria-pressed={hideExitSelection.selected === "alternate"}
+                aria-pressed={hideExitStyle === "quick"}
                 onClick={() => {
-                  preferredHideExit.current = "alternate";
-                  setHideExitSelection((current) => current
-                    ? { ...current, selected: "alternate" }
-                    : current);
+                  preferredHideExitStyle.current = "quick";
+                  setHideExitStyle("quick");
                 }}
               >
-                另一侧 <kbd>X</kbd>
+                快速 · 高扰动 <kbd className="desktop-key">Z</kbd>
               </button>
+              {activeHideArchetype === "traversal-hide"
+                && hideExitSelection?.options.some(
+                  (option) => option.kind === "alternate",
+                ) && (
+                <>
+                  <small>出口</small>
+                  <button
+                    type="button"
+                    aria-pressed={hideExitSelection.selected === "origin"}
+                    onClick={() => {
+                      preferredHideExit.current = "origin";
+                      setHideExitSelection((current) => current
+                        ? { ...current, selected: "origin" }
+                        : current);
+                    }}
+                  >
+                    原入口
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={hideExitSelection.selected === "alternate"}
+                    onClick={() => {
+                      preferredHideExit.current = "alternate";
+                      setHideExitSelection((current) => current
+                        ? { ...current, selected: "alternate" }
+                        : current);
+                    }}
+                  >
+                    另一侧 <kbd className="desktop-key">X</kbd>
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -12945,11 +13997,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         )}
 
         {showResult && !loading && (
-          <div className={`overlay ${phase}`}>
+          <div
+            className={`overlay ${phase}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="game-overlay-title"
+            aria-describedby="game-overlay-description"
+          >
             <div className="overlay-card">
-              <span className={`result ${phase}`}>{phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : `${campaignLevel.campaign.themeLabel}篇 · ${campaignLevel.campaign.difficultyLabel}`}</span>
-              <h2>{phase === "won" ? `你完成了「${campaignLevel.campaign.name}」` : phase === "lost" ? captureFeedback.title : campaignLevel.campaign.subtitle}</h2>
-              <p>
+              <span
+                className={`result ${phase}`}
+                role={phase === "won" || phase === "lost" ? "status" : undefined}
+                aria-live={phase === "won" || phase === "lost" ? "assertive" : undefined}
+              >
+                {phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : `${campaignLevel.campaign.themeLabel}篇 · ${campaignLevel.campaign.difficultyLabel}`}
+              </span>
+              <h2 id="game-overlay-title">{phase === "won" ? `你完成了「${campaignLevel.campaign.name}」` : phase === "lost" ? captureFeedback.title : campaignLevel.campaign.subtitle}</h2>
+              <p id="game-overlay-description">
                 {phase === "ready"
                   ? readyBriefing
                   : phase === "lost"
@@ -13011,7 +14075,87 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 </>
               )}
               {phase === "lost" && (
-                <div className="failure-advice"><small>下一次这样做</small><strong>{captureFeedback.hint}</strong></div>
+                <div className="failure-causal-replay" aria-label="失败前公开因果复盘">
+                  <div>
+                    <small>
+                      LAST {Math.round(lastFailureReplay?.window.durationSeconds ?? 10)}s
+                      {" · "}公开因果复盘
+                    </small>
+                    <strong>
+                      {lastFailureReplay?.primaryCause.label ?? captureFeedback.title}
+                    </strong>
+                  </div>
+                  {lastFailureReplay && (
+                    <ol>
+                      {lastFailureReplay.timeline.map((entry) => (
+                        <li
+                          key={entry.id}
+                          data-replay-icon={entry.iconToken}
+                          data-replay-glyph={
+                            FAILURE_REPLAY_GLYPHS[entry.iconToken]
+                          }
+                        >
+                          <time>
+                            -{entry.secondsBeforeCapture.toFixed(1)}s
+                          </time>
+                          <span>
+                            <b>{entry.label}</b>
+                            <small>{entry.detail}</small>
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                  {lastFailureReplay?.semanticTrack
+                    && (() => {
+                      const track = failureSemanticTrackCoordinates(
+                        lastFailureReplay.semanticTrack.samples,
+                      );
+                      if (!track.length) return null;
+                      return (
+                        <div
+                          className="failure-semantic-track"
+                          aria-label={`失败前玩家行动轨迹，${track.length} 个公开采样`}
+                        >
+                          <span>
+                            <small>PLAYER TRAIL</small>
+                            <strong>
+                              -{track[0].sample.secondsBeforeCapture.toFixed(1)}s
+                              {" → "}被抓
+                            </strong>
+                          </span>
+                          <svg
+                            viewBox="0 0 100 50"
+                            role="img"
+                            aria-label="仅包含玩家自身位置的行动轨迹"
+                          >
+                            <polyline
+                              points={track.map(({ x, y }) => `${x},${y}`).join(" ")}
+                            />
+                            {track.map(({ sample, x, y }, index) => (
+                              <g
+                                key={`${sample.atSeconds}:${sample.action}:${index}`}
+                                transform={`translate(${x} ${y})`}
+                              >
+                                <circle r={index === track.length - 1 ? 2.8 : 2.1} />
+                                <text x="0" y="-4">
+                                  {FAILURE_REPLAY_GLYPHS[sample.iconToken]}
+                                </text>
+                              </g>
+                            ))}
+                          </svg>
+                        </div>
+                      );
+                    })()}
+                  <div className="failure-advice">
+                    <small>
+                      {lastFailureReplay?.advice.label ?? "下一次这样做"}
+                    </small>
+                    <strong>
+                      {lastFailureReplay?.advice.detail ?? captureFeedback.hint}
+                    </strong>
+                  </div>
+                </div>
               )}
 
               {phase === "ready" && (
@@ -13119,6 +14263,63 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                       ))}
                     </div>
                   )}
+                  {hospitalGoldEnabled && (
+                    <>
+                      <div
+                        className="library-plan-selector hospital-plan-selector"
+                        role="group"
+                        aria-label="选择午夜门诊撤离计划"
+                      >
+                        {HOSPITAL_BRANCHING_MISSION.plans.map((plan) => (
+                          <button
+                            type="button"
+                            key={plan.id}
+                            aria-pressed={selectedHospitalPlan === plan.id}
+                            onClick={() => chooseHospitalPlan(plan.id)}
+                          >
+                            <b>{plan.label}</b>
+                            <small>
+                              {plan.routeProfile === "quiet-long"
+                                ? "低噪 · 低暴露 · 路线较长"
+                                : "高噪 · 高暴露 · 路线较短"}
+                              {" · "}
+                              {plan.strategy}
+                            </small>
+                          </button>
+                        ))}
+                      </div>
+                      <div
+                        className="library-plan-selector hospital-loadout-selector"
+                        role="group"
+                        aria-label="选择两项医院战术能力"
+                      >
+                        {HOSPITAL_TOOL_LOADOUT.tools.map((tool) => {
+                          const selected =
+                            hospitalLoadoutSelection.selectedToolIds.includes(
+                              tool.id,
+                            );
+                          const recommended =
+                            HOSPITAL_TOOL_LOADOUT.recommendedToolIds.includes(
+                              tool.id,
+                            );
+                          return (
+                            <button
+                              type="button"
+                              key={tool.id}
+                              aria-pressed={selected}
+                              onClick={() => chooseHospitalLoadoutTool(tool.id)}
+                              title="始终保持两个战术位；选择新能力会替换最早选中的能力"
+                            >
+                              <b>
+                                {tool.label}{recommended ? " · 推荐" : ""}
+                              </b>
+                              <small>{tool.description}</small>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                   {selectedRemixContract && (
                     <span>
                       <i aria-hidden="true">↻</i>
@@ -13148,7 +14349,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                   </span>
                   <span>
                     <b>4</b>
-                    1–3 选战术工具，G 部署门楔、转角镜或局部断电；C 抹除近处足迹
+                    {hospitalGoldEnabled
+                      ? `本局已携带：${hospitalLoadoutSelection.selectedToolIds
+                        .map((id) => HOSPITAL_TOOL_LOADOUT.tools.find(
+                          (tool) => tool.id === id,
+                        )?.label)
+                        .filter(Boolean)
+                        .join(" + ")}`
+                      : "1–3 选战术工具，G 部署门楔、转角镜或局部断电；C 抹除近处足迹"}
                   </span>
                 </div>
               )}
@@ -13174,15 +14382,27 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                   {CAMPAIGN_LEVELS.map((level, index) => {
                     const locked = index + 1 > unlockedThrough;
                     const active = index === selectedLevelIndex;
-                    const levelRecordId = level.id === LIBRARY_BRANCHING_MISSION.levelId
-                      ? libraryG2RunIdentity(level.id, selectedLibraryPlan)
-                      : level.id;
+                    const activeCertifiedLayout = Boolean(
+                      active && selectedRemixContract,
+                    );
+                    const levelRecordId = activeCertifiedLayout
+                      ? runRecordLevelId
+                      : level.id === LIBRARY_BRANCHING_MISSION.levelId
+                        ? libraryG2RunIdentity(level.id, selectedLibraryPlan)
+                        : level.id === HOSPITAL_BRANCHING_MISSION.levelId
+                          ? hospitalG2RunIdentity(level.id, selectedHospitalPlan)
+                          : level.id;
                     const branchRunRecord = getCampaignRunRecord(
                       campaignProgress,
                       levelRecordId,
                       preferences.ruleset,
                     );
-                    const legacyRunRecord = level.id === LIBRARY_BRANCHING_MISSION.levelId
+                    const legacyRunRecord =
+                      !activeCertifiedLayout
+                      && (
+                        level.id === LIBRARY_BRANCHING_MISSION.levelId
+                        || level.id === HOSPITAL_BRANCHING_MISSION.levelId
+                      )
                       ? getCampaignRunRecord(
                           campaignProgress,
                           level.id,
@@ -13197,8 +14417,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                     const runRecord = showingLegacyBaseline && legacyRunRecord
                       ? legacyRunRecord
                       : branchRunRecord;
-                    const best = runRecord.bestSeconds;
-                    const mastery = runRecord.mastery;
+                    const best = activeCertifiedLayout
+                      ? remixRecord?.bestSeconds ?? runRecord.bestSeconds
+                      : runRecord.bestSeconds;
+                    const mastery = activeCertifiedLayout
+                      ? remixRecord?.mastery ?? runRecord.mastery
+                      : runRecord.mastery;
                     return (
                       <button
                         className={`level-card${active ? " active" : ""}${locked ? " locked" : ""}${mastery ? ` rank-${mastery.rank}` : ""}`}
@@ -13224,7 +14448,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               )}
 
               <div className="overlay-actions">
-                <button className="primary" type="button" onClick={primaryAction}>
+                <button
+                  className="primary"
+                  type="button"
+                  ref={phase === "won" || phase === "lost" ? resultPrimaryButton : undefined}
+                  onClick={primaryAction}
+                >
                   {phase === "ready"
                     ? `开始第 ${campaignLevel.campaign.levelNumber} 关 · ${layoutLabel}`
                     : phase === "won" && hasNextLevel ? "进入下一关" : "再来一次"}
@@ -13240,6 +14469,19 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                     改走{
                       LIBRARY_BRANCHING_MISSION.plans.find(
                         (plan) => plan.id !== selectedLibraryPlan,
+                      )?.label
+                    }
+                  </button>
+                )}
+                {hospitalGoldEnabled && phase !== "ready" && (
+                  <button
+                    className="secondary library-plan-switch"
+                    type="button"
+                    onClick={switchHospitalPlanAfterRun}
+                  >
+                    改走{
+                      HOSPITAL_BRANCHING_MISSION.plans.find(
+                        (plan) => plan.id !== selectedHospitalPlan,
                       )?.label
                     }
                   </button>
@@ -13306,6 +14548,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               )}
               <button
                 type="button"
+                aria-pressed={touchQuietModeLatched}
+                aria-label={`${
+                  ["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode)
+                    ? "柜内观察"
+                    : "轻步"
+                }，${touchQuietModeLatched ? "已锁定，点击关闭" : "按住启用；辅助操作可点击锁定"}`}
+                title="触控可按住；屏幕阅读器、语音或开关控制可点击切换"
                 onPointerDown={(event) => {
                   event.preventDefault();
                   event.currentTarget.setPointerCapture(event.pointerId);
@@ -13315,12 +14564,22 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                   if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                     event.currentTarget.releasePointerCapture(event.pointerId);
                   }
-                  touch("q", false);
+                  touch("q", touchQuietModeLatchedRef.current);
                 }}
-                onPointerCancel={() => touch("q", false)}
-                onLostPointerCapture={() => touch("q", false)}
+                onPointerCancel={() => touch("q", touchQuietModeLatchedRef.current)}
+                onLostPointerCapture={() => touch("q", touchQuietModeLatchedRef.current)}
+                onClick={(event) => {
+                  if (event.detail !== 0) return;
+                  updateTouchQuietMode(!touchQuietModeLatchedRef.current);
+                }}
               >
-                {["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode) ? "按住观察" : "按住轻步"}
+                {touchQuietModeLatched
+                  ? ["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode)
+                    ? "观察已锁定"
+                    : "轻步已锁定"
+                  : ["hidden", "entering-peek", "peeking", "exiting-peek"].includes(playerMode)
+                    ? "按住观察"
+                    : "按住轻步"}
               </button>
             </div>
           </>
@@ -13334,7 +14593,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         <small>
           {`WASD / 方向键移动 · E 躲藏或离开 · ${
             libraryGoldEnabled ? "F 投掷诱饵 · " : ""
-          }1–3 选工具 / G 部署 · C 抹迹 · Q 轻步 / 柜内观察 · X 切换穿行出口 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开`}
+          }${hospitalGoldEnabled
+            ? `本局两项战术位 / G 部署 · ${
+                evidenceEraseEquipped ? "C 抹迹 · " : ""
+              }`
+            : "1–3 选工具 / G 部署 · C 抹迹 · "
+          }Q 轻步 / 柜内观察 · Z 切换谨慎/快速离开 · X 切换穿行出口 · 滚轮动态调视野 · Esc 暂停 · M 声音 · R 重开`}
         </small>
       </footer>
     </main>

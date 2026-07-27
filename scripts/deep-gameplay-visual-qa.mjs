@@ -878,7 +878,7 @@ async function exerciseAlternativeHide(
     hidden = await browser.evaluate("window.__CHASING_QA__.getState()");
     selectedExit = hidden.hideExitSelection.selected;
     await browser.waitFor(
-      "document.querySelector('.hide-exit-selector button[aria-pressed=\"true\"]')?.textContent.includes('另一侧')",
+      "Array.from(document.querySelectorAll('.hide-exit-selector button[aria-pressed=\"true\"]')).some((button) => button.textContent.includes('另一侧'))",
       3_000,
     );
     const alternateFile = path.join(

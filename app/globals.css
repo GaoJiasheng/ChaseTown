@@ -15,6 +15,18 @@
 html, body { margin: 0; min-height: 100%; background: #070b10; color: var(--ink); font-family: Inter, "SF Pro Display", Arial, "PingFang SC", sans-serif; }
 body { overflow: hidden; background: radial-gradient(circle at 46% -18%, #243748 0, #101923 40%, #070b10 100%); }
 button { font: inherit; }
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
 
 .game-shell {
   --hud-gutter: 16px;
@@ -509,6 +521,26 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
   border-color: var(--safe);
   background: linear-gradient(145deg, rgba(90, 224, 160, .42), rgba(5, 37, 24, .82));
 }
+.hospital-mission-exposed .mission-status {
+  border-color: rgba(255, 152, 88, .74);
+  background:
+    linear-gradient(108deg, rgba(126, 45, 16, .26), transparent 58%),
+    var(--hud-surface-strong);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, .3),
+    0 0 26px rgba(255, 112, 58, .17),
+    inset 0 1px 0 rgba(255, 220, 184, .18);
+}
+.hospital-mission-exposed .mission-status > span {
+  border-color: #ff9858;
+  background:
+    linear-gradient(145deg, rgba(255, 152, 88, .52), rgba(61, 21, 8, .88));
+}
+.hospital-mission-exposed .cinematic-vignette {
+  box-shadow:
+    inset 0 0 calc(34px + var(--threat) * 36px)
+      rgba(255, 87, 46, calc(.12 + var(--threat) * .28));
+}
 .ghost-race > span {
   position: relative;
   width: 25px;
@@ -750,6 +782,9 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
   gap: 5px;
   padding: 5px 6px 7px;
 }
+.stealth-tool-row.compact-loadout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .stealth-tool-row > button {
   position: relative;
   display: flex;
@@ -830,6 +865,21 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
 .playfield:has(.stealth-toolbelt-status.with-decoy) .interaction-prompt { bottom: 168px; }
 .playfield:has(.overlay) .stealth-toolbelt-status,
 .playfield:has(.pause-card) .stealth-toolbelt-status { opacity: 0; pointer-events: none; }
+.playfield:is(
+  .mode-hidden,
+  .mode-entering-peek,
+  .mode-peeking,
+  .mode-exiting-peek
+) .stealth-toolbelt-status,
+.playfield:is(
+  .mode-hidden,
+  .mode-entering-peek,
+  .mode-peeking,
+  .mode-exiting-peek
+) .view-controls {
+  opacity: 0;
+  pointer-events: none;
+}
 .theme-mechanic.phase-cooldown { opacity: .78; }
 .theme-mechanic.phase-cooldown > span { animation: none; opacity: .48; }
 
@@ -1019,6 +1069,7 @@ html[data-chasing-ready="true"] .three-mount::after { opacity: 0; }
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 6px;
   max-width: calc(100% - 32px);
   padding: 5px;
@@ -1310,6 +1361,40 @@ button:focus-visible, [tabindex]:focus-visible {
 .library-plan-selector b { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .library-plan-selector small { color: #82959b; font-size: 8px; line-height: 1.35; }
 .library-plan-selector button[aria-pressed="true"] small { color: #c9ae82; }
+.mission-briefing > .hospital-plan-selector {
+  border-color: rgba(105, 218, 224, .26);
+  background:
+    linear-gradient(100deg, rgba(83, 195, 206, .09), transparent 58%),
+    rgba(2, 10, 13, .52);
+}
+.hospital-plan-selector button:hover,
+.hospital-loadout-selector button:hover {
+  border-color: rgba(119, 224, 230, .4);
+  background: rgba(74, 191, 201, .075);
+}
+.hospital-plan-selector button[aria-pressed="true"],
+.hospital-loadout-selector button[aria-pressed="true"] {
+  color: #e8ffff;
+  border-color: rgba(111, 225, 232, .72);
+  background:
+    linear-gradient(135deg, rgba(61, 183, 194, .18), transparent),
+    rgba(255, 255, 255, .035);
+  box-shadow:
+    inset 0 0 0 1px rgba(167, 245, 247, .07),
+    0 0 18px rgba(67, 195, 204, .08);
+}
+.mission-briefing > .hospital-loadout-selector {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-color: rgba(105, 218, 224, .18);
+  background: rgba(2, 10, 13, .48);
+}
+.hospital-loadout-selector button {
+  min-height: 58px;
+}
+.hospital-plan-selector button[aria-pressed="true"] small,
+.hospital-loadout-selector button[aria-pressed="true"] small {
+  color: #a9d9dc;
+}
 .run-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1365,6 +1450,167 @@ button:focus-visible, [tabindex]:focus-visible {
 }
 .failure-advice small { color: #d47d85; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
 .failure-advice strong { color: #f1d7d9; font-size: 12px; line-height: 1.45; }
+.failure-causal-replay {
+  display: grid;
+  gap: 9px;
+  margin: -5px 0 16px;
+  padding: 11px;
+  border: 1px solid rgba(255, 119, 128, .2);
+  border-radius: 11px;
+  background:
+    linear-gradient(120deg, rgba(94, 24, 31, .22), transparent 55%),
+    rgba(2, 8, 11, .42);
+}
+.failure-causal-replay > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.failure-causal-replay > div:first-child small {
+  color: #d87881;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+.failure-causal-replay > div:first-child strong {
+  color: #f3dadd;
+  font-size: 12px;
+}
+.failure-causal-replay ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.failure-causal-replay li {
+  position: relative;
+  min-width: 0;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, .075);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .025);
+}
+.failure-causal-replay li::before {
+  content: attr(data-replay-glyph);
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 141, 148, .7);
+  border-radius: 6px;
+  color: #ffdadd;
+  background: #4a1c22;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .34);
+  font-size: 8px;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+.failure-causal-replay li[data-replay-icon="footsteps"]::before,
+.failure-causal-replay li[data-replay-icon="route"]::before,
+.failure-causal-replay li[data-replay-icon="action"]::before {
+  color: #d8eff7;
+  border-color: rgba(123, 220, 239, .58);
+  background: #14343d;
+}
+.failure-causal-replay li[data-replay-icon="hide"]::before,
+.failure-causal-replay li[data-replay-icon="door"]::before,
+.failure-causal-replay li[data-replay-icon="peek"]::before {
+  color: #f5e2af;
+  border-color: rgba(232, 189, 104, .62);
+  background: #40331a;
+}
+.failure-causal-replay time {
+  color: #df8c93;
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.failure-causal-replay li span { min-width: 0; }
+.failure-causal-replay li b,
+.failure-causal-replay li small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.failure-causal-replay li b {
+  color: #e8d7d9;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.failure-causal-replay li small {
+  margin-top: 3px;
+  color: #8f9ba0;
+  font-size: 7px;
+  line-height: 1.35;
+  white-space: normal;
+}
+.failure-causal-replay .failure-advice {
+  margin: 0;
+  padding: 9px 11px;
+}
+.failure-semantic-track {
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: minmax(92px, .42fr) minmax(160px, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 0 !important;
+  padding: 8px 10px;
+  border: 1px solid rgba(123, 220, 239, .15);
+  border-radius: 9px;
+  background:
+    linear-gradient(115deg, rgba(31, 91, 108, .14), transparent 58%),
+    rgba(1, 7, 10, .4);
+}
+.failure-semantic-track > span {
+  display: grid;
+  gap: 3px;
+}
+.failure-semantic-track > span small {
+  color: #77d6ef;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .15em;
+}
+.failure-semantic-track > span strong {
+  color: #d6e8ed;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.failure-semantic-track svg {
+  width: 100%;
+  height: 54px;
+  overflow: visible;
+}
+.failure-semantic-track polyline {
+  fill: none;
+  stroke: rgba(123, 220, 239, .72);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.failure-semantic-track circle {
+  fill: #102f38;
+  stroke: #9eeaff;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.failure-semantic-track text {
+  fill: #d7f6ff;
+  font-size: 5px;
+  font-weight: 900;
+  text-anchor: middle;
+}
 .ghost-save-note {
   margin: 0 0 13px;
   padding: 7px 10px;
@@ -1602,6 +1848,9 @@ footer small { margin-left: auto; color: #687882; }
     grid-template-columns: repeat(4, minmax(44px, 1fr));
     gap: 4px;
     padding: 4px;
+  }
+  .stealth-tool-row.compact-loadout {
+    grid-template-columns: repeat(2, minmax(44px, 1fr));
   }
   .stealth-tool-row > button {
     justify-content: center;
@@ -1978,6 +2227,9 @@ footer small { margin-left: auto; color: #687882; }
   .overlay p { color: #bdcbd0; line-height: 1.45; }
   .mastery-challenges { grid-template-columns: 1fr; }
   .mastery-challenges small { white-space: normal; }
+  .failure-causal-replay ol { grid-template-columns: 1fr; }
+  .failure-causal-replay li { min-height: 54px; }
+  .failure-semantic-track { grid-template-columns: 1fr; gap: 5px; }
   .preference-settings {
     grid-template-columns: 1fr;
     gap: 7px;
@@ -2005,6 +2257,24 @@ footer small { margin-left: auto; color: #687882; }
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: stretch;
     padding: 6px;
+  }
+  .mission-briefing:has(> .hospital-plan-selector) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+  .mission-briefing:has(> .hospital-plan-selector) > div,
+  .mission-briefing:has(> .hospital-plan-selector) > span {
+    width: 100%;
+    min-height: 50px;
+  }
+  .mission-briefing:has(> .hospital-plan-selector) > .hospital-plan-selector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mission-briefing:has(> .hospital-plan-selector) > .hospital-loadout-selector {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
   }
   .library-plan-selector button { padding: 7px 8px; }
   .library-plan-selector small {
@@ -2053,7 +2323,7 @@ footer small { margin-left: auto; color: #687882; }
      action label and the playfield at 360–390px. */
   .interaction-prompt { display: none; }
   .hide-exit-selector {
-    bottom: 150px;
+    bottom: 176px;
     max-width: calc(100% - 24px);
     overflow-x: auto;
   }
@@ -2194,7 +2464,8 @@ footer small { margin-left: auto; color: #687882; }
 }
 .high-contrast .preference-group button[aria-pressed="true"],
 .high-contrast .pause-settings button[aria-pressed="true"],
-.high-contrast .hide-exit-selector button[aria-pressed="true"] {
+.high-contrast .hide-exit-selector button[aria-pressed="true"],
+.high-contrast .library-plan-selector button[aria-pressed="true"] {
   color: #050708;
   border-color: #fff;
   background: #fff;

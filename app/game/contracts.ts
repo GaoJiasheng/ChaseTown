@@ -35,6 +35,8 @@ export type MoveIntent = { x: number; y: number };
 
 export type HideArchetypeKind = "hard-locker" | "soft-cover" | "traversal-hide";
 export type HideExitKind = "origin" | "alternate";
+export type HideExitStyle = "standard" | "quick" | "careful";
+export type HideDisturbanceLevel = 0 | 1 | 2 | 3;
 
 export interface SimulationInput {
   move?: MoveIntent;
@@ -71,6 +73,12 @@ export interface SimulationInput {
    * Unsupported alternate requests safely resolve to the origin exit.
    */
   hideExitChoice?: HideExitKind;
+  /**
+   * Exit commitment selected by the player. Quick exits shorten the authored
+   * transition but make more noise and disturbance; careful exits do the
+   * inverse. Omission preserves the original standard exit exactly.
+   */
+  hideExitStyle?: HideExitStyle;
 }
 
 export interface HideSpotDefinition {
@@ -158,11 +166,26 @@ export interface PlayerState {
   hideTurnCycle: number;
   /** Duration used to time-scale the authored 90° pivot for this segment. */
   hideTurnSegmentDurationSeconds: number;
+  /** Committed exit style while exiting; null outside that transition. */
+  hideExitStyle: HideExitStyle | null;
+}
+
+export interface PublicRegionSuspicion {
+  /** Stable navigation-region id derived only from public level geometry. */
+  readonly regionId: string;
+  /** Public junction/corridor anchor used to order search and patrol routes. */
+  readonly anchor: Point;
+  /** Current decayed suspicion in [0, 1]. */
+  readonly confidence: number;
+  readonly updatedAtSeconds: number;
+  readonly decayPerSecond: number;
 }
 
 export interface ChaserMemory {
   /** Updated only from explicit perception evidence. */
   lastKnownPosition: Point | null;
+  /** Last public travel direction; never sampled from a concealed player. */
+  lastKnownDirection: Point | null;
   lastSeenAtSeconds: number | null;
   lastHeardAtSeconds: number | null;
   lastClueAtSeconds: number | null;
@@ -173,6 +196,7 @@ export interface ChaserMemory {
    */
   deferredSoundEvidence: {
     position: Point;
+    direction?: Point;
     strength: number;
     observedAtSeconds: number;
     sourceType?: SoundEvidenceSourceType;
@@ -187,6 +211,11 @@ export interface ChaserMemory {
    * bounded public-evidence ledger, never a copy of player or locker state.
    */
   evidenceTrail?: readonly PublicEvidenceMemory[];
+  /**
+   * At most four decaying public navigation regions. These may only order
+   * search hypotheses and patrol points; they never become a chase target.
+   */
+  regionSuspicion: readonly PublicRegionSuspicion[];
 }
 
 export interface ChaserState {
@@ -205,6 +234,12 @@ export interface ChaserState {
   scanOriginHeading: Point;
   /** Deterministic per-encounter shuffle; derived only from observed evidence. */
   searchSeed: number;
+  /**
+   * Frozen public-geometry route captured once when search begins. Suspicion may
+   * continue to decay, but it cannot reorder an in-progress search or make
+   * movement-frame target reads rebuild the navigation graph.
+   */
+  searchPlan: readonly Point[];
   searchIndex: number;
   searchWaypointElapsedSeconds: number;
   /** Public-evidence candidate selected without consulting locker occupancy. */
@@ -218,23 +253,33 @@ export interface ChaserState {
 export interface HideSpotRuntimeState {
   id: string;
   occupiedByPlayer: boolean;
+  /** Public scene disturbance; AI receives it only after a legal LOS sample. */
+  disturbanceLevel: HideDisturbanceLevel;
+  disturbanceRevision: number;
+  disturbanceUpdatedAtTick: number;
+  useCount: number;
+  peekCount: number;
 }
 
 export type PerceptionEvidence =
   | {
       kind: "player-visible";
       position: Point;
+      /** Optional public motion direction captured by the perception adapter. */
+      direction?: Point;
       observedAtSeconds: number;
     }
   | {
       kind: "hide-entry-visible";
       hideSpotId: string;
       position: Point;
+      direction?: Point;
       observedAtSeconds: number;
     }
   | {
       kind: "sound";
       position: Point;
+      direction?: Point;
       strength: number;
       observedAtSeconds: number;
       /** Explicit provenance lets authored decoys remain auditable and fair. */
@@ -255,6 +300,7 @@ export type PerceptionEvidence =
       kind: "world-clue";
       clueId: string;
       position: Point;
+      direction?: Point;
       observedAtSeconds: number;
       confidence: number;
       sourceType: WorldClueSourceType;
@@ -279,6 +325,7 @@ export type SoundEvidenceSourceType =
 export interface PublicEvidenceMemory {
   readonly kind: "visual" | "hide-entry-visible" | "sound" | "world-clue";
   readonly position: Point;
+  readonly direction: Point | null;
   readonly observedAtSeconds: number;
   readonly confidence: number;
   readonly decayPerSecond: number;

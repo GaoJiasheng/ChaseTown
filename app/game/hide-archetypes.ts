@@ -1,6 +1,9 @@
 import type {
+  HideDisturbanceLevel,
   HideArchetypeKind as ContractHideArchetypeKind,
   HideExitKind as ContractHideExitKind,
+  HideExitStyle as ContractHideExitStyle,
+  HideSpotRuntimeState,
   HideSpotDefinition,
   LevelDefinition,
   PerceptionEvidence,
@@ -12,7 +15,26 @@ import type { SoundStimulus } from "./perception.ts";
 export type HideArchetypeKind = ContractHideArchetypeKind;
 export type HideRiskBand = "low" | "medium" | "high";
 export type HideExitKind = ContractHideExitKind;
+export type HideExitStyle = ContractHideExitStyle;
 export type HideTransitionKind = "enter" | "exit-origin" | "exit-alternate" | "peek";
+export type HideDisturbanceCause =
+  | "enter"
+  | "peek"
+  | "exit-standard"
+  | "exit-quick"
+  | "exit-careful";
+
+export interface HideExitStyleProfile {
+  readonly style: HideExitStyle;
+  readonly durationMultiplier: number;
+  readonly soundMultiplier: number;
+  /**
+   * Multiplies the delay before the player becomes visible. A careful exit is
+   * longer overall but exposes the player earlier relative to that duration.
+   */
+  readonly exposureDelayMultiplier: number;
+  readonly disturbanceIncrease: 1 | 2 | 3;
+}
 
 export interface HideArchetypeRisk {
   readonly entry: HideRiskBand;
@@ -130,6 +152,96 @@ const profile = (value: HideArchetypeProfile): HideArchetypeProfile => Object.fr
   evidence: Object.freeze({ ...value.evidence }),
   timing: Object.freeze({ ...value.timing }),
 });
+
+export const HIDE_EXIT_STYLE_PROFILES: Readonly<Record<HideExitStyle, HideExitStyleProfile>> =
+  Object.freeze({
+    standard: Object.freeze({
+      style: "standard",
+      durationMultiplier: 1,
+      soundMultiplier: 1,
+      exposureDelayMultiplier: 1,
+      disturbanceIncrease: 1,
+    }),
+    quick: Object.freeze({
+      style: "quick",
+      durationMultiplier: 0.68,
+      soundMultiplier: 1.45,
+      exposureDelayMultiplier: 0.48,
+      // A slammed exit is immediately unmistakable even if the object had
+      // settled completely while the player waited inside.
+      disturbanceIncrease: 3,
+    }),
+    careful: Object.freeze({
+      style: "careful",
+      durationMultiplier: 1.3,
+      soundMultiplier: 0.52,
+      exposureDelayMultiplier: 0.75,
+      disturbanceIncrease: 1,
+    }),
+  });
+
+export function hideExitStyleProfile(style: HideExitStyle): HideExitStyleProfile {
+  return HIDE_EXIT_STYLE_PROFILES[style];
+}
+
+function disturbanceLevel(value: number): HideDisturbanceLevel {
+  return Math.max(0, Math.min(3, Math.floor(value))) as HideDisturbanceLevel;
+}
+
+/**
+ * Pure public-state reducer. Occupancy is preserved but never consulted, so
+ * the same visible interaction produces the same disturbance whether or not
+ * any AI system knows who caused it.
+ */
+export function applyHideDisturbance(
+  state: HideSpotRuntimeState,
+  cause: HideDisturbanceCause,
+  atTick: number,
+): HideSpotRuntimeState {
+  if (!Number.isInteger(atTick) || atTick < 0) {
+    throw new Error("Hide disturbance tick must be a non-negative integer");
+  }
+  const style = cause.startsWith("exit-")
+    ? hideExitStyleProfile(cause.slice("exit-".length) as HideExitStyle)
+    : null;
+  const increase = style?.disturbanceIncrease ?? 1;
+  return {
+    ...state,
+    disturbanceLevel: disturbanceLevel(state.disturbanceLevel + increase),
+    disturbanceRevision: state.disturbanceRevision + 1,
+    disturbanceUpdatedAtTick: atTick,
+    useCount: state.useCount + Number(cause === "enter"),
+    peekCount: state.peekCount + Number(cause === "peek"),
+  };
+}
+
+/** Deterministic integer decay independent of render cadence. */
+export function decayHideDisturbance(
+  state: HideSpotRuntimeState,
+  atTick: number,
+  ticksPerLevel: number,
+): HideSpotRuntimeState {
+  if (!Number.isInteger(atTick) || atTick < 0) {
+    throw new Error("Hide disturbance tick must be a non-negative integer");
+  }
+  if (!Number.isInteger(ticksPerLevel) || ticksPerLevel <= 0) {
+    throw new Error("Hide disturbance decay interval must be a positive integer");
+  }
+  if (state.disturbanceLevel === 0 || atTick <= state.disturbanceUpdatedAtTick) {
+    return state;
+  }
+  const elapsedTicks = atTick - state.disturbanceUpdatedAtTick;
+  const elapsedStages = Math.floor(elapsedTicks / ticksPerLevel);
+  const appliedStages = Math.min(state.disturbanceLevel, elapsedStages);
+  if (appliedStages <= 0) return state;
+  return {
+    ...state,
+    disturbanceLevel: disturbanceLevel(state.disturbanceLevel - appliedStages),
+    disturbanceRevision: state.disturbanceRevision + appliedStages,
+    disturbanceUpdatedAtTick:
+      state.disturbanceUpdatedAtTick + elapsedStages * ticksPerLevel,
+  };
+}
 
 export const HIDE_ARCHETYPE_PROFILES: Readonly<Record<HideArchetypeKind, HideArchetypeProfile>> = Object.freeze({
   "hard-locker": profile({
@@ -380,6 +492,7 @@ function stableSourceId(hideSpotId: string): string {
 export function hideTransitionEvidence(
   resolved: ResolvedHideSpotArchetype,
   transition: HideTransitionKind,
+  exitStyle: HideExitStyle = "standard",
 ): HideTransitionEvidence {
   if (transition === "peek" && !resolved.profile.capabilities.canPeek) {
     throw new Error(`${resolved.archetype} does not support peeking`);
@@ -387,11 +500,19 @@ export function hideTransitionEvidence(
   if (transition === "exit-alternate" && !resolved.profile.capabilities.canExitAlternate) {
     throw new Error(`${resolved.archetype} does not support an alternate exit`);
   }
-  const strength = transition === "enter"
+  const baseStrength = transition === "enter"
     ? resolved.profile.evidence.entrySoundStrength
     : transition === "peek"
       ? resolved.profile.evidence.peekSoundStrength
       : resolved.profile.evidence.exitSoundStrength;
+  const strength = Math.min(
+    1,
+    baseStrength * (
+      transition === "exit-origin" || transition === "exit-alternate"
+        ? hideExitStyleProfile(exitStyle).soundMultiplier
+        : 1
+    ),
+  );
   const position = transition === "exit-alternate" && resolved.alternateExit
     ? resolved.alternateExit
     : resolved.approach;

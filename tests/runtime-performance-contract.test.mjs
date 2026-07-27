@@ -198,7 +198,7 @@ test("gameplay hotkeys defer phase authority to the current simulation command",
   );
   assert.match(
     SOURCE,
-    /addEventListener\("keydown", keyDown\)[\s\S]*\}, \[resetAnalogueMove\]\);/u,
+    /addEventListener\("keydown", keyDown\)[\s\S]*\}, \[resetAnalogueMove, updateTouchQuietMode\]\);/u,
   );
   assert.doesNotMatch(
     SOURCE,
@@ -431,6 +431,10 @@ test("player HUD receives only release-smoothed public threat while a chaser is 
   assert.match(SOURCE, /interaction\?\.kind === "exit" && publicThreat !== "calm"/);
   assert.match(SOURCE, /const urgentHideMarker = playerKnowledge\.threat !== "calm"/);
   assert.match(SOURCE, /const publicCameraThreat = chaserKnowledgeObservable[\s\S]*playerKnowledge\.threat === "active"/);
+  assert.match(
+    SOURCE,
+    /chaserKnowledgeObservable !== renderedChaserObservable[\s\S]*setChaserObservable\(chaserKnowledgeObservable\)/u,
+  );
   assert.doesNotMatch(SOURCE, /className=\{`playfield[^`]*threat-\$\{chaserMode\}/);
   assert.match(SOURCE, /chaserPosition: chaserKnowledgeObservable[\s\S]*playerKnownChaser\?\.position/);
 });

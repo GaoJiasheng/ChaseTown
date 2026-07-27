@@ -1,5 +1,41 @@
-import type { ChaserMode, GameConfig, GamePhase, PlayerMode, PlayerState } from "./contracts.ts";
+import type {
+  ChaserMode,
+  GameConfig,
+  GamePhase,
+  HideExitKind,
+  PlayerMode,
+  PlayerState,
+} from "./contracts.ts";
 import type { AnimationState } from "./animation/actor-runtime.ts";
+
+interface HideExitSelectionPresentation {
+  readonly selected: HideExitKind;
+  readonly options: readonly { readonly kind: HideExitKind }[];
+}
+
+/**
+ * Keeps a just-pressed exit choice visible until the next authoritative fixed
+ * step consumes it. The HUD refresh can otherwise re-apply the previous
+ * simulation value for one 120 ms presentation interval.
+ */
+export function reconcileHideExitSelection<
+  Selection extends HideExitSelectionPresentation,
+>(
+  runtimeSelection: Selection | null,
+  preferredSelection: HideExitKind,
+): Selection | null {
+  if (
+    !runtimeSelection
+    || runtimeSelection.selected === preferredSelection
+    || !runtimeSelection.options.some(({ kind }) => kind === preferredSelection)
+  ) {
+    return runtimeSelection;
+  }
+  return {
+    ...runtimeSelection,
+    selected: preferredSelection,
+  };
+}
 
 export interface LockerDoorClaim {
   owner: "idle" | "player" | "chaser";

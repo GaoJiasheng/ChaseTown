@@ -1,6 +1,10 @@
-export const CAPTURE_HOLD_LEASE_MILLISECONDS = 5_000;
-export const CAPTURE_HOLD_RENEW_INTERVAL_MILLISECONDS = 1_000;
-export const CAPTURE_HOLD_COMMAND_TIMEOUT_MILLISECONDS = 2_500;
+// Full-resolution WebGL readback can briefly serialize Runtime.evaluate behind
+// Page.captureScreenshot on loaded hardware and software renderers. Keep the
+// browser-owned lease finite, but leave enough headroom for one slow readback
+// so a healthy controller is not mistaken for a disconnected one.
+export const CAPTURE_HOLD_LEASE_MILLISECONDS = 10_000;
+export const CAPTURE_HOLD_RENEW_INTERVAL_MILLISECONDS = 2_000;
+export const CAPTURE_HOLD_COMMAND_TIMEOUT_MILLISECONDS = 8_000;
 
 function asError(value) {
   return value instanceof Error ? value : new Error(String(value));

@@ -5,6 +5,7 @@ import {
   actionableSoundConfidence,
   createInitialChaser,
   generateSearchHypotheses,
+  generateSearchWaypoints,
   getChaserTarget,
   publicEvidenceLedger,
   stepChaserBrain,
@@ -193,6 +194,11 @@ test("same public evidence produces exactly the same decision and a decoy create
   const searching = {
     ...left.state,
     mode: "search",
+    searchPlan: generateSearchWaypoints(
+      crossLevel,
+      evidence.position,
+      left.state.searchSeed,
+    ),
     searchIndex: 1,
   };
   const graphHypotheses = generateSearchHypotheses(

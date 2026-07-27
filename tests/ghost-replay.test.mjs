@@ -88,6 +88,87 @@ test("ghost input recording is change-compressed while interaction remains a one
   assert.deepEqual(cursor.sample(10), sampleGhostInput(recording, 10), "cursor can seek backwards");
 });
 
+test("hide exit styles use mutually exclusive held flags and remain change-compressed", () => {
+  const recorder = new GhostInputRecorder("hide-exit-styles", 1 / 60);
+  for (let tick = 0; tick < 80; tick += 1) {
+    const hideExitStyle = tick < 20
+      ? "standard"
+      : tick < 40
+        ? "quick"
+        : tick < 60
+          ? "careful"
+          : "standard";
+    recorder.record(tick, {
+      move: { x: 0, y: 0 },
+      hideExitStyle,
+      interactPressed: tick === 30,
+    });
+  }
+  const recording = recorder.finish(80);
+  assert.ok(recording);
+  assert.deepEqual(
+    recording.keyframes,
+    [
+      [0, 0, 0, 0],
+      [20, 0, 0, 16],
+      [30, 0, 0, 20],
+      [40, 0, 0, 32],
+      [60, 0, 0, 0],
+    ],
+    "styles should add frames only when the held style changes",
+  );
+  assert.equal(sampleGhostInput(recording, 19).hideExitStyle, "standard");
+  assert.equal(sampleGhostInput(recording, 20).hideExitStyle, "quick");
+  assert.equal(sampleGhostInput(recording, 30).hideExitStyle, "quick");
+  assert.equal(sampleGhostInput(recording, 30).interactPressed, true);
+  assert.equal(sampleGhostInput(recording, 31).interactPressed, false);
+  assert.equal(sampleGhostInput(recording, 40).hideExitStyle, "careful");
+  assert.equal(sampleGhostInput(recording, 60).hideExitStyle, "standard");
+
+  const cursor = new GhostReplayCursor(recording);
+  assert.equal(cursor.sample(55).hideExitStyle, "careful");
+  assert.equal(cursor.sample(65).hideExitStyle, "standard");
+  assert.equal(cursor.sample(25).hideExitStyle, "quick", "backward seek lost exit style");
+});
+
+test("parser rejects impossible dual exit-style flags but accepts legacy zero-bit Standard", () => {
+  const recorder = new GhostInputRecorder("hide-exit-conflict", 1 / 60);
+  recorder.record(0, { hideExitStyle: "quick" });
+  const recording = recorder.finish(10);
+  assert.ok(recording);
+  const conflicting = JSON.parse(serializeGhostRecording(recording));
+  conflicting.keyframes[0][3] = 16 | 32;
+  assert.equal(
+    parseGhostRecording(resignSerializedGhost(conflicting)),
+    null,
+    "a checksum-valid quick+careful frame must still be rejected",
+  );
+
+  const legacyPayload = {
+    version: 1,
+    levelId: "legacy-standard-zero-bit",
+    fixedStepSeconds: 1 / 60,
+    durationTicks: 10,
+    keyframes: [
+      [0, 127, 0, 0],
+      [5, 0, 0, 8],
+    ],
+  };
+  const legacy = parseGhostRecording(JSON.stringify({
+    ...legacyPayload,
+    checksum: replayChecksum(legacyPayload),
+  }));
+  assert.ok(legacy);
+  assert.equal(sampleGhostInput(legacy, 0).hideExitStyle, "standard");
+  assert.equal(sampleGhostInput(legacy, 7).hideExitStyle, "standard");
+  assert.equal(sampleGhostInput(legacy, 7).hideExitChoice, "alternate");
+  assert.deepEqual(
+    parseGhostRecording(serializeGhostRecording(legacy)),
+    legacy,
+    "legacy v1 recording should round-trip without migration",
+  );
+});
+
 test("checksum, level allowlist, per-run budget, and local storage reject corrupt ghosts", () => {
   const recorder = new GhostInputRecorder("hospital", 1 / 60);
   recorder.record(0, { move: { x: 1, y: 0 } });
@@ -382,22 +463,66 @@ test("fixed-step input buffer preserves a sub-frame interaction edge at 144 Hz",
     move: { x: 1, y: 0 },
     interactPressed: true,
     sneakHeld: true,
+    hideExitStyle: "quick",
   });
   buffer.stage(0, {
     move: { x: 0, y: 1 },
     interactPressed: false,
     sneakHeld: false,
+    hideExitStyle: "careful",
   });
   const committed = buffer.consumeIfAdvanced(1);
   assert.equal(committed?.tick, 0);
   assert.deepEqual(committed?.input.move, { x: 0, y: 1 });
   assert.equal(committed?.input.interactPressed, true);
   assert.equal(committed?.input.sneakHeld, false);
+  assert.equal(committed?.input.hideExitStyle, "careful");
   assert.equal(buffer.consumeIfAdvanced(2), null);
 
-  buffer.stage(1, { move: { x: -1, y: 0 } });
+  buffer.stage(1, { move: { x: -1, y: 0 }, hideExitStyle: "quick" });
+  const quick = buffer.consumeIfAdvanced(2);
+  assert.equal(quick?.input.hideExitStyle, "quick");
+  buffer.stage(2, { move: { x: -1, y: 0 }, hideExitStyle: "standard" });
   buffer.reset();
-  assert.equal(buffer.consumeIfAdvanced(2), null);
+  assert.equal(buffer.consumeIfAdvanced(3), null);
+});
+
+test("fixed-step input buffer retains an explicitly selected exit style across sparse stages", () => {
+  const buffer = new GhostFixedStepInputBuffer();
+  buffer.stage(0, {
+    hideExitStyle: "quick",
+    move: { x: 1, y: 0 },
+  });
+  buffer.stage(0, {
+    interactPressed: true,
+    move: { x: 0, y: 1 },
+  });
+  buffer.stage(0, {
+    interactPressed: false,
+    move: { x: -1, y: 0 },
+  });
+  const sameTick = buffer.consumeIfAdvanced(1);
+  assert.equal(sameTick?.input.hideExitStyle, "quick");
+  assert.equal(sameTick?.input.interactPressed, true);
+  assert.deepEqual(sameTick?.input.move, { x: -1, y: 0 });
+
+  buffer.stage(1, { move: { x: 0, y: -1 } });
+  const nextTick = buffer.consumeIfAdvanced(2);
+  assert.equal(
+    nextTick?.input.hideExitStyle,
+    "quick",
+    "a sparse later tick diverged from GameSimulation held-input semantics",
+  );
+
+  buffer.stage(2, { hideExitStyle: "standard" });
+  assert.equal(buffer.consumeIfAdvanced(3)?.input.hideExitStyle, "standard");
+  buffer.reset();
+  buffer.stage(3, {});
+  assert.equal(
+    buffer.consumeIfAdvanced(4)?.input.hideExitStyle,
+    undefined,
+    "reset leaked a prior run's held style",
+  );
 });
 
 test("pre-step ghost recording reproduces fixed-step movement at 30/60/120/144 Hz", () => {
@@ -470,6 +595,91 @@ test("pre-step ghost recording reproduces fixed-step movement at 30/60/120/144 H
     );
     assert.equal(replayState.tick, referenceState.tick);
   }
+});
+
+function replayStyledHideExit(style) {
+  const spot = {
+    id: `ghost-${style}-locker`,
+    approach: { x: 2, y: 0 },
+    concealed: { x: 2, y: -0.3 },
+    facing: { x: 1, y: 0 },
+  };
+  const level = createLevel({
+    id: `ghost-hide-exit-${style}`,
+    width: 10,
+    height: 1,
+    walkable: [Array(10).fill(true)],
+    playerStart: { ...spot.approach },
+    exit: { x: 0, y: 0 },
+    chaserStart: { x: 9, y: 0 },
+    chaserStartHeading: { x: 0, y: 1 },
+    patrol: [{ x: 9, y: 0 }],
+    hideSpots: [spot],
+  });
+  const options = {
+    level,
+    autoStart: true,
+    initialPlayerHeading: spot.facing,
+    config: {
+      fixedStepSeconds: 1 / 60,
+      maxFrameDeltaSeconds: 2,
+      spawnDelaySeconds: 999,
+      chaserSpeed: 0,
+      hideEnterSeconds: 0.1,
+      hideEnterExposureSeconds: 0.08,
+      hideExitSeconds: 0.6,
+      hideExitExposureSeconds: 0.1,
+      hideInteractRange: 0.2,
+      catchRange: 0.05,
+      hearingRange: 0.1,
+    },
+  };
+  const reference = new GameSimulation(options);
+  const recorder = new GhostInputRecorder(level.id, 1 / 60);
+  let referenceExitTick = null;
+  let referenceState = reference.getState();
+  for (let tick = 0; tick < 90; tick += 1) {
+    const input = {
+      hideExitStyle: style,
+      interactPressed: tick === 0 || tick === 12,
+    };
+    recorder.record(tick, input);
+    referenceState = reference.advance(1 / 60, input);
+    if (tick > 12 && referenceExitTick === null && referenceState.player.mode === "free") {
+      referenceExitTick = referenceState.tick;
+    }
+  }
+  const recording = recorder.finish(referenceState.tick);
+  assert.ok(recording);
+
+  const replay = new GameSimulation(options);
+  const cursor = new GhostReplayCursor(recording);
+  let replayExitTick = null;
+  let replayState = replay.getState();
+  while (replayState.tick < recording.durationTicks) {
+    replayState = replay.advance(
+      recording.fixedStepSeconds,
+      cursor.sample(replayState.tick),
+    );
+    if (replayState.tick > 12 && replayExitTick === null && replayState.player.mode === "free") {
+      replayExitTick = replayState.tick;
+    }
+  }
+  assert.equal(replayExitTick, referenceExitTick);
+  assert.deepEqual(replayState.player, referenceState.player);
+  assert.deepEqual(replayState.hideSpots, referenceState.hideSpots);
+  return {
+    exitTick: referenceExitTick,
+    disturbance: referenceState.hideSpots[spot.id].disturbanceLevel,
+  };
+}
+
+test("quick and careful ghost inputs reproduce their distinct hide-exit timing", () => {
+  const quick = replayStyledHideExit("quick");
+  const careful = replayStyledHideExit("careful");
+  assert.ok(quick.exitTick < careful.exitTick);
+  assert.equal(quick.disturbance, 3);
+  assert.equal(careful.disturbance, 2);
 });
 
 test("quantized replay stays deterministic inside the 0.1-cell personal ghost budget", () => {
