@@ -260,3 +260,32 @@ test("the built artifact ships one canonical Basis transcoder without stale prel
   assert.match(gameSource, /\/basis\/basis_transcoder\.wasm/u);
   assert.match(gameSource, /\/basis\/basis_transcoder\.js/u);
 });
+
+test("the SSR game chunk never evaluates the browser-only KTX2 URL bootstrap", async () => {
+  const serverAssets = path.join(ROOT, "dist", "server", "ssr", "assets");
+  const assets = await readdir(serverAssets);
+  const gameChunk = assets.find((filename) => /^chasing-game-.+\.js$/u.test(filename));
+  const ktx2Chunk = assets.find((filename) => /^KTX2Loader-.+\.js$/u.test(filename));
+  assert.ok(gameChunk, "the SSR game chunk is missing");
+  assert.ok(ktx2Chunk, "the browser-only SSR KTX2 split chunk is missing");
+
+  const [gameSource, ktx2Source] = await Promise.all([
+    readFile(path.join(serverAssets, gameChunk), "utf8"),
+    readFile(path.join(serverAssets, ktx2Chunk), "utf8"),
+  ]);
+  assert.doesNotMatch(
+    gameSource,
+    /WASM_BIN_URL|new URL\("\.\.\/libs\/basis\/basis_transcoder/u,
+    "Cloudflare SSR must not evaluate KTX2Loader's import.meta.url bootstrap",
+  );
+  assert.match(
+    gameSource,
+    /typeof window === "undefined" \|\| typeof document === "undefined".+import\("\.\/KTX2Loader-/u,
+    "the KTX2 split chunk must start only during browser module evaluation",
+  );
+  assert.match(
+    ktx2Source,
+    /new URL\("\.\.\/libs\/basis\/basis_transcoder\.wasm", import\.meta\.url\)/u,
+    "the browser split chunk must retain Three.js's canonical KTX2 bootstrap",
+  );
+});

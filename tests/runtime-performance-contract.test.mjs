@@ -101,12 +101,17 @@ test("scene loading is cancellable, retryable, concurrency-limited and KTX2 awar
   assert.match(SOURCE, /loader\.parseAsync\(bytes/);
   assert.match(
     SOURCE,
-    /^import \{ KTX2Loader \} from "three\/examples\/jsm\/loaders\/KTX2Loader\.js";[\s\S]*new KTX2Loader\(loadingManager\)[\s\S]*setTranscoderPath\("\/basis\/"\)[\s\S]*detectSupport\(renderer\)/m,
+    /^import type \{ KTX2Loader \} from "three\/examples\/jsm\/loaders\/KTX2Loader\.js";[\s\S]*typeof window === "undefined"[\s\S]*import\("three\/examples\/jsm\/loaders\/KTX2Loader\.js"\)[\s\S]*eagerKtx2LoaderModulePromise[\s\S]*new BrowserKTX2Loader\(loadingManager\)[\s\S]*setTranscoderPath\("\/basis\/"\)[\s\S]*detectSupport\(renderer\)/m,
   );
-  assert.doesNotMatch(
+  assert.equal(
+    SOURCE.match(/import\("three\/examples\/jsm\/loaders\/KTX2Loader\.js"\)/gu)?.length,
+    1,
+    "KTX2 support must use one eager browser-only module request",
+  );
+  assert.match(
     SOURCE,
-    /import\("three\/examples\/jsm\/loaders\/KTX2Loader\.js"\)/,
-    "KTX2 support must not add a post-bootstrap dynamic-import waterfall",
+    /const eagerKtx2LoaderModulePromise[\s\S]*const getGlbLoader = \(\) =>[\s\S]*gltfLoaderPromise = eagerKtx2LoaderModulePromise/u,
+    "KTX2 module loading must start during browser module evaluation, before scene bootstrap",
   );
   assert.match(SOURCE, /const playableTextures = collectObjectTextures\([\s\S]*disposeObjectResources\([\s\S]*playableTextures/);
   assert.match(SOURCE, /sceneAssets\.abort\(new DOMException\("Scene disposed"/);

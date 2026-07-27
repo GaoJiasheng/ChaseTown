@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+import type { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -349,6 +349,22 @@ import {
   type ThemeObjectiveDefinition,
 } from "./game/theme-objectives.ts";
 import { combineScreenMove, sampleVirtualStick } from "./game/virtual-stick.ts";
+
+// KTX2Loader constructs fallback URLs from import.meta.url as soon as its
+// module evaluates. Cloudflare's bundled SSR worker does not expose a valid
+// module URL there, even though the loader is browser-only, so a static import
+// crashes the production document request before React renders. Begin the
+// browser import at client module evaluation (not after bootstrap/model load)
+// and keep the server branch inert.
+const eagerKtx2LoaderModulePromise = (
+  typeof window === "undefined" || typeof document === "undefined"
+)
+  ? null
+  : import("three/examples/jsm/loaders/KTX2Loader.js");
+// Retain the original rejecting promise for the scene loader while attaching
+// an immediate observer so an early network failure cannot become an unhandled
+// rejection before the renderer asks for the module.
+void eagerKtx2LoaderModulePromise?.catch(() => undefined);
 
 type ActorName = "kid" | "villain" | "police";
 type StructureAssetName = keyof typeof STRUCTURE_ASSETS;
@@ -6136,10 +6152,15 @@ export function ChasingGame() {
     };
     const getGlbLoader = () => {
       if (gltfLoaderPromise) return gltfLoaderPromise;
-      gltfLoaderPromise = Promise.resolve()
-        .then(() => {
+      if (!eagerKtx2LoaderModulePromise) {
+        return Promise.reject(
+          new Error("KTX2Loader is available only in the browser renderer"),
+        );
+      }
+      gltfLoaderPromise = eagerKtx2LoaderModulePromise
+        .then(({ KTX2Loader: BrowserKTX2Loader }) => {
           if (disposed) throw new DOMException("Scene disposed", "AbortError");
-          ktx2Loader = new KTX2Loader(loadingManager)
+          ktx2Loader = new BrowserKTX2Loader(loadingManager)
             .setTranscoderPath("/basis/")
             .detectSupport(renderer);
           const gltfLoader = new GLTFLoader(loadingManager);
