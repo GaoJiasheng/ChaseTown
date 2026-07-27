@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { access, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { gunzipSync } from "node:zlib";
 
 import {
   DEPLOYMENT_SOURCE_ASSET_EXCLUDES,
@@ -31,6 +33,20 @@ async function treeBytes(directory) {
     total += entry.isDirectory() ? await treeBytes(target) : (await stat(target)).size;
   }
   return total;
+}
+
+async function treeFiles(directory) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...await treeFiles(target));
+    else if (entry.isFile()) files.push(target);
+  }
+  return files.sort();
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
 }
 
 function publicPathForHref(href) {
@@ -94,6 +110,9 @@ test("built runtime manifest and deployment size match the release contract", as
   assert.equal(manifest.releaseIntegrityVersion, 1);
   assert.equal(manifest.maximumClientBytes, MAX_DEPLOYED_CLIENT_BYTES);
   assert.deepEqual(manifest.firstCampaignPreloads, FIRST_CAMPAIGN_PRELOAD_ASSETS);
+  assert.equal(manifest.runtimeGlbTransports.formatVersion, 1);
+  assert.equal(manifest.runtimeGlbTransports.encoding, "gzip-envelope");
+  assert.ok(manifest.runtimeGlbTransports.assets.length > 0);
   assert.equal(
     manifest.firstPlayableBudget.maximumCriticalBytes,
     MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES,
@@ -124,6 +143,46 @@ test("built runtime manifest and deployment size match the release contract", as
   );
 });
 
+test("every deployed GLB is a byte-exact audited gzip transport envelope", async () => {
+  const manifest = JSON.parse(
+    await readFile(path.join(CLIENT_OUTPUT, "runtime-asset-manifest.json"), "utf8"),
+  );
+  const records = manifest.runtimeGlbTransports.assets;
+  const deployedGlbs = (await treeFiles(path.join(CLIENT_OUTPUT, "models")))
+    .filter((pathname) => pathname.endsWith(".glb"))
+    .map((pathname) => (
+      `/${path.relative(CLIENT_OUTPUT, pathname).split(path.sep).join("/")}`
+    ));
+  assert.deepEqual(
+    records.map(({ path: publicPath }) => publicPath),
+    deployedGlbs,
+    "the transport audit must cover every deployed GLB exactly once",
+  );
+
+  for (const record of records) {
+    assert.equal(record.encoding, "gzip-envelope");
+    const relativePath = record.path.replace(/^\/+/u, "");
+    const encoded = await readFile(path.join(CLIENT_OUTPUT, relativePath));
+    assert.equal(encoded[0], 0x1f);
+    assert.equal(encoded[1], 0x8b);
+    assert.equal(record.encodedBytes, encoded.byteLength);
+    assert.equal(record.encodedSha256, sha256(encoded));
+
+    const decoded = gunzipSync(encoded);
+    const source = await readFile(path.join(PUBLIC, relativePath));
+    assert.deepEqual(
+      decoded,
+      source,
+      `${record.path} does not decode to its source GLB byte-for-byte`,
+    );
+    assert.equal(record.decodedBytes, decoded.byteLength);
+    assert.equal(record.decodedSha256, sha256(decoded));
+    assert.equal(decoded.readUInt32LE(0), 0x46546c67);
+    assert.equal(decoded.readUInt32LE(4), 2);
+    assert.equal(decoded.readUInt32LE(8), decoded.byteLength);
+  }
+});
+
 test("first-playable accounting includes every preload plus HTML, JS, CSS, WASM and models", async () => {
   const manifest = JSON.parse(
     await readFile(path.join(CLIENT_OUTPUT, "runtime-asset-manifest.json"), "utf8"),
@@ -142,6 +201,13 @@ test("first-playable accounting includes every preload plus HTML, JS, CSS, WASM 
       record.phase,
       preload.blocksFirstPlayable ? "critical" : "eager",
     );
+    if (record.kind === "model") {
+      assert.equal(
+        record.transferEncoding,
+        "gzip-envelope",
+        `${pathname} must be measured by its deployed envelope bytes`,
+      );
+    }
   }
   const mirrorPath = new URL(
     STEALTH_CORNER_MIRROR_PRELOAD,

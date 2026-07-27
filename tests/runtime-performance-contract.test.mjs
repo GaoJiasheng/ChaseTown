@@ -88,6 +88,14 @@ test("runtime quality profiles control real rendering work", () => {
 test("scene loading is cancellable, retryable, concurrency-limited and KTX2 aware", () => {
   assert.match(SOURCE, /createSceneAssetLoader\(\{[\s\S]*maximumConcurrentRequests: 3/);
   assert.match(SOURCE, /sceneAssets\.fetchArrayBuffer\(absoluteUrl/);
+  assert.match(
+    SOURCE,
+    /for \(let decodeAttempt = 1; decodeAttempt <= 2; decodeAttempt \+= 1\)[\s\S]*?cache: decodeAttempt === 1 \? "force-cache" : "reload"/u,
+  );
+  assert.match(
+    SOURCE,
+    /error instanceof AssetLoadError[\s\S]*?error\.code === "ASSET_DECODE"[\s\S]*?decodeAttempt < 2/u,
+  );
   assert.match(SOURCE, /externalAssetUrisFromGlb\(bytes\)[\s\S]*fetchControlledDependency/);
   assert.match(SOURCE, /loadingManager\.setURLModifier/);
   assert.match(SOURCE, /loader\.parseAsync\(bytes/);

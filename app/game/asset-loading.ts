@@ -1,5 +1,7 @@
 export type AssetLoadErrorCode =
   | "ASSET_ABORTED"
+  | "ASSET_DECODE"
+  | "ASSET_DECOMPRESSION_UNSUPPORTED"
   | "ASSET_TIMEOUT"
   | "ASSET_HTTP"
   | "ASSET_NETWORK"
@@ -109,13 +111,13 @@ const MEBIBYTE = 1024 * 1024;
 
 /**
  * Release gate for a cold 10 Mbps / 80 ms connection. The category caps are
- * intentionally additive to the 8 MiB total so one unoptimised asset cannot
+ * intentionally additive to the 6.5 MiB total so one unoptimised asset cannot
  * consume the entire first-playable budget. Navigation and hide-spot retain
  * enough headroom for the authored gate and animated hero locker; the global
  * transfer/time ceilings remain the non-negotiable release gate.
  */
 export const FIRST_PLAYABLE_BUDGET_TARGET: FirstPlayableBudgetTarget = Object.freeze({
-  maximumTransferBytes: 8 * MEBIBYTE,
+  maximumTransferBytes: 6.5 * MEBIBYTE,
   maximumSeconds: 8,
   bandwidthMegabitsPerSecond: 10,
   roundTripMilliseconds: 80,
@@ -268,7 +270,122 @@ export function auditFirstPlayableAssetBudget(
 }
 
 const GLB_MAGIC = 0x46546c67;
+const GLB_VERSION = 2;
+const GLB_HEADER_BYTES = 12;
 const GLB_JSON_CHUNK = 0x4e4f534a;
+const GZIP_ID1 = 0x1f;
+const GZIP_ID2 = 0x8b;
+
+export interface RuntimeGlbTransportDecodeOptions {
+  readonly url?: string;
+  /**
+   * Test seam for the unsupported-browser recovery path. Production callers
+   * should omit this and let feature detection inspect the current runtime.
+   */
+  readonly decompressionStreamAvailable?: boolean;
+}
+
+function runtimeGlbDecodeError(
+  message: string,
+  url: string,
+  cause?: unknown,
+): AssetLoadError {
+  return new AssetLoadError(message, {
+    code: "ASSET_DECODE",
+    url,
+    attempt: 1,
+    retryable: true,
+    cause,
+  });
+}
+
+function assertRuntimeGlbPayload(
+  buffer: ArrayBuffer,
+  url: string,
+): void {
+  if (buffer.byteLength < GLB_HEADER_BYTES) {
+    throw runtimeGlbDecodeError(
+      `Runtime GLB is shorter than its header: ${url}`,
+      url,
+    );
+  }
+  const view = new DataView(buffer);
+  if (view.getUint32(0, true) !== GLB_MAGIC) {
+    throw runtimeGlbDecodeError(
+      `Runtime GLB magic is invalid: ${url}`,
+      url,
+    );
+  }
+  if (view.getUint32(4, true) !== GLB_VERSION) {
+    throw runtimeGlbDecodeError(
+      `Runtime GLB version is not 2: ${url}`,
+      url,
+    );
+  }
+  const declaredLength = view.getUint32(8, true);
+  if (declaredLength !== buffer.byteLength) {
+    throw runtimeGlbDecodeError(
+      `Runtime GLB length mismatch for ${url}: declared `
+      + `${declaredLength}, received ${buffer.byteLength}`,
+      url,
+    );
+  }
+}
+
+/**
+ * Decodes the build-time gzip transport envelope without changing the GLB
+ * bytes handed to Three.js. Development/source GLBs remain identity encoded,
+ * so the same loader accepts both forms and validates both fail-closed.
+ */
+export async function decodeRuntimeGlbTransport(
+  buffer: ArrayBuffer,
+  options: RuntimeGlbTransportDecodeOptions = {},
+): Promise<ArrayBuffer> {
+  const url = options.url ?? "(runtime GLB)";
+  const bytes = new Uint8Array(buffer);
+  const gzipEnvelope = bytes.byteLength >= 2
+    && bytes[0] === GZIP_ID1
+    && bytes[1] === GZIP_ID2;
+  if (!gzipEnvelope) {
+    assertRuntimeGlbPayload(buffer, url);
+    return buffer;
+  }
+
+  const decompressionAvailable =
+    options.decompressionStreamAvailable
+    ?? typeof globalThis.DecompressionStream !== "undefined";
+  if (
+    !decompressionAvailable
+    || typeof globalThis.DecompressionStream === "undefined"
+  ) {
+    throw new AssetLoadError(
+      `This browser cannot decode the compressed runtime GLB: ${url}`,
+      {
+        code: "ASSET_DECOMPRESSION_UNSUPPORTED",
+        url,
+        attempt: 1,
+        retryable: false,
+      },
+    );
+  }
+
+  let decoded: ArrayBuffer;
+  try {
+    const compressed = new Blob([buffer]).stream();
+    const decompressed = compressed.pipeThrough(
+      new globalThis.DecompressionStream("gzip"),
+    );
+    decoded = await new Response(decompressed).arrayBuffer();
+  } catch (error) {
+    throw runtimeGlbDecodeError(
+      `Runtime GLB gzip envelope could not be decoded: ${url}`,
+      url,
+      error,
+    );
+  }
+  assertRuntimeGlbPayload(decoded, url);
+  return decoded;
+}
 
 /**
  * Returns every non-data URI referenced by a binary glTF. Callers can prefetch
@@ -463,6 +580,12 @@ export function assetLoadRecoveryMessage(error: unknown, online = true): string 
   }
   if (error.code === "ASSET_TIMEOUT") {
     return "素材载入超时，可在当前关卡原地重试。";
+  }
+  if (error.code === "ASSET_DECOMPRESSION_UNSUPPORTED") {
+    return "当前浏览器不支持压缩 3D 素材解码。请升级或更换浏览器后，在当前关卡原地重试。";
+  }
+  if (error.code === "ASSET_DECODE") {
+    return "3D 素材校验失败，可能是缓存或传输损坏；刷新后可在当前关卡原地重试。";
   }
   if (error.code === "ASSET_NETWORK" || error.code === "ASSET_RESPONSE") {
     return "素材网络传输中断，可在当前关卡原地重试。";

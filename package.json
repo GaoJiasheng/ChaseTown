@@ -24,6 +24,7 @@
     "qa:active-mechanic": "node scripts/active-mechanic-qa.mjs",
     "qa:character-bootstrap": "node scripts/character-bootstrap-visual-qa.mjs",
     "qa:deep-gameplay": "node scripts/deep-gameplay-visual-qa.mjs",
+    "qa:frame-stability": "node scripts/frame-stability-visual-qa.mjs",
     "qa:hospital-gold": "node scripts/hospital-gold-visual-qa.mjs",
     "qa:library-gold": "node scripts/library-gold-visual-qa.mjs",
     "qa:locker-maze": "node scripts/locker-maze-qa.mjs",

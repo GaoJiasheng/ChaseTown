@@ -10,17 +10,17 @@ export const metadata: Metadata = {
     title: "Chasing · 3D 主题逃生战役",
     description: "校园、医院、消防站、工厂四大主题；切断追捕者视线，藏好，再冲向出口。",
     images: [{
-      url: "/chasing-social-card-v2.jpg",
+      url: "/chasing-social-card-v3.jpg",
       width: 1200,
       height: 630,
-      alt: "玩家穿过精细建模的校园迷宫，利用打开的储物柜避开正在搜索的追捕者",
+      alt: "玩家从精细建模的午夜医院储物柜中探身，避开正在最后目击点巡视的追捕者",
     }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Chasing · 3D 主题逃生战役",
     description: "10 关四主题 3D 潜逃：断开视线、藏好、再冲向出口。",
-    images: ["/chasing-social-card-v2.jpg"],
+    images: ["/chasing-social-card-v3.jpg"],
   },
 };
 

@@ -11,6 +11,7 @@ import {
   assertFirstPlayableBudget,
   createFirstPlayableBudget,
   deduplicateBasisTranscoder,
+  encodeRuntimeGlbTransports,
 } from "./release-integrity";
 
 async function exists(path: string): Promise<boolean> {
@@ -89,6 +90,9 @@ export function sites(): Plugin {
       }
 
       await deduplicateBasisTranscoder(clientOutputDirectory, serverEntry);
+      const runtimeGlbTransports = await encodeRuntimeGlbTransports(
+        clientOutputDirectory,
+      );
       const firstPlayableBudget = await createFirstPlayableBudget(
         clientOutputDirectory,
         FIRST_CAMPAIGN_PRELOAD_ASSETS,
@@ -102,6 +106,11 @@ export function sites(): Plugin {
           maximumClientBytes: MAX_DEPLOYED_CLIENT_BYTES,
           firstCampaignPreloads: FIRST_CAMPAIGN_PRELOAD_ASSETS,
           firstPlayableBudget,
+          runtimeGlbTransports: {
+            formatVersion: 1,
+            encoding: "gzip-envelope",
+            assets: runtimeGlbTransports,
+          },
           basisTranscoder: {
             canonicalAssets: [
               "/basis/basis_transcoder.js",

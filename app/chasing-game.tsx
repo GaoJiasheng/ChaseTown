@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
@@ -22,10 +22,12 @@ import {
   soundPanForWorldPoints,
 } from "./game/audio/immersive-soundscape.ts";
 import {
+  AssetLoadError,
   assetLoadRecoveryMessage,
   auditFirstPlayableAssetBudget,
   createQaAssetFaultInjector,
   createSceneAssetLoader,
+  decodeRuntimeGlbTransport,
   externalAssetUrisFromGlb,
   type AssetBudgetManifestEntry,
   type FirstPlayableAssetCategory,
@@ -150,6 +152,23 @@ import {
   sampleMechanicWorldFeedback,
 } from "./game/environment-composition.ts";
 import {
+  fixedBearingCameraPolicyForTheme,
+  selectNarrativeRoomAnchors,
+} from "./game/hospital-cinematic-composition.ts";
+import {
+  HOSPITAL_DRESSING_FOOTPRINTS,
+  hospitalDressingFootprintAt,
+  planHospitalDressingLayout,
+} from "./game/hospital-dressing-layout.ts";
+import {
+  advanceStableLightHandoff,
+  sanitizeAuthoredLightIntensity,
+  selectStableLightBudget,
+  snapDirectionalShadowAnchor,
+  steadyLightCapacityForPhysicalCapacity,
+  type StableLightHandoffTransition,
+} from "./game/lighting-stability.ts";
+import {
   CERTIFIED_REMIX_MISSION_VERSION,
   certifiedRemixContractsForLevel,
   remixRecordStorageKey,
@@ -202,6 +221,14 @@ import {
   type HospitalMissionPlanId,
   type HospitalMissionState,
 } from "./game/hospital-branching-mission.ts";
+import {
+  LAST_RUN_SETUP_VERSION,
+  canGoBackPreRunFlow,
+  createPreRunFlowState,
+  loadLastRunSetup,
+  preRunFlowReducer,
+  saveLastRunSetup,
+} from "./game/pre-run-flow.ts";
 import {
   LIBRARY_PORTABLE_DECOY_DEFINITION,
   acknowledgePortableDecoySound,
@@ -2897,9 +2924,19 @@ export function ChasingGame() {
   const pausedRef = useRef(false);
   const resumeButton = useRef<HTMLButtonElement>(null);
   const resultPrimaryButton = useRef<HTMLButtonElement>(null);
+  const preRunPrimaryButton = useRef<HTMLButtonElement>(null);
+  const preRunStepTitle = useRef<HTMLHeadingElement>(null);
+  const preRunCard = useRef<HTMLDivElement>(null);
   const pauseReturnFocus = useRef<HTMLElement | null>(null);
   const commands = useRef<GameCommands>(NOOP_COMMANDS);
   const qaAssetFaultInjector = useRef<QaAssetFaultInjector | null>(null);
+  const [preRunFlow, dispatchPreRunFlow] = useReducer(
+    preRunFlowReducer,
+    undefined,
+    () => createPreRunFlowState(),
+  );
+  const preRunAdvanceActionRef = useRef<() => void>(() => {});
+  const preRunBackActionRef = useRef<() => void>(() => {});
   const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
   const [selectedRemixVariant, setSelectedRemixVariant] = useState<0 | 1 | 2 | null>(null);
   const [selectedLibraryPlan, setSelectedLibraryPlan] =
@@ -3011,9 +3048,16 @@ export function ChasingGame() {
     [campaignLevel],
   );
   const gameplayConfig = useMemo(
-    () => preferences.ruleset === "assisted"
-      ? { ...baseGameplayConfig, ...assistedGameplayConfig(baseGameplayConfig) }
-      : baseGameplayConfig,
+    () => {
+      if (preferences.ruleset !== "assisted") return baseGameplayConfig;
+      // The simulation merges these overrides over its complete default
+      // config. Omit absent Assisted keys instead of spreading `undefined`,
+      // which would otherwise erase required defaults during the merge.
+      return Object.freeze(Object.fromEntries(
+        Object.entries(assistedGameplayConfig(baseGameplayConfig))
+          .filter(([, value]) => value !== undefined),
+      ));
+    },
     [baseGameplayConfig, preferences.ruleset],
   );
   const hideGuidancePolicy = useMemo(() => getCampaignHideGuidancePolicy(campaignLevel), [campaignLevel]);
@@ -3163,20 +3207,47 @@ export function ChasingGame() {
 
   useEffect(() => {
     let active = true;
+    let restoredProgress = createCampaignProgress();
     try {
       const stored = JSON.parse(localStorage.getItem(CAMPAIGN_PROGRESS_KEY) ?? "null") as unknown;
-      if (!stored) return;
-      const sanitized = sanitizeCampaignProgress(
-        stored,
-        CAMPAIGN_LEVELS.map((level) => level.id),
-        [
-          ...CAMPAIGN_LEVELS.map((level) => level.id),
-          ...LIBRARY_G2_RECORD_IDS,
-          ...HOSPITAL_G2_RECORD_IDS,
-        ],
-      );
+      if (stored) {
+        restoredProgress = sanitizeCampaignProgress(
+          stored,
+          CAMPAIGN_LEVELS.map((level) => level.id),
+          [
+            ...CAMPAIGN_LEVELS.map((level) => level.id),
+            ...LIBRARY_G2_RECORD_IDS,
+            ...HOSPITAL_G2_RECORD_IDS,
+          ],
+        );
+      }
+      const restoredSetup = loadLastRunSetup(localStorage, {
+        levelIds: CAMPAIGN_LEVELS.map((level) => level.id),
+        progress: restoredProgress,
+      });
       queueMicrotask(() => {
-        if (active) setCampaignProgress(sanitized);
+        if (!active) return;
+        setCampaignProgress(restoredProgress);
+        if (!restoredSetup) return;
+        const restoredLevelIndex = CAMPAIGN_LEVELS.findIndex(
+          (level) => level.id === restoredSetup.levelId,
+        );
+        if (restoredLevelIndex < 0) return;
+        setSelectedLevelIndex(restoredLevelIndex);
+        setSelectedRemixVariant(restoredSetup.remixVariant);
+        setSelectedLibraryPlan(restoredSetup.libraryPlanId);
+        setSelectedHospitalPlan(restoredSetup.hospitalPlanId);
+        setSelectedHospitalLoadout(restoredSetup.hospitalToolIds);
+        setPreferences((current) => ({
+          ...current,
+          ruleset: restoredSetup.ruleset,
+          version: current.version,
+        }));
+        // A fully validated setup can resume at the final confirmation without
+        // silently launching. Two explicit reducer steps preserve the same
+        // non-skippable state machine used by pointer and keyboard input.
+        dispatchPreRunFlow({ type: "next" });
+        dispatchPreRunFlow({ type: "next" });
       });
     } catch {
       // A corrupt or unavailable store must never block the first chapter.
@@ -3208,6 +3279,67 @@ export function ChasingGame() {
     updateTouchQuietMode(false);
     commands.current.begin();
   }, [updateTouchQuietMode]);
+  const beginPreparedRun = useCallback(() => {
+    const unlockedThrough = getCampaignUnlockedThrough(
+      campaignProgressRef.current,
+      preferences.ruleset,
+    );
+    if (selectedLevelIndex + 1 > unlockedThrough) {
+      // Rulesets own independent unlock lanes. A player may switch from an
+      // advanced Assisted chapter back to Standard during strategy setup; the
+      // final authority must reject that stale selection instead of starting
+      // or recording an ineligible run.
+      dispatchPreRunFlow({ type: "reset" });
+      return;
+    }
+    saveLastRunSetup(localStorage, {
+      version: LAST_RUN_SETUP_VERSION,
+      levelId: sourceCampaignLevel.id,
+      remixVariant: selectedRemixVariant,
+      ruleset: preferences.ruleset,
+      libraryPlanId: selectedLibraryPlan,
+      hospitalPlanId: selectedHospitalPlan,
+      hospitalToolIds: hospitalLoadoutSelection.selectedToolIds,
+    }, {
+      levelIds: CAMPAIGN_LEVELS.map((level) => level.id),
+      progress: campaignProgressRef.current,
+    });
+    begin();
+  }, [
+    begin,
+    hospitalLoadoutSelection.selectedToolIds,
+    preferences.ruleset,
+    selectedHospitalPlan,
+    selectedLibraryPlan,
+    selectedLevelIndex,
+    selectedRemixVariant,
+    sourceCampaignLevel.id,
+  ]);
+  const advancePreRunFlow = useCallback(() => {
+    const unlockedThrough = getCampaignUnlockedThrough(
+      campaignProgressRef.current,
+      preferences.ruleset,
+    );
+    if (selectedLevelIndex + 1 > unlockedThrough) return;
+    if (preRunFlow.step === "briefing") {
+      beginPreparedRun();
+      return;
+    }
+    dispatchPreRunFlow({ type: "next" });
+  }, [
+    beginPreparedRun,
+    preferences.ruleset,
+    preRunFlow.step,
+    selectedLevelIndex,
+  ]);
+  const goBackPreRunFlow = useCallback(() => {
+    if (!canGoBackPreRunFlow(preRunFlow)) return;
+    dispatchPreRunFlow({ type: "back" });
+  }, [preRunFlow]);
+  useEffect(() => {
+    preRunAdvanceActionRef.current = advancePreRunFlow;
+    preRunBackActionRef.current = goBackPreRunFlow;
+  }, [advancePreRunFlow, goBackPreRunFlow]);
   const restart = useCallback(() => {
     updateTouchQuietMode(false);
     commands.current.restart();
@@ -3295,12 +3427,13 @@ export function ChasingGame() {
     // without changing selectedLevelIndex would leave the overlay stuck,
     // because the scene effect correctly has nothing to rebuild.
     if (index === selectedLevelIndex) return;
+    if (phase !== "ready") dispatchPreRunFlow({ type: "reset" });
     setLoading(true);
     setLoadError("");
     setLoadProgress({ done: 0, total: BOOTSTRAP_ASSET_COUNT, message: "正在切换主题关卡与高精度环境…" });
     setSelectedRemixVariant(null);
     setSelectedLevelIndex(index);
-  }, [campaignProgress, preferences.ruleset, selectedLevelIndex]);
+  }, [campaignProgress, phase, preferences.ruleset, selectedLevelIndex]);
 
   const chooseRemixVariant = useCallback((variant: 0 | 1 | 2 | null) => {
     if (variant === selectedRemixVariant) return;
@@ -3340,6 +3473,8 @@ export function ChasingGame() {
       (plan) => plan.id !== selectedLibraryPlan,
     );
     if (!nextPlan) return;
+    dispatchPreRunFlow({ type: "reset" });
+    dispatchPreRunFlow({ type: "next" });
     setResultVisible(true);
     setPhase("ready");
     setLoading(true);
@@ -3378,6 +3513,8 @@ export function ChasingGame() {
       (plan) => plan.id !== selectedHospitalPlan,
     );
     if (!nextPlan) return;
+    dispatchPreRunFlow({ type: "reset" });
+    dispatchPreRunFlow({ type: "next" });
     setResultVisible(true);
     setPhase("ready");
     setLoading(true);
@@ -3464,14 +3601,51 @@ export function ChasingGame() {
   }, [loading, phase, resultVisible]);
 
   useEffect(() => {
+    const readyDialogVisible = !loading && resultVisible && phase === "ready";
+    if (!readyDialogVisible) return;
+    const frame = requestAnimationFrame(() => {
+      preRunCard.current
+        ?.querySelector<HTMLElement>(".pre-run-body")
+        ?.scrollTo({ top: 0 });
+      preRunStepTitle.current?.focus({ preventScroll: true });
+    });
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const card = preRunCard.current;
+      if (!card) return;
+      const focusable = [...card.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), details > summary, [tabindex]:not([tabindex='-1'])",
+      )];
+      if (!focusable.length) return;
+      const currentIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      const nextIndex = event.shiftKey
+        ? currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1
+        : currentIndex < 0 || currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1;
+      event.preventDefault();
+      focusable[nextIndex].focus();
+    };
+    document.addEventListener("keydown", trapFocus);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", trapFocus);
+    };
+  }, [loading, phase, preRunFlow.step, resultVisible]);
+
+  useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       const target = event.target instanceof Element ? event.target : null;
-      const focusedControl = Boolean(target?.closest("button, input, select, textarea, a[href], [contenteditable='true']"));
+      const focusedControl = Boolean(target?.closest(
+        "button, summary, input, select, textarea, a[href], [contenteditable='true']",
+      ));
       if (shouldIgnoreFocusedControlKey(key, focusedControl)) return;
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
       if (key === "escape") {
         event.preventDefault();
+        if (keyboardPresentationRef.current.phase === "ready") {
+          preRunBackActionRef.current();
+          return;
+        }
         commands.current.togglePause();
         return;
       }
@@ -3482,7 +3656,10 @@ export function ChasingGame() {
       }
       keyboardKeys.current.add(key);
       if (event.repeat) return;
-      if (key === "r") commands.current.restart();
+      if (
+        key === "r"
+        && keyboardPresentationRef.current.phase !== "ready"
+      ) commands.current.restart();
       else if (key === "m") commands.current.toggleMute();
       else if (key === "0") commands.current.resetZoom();
       else if (key === "-" || key === "_") commands.current.adjustZoom(1.12);
@@ -3524,7 +3701,10 @@ export function ChasingGame() {
         && keyboardPresentationRef.current.phase !== "playing"
       ) {
         const keyboardPresentation = keyboardPresentationRef.current;
-        if (
+        if (keyboardPresentation.phase === "ready") {
+          preRunAdvanceActionRef.current();
+        }
+        else if (
           keyboardPresentation.phase === "won"
           && keyboardPresentation.selectedLevelIndex < CAMPAIGN_LEVELS.length - 1
         ) {
@@ -3707,6 +3887,12 @@ export function ChasingGame() {
     );
     const hideDisturbanceEmissive = new THREE.Color(0xffa85c);
     const environmentComposition = buildEnvironmentCompositionPlan(campaignLevel);
+    const traversalCameraPolicy = fixedBearingCameraPolicyForTheme(
+      campaignLevel.campaign.theme,
+    );
+    let hospitalNarrativeComposition: ReturnType<
+      typeof selectNarrativeRoomAnchors
+    > = Object.freeze([]);
     const missionDefinition = themeMissionDefinition(campaignLevel.campaign.theme);
     const legacyMissionPlacementPlan = planThemeMissionPlacements(
       campaignLevel,
@@ -4118,7 +4304,18 @@ export function ChasingGame() {
     const loadedAssetIds = new Set<string>();
     const loadedAssetRoots = new Set<THREE.Object3D>();
     const placedAssetIds = new Set<string>();
-    const performanceLights: Array<{ light: THREE.Light; priority: number }> = [];
+    const performanceLights: Array<{
+      readonly id: string;
+      readonly light: THREE.Light;
+      readonly priority: number;
+      sourceIntensity: number;
+      appliedIntensity: number;
+      gain: number;
+    }> = [];
+    let performanceLightRegistrationIndex = 0;
+    let performanceLightBudgetInitialized = false;
+    let performanceLightHandoff: StableLightHandoffTransition | null = null;
+    const selectedPerformanceLightIds = new Set<string>();
     let exitMissionLight: THREE.SpotLight | null = null;
     const nonCriticalShadowCasters: Array<{ object: THREE.Object3D; castShadow: boolean }> = [];
     let requestPoliceAsset: (() => Promise<void>) | null = null;
@@ -4313,7 +4510,12 @@ export function ChasingGame() {
       campaignLevel.campaign.theme === "factory" ? 0x91dced : 0xb9d7ff,
       atmosphere.keyIntensity,
     );
-    moon.position.set(14, 28, 18);
+    const moonFollowOffset = Object.freeze({ x: 14, y: 28, z: 18 });
+    moon.position.set(
+      moonFollowOffset.x,
+      moonFollowOffset.y,
+      moonFollowOffset.z,
+    );
     moon.castShadow = true;
     moon.target.position.copy(cameraFocus);
     moon.layers.enable(1);
@@ -4389,11 +4591,38 @@ export function ChasingGame() {
 
     const registerPerformanceLight = (light: THREE.Light, priority: number) => {
       light.layers.enable(1);
-      performanceLights.push({ light, priority });
+      performanceLightRegistrationIndex += 1;
+      const sourceIntensity = sanitizeAuthoredLightIntensity(light.intensity);
+      light.intensity = sourceIntensity;
+      performanceLights.push({
+        id: `${light.name || light.type}-${performanceLightRegistrationIndex}`,
+        light,
+        priority,
+        sourceIntensity,
+        appliedIntensity: sourceIntensity,
+        gain: performanceLightBudgetInitialized ? 0 : 1,
+      });
+    };
+    const authorPerformanceLightIntensity = (
+      light: THREE.Light,
+      intensity: number,
+    ) => {
+      const sourceIntensity = sanitizeAuthoredLightIntensity(intensity);
+      light.intensity = sourceIntensity;
+      const entry = performanceLights.find((candidate) => candidate.light === light);
+      if (entry) entry.sourceIntensity = sourceIntensity;
     };
     const unregisterPerformanceLight = (light: THREE.Light) => {
       const index = performanceLights.findIndex((entry) => entry.light === light);
-      if (index >= 0) performanceLights.splice(index, 1);
+      if (index >= 0) {
+        const id = performanceLights[index].id;
+        selectedPerformanceLightIds.delete(id);
+        if (
+          performanceLightHandoff?.outgoingId === id
+          || performanceLightHandoff?.incomingId === id
+        ) performanceLightHandoff = null;
+        performanceLights.splice(index, 1);
+      }
       light.intensity = 0;
       light.visible = false;
     };
@@ -4818,7 +5047,7 @@ export function ChasingGame() {
           view.settled = true;
           view.beacon.visible = false;
           (view.beacon.material as THREE.SpriteMaterial).opacity = 0;
-          view.light.intensity = 0;
+          authorPerformanceLightIntensity(view.light, 0);
           if (view.lightRegistered) {
             unregisterPerformanceLight(view.light);
             view.lightRegistered = false;
@@ -4881,7 +5110,10 @@ export function ChasingGame() {
           ? THREE.MathUtils.clamp(0.42 + pulse * 0.34, 0, 0.82)
           : 0;
         view.beacon.visible = active;
-        view.light.intensity = active ? 1.6 + pulse * 1.9 : 0;
+        authorPerformanceLightIntensity(
+          view.light,
+          active ? 1.6 + pulse * 1.9 : 0,
+        );
         if (!active && view.lightRegistered) {
           unregisterPerformanceLight(view.light);
           view.lightRegistered = false;
@@ -5465,7 +5697,9 @@ export function ChasingGame() {
         const age = Math.max(0, tick - view.createdAtTick);
         const fade = THREE.MathUtils.clamp(1 - age / lifetime, 0, 1);
         view.root.visible = fade > 0.04;
-        if (view.light) view.light.intensity = 0.2 + fade * 0.72;
+        if (view.light) {
+          authorPerformanceLightIntensity(view.light, 0.2 + fade * 0.72);
+        }
       }
       for (const view of [...stealthToolWorldViews.values()]) {
         if (tick >= view.expiresAtTick) {
@@ -5488,7 +5722,7 @@ export function ChasingGame() {
         view.root.rotation.y += (1 - eased) * 0.16;
         if (view.light) {
           const pulse = 0.5 + Math.sin(tick * 0.09 + view.createdAtTick) * 0.5;
-          view.light.intensity = 0.7 + pulse * 1.25;
+          authorPerformanceLightIntensity(view.light, 0.7 + pulse * 1.25);
         }
       }
     };
@@ -5522,17 +5756,23 @@ export function ChasingGame() {
               ? campaignLevel.campaign.palette.emissive
               : 0x51606a,
         );
-        view.light.intensity = isCompleted
-          ? 0.22
-          : isAvailable && nearby
-            ? distance <= 1.35 ? 3.4 + pulse * 0.6 : 1.1 + pulse * 0.35
-            : 0.08;
+        authorPerformanceLightIntensity(
+          view.light,
+          isCompleted
+            ? 0.22
+            : isAvailable && nearby
+              ? distance <= 1.35 ? 3.4 + pulse * 0.6 : 1.1 + pulse * 0.35
+              : 0.08,
+        );
         const scale = isAvailable && distance <= 1.35 ? 1 + pulse * 0.015 : 1;
         view.root.scale.copy(view.baseScale).multiplyScalar(scale);
       }
       if (exitMissionLight) {
         exitMissionLight.color.set(missionState.exitUnlocked ? 0x64f0a7 : 0xff5b62);
-        exitMissionLight.intensity = missionState.exitUnlocked ? 18 : 6.5;
+        authorPerformanceLightIntensity(
+          exitMissionLight,
+          missionState.exitUnlocked ? 18 : 6.5,
+        );
         exitMissionLight.angle = missionState.exitUnlocked ? Math.PI / 5.4 : Math.PI / 7.2;
       }
     };
@@ -5571,7 +5811,7 @@ export function ChasingGame() {
         worldFeedback.lightIntensity,
         promptVisible ? 1.5 : sample.phase === "cooldown" ? 0.28 : 0.58,
       );
-      view.light.intensity = Math.max(0, phaseIntensity);
+      authorPerformanceLightIntensity(view.light, phaseIntensity);
       view.light.color.set(
         sample.phase === "warning"
           ? 0xffa44d
@@ -5608,32 +5848,89 @@ export function ChasingGame() {
       }
     };
     const lightWorldPosition = new THREE.Vector3();
-    const updatePerformanceLightBudget = (focus: THREE.Vector3) => {
+    const updatePerformanceLightBudget = (
+      focus: THREE.Vector3,
+      deltaSeconds: number,
+    ) => {
       const emergencyPolicy = EMERGENCY_RENDER_POLICIES[emergencyDegradation.level];
-      const active = performanceLights
-        .filter(({ light }) => light.intensity > 1e-4)
-        .map((entry) => ({
-          ...entry,
-          score: entry.priority * 10_000
-            - entry.light.getWorldPosition(lightWorldPosition).distanceToSquared(focus),
-        }))
-        .sort((left, right) => right.score - left.score);
-      const selected = new Set(
-        active
-          .slice(
-            0,
-            Math.max(
-              1,
-              Math.floor(
-                renderQualityProfile.maximumDynamicLights
-                * emergencyPolicy.dynamicLightScale,
-              ),
-            ),
-          )
-          .map(({ light }) => light),
+      const physicalCapacity = Math.max(
+        1,
+        Math.floor(
+          renderQualityProfile.maximumDynamicLights
+          * emergencyPolicy.dynamicLightScale,
+        ),
       );
-      for (const { light } of performanceLights) {
-        light.visible = light.intensity > 1e-4 && selected.has(light);
+      const steadyCapacity = steadyLightCapacityForPhysicalCapacity(
+        physicalCapacity,
+      );
+      // Runtime systems write sourceIntensity through
+      // authorPerformanceLightIntensity. Never infer authorship by comparing
+      // against the budgeted presentation value: an excluded light can already
+      // present at zero when gameplay explicitly switches its authored value
+      // to zero.
+      const desired = selectStableLightBudget(
+        performanceLights.map((entry) => ({
+          id: entry.id,
+          priority: entry.priority,
+          score: -entry.light
+            .getWorldPosition(lightWorldPosition)
+            .distanceToSquared(focus),
+          enabled: entry.sourceIntensity > 1e-4,
+        })),
+        {
+          capacity: steadyCapacity,
+          previousSelectedIds: performanceLightHandoff
+            ? [...selectedPerformanceLightIds].filter(
+                (id) => id !== performanceLightHandoff?.outgoingId,
+              )
+            : selectedPerformanceLightIds,
+          // Scores are negative squared metres. A challenger must be
+          // meaningfully closer before taking a same-priority slot.
+          hysteresisMargin: 4,
+        },
+      );
+
+      if (!performanceLightBudgetInitialized) {
+        selectedPerformanceLightIds.clear();
+        for (const id of desired.selectedIds) selectedPerformanceLightIds.add(id);
+        performanceLightHandoff = null;
+        performanceLightBudgetInitialized = true;
+        for (const entry of performanceLights) {
+          entry.gain = selectedPerformanceLightIds.has(entry.id) ? 1 : 0;
+        }
+      } else {
+        const handoff = advanceStableLightHandoff(
+          performanceLights.map((entry) => ({
+            id: entry.id,
+            gain: entry.gain,
+            sourceIntensity: entry.sourceIntensity,
+            enabled: entry.sourceIntensity > 1e-4,
+          })),
+          {
+            capacity: physicalCapacity,
+            previousSelectedIds: selectedPerformanceLightIds,
+            desiredSelectedIds: desired.selectedIds,
+            previousTransition: performanceLightHandoff,
+            deltaSeconds,
+          },
+        );
+        const gainById = new Map(
+          handoff.lights.map(({ id, gain }) => [id, gain]),
+        );
+        selectedPerformanceLightIds.clear();
+        for (const id of handoff.selectedIds) {
+          selectedPerformanceLightIds.add(id);
+        }
+        performanceLightHandoff = handoff.transition;
+        for (const entry of performanceLights) {
+          entry.gain = gainById.get(entry.id) ?? 0;
+        }
+      }
+
+      for (const entry of performanceLights) {
+        entry.appliedIntensity = entry.sourceIntensity * entry.gain;
+        entry.light.intensity = entry.appliedIntensity;
+        entry.light.visible = entry.appliedIntensity > 1e-4;
       }
     };
     const applyNonCriticalShadowPolicy = () => {
@@ -6573,7 +6870,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             materialState.baseEmissiveIntensity;
         }
         locker.beacon.visible = false;
-        locker.beaconLight.intensity = 0;
+        authorPerformanceLightIntensity(locker.beaconLight, 0);
         locker.root.getObjectByName("DoorPivot")?.quaternion.identity();
       }
     };
@@ -7150,10 +7447,32 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       try {
         const absoluteUrl = new URL(url, location.href);
         const parser = getGlbLoader();
-        const bytes = await sceneAssets.fetchArrayBuffer(absoluteUrl, {
-          requestInit: { cache: "force-cache" },
-        });
-        loadedTransferBytes.set(absoluteUrl.href, bytes.byteLength);
+        let bytes: ArrayBuffer | null = null;
+        for (let decodeAttempt = 1; decodeAttempt <= 2; decodeAttempt += 1) {
+          const transportBytes = await sceneAssets.fetchArrayBuffer(absoluteUrl, {
+            requestInit: {
+              // A failed CRC/GLB integrity check must bypass the potentially
+              // corrupt browser cache on its one automatic re-fetch.
+              cache: decodeAttempt === 1 ? "force-cache" : "reload",
+            },
+          });
+          loadedTransferBytes.set(absoluteUrl.href, transportBytes.byteLength);
+          try {
+            bytes = await decodeRuntimeGlbTransport(transportBytes, {
+              url: absoluteUrl.href,
+            });
+            break;
+          } catch (error) {
+            const shouldRefetch = error instanceof AssetLoadError
+              && error.code === "ASSET_DECODE"
+              && error.retryable
+              && decodeAttempt < 2;
+            if (!shouldRefetch) throw error;
+          }
+        }
+        if (!bytes) {
+          throw new Error(`Runtime GLB decode exhausted without bytes: ${absoluteUrl.href}`);
+        }
         const assetBaseUrl = new URL(".", absoluteUrl);
         const dependencies = externalAssetUrisFromGlb(bytes)
           .map((dependency) => new URL(dependency, assetBaseUrl));
@@ -7392,7 +7711,6 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       document.documentElement.dataset.chasingReady = "true";
       scheduleEnvironmentLighting();
       startScorePrewarm();
-      if (new URLSearchParams(location.search).get("autostart") === "1") beginGame();
 
       // Load and build non-collision dressing only after control is available.
       // The complete group is attached at opacity zero, then eased in together,
@@ -7765,6 +8083,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         depthWrite: false,
         polygonOffset: true,
         polygonOffsetFactor: -2,
+        polygonOffsetUnits: -1,
         side: THREE.DoubleSide,
       });
       const wallContactPlacements = [
@@ -8150,7 +8469,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       registerPerformanceLight(exitLight, 1);
       exitMissionLight = exitLight;
       exitLight.color.set(0xff5b62);
-      exitLight.intensity = 6.5;
+      authorPerformanceLightIntensity(exitLight, 6.5);
       if (libraryGoldEnabled || hospitalGoldEnabled) {
         const branchExitPlacements = hospitalGoldEnabled
           ? HOSPITAL_BRANCHING_MISSION_TOPOLOGY.exitPlacements
@@ -8663,14 +8982,119 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           rotationRadians: anchor.rotation,
         },
       ).supported);
+      const hospitalNarrativeSelections = campaignLevel.campaign.theme === "hospital"
+        ? selectNarrativeRoomAnchors(
+            environmentComposition.landmarkBeats,
+            roomSafeDecorAnchors,
+          )
+        : [];
+      hospitalNarrativeComposition = hospitalNarrativeSelections;
       const interiorNarrativeAnchors = artLayout.landmarkNodes.map((_, index) => (
-        roomSafeDecorAnchors[index]
+        hospitalNarrativeSelections[index]?.anchor
+        ?? roomSafeDecorAnchors[index]
         ?? offsetAnchor(
           exteriorAnchor(campaignLevel.playerStart, 2.8, 0),
           (index - (artLayout.landmarkNodes.length - 1) / 2) * 2.45,
           -1.2,
         )
       ));
+      const narrativeAnchorKeys = new Set(
+        interiorNarrativeAnchors.map(({ point }) => (
+          `${point.x.toFixed(5)}:${point.y.toFixed(5)}`
+        )),
+      );
+      const ambientRoomAnchors = roomSafeDecorAnchors.filter(({ point }) => (
+        !narrativeAnchorKeys.has(`${point.x.toFixed(5)}:${point.y.toFixed(5)}`)
+      ));
+      const hospitalFeaturedInteriorNodes = campaignLevel.campaign.theme === "hospital"
+        ? (PROP_SET_FEATURED_THEME_PROPS[campaignLevel.campaign.atmosphere.propSet]?.interior ?? [])
+        : [];
+      const hospitalSharedInteriorNames = campaignLevel.campaign.theme === "hospital"
+        ? THEME_SHARED_PROPS.hospital
+            .map(([name]) => name)
+            .filter((name) => name !== "trash")
+        : [];
+      const hospitalAmbientClusterTarget = campaignLevel.campaign.theme === "hospital"
+        ? Math.max(
+            1,
+            Math.min(
+              ambientRoomAnchors.length,
+              3 + Math.ceil(campaignLevel.campaign.difficulty / 2),
+            ),
+          )
+        : 0;
+      const hospitalDressingRequests = campaignLevel.campaign.theme === "hospital"
+        ? [
+            ...hospitalFeaturedInteriorNodes.map((node) => {
+              const footprint = HOSPITAL_DRESSING_FOOTPRINTS[
+                node as keyof typeof HOSPITAL_DRESSING_FOOTPRINTS
+              ];
+              if (!footprint) throw new Error(`医院陈设缺少占地定义 ${node}`);
+              return {
+                id: `featured:${node}`,
+                category: "featured" as const,
+                footprint,
+              };
+            }),
+            ...hospitalSharedInteriorNames.map((name) => {
+              const footprint = HOSPITAL_DRESSING_FOOTPRINTS[
+                name as keyof typeof HOSPITAL_DRESSING_FOOTPRINTS
+              ];
+              if (!footprint) throw new Error(`医院共享陈设缺少占地定义 ${name}`);
+              return {
+                id: `shared:${name}`,
+                category: "shared" as const,
+                footprint,
+              };
+            }),
+            ...Array.from({ length: hospitalAmbientClusterTarget }, (_, index) => ({
+              id: `ambient:${index + 1}`,
+              category: "ambient" as const,
+              footprint: HOSPITAL_DRESSING_FOOTPRINTS.ambientCluster,
+            })),
+          ]
+        : [];
+      const hospitalDressingLayout = campaignLevel.campaign.theme === "hospital"
+        ? planHospitalDressingLayout(
+            ambientRoomAnchors,
+            hospitalDressingRequests,
+            interiorNarrativeAnchors.map((anchor, index) => ({
+              id: `narrative:${index + 1}`,
+              category: "narrative" as const,
+              footprint: hospitalDressingFootprintAt(
+                anchor,
+                HOSPITAL_DRESSING_FOOTPRINTS.narrativeCluster,
+              ),
+            })),
+            {
+              supportsFootprint: (footprint) => roomFloorSupportForFootprint(
+                campaignLevel,
+                roomTopology,
+                footprint,
+              ).supported,
+            },
+          )
+        : null;
+      if (hospitalDressingLayout?.unplacedIds.length) {
+        throw new Error(
+          `医院陈设 bay/slot 规划失败：${hospitalDressingLayout.unplacedIds.join("、")}`,
+        );
+      }
+      const hospitalFeaturedRoomAnchors = new Map(
+        (hospitalDressingLayout?.placements ?? [])
+          .filter(({ category }) => category === "featured")
+          .map((placement) => [placement.id.slice("featured:".length), placement.anchor]),
+      );
+      const hospitalSharedRoomAnchors = new Map(
+        (hospitalDressingLayout?.placements ?? [])
+          .filter(({ category }) => category === "shared")
+          .map((placement) => [placement.id.slice("shared:".length), placement.anchor]),
+      );
+      const ambientClusterRoomAnchors = campaignLevel.campaign.theme === "hospital"
+        ? (hospitalDressingLayout?.placements ?? [])
+            .filter(({ category }) => category === "ambient")
+            .map(({ anchor }) => anchor)
+        : ambientRoomAnchors;
       const roomAnchors = roomSafeDecorAnchors.slice(0, Math.min(roomSafeDecorAnchors.length, 9));
       const roomFloorPlacements: Record<"secondary" | "service", ModulePlacement[]> = {
         secondary: [],
@@ -8737,11 +9161,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         addAuthoredCluster([node, genericVariant], anchor.point, anchor.rotation, `landmark-${artLayout.key}-${index + 1}`);
       }
       const ambientClusterCount = Math.min(
-        Math.max(0, roomSafeDecorAnchors.length - artLayout.landmarkNodes.length),
+        ambientClusterRoomAnchors.length,
         3 + Math.ceil(campaignLevel.campaign.difficulty / 2),
       );
       for (let index = 0; index < ambientClusterCount; index += 1) {
-        const anchor = roomSafeDecorAnchors[artLayout.landmarkNodes.length + index];
+        const anchor = ambientClusterRoomAnchors[index];
         const genericVariant = ["DressingClusterB", "DressingClusterA", "DressingClusterC"][
           (index + campaignLevel.campaign.levelNumber) % 3
         ];
@@ -8786,6 +9210,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         depthWrite: false,
         polygonOffset: true,
         polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
         side: THREE.DoubleSide,
       });
       const propContactAnchors = [
@@ -8801,13 +9226,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       );
       propContactAnchors.forEach((anchor, index) => {
         const position = world(anchor.point, campaignLevel);
-        position.y = 0.116;
+        // Keep prop and wall contact decals in deterministic transparent
+        // batches. Their authored footprints overlap near room edges; a
+        // distinct depth bias and render order prevents the renderer from
+        // swapping those translucent layers as the camera moves.
+        position.y = 0.12;
         const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), anchor.rotation);
         propContacts.setMatrixAt(index, new THREE.Matrix4().compose(position, rotation, new THREE.Vector3(1, 1, 1)));
       });
       propContacts.instanceMatrix.needsUpdate = true;
       propContacts.name = `${theme}-prop-contact-shadows`;
-      propContacts.renderOrder = 1;
+      propContacts.renderOrder = 2;
       parent.add(propContacts);
       placedAssetIds.add("runtime:prop-contact-shadows");
       addAuthoredCluster(
@@ -8854,9 +9283,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ? featuredThemeProps.arrival.map(requireThemeSpec)
         : arrivalThemeSpecs.slice(0, 2);
       selectedWallSpecs.forEach((spec, index) => {
-        const narrativeAnchor = interiorNarrativeAnchors[index % Math.max(1, interiorNarrativeAnchors.length)]
+        const hospitalAnchor = campaignLevel.campaign.theme === "hospital"
+          ? hospitalFeaturedRoomAnchors.get(spec.node)
+          : undefined;
+        if (campaignLevel.campaign.theme === "hospital" && !hospitalAnchor) return;
+        const narrativeAnchor = hospitalAnchor
+          ?? interiorNarrativeAnchors[index % Math.max(1, interiorNarrativeAnchors.length)]
           ?? exteriorAnchor(campaignLevel.playerStart, 2.8, -2.2);
-        const anchor = offsetAnchor(narrativeAnchor, index % 2 === 0 ? 1.2 : -1.2);
+        const anchor = hospitalAnchor
+          ? narrativeAnchor
+          : offsetAnchor(narrativeAnchor, index % 2 === 0 ? 1.2 : -1.2);
         addThemeProp(spec, anchor.point, anchor.rotation);
       });
       selectedArrivalSpecs.forEach((spec, index) => {
@@ -9002,7 +9438,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           ? offsetAnchor(arrivalAnchor, -2.35, -0.35)
           : name === "tree"
             ? offsetAnchor(arrivalAnchor, 2.65, -0.75)
-            : offsetAnchor(interiorNarrativeAnchors[0] ?? arrivalAnchor, -1.25);
+            : campaignLevel.campaign.theme === "hospital"
+              ? hospitalSharedRoomAnchors.get(name)
+              : offsetAnchor(interiorNarrativeAnchors[0] ?? arrivalAnchor, -1.25);
+        if (!anchor) return;
         addProp(name, anchor.point, height, anchor.rotation);
       });
 
@@ -9838,9 +10277,16 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           1,
         );
         locker.beaconLight.color.setHex(isSuggested ? guidedLightColor : 0x5ae0a0);
-        locker.beaconLight.intensity = locker.beacon.visible
-          ? isInteractable ? 2.3 + markerPulse * 0.7 : urgentHideMarker ? 1.35 + markerPulse * 0.4 : 0.72
-          : 0;
+        authorPerformanceLightIntensity(
+          locker.beaconLight,
+          locker.beacon.visible
+            ? isInteractable
+              ? 2.3 + markerPulse * 0.7
+              : urgentHideMarker
+                ? 1.35 + markerPulse * 0.4
+                : 0.72
+            : 0,
+        );
       }
     };
 
@@ -10587,12 +11033,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           qualityEvaluationSeconds = 0;
         }
 
-        const atmospherePulse = atmosphere.pulseHertz > 0
-          ? Math.sin(now * 0.001 * atmosphere.pulseHertz * Math.PI * 2)
-          : 0;
+        // A directional fill affects every PBR surface in view. Pulsing that
+        // light made the entire maze and every model brighten/darken together,
+        // which reads as renderer flicker rather than authored atmosphere.
+        // Theme motion remains in local fixtures, particles and mechanic
+        // lights; the global bounce stays exposure-stable.
         warmBounce.intensity = atmosphere.bounceIntensity
-          * (0.72 + artLayout.warmLightMix * 0.28)
-          * (1 + atmospherePulse * atmosphere.pulseDepth);
+          * (0.72 + artLayout.warmLightMix * 0.28);
         const atmosphereAttribute = atmosphereGeometry.getAttribute("position") as THREE.BufferAttribute;
         const renderedAtmosphereParticles = Math.min(
           atmosphereParticleCount,
@@ -11720,10 +12167,28 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           playerPresentationPose(latestState, campaignLevel, simulation).point,
           campaignLevel,
         ).add(new THREE.Vector3(0, 0.92, 0));
-        moon.target.position.copy(playerAnchor).setY(0);
-        moon.position.copy(moon.target.position).add(new THREE.Vector3(14, 28, 18));
+        const stableShadowAnchor = snapDirectionalShadowAnchor({
+          target: { x: playerAnchor.x, y: 0, z: playerAnchor.z },
+          lightOffset: moonFollowOffset,
+          frustumWidth: moon.shadow.camera.right - moon.shadow.camera.left,
+          frustumHeight: moon.shadow.camera.top - moon.shadow.camera.bottom,
+          shadowMapSize: {
+            width: moon.shadow.mapSize.x,
+            height: moon.shadow.mapSize.y,
+          },
+        });
+        moon.target.position.set(
+          stableShadowAnchor.snappedTarget.x,
+          stableShadowAnchor.snappedTarget.y,
+          stableShadowAnchor.snappedTarget.z,
+        );
+        moon.position.set(
+          stableShadowAnchor.snappedLightPosition.x,
+          stableShadowAnchor.snappedLightPosition.y,
+          stableShadowAnchor.snappedLightPosition.z,
+        );
         moon.target.updateMatrixWorld();
-        updatePerformanceLightBudget(playerAnchor);
+        updatePerformanceLightBudget(playerAnchor, delta);
         const chaserAnchor = world(latestState.chaser.position, campaignLevel).add(new THREE.Vector3(0, 1.05, 0));
         const policeAnchor = actors.police?.root.position.clone().add(new THREE.Vector3(0, 1.05, 0)) ?? playerAnchor;
         const framingThreat = shouldFrameChaser(
@@ -11777,6 +12242,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 cameraDistance: preferredDistance,
                 verticalFovDegrees: camera.fov,
                 aspect: camera.aspect,
+                edgeInset: traversalCameraPolicy.edgeInsetWorldUnits,
+                maximumShift: traversalCameraPolicy.maximumFocusShiftWorldUnits,
+                safeHorizontalNdc: traversalCameraPolicy.safeHorizontalNdc,
+                safeVerticalNdc: traversalCameraPolicy.safeVerticalNdc,
               })
             : cameraFocusForEdgeHide({
               focus: baseTargetFocus,
@@ -12589,12 +13058,23 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             runtimeObjectives: runtimeMissionObjectives,
             state: missionState,
             playerRuleProgress,
-            views: [...missionViews.values()].map((view) => ({
-              id: view.id,
-              position: view.position,
-              lightColor: view.light.color.getHex(),
-              lightIntensity: view.light.intensity,
-            })),
+            views: [...missionViews.values()].map((view) => {
+              const registeredLight = performanceLights.find(
+                ({ light }) => light === view.light,
+              );
+              return {
+                id: view.id,
+                position: view.position,
+                lightColor: view.light.color.getHex(),
+                // QA mission semantics describe the authored objective beacon,
+                // not whether the camera-local renderer budget currently
+                // presents that off-screen light. Keep both values explicit.
+                lightIntensity:
+                  registeredLight?.sourceIntensity ?? view.light.intensity,
+                appliedLightIntensity:
+                  registeredLight?.appliedIntensity ?? view.light.intensity,
+              };
+            }),
             commitment: missionCommitment
               ? { ...missionCommitment }
               : null,
@@ -12791,6 +13271,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           },
           preferences: preferencesRef.current,
           environmentComposition,
+          hospitalCinematic: campaignLevel.campaign.theme === "hospital"
+            ? {
+                cameraPolicy: traversalCameraPolicy,
+                narrativeAnchors: hospitalNarrativeComposition,
+              }
+            : null,
           telemetry: runTelemetry,
           sceneIntegrity: {
             expectedMovementBlockers: campaignLevel.movementBlockers?.length ?? 0,
@@ -12844,6 +13330,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             owner: view.owner,
           }])),
           audio: score.getSnapshot(),
+          lightingStability: {
+            globalBounceMode: "steady",
+            selectedPerformanceLightIds: [...selectedPerformanceLightIds].sort(),
+            visiblePerformanceLightCount: performanceLights.filter(
+              ({ light }) => light.visible,
+            ).length,
+            performanceLights: performanceLights.map((entry) => ({
+              id: entry.id,
+              priority: entry.priority,
+              sourceIntensity: entry.sourceIntensity,
+              appliedIntensity: entry.appliedIntensity,
+              gain: entry.gain,
+              visible: entry.light.visible,
+            })),
+            shadowTarget: {
+              x: moon.target.position.x,
+              y: moon.target.position.y,
+              z: moon.target.position.z,
+            },
+          },
           camera: {
             fov: camera.fov,
             aspect: camera.aspect,
@@ -13282,6 +13788,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
     campaignProgress,
     preferences.ruleset,
   );
+  const selectedLevelUnlockedForRuleset =
+    selectedLevelIndex + 1 <= unlockedThrough;
   const layoutLabel = selectedRemixVariant === null
     ? "原版布局"
     : `认证布局 ${(selectedRemixVariant + 1).toString().padStart(2, "0")}`;
@@ -13338,6 +13846,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           : ""
       }`;
   const readyBriefing = `${readyCampaignBriefing} 本关追捕者为「${chaserArchetypeProfile.label}」：${chaserArchetypeProfile.readableRule}`;
+  const preRunStepIndex = preRunFlow.step === "chapter"
+    ? 0
+    : preRunFlow.step === "strategy"
+      ? 1
+      : 2;
+  const preRunTitle = preRunFlow.step === "chapter"
+    ? "选择今晚的行动章节"
+    : preRunFlow.step === "strategy"
+      ? "确定路线、规则与装备"
+      : `确认「${campaignLevel.campaign.name}」行动简报`;
+  const preRunDescription = preRunFlow.step === "chapter"
+    ? "十个主题章节各自拥有独立地标、追捕节奏和最佳记录。锁定一关后，再进入路线配置。"
+    : preRunFlow.step === "strategy"
+      ? "先确认排名规则与固定布局；主题关卡还可选择分支路线和本局战术能力。"
+      : `${displayedMissionTitle} · ${chaserArchetypeProfile.label}会依据真实目击、声音和最后位置追踪。`;
+  const selectedRouteLabel = selectedHospitalPlanDefinition?.label
+    ?? selectedLibraryPlanDefinition?.label
+    ?? "主题主线";
   const showResult = phase === "ready" || ((phase === "won" || phase === "lost") && resultVisible);
   const interactionSpot = interaction
     ? campaignLevel.hideSpots.find((spot) => spot.id === interaction.hideSpotId)
@@ -13455,9 +13981,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         ?? (stealthSystems?.mirrorThreatVisible
           ? "镜面已捕捉追捕者 · 可安全判断出柜时机"
           : `${selectedToolMeta.label} · ${selectedToolPhaseLabel}`);
-  const primaryAction = phase === "won" && hasNextLevel
-    ? () => chooseLevel(selectedLevelIndex + 1)
-    : begin;
+  const primaryAction = phase === "ready"
+    ? advancePreRunFlow
+    : phase === "won" && hasNextLevel
+      ? () => chooseLevel(selectedLevelIndex + 1)
+      : begin;
   const hideRiskLabel = hideGuideRisk === "low" ? "低风险" : hideGuideRisk === "medium" ? "风险未知" : "高风险";
   const hideGuideTitle = hideGuideStrategy === "break-line-of-sight"
     ? "暂无线安全藏柜"
@@ -14004,22 +14532,57 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             aria-labelledby="game-overlay-title"
             aria-describedby="game-overlay-description"
           >
-            <div className="overlay-card">
+            <div
+              className={`overlay-card${phase === "ready" ? " pre-run-card" : ""}`}
+              ref={phase === "ready" ? preRunCard : undefined}
+            >
               <span
                 className={`result ${phase}`}
                 role={phase === "won" || phase === "lost" ? "status" : undefined}
                 aria-live={phase === "won" || phase === "lost" ? "assertive" : undefined}
               >
-                {phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : `${campaignLevel.campaign.themeLabel}篇 · ${campaignLevel.campaign.difficultyLabel}`}
+                {phase === "won"
+                  ? "成功逃脱"
+                  : phase === "lost"
+                    ? "被抓住了"
+                    : `行动准备 · ${preRunStepIndex + 1}/3`}
               </span>
-              <h2 id="game-overlay-title">{phase === "won" ? `你完成了「${campaignLevel.campaign.name}」` : phase === "lost" ? captureFeedback.title : campaignLevel.campaign.subtitle}</h2>
+              <h2
+                id="game-overlay-title"
+                ref={phase === "ready" ? preRunStepTitle : undefined}
+                tabIndex={phase === "ready" ? -1 : undefined}
+              >
+                {phase === "won"
+                  ? `你完成了「${campaignLevel.campaign.name}」`
+                  : phase === "lost"
+                    ? captureFeedback.title
+                    : preRunTitle}
+              </h2>
               <p id="game-overlay-description">
                 {phase === "ready"
-                  ? readyBriefing
+                  ? preRunDescription
                   : phase === "lost"
                     ? captureFeedback.explanation
                     : "追捕者只会依据真实目击、声音与最后位置追踪。你成功利用遮挡和藏身点完成了逃脱。"}
               </p>
+              {phase === "ready" && (
+                <ol className="pre-run-progress" aria-label="行动准备进度">
+                  {[
+                    ["01", "选章节"],
+                    ["02", "定策略"],
+                    ["03", "看简报"],
+                  ].map(([number, label], index) => (
+                    <li
+                      key={number}
+                      aria-current={index === preRunStepIndex ? "step" : undefined}
+                      data-complete={index < preRunStepIndex ? "true" : undefined}
+                    >
+                      <span>{index < preRunStepIndex ? "✓" : number}</span>
+                      <b>{label}</b>
+                    </li>
+                  ))}
+                </ol>
+              )}
               {phase === "won" && lastRunSummary && (
                 <>
                   <div className="run-summary" aria-label="本局成绩">
@@ -14159,334 +14722,443 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               )}
 
               {phase === "ready" && (
-                <div className="preference-settings" aria-label="游戏模式与辅助设置">
-                  <div className="preference-group">
-                    <small>规则模式</small>
-                    <button
-                      type="button"
-                      aria-pressed={preferences.ruleset === "standard"}
-                      onClick={() => updatePreferences({ ruleset: "standard" })}
-                    >
-                      标准 · 排名
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={preferences.ruleset === "assisted"}
-                      onClick={() => updatePreferences({ ruleset: "assisted" })}
-                    >
-                      辅助 · 独立进度
-                    </button>
-                  </div>
-                  <div className="preference-group compact" aria-label="选择固定认证布局">
-                    <small>关卡布局 · 固定认证（非随机）</small>
-                    <button
-                      type="button"
-                      aria-pressed={selectedRemixVariant === null}
-                      onClick={() => chooseRemixVariant(null)}
-                    >
-                      原版
-                    </button>
-                    {remixContracts.map((contract) => (
-                      <button
-                        type="button"
-                        key={contract.id}
-                        aria-pressed={selectedRemixVariant === contract.variantIndex}
-                        onClick={() => chooseRemixVariant(contract.variantIndex)}
-                      >
-                        布局 {(contract.variantIndex + 1).toString().padStart(2, "0")}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="preference-group compact">
-                    <button
-                      type="button"
-                      aria-pressed={preferences.personalGhostEnabled}
-                      onClick={() => updatePreferences({
-                        personalGhostEnabled: !preferences.personalGhostEnabled,
-                      })}
-                    >
-                      个人幽灵
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={preferences.hudDensity === "full"}
-                      onClick={() => updatePreferences({
-                        hudDensity: preferences.hudDensity === "full" ? "cinematic" : "full",
-                      })}
-                    >
-                      {preferences.hudDensity === "full" ? "完整 HUD" : "电影 HUD"}
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={preferences.highContrast}
-                      onClick={() => updatePreferences({ highContrast: !preferences.highContrast })}
-                    >
-                      高对比
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={preferences.reducedMotion}
-                      onClick={() => updatePreferences({ reducedMotion: !preferences.reducedMotion })}
-                    >
-                      减少动态
-                    </button>
-                  </div>
-                  <p>
-                    {(preferences.ruleset === "standard"
-                      ? "标准规则记录排行榜资格与个人最佳幽灵。"
-                      : "辅助规则降低追捕压力、扩大互动范围，并使用独立进度，不覆盖标准成绩。")
-                    + (selectedRemixContract
-                      ? ` ${layoutLabel}使用固定种子，成绩与幽灵均按布局、规则模式和任务版本独立保存。`
-                      : "")}
-                  </p>
-                </div>
-              )}
-
-              {phase === "ready" && (
-                <div className="mission-briefing" aria-label="本关主题任务">
-                  <div>
-                    <small>本关任务链 · {layoutLabel}</small>
-                    <strong>{displayedMissionTitle}</strong>
-                  </div>
-                  {libraryGoldEnabled && (
-                    <div className="library-plan-selector" role="group" aria-label="选择图书楼脱身计划">
-                      {LIBRARY_BRANCHING_MISSION.plans.map((plan) => (
-                        <button
-                          type="button"
-                          key={plan.id}
-                          aria-pressed={selectedLibraryPlan === plan.id}
-                          onClick={() => chooseLibraryPlan(plan.id)}
-                        >
-                          <b>{plan.label}</b>
-                          <small>{plan.strategy}</small>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {hospitalGoldEnabled && (
+                <div className="pre-run-body" data-step={preRunFlow.step}>
+                  {preRunFlow.step === "chapter" && (
                     <>
-                      <div
-                        className="library-plan-selector hospital-plan-selector"
-                        role="group"
-                        aria-label="选择午夜门诊撤离计划"
-                      >
-                        {HOSPITAL_BRANCHING_MISSION.plans.map((plan) => (
-                          <button
-                            type="button"
-                            key={plan.id}
-                            aria-pressed={selectedHospitalPlan === plan.id}
-                            onClick={() => chooseHospitalPlan(plan.id)}
-                          >
-                            <b>{plan.label}</b>
-                            <small>
-                              {plan.routeProfile === "quiet-long"
-                                ? "低噪 · 低暴露 · 路线较长"
-                                : "高噪 · 高暴露 · 路线较短"}
-                              {" · "}
-                              {plan.strategy}
-                            </small>
-                          </button>
-                        ))}
+                      <div className="pre-run-section-intro">
+                        <small>CHAPTER SELECT</small>
+                        <strong>
+                          已解锁 {Math.min(unlockedThrough, CAMPAIGN_LEVELS.length)}/
+                          {CAMPAIGN_LEVELS.length} · 当前为第 {campaignLevel.campaign.levelNumber} 关
+                        </strong>
                       </div>
-                      <div
-                        className="library-plan-selector hospital-loadout-selector"
-                        role="group"
-                        aria-label="选择两项医院战术能力"
-                      >
-                        {HOSPITAL_TOOL_LOADOUT.tools.map((tool) => {
-                          const selected =
-                            hospitalLoadoutSelection.selectedToolIds.includes(
-                              tool.id,
-                            );
-                          const recommended =
-                            HOSPITAL_TOOL_LOADOUT.recommendedToolIds.includes(
-                              tool.id,
-                            );
+                      <div className="level-grid" aria-label="选择关卡">
+                        {CAMPAIGN_LEVELS.map((level, index) => {
+                          const locked = index + 1 > unlockedThrough;
+                          const active = index === selectedLevelIndex;
+                          const activeCertifiedLayout = Boolean(
+                            active && selectedRemixContract,
+                          );
+                          const levelRecordId = activeCertifiedLayout
+                            ? runRecordLevelId
+                            : level.id === LIBRARY_BRANCHING_MISSION.levelId
+                              ? libraryG2RunIdentity(level.id, selectedLibraryPlan)
+                              : level.id === HOSPITAL_BRANCHING_MISSION.levelId
+                                ? hospitalG2RunIdentity(level.id, selectedHospitalPlan)
+                                : level.id;
+                          const branchRunRecord = getCampaignRunRecord(
+                            campaignProgress,
+                            levelRecordId,
+                            preferences.ruleset,
+                          );
+                          const legacyRunRecord =
+                            !activeCertifiedLayout
+                            && (
+                              level.id === LIBRARY_BRANCHING_MISSION.levelId
+                              || level.id === HOSPITAL_BRANCHING_MISSION.levelId
+                            )
+                              ? getCampaignRunRecord(
+                                  campaignProgress,
+                                  level.id,
+                                  preferences.ruleset,
+                                )
+                              : null;
+                          const showingLegacyBaseline = Boolean(
+                            legacyRunRecord?.bestSeconds
+                            && !branchRunRecord.bestSeconds
+                            && !branchRunRecord.mastery,
+                          );
+                          const runRecord = showingLegacyBaseline && legacyRunRecord
+                            ? legacyRunRecord
+                            : branchRunRecord;
+                          const best = activeCertifiedLayout
+                            ? remixRecord?.bestSeconds ?? runRecord.bestSeconds
+                            : runRecord.bestSeconds;
+                          const mastery = activeCertifiedLayout
+                            ? remixRecord?.mastery ?? runRecord.mastery
+                            : runRecord.mastery;
                           return (
                             <button
+                              className={`level-card${active ? " active" : ""}${locked ? " locked" : ""}${mastery ? ` rank-${mastery.rank}` : ""}`}
                               type="button"
-                              key={tool.id}
-                              aria-pressed={selected}
-                              onClick={() => chooseHospitalLoadoutTool(tool.id)}
-                              title="始终保持两个战术位；选择新能力会替换最早选中的能力"
+                              key={level.id}
+                              disabled={locked || loading}
+                              onClick={() => chooseLevel(index)}
+                              aria-current={active ? "step" : undefined}
                             >
-                              <b>
-                                {tool.label}{recommended ? " · 推荐" : ""}
-                              </b>
-                              <small>{tool.description}</small>
+                              <span>{level.campaign.levelNumber.toString().padStart(2, "0")}</span>
+                              <strong>{locked ? "未解锁" : level.campaign.name}</strong>
+                              <small>
+                                {locked
+                                  ? "完成上一关"
+                                  : best
+                                    ? `最佳 ${best.toFixed(2)}s${mastery ? ` · ${MASTERY_RANK_LABEL[mastery.rank]}` : ""}${showingLegacyBaseline ? " · 旧版基线" : ""}`
+                                    : level.campaign.themeLabel}
+                              </small>
                             </button>
                           );
                         })}
                       </div>
                     </>
                   )}
-                  {selectedRemixContract && (
-                    <span>
-                      <i aria-hidden="true">↻</i>
-                      <b>认证重编挑战</b>
-                      <small>通路、巡逻、任务锚点与藏点供应均已重编；布局编号固定，可重复练习。</small>
-                    </span>
+
+                  {preRunFlow.step === "strategy" && (
+                    <>
+                      <div className="preference-settings" aria-label="游戏规则与固定布局">
+                        <div className="preference-group">
+                          <small>规则模式</small>
+                          <button
+                            type="button"
+                            aria-pressed={preferences.ruleset === "standard"}
+                            onClick={() => updatePreferences({ ruleset: "standard" })}
+                          >
+                            标准 · 排名
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={preferences.ruleset === "assisted"}
+                            onClick={() => updatePreferences({ ruleset: "assisted" })}
+                          >
+                            辅助 · 独立进度
+                          </button>
+                        </div>
+                        <div
+                          className="preference-group compact"
+                          role="group"
+                          aria-label="选择固定认证布局"
+                        >
+                          <small>关卡布局 · 固定认证（非随机）</small>
+                          <button
+                            type="button"
+                            aria-pressed={selectedRemixVariant === null}
+                            onClick={() => chooseRemixVariant(null)}
+                          >
+                            原版
+                          </button>
+                          {remixContracts.map((contract) => (
+                            <button
+                              type="button"
+                              key={contract.id}
+                              aria-pressed={selectedRemixVariant === contract.variantIndex}
+                              onClick={() => chooseRemixVariant(contract.variantIndex)}
+                            >
+                              布局 {(contract.variantIndex + 1).toString().padStart(2, "0")}
+                            </button>
+                          ))}
+                        </div>
+                        <p>
+                          {(!selectedLevelUnlockedForRuleset
+                            ? `当前第 ${campaignLevel.campaign.levelNumber} 关尚未在${
+                                preferences.ruleset === "standard" ? "标准" : "辅助"
+                              }进度中解锁；请返回章节选择已解锁关卡。`
+                            : preferences.ruleset === "standard"
+                              ? "标准规则记录排名资格与个人最佳幽灵。"
+                              : "辅助规则降低追捕压力、扩大互动范围，并使用独立进度。")
+                          + (selectedRemixContract
+                            ? ` ${layoutLabel}的成绩与幽灵独立保存。`
+                            : "")}
+                        </p>
+                      </div>
+
+                      <div className="mission-briefing strategy-briefing" aria-label="主题路线与装备">
+                        <div>
+                          <small>本关任务链 · {layoutLabel}</small>
+                          <strong>{displayedMissionTitle}</strong>
+                        </div>
+                        {libraryGoldEnabled && (
+                          <div
+                            className="library-plan-selector"
+                            role="group"
+                            aria-label="选择图书楼脱身计划"
+                          >
+                            {LIBRARY_BRANCHING_MISSION.plans.map((plan) => (
+                              <button
+                                type="button"
+                                key={plan.id}
+                                aria-pressed={selectedLibraryPlan === plan.id}
+                                onClick={() => chooseLibraryPlan(plan.id)}
+                              >
+                                <b>{plan.label}</b>
+                                <small>{plan.strategy}</small>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {hospitalGoldEnabled && (
+                          <>
+                            <div
+                              className="library-plan-selector hospital-plan-selector"
+                              role="group"
+                              aria-label="选择午夜门诊撤离计划"
+                            >
+                              {HOSPITAL_BRANCHING_MISSION.plans.map((plan) => (
+                                <button
+                                  type="button"
+                                  key={plan.id}
+                                  aria-pressed={selectedHospitalPlan === plan.id}
+                                  onClick={() => chooseHospitalPlan(plan.id)}
+                                >
+                                  <b>{plan.label}</b>
+                                  <small>
+                                    {plan.routeProfile === "quiet-long"
+                                      ? "低噪 · 低暴露 · 路线较长"
+                                      : "高噪 · 高暴露 · 路线较短"}
+                                    {" · "}
+                                    {plan.strategy}
+                                  </small>
+                                </button>
+                              ))}
+                            </div>
+                            <div
+                              className="library-plan-selector hospital-loadout-selector"
+                              role="group"
+                              aria-label="选择两项医院战术能力"
+                            >
+                              {HOSPITAL_TOOL_LOADOUT.tools.map((tool) => {
+                                const selected =
+                                  hospitalLoadoutSelection.selectedToolIds.includes(
+                                    tool.id,
+                                  );
+                                const recommended =
+                                  HOSPITAL_TOOL_LOADOUT.recommendedToolIds.includes(
+                                    tool.id,
+                                  );
+                                return (
+                                  <button
+                                    type="button"
+                                    key={tool.id}
+                                    aria-pressed={selected}
+                                    onClick={() => chooseHospitalLoadoutTool(tool.id)}
+                                    title="始终保持两个战术位；选择新能力会替换最早选中的能力"
+                                  >
+                                    <b>
+                                      {tool.label}{recommended ? " · 推荐" : ""}
+                                    </b>
+                                    <small>{tool.description}</small>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div
+                              className="hospital-loadout-status"
+                              role="status"
+                              aria-live="polite"
+                            >
+                              <b>战术位 2/2</b>
+                              <small>
+                                已装备{" "}
+                                {hospitalLoadoutSelection.selectedToolIds
+                                  .map((id) => HOSPITAL_TOOL_LOADOUT.tools.find(
+                                    (tool) => tool.id === id,
+                                  )?.label)
+                                  .filter(Boolean)
+                                  .join(" + ")}
+                              </small>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <details className="pre-run-disclosure display-preferences">
+                        <summary>
+                          <span>
+                            <b>显示与舒适度</b>
+                            <small>个人幽灵、HUD、高对比与动态效果</small>
+                          </span>
+                        </summary>
+                        <div className="preference-group compact">
+                          <button
+                            type="button"
+                            aria-pressed={preferences.personalGhostEnabled}
+                            onClick={() => updatePreferences({
+                              personalGhostEnabled: !preferences.personalGhostEnabled,
+                            })}
+                          >
+                            个人幽灵
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={preferences.hudDensity === "full"}
+                            onClick={() => updatePreferences({
+                              hudDensity: preferences.hudDensity === "full" ? "cinematic" : "full",
+                            })}
+                          >
+                            {preferences.hudDensity === "full" ? "完整 HUD" : "电影 HUD"}
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={preferences.highContrast}
+                            onClick={() => updatePreferences({ highContrast: !preferences.highContrast })}
+                          >
+                            高对比
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={preferences.reducedMotion}
+                            onClick={() => updatePreferences({ reducedMotion: !preferences.reducedMotion })}
+                          >
+                            减少动态
+                          </button>
+                        </div>
+                      </details>
+                    </>
                   )}
-                  {displayedMissionObjectives.map((objective, index) => (
-                    <span key={objective.id}>
-                      <i aria-hidden="true">{index + 1}</i>
-                      <b>{objective.label}</b>
-                      <small>{objective.interactionPrompt}</small>
-                    </span>
-                  ))}
+
+                  {preRunFlow.step === "briefing" && (
+                    <>
+                      <div className="pre-run-summary-strip" aria-label="本局配置摘要">
+                        <span><small>章节</small><b>{campaignLevel.campaign.levelNumber.toString().padStart(2, "0")} · {campaignLevel.campaign.themeLabel}</b></span>
+                        <span><small>规则</small><b>{preferences.ruleset === "standard" ? "标准排名" : "辅助进度"}</b></span>
+                        <span><small>布局</small><b>{layoutLabel}</b></span>
+                        <span><small>路线</small><b>{selectedRouteLabel}</b></span>
+                      </div>
+                      <div className="mission-briefing briefing-objectives" aria-label="本关目标顺序">
+                        <div>
+                          <small>按序完成 · {layoutLabel}</small>
+                          <strong>{displayedMissionTitle}</strong>
+                        </div>
+                        {selectedRemixContract && (
+                          <span>
+                            <i aria-hidden="true">↻</i>
+                            <b>认证重编挑战</b>
+                            <small>固定重编通路、巡逻、任务锚点与藏点供应。</small>
+                          </span>
+                        )}
+                        {displayedMissionObjectives.map((objective, index) => (
+                          <span key={objective.id}>
+                            <i aria-hidden="true">{index + 1}</i>
+                            <b>{objective.label}</b>
+                            <small>{objective.interactionPrompt}</small>
+                          </span>
+                        ))}
+                      </div>
+                      <p className="pre-run-readiness">{readyBriefing}</p>
+
+                      <details className="pre-run-disclosure">
+                        <summary>
+                          <span>
+                            <b>潜行与躲藏要点</b>
+                            <small>切断视线、选藏点、制造调查窗口</small>
+                          </span>
+                        </summary>
+                        <div className="hide-loop" aria-label="躲柜玩法流程">
+                          <span><b>1</b>绕墙切断视线</span>
+                          <span><b>2</b>按风险选择硬柜、软遮挡或穿行藏点</span>
+                          <span>
+                            <b>3</b>
+                            {libraryGoldEnabled
+                              ? "按 F 投掷精装笔记本诱饵，趁调查与左右巡视时改线"
+                              : "利用本关主题机关制造公开线索，趁追捕者调查时改线"}
+                          </span>
+                          <span>
+                            <b>4</b>
+                            {hospitalGoldEnabled
+                              ? `本局携带：${hospitalLoadoutSelection.selectedToolIds
+                                .map((id) => HOSPITAL_TOOL_LOADOUT.tools.find(
+                                  (tool) => tool.id === id,
+                                )?.label)
+                                .filter(Boolean)
+                                .join(" + ")}`
+                              : "1–3 选工具，G 部署战术物件；C 抹除近处足迹"}
+                          </span>
+                        </div>
+                      </details>
+
+                      <details className="pre-run-disclosure">
+                        <summary>
+                          <span>
+                            <b>精通与计时目标</b>
+                            <small>目标 {masteryPreview.targetSeconds.toFixed(1)}s · 展开查看挑战条件</small>
+                          </span>
+                        </summary>
+                        <div className="mastery-preview" aria-label="本关精通目标">
+                          <div>
+                            <small>{preferences.ruleset === "standard" ? "STANDARD · 排名精通" : "ASSISTED · 独立精通"}</small>
+                            <strong>目标时间 {masteryPreview.targetSeconds.toFixed(1)}s</strong>
+                          </div>
+                          {masteryPreview.objectives.map((objective) => (
+                            <span key={objective.id} title={objective.description}>
+                              <i aria-hidden="true">◇</i>
+                              <b>{objective.label}</b>
+                              <small>{objective.description}</small>
+                            </span>
+                          ))}
+                        </div>
+                      </details>
+                    </>
+                  )}
                 </div>
               )}
 
-              {phase === "ready" && (
-                <div className="hide-loop" aria-label="躲柜玩法流程">
-                  <span><b>1</b>绕墙切断视线</span>
-                  <span><b>2</b>按风险选择硬柜、软遮挡或穿行藏点</span>
-                  <span>
-                    <b>3</b>
-                    {libraryGoldEnabled
-                      ? "按 F 投掷精装笔记本诱饵，趁调查与左右巡视时改线"
-                      : "利用本关主题机关制造公开线索，趁追捕者调查时改线"}
-                  </span>
-                  <span>
-                    <b>4</b>
-                    {hospitalGoldEnabled
-                      ? `本局已携带：${hospitalLoadoutSelection.selectedToolIds
-                        .map((id) => HOSPITAL_TOOL_LOADOUT.tools.find(
-                          (tool) => tool.id === id,
-                        )?.label)
-                        .filter(Boolean)
-                        .join(" + ")}`
-                      : "1–3 选战术工具，G 部署门楔、转角镜或局部断电；C 抹除近处足迹"}
-                  </span>
-                </div>
-              )}
-
-              {phase === "ready" && (
-                <div className="mastery-preview" aria-label="本关精通目标">
-                  <div>
-                    <small>{preferences.ruleset === "standard" ? "STANDARD · 排名精通" : "ASSISTED · 独立精通"}</small>
-                    <strong>目标时间 {masteryPreview.targetSeconds.toFixed(1)}s</strong>
-                  </div>
-                  {masteryPreview.objectives.map((objective) => (
-                    <span key={objective.id} title={objective.description}>
-                      <i aria-hidden="true">◇</i>
-                      <b>{objective.label}</b>
-                      <small>{objective.description}</small>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {phase === "ready" && (
-                <div className="level-grid" aria-label="选择关卡">
-                  {CAMPAIGN_LEVELS.map((level, index) => {
-                    const locked = index + 1 > unlockedThrough;
-                    const active = index === selectedLevelIndex;
-                    const activeCertifiedLayout = Boolean(
-                      active && selectedRemixContract,
-                    );
-                    const levelRecordId = activeCertifiedLayout
-                      ? runRecordLevelId
-                      : level.id === LIBRARY_BRANCHING_MISSION.levelId
-                        ? libraryG2RunIdentity(level.id, selectedLibraryPlan)
-                        : level.id === HOSPITAL_BRANCHING_MISSION.levelId
-                          ? hospitalG2RunIdentity(level.id, selectedHospitalPlan)
-                          : level.id;
-                    const branchRunRecord = getCampaignRunRecord(
-                      campaignProgress,
-                      levelRecordId,
-                      preferences.ruleset,
-                    );
-                    const legacyRunRecord =
-                      !activeCertifiedLayout
-                      && (
-                        level.id === LIBRARY_BRANCHING_MISSION.levelId
-                        || level.id === HOSPITAL_BRANCHING_MISSION.levelId
-                      )
-                      ? getCampaignRunRecord(
-                          campaignProgress,
-                          level.id,
-                          preferences.ruleset,
-                        )
-                      : null;
-                    const showingLegacyBaseline = Boolean(
-                      legacyRunRecord?.bestSeconds
-                      && !branchRunRecord.bestSeconds
-                      && !branchRunRecord.mastery,
-                    );
-                    const runRecord = showingLegacyBaseline && legacyRunRecord
-                      ? legacyRunRecord
-                      : branchRunRecord;
-                    const best = activeCertifiedLayout
-                      ? remixRecord?.bestSeconds ?? runRecord.bestSeconds
-                      : runRecord.bestSeconds;
-                    const mastery = activeCertifiedLayout
-                      ? remixRecord?.mastery ?? runRecord.mastery
-                      : runRecord.mastery;
-                    return (
-                      <button
-                        className={`level-card${active ? " active" : ""}${locked ? " locked" : ""}${mastery ? ` rank-${mastery.rank}` : ""}`}
-                        type="button"
-                        key={level.id}
-                        disabled={locked || loading}
-                        onClick={() => chooseLevel(index)}
-                        aria-current={active ? "step" : undefined}
-                      >
-                        <span>{level.campaign.levelNumber.toString().padStart(2, "0")}</span>
-                        <strong>{locked ? "未解锁" : level.campaign.name}</strong>
-                        <small>
-                          {locked
-                            ? "完成上一关"
-                            : best
-                              ? `最佳 ${best.toFixed(2)}s${mastery ? ` · ${MASTERY_RANK_LABEL[mastery.rank]}` : ""}${showingLegacyBaseline ? " · 旧版基线" : ""}`
-                              : level.campaign.themeLabel}
-                        </small>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="overlay-actions">
-                <button
-                  className="primary"
-                  type="button"
-                  ref={phase === "won" || phase === "lost" ? resultPrimaryButton : undefined}
-                  onClick={primaryAction}
-                >
-                  {phase === "ready"
-                    ? `开始第 ${campaignLevel.campaign.levelNumber} 关 · ${layoutLabel}`
-                    : phase === "won" && hasNextLevel ? "进入下一关" : "再来一次"}
-                  <kbd>Enter</kbd>
-                </button>
-                {phase === "won" && <button className="secondary" type="button" onClick={begin}>重玩本关</button>}
-                {libraryGoldEnabled && phase !== "ready" && (
+              {phase === "ready" ? (
+                <div className="overlay-actions pre-run-footer">
                   <button
-                    className="secondary library-plan-switch"
+                    className="secondary"
                     type="button"
-                    onClick={switchLibraryPlanAfterRun}
+                    disabled={!canGoBackPreRunFlow(preRunFlow)}
+                    onClick={goBackPreRunFlow}
                   >
-                    改走{
-                      LIBRARY_BRANCHING_MISSION.plans.find(
-                        (plan) => plan.id !== selectedLibraryPlan,
-                      )?.label
-                    }
+                    返回
+                    {canGoBackPreRunFlow(preRunFlow) && <kbd>Esc</kbd>}
                   </button>
-                )}
-                {hospitalGoldEnabled && phase !== "ready" && (
+                  <span aria-hidden="true">
+                    {preRunStepIndex + 1} / 3
+                  </span>
                   <button
-                    className="secondary library-plan-switch"
+                    className="primary"
                     type="button"
-                    onClick={switchHospitalPlanAfterRun}
+                    ref={preRunPrimaryButton}
+                    disabled={!selectedLevelUnlockedForRuleset}
+                    onClick={advancePreRunFlow}
                   >
-                    改走{
-                      HOSPITAL_BRANCHING_MISSION.plans.find(
-                        (plan) => plan.id !== selectedHospitalPlan,
-                      )?.label
-                    }
+                    {preRunFlow.step === "chapter"
+                      ? "下一步：计划与装备"
+                      : preRunFlow.step === "strategy"
+                        ? "下一步：确认行动简报"
+                        : `开始第 ${campaignLevel.campaign.levelNumber} 关 · ${layoutLabel}`}
+                    <kbd>Enter</kbd>
                   </button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="overlay-actions">
+                  <button
+                    className="primary"
+                    type="button"
+                    ref={resultPrimaryButton}
+                    onClick={primaryAction}
+                  >
+                    {phase === "won" && hasNextLevel ? "进入下一关" : "再来一次"}
+                    <kbd>Enter</kbd>
+                  </button>
+                  {phase === "won" && <button className="secondary" type="button" onClick={begin}>重玩本关</button>}
+                  {libraryGoldEnabled && (
+                    <button
+                      className="secondary library-plan-switch"
+                      type="button"
+                      onClick={switchLibraryPlanAfterRun}
+                    >
+                      改走{
+                        LIBRARY_BRANCHING_MISSION.plans.find(
+                          (plan) => plan.id !== selectedLibraryPlan,
+                        )?.label
+                      }
+                    </button>
+                  )}
+                  {hospitalGoldEnabled && (
+                    <button
+                      className="secondary library-plan-switch"
+                      type="button"
+                      onClick={switchHospitalPlanAfterRun}
+                    >
+                      改走{
+                        HOSPITAL_BRANCHING_MISSION.plans.find(
+                          (plan) => plan.id !== selectedHospitalPlan,
+                        )?.label
+                      }
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

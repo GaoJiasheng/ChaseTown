@@ -528,18 +528,30 @@ async function connect() {
 async function auditTouchLayout(browser, stage) {
   return browser.evaluate(`(() => {
     const stage = ${JSON.stringify(stage)};
-    const selectors = stage === "ready"
-      ? [
-          ".overlay-actions button",
-          ".hospital-plan-selector button",
-          ".hospital-loadout-selector button"
-        ]
-      : [
-          ".view-controls button",
-          ".action-controls button",
-          ".stealth-tool-row button",
-          ".controls"
-        ];
+    const selectorsByStage = {
+      chapter: [
+        '.pre-run-body[data-step="chapter"] .level-grid button',
+        ".pre-run-footer button"
+      ],
+      strategy: [
+        '.pre-run-body[data-step="strategy"] .preference-settings button',
+        '.pre-run-body[data-step="strategy"] .hospital-plan-selector button',
+        '.pre-run-body[data-step="strategy"] .hospital-loadout-selector button',
+        '.pre-run-body[data-step="strategy"] .pre-run-disclosure > summary',
+        ".pre-run-footer button"
+      ],
+      briefing: [
+        '.pre-run-body[data-step="briefing"] .pre-run-disclosure > summary',
+        ".pre-run-footer button"
+      ],
+      running: [
+        ".view-controls button",
+        ".action-controls button",
+        ".stealth-tool-row button",
+        ".controls"
+      ]
+    };
+    const selectors = selectorsByStage[stage] ?? [];
     const isVisible = (element) => {
       if (!(element instanceof HTMLElement)) return false;
       let current = element;
@@ -553,12 +565,42 @@ async function auditTouchLayout(browser, stage) {
         current = current.parentElement;
       }
       const bounds = element.getBoundingClientRect();
-      return bounds.width > 0
+      if (!(bounds.width > 0
         && bounds.height > 0
         && bounds.right > 0
         && bounds.bottom > 0
         && bounds.left < innerWidth
-        && bounds.top < innerHeight;
+        && bounds.top < innerHeight)) return false;
+      // getBoundingClientRect still reports descendants scrolled behind a
+      // clipped header. Exclude controls whose centre is outside any overflow
+      // ancestor before treating elementFromPoint as an occlusion failure.
+      let clipAncestor = element.parentElement;
+      while (clipAncestor instanceof HTMLElement) {
+        const clipStyle = getComputedStyle(clipAncestor);
+        const clipsX = /(auto|scroll|hidden|clip)/.test(clipStyle.overflowX);
+        const clipsY = /(auto|scroll|hidden|clip)/.test(clipStyle.overflowY);
+        if (clipsX || clipsY) {
+          const clipBounds = clipAncestor.getBoundingClientRect();
+          if (
+            (
+              clipsX
+              && (
+                bounds.left < clipBounds.left - 0.5
+                || bounds.right > clipBounds.right + 0.5
+              )
+            )
+            || (
+              clipsY
+              && (
+                bounds.top < clipBounds.top - 0.5
+                || bounds.bottom > clipBounds.bottom + 0.5
+              )
+            )
+          ) return false;
+        }
+        clipAncestor = clipAncestor.parentElement;
+      }
+      return true;
     };
     const nodes = [...new Set(
       selectors.flatMap((selector) => [...document.querySelectorAll(selector)])
@@ -623,8 +665,9 @@ function assertTouchLayout(layout, stage) {
   assert.equal(layout.viewport.width, 390);
   assert.equal(layout.viewport.height, 844);
   assert.equal(layout.horizontalOverflow, false, `${stage} overflows horizontally`);
+  const minimumTargetCount = layout.stage === "briefing" ? 2 : 3;
   assert.ok(
-    layout.targetCount >= 3,
+    layout.targetCount >= minimumTargetCount,
     `${stage} exposes too few touch targets: ${JSON.stringify(layout.targets)}`,
   );
   assert.deepEqual(
@@ -644,27 +687,79 @@ function assertTouchLayout(layout, stage) {
   );
 }
 
-async function captureReadyEvidence(browser, prefix) {
+async function waitForPreRunStep(browser, step) {
+  await browser.waitFor(`(() => {
+    const body = document.querySelector(".pre-run-body");
+    const current = document.querySelector(
+      '.pre-run-progress [aria-current="step"] b'
+    )?.textContent?.trim();
+    return window.__CHASING_QA__?.getState()?.game?.phase === "ready"
+      && body?.getAttribute("data-step") === ${JSON.stringify(step)}
+      && Boolean(current);
+  })()`);
+}
+
+async function advancePreRunStep(browser, from, to) {
+  await waitForPreRunStep(browser, from);
+  await browser.evaluate(`(() => {
+    const button = document.querySelector(".pre-run-footer .primary");
+    if (!(button instanceof HTMLButtonElement)) {
+      throw new Error("pre-run primary action is unavailable");
+    }
+    button.click();
+  })()`);
+  if (to === "playing") {
+    await browser.waitFor(
+      "window.__CHASING_QA__?.getState()?.game?.phase === 'playing'",
+    );
+    return;
+  }
+  await waitForPreRunStep(browser, to);
+}
+
+async function capturePreRunEvidence(browser, prefix, step) {
+  await waitForPreRunStep(browser, step);
   await browser.viewport(1512, 982, false);
   await browser.evaluate(`(() => {
-    const card = document.querySelector(".overlay-card");
-    if (card) card.scrollTop = 0;
+    const body = document.querySelector(".pre-run-body");
+    if (body instanceof HTMLElement) body.scrollTop = 0;
   })()`);
   await sleep(120);
-  const desktop = await browser.screenshot(`${prefix}-desktop-ready.png`);
+  const desktop = await browser.screenshot(`${prefix}-desktop-${step}.png`);
 
   await browser.viewport(390, 844, true);
-  await browser.evaluate(`(() => {
-    document.querySelector(".hospital-loadout-selector")?.scrollIntoView({
-      block: "center",
-      inline: "center"
-    });
-  })()`);
+  if (step === "strategy") {
+    await browser.evaluate(`(() => {
+      document.querySelector(".hospital-plan-selector")?.scrollIntoView({
+        block: "start",
+        inline: "nearest"
+      });
+    })()`);
+  } else {
+    await browser.evaluate(`(() => {
+      const body = document.querySelector(".pre-run-body");
+      if (body instanceof HTMLElement) body.scrollTop = 0;
+    })()`);
+  }
   await sleep(160);
-  const layout = await auditTouchLayout(browser, "ready");
-  const mobile = await browser.screenshot(`${prefix}-mobile-ready.png`);
-  assertTouchLayout(layout, `${prefix} mobile ready`);
-  return { desktop, mobile, layout };
+  const layout = await auditTouchLayout(browser, step);
+  const mobile = await browser.screenshot(`${prefix}-mobile-${step}.png`);
+  assertTouchLayout(layout, `${prefix} mobile ${step}`);
+  const progress = await browser.evaluate(`(() => ({
+    step: document.querySelector(".pre-run-body")?.getAttribute("data-step"),
+    current: document.querySelector(
+      '.pre-run-progress [aria-current="step"] b'
+    )?.textContent?.trim(),
+    completeCount: document.querySelectorAll(
+      '.pre-run-progress [data-complete="true"]'
+    ).length
+  }))()`);
+  assert.equal(progress.step, step);
+  assert.equal(
+    progress.completeCount,
+    step === "chapter" ? 0 : step === "strategy" ? 1 : 2,
+  );
+  return { step, desktop, mobile, layout, progress };
 }
 
 async function captureRunningEvidence(browser, prefix) {
@@ -764,13 +859,31 @@ try {
       .map(({ id }) => id),
     pharmacyExpected.objectiveIds,
   );
+  const pharmacyChapterEvidence = await capturePreRunEvidence(
+    browser,
+    "01-hospital-pharmacy",
+    "chapter",
+  );
+  await advancePreRunStep(browser, "chapter", "strategy");
   const loadoutUi = await browser.evaluate(`(() => ({
-    ids: [...document.querySelectorAll(".hospital-loadout-selector button")]
+    step: document.querySelector(".pre-run-body")?.getAttribute("data-step"),
+    planLabels: [...document.querySelectorAll(
+      '.pre-run-body[data-step="strategy"] .hospital-plan-selector button'
+    )].map((button) => button.textContent?.replace(/\\s+/g, " ").trim()),
+    selectedPlanCount: document.querySelectorAll(
+      '.pre-run-body[data-step="strategy"] .hospital-plan-selector button[aria-pressed="true"]'
+    ).length,
+    ids: [...document.querySelectorAll(
+      '.pre-run-body[data-step="strategy"] .hospital-loadout-selector button'
+    )]
       .map((button) => button.textContent?.replace(/\\s+/g, " ").trim()),
     selectedCount: document.querySelectorAll(
-      '.hospital-loadout-selector button[aria-pressed="true"]'
+      '.pre-run-body[data-step="strategy"] .hospital-loadout-selector button[aria-pressed="true"]'
     ).length
   }))()`);
+  assert.equal(loadoutUi.step, "strategy");
+  assert.equal(loadoutUi.planLabels.length, 2);
+  assert.equal(loadoutUi.selectedPlanCount, 1);
   assert.equal(loadoutUi.ids.length, 4);
   assert.equal(loadoutUi.selectedCount, 2);
 
@@ -802,15 +915,19 @@ try {
       RECOMMENDED_LOADOUT,
     )});
   })()`);
-  const pharmacyReadyEvidence = await captureReadyEvidence(
+  const pharmacyStrategyEvidence = await capturePreRunEvidence(
     browser,
     "01-hospital-pharmacy",
+    "strategy",
+  );
+  await advancePreRunStep(browser, "strategy", "briefing");
+  const pharmacyBriefingEvidence = await capturePreRunEvidence(
+    browser,
+    "01-hospital-pharmacy",
+    "briefing",
   );
 
-  await browser.evaluate("window.__CHASING_QA__.start()");
-  await browser.waitFor(
-    "window.__CHASING_QA__?.getState()?.game?.phase === 'playing'",
-  );
+  await advancePreRunStep(browser, "briefing", "playing");
   const pharmacyInteractionObservations =
     await completePlanThroughPlayerInteractions(
       browser,
@@ -888,15 +1005,43 @@ try {
       .map(({ id }) => id),
     emergencyExpected.objectiveIds,
   );
-  const emergencyReadyEvidence = await captureReadyEvidence(
+  // The result-page route switch intentionally returns to the strategy step:
+  // the chapter is already known, while the alternate route and retained
+  // two-slot loadout still need a player-facing review before the briefing.
+  await waitForPreRunStep(browser, "strategy");
+  const emergencyStrategyUi = await browser.evaluate(`(() => ({
+    step: document.querySelector(".pre-run-body")?.getAttribute("data-step"),
+    planLabels: [...document.querySelectorAll(
+      '.pre-run-body[data-step="strategy"] .hospital-plan-selector button'
+    )].map((button) => button.textContent?.replace(/\\s+/g, " ").trim()),
+    selectedPlanCount: document.querySelectorAll(
+      '.pre-run-body[data-step="strategy"] .hospital-plan-selector button[aria-pressed="true"]'
+    ).length,
+    loadoutLabels: [...document.querySelectorAll(
+      '.pre-run-body[data-step="strategy"] .hospital-loadout-selector button'
+    )].map((button) => button.textContent?.replace(/\\s+/g, " ").trim()),
+    selectedLoadoutCount: document.querySelectorAll(
+      '.pre-run-body[data-step="strategy"] .hospital-loadout-selector button[aria-pressed="true"]'
+    ).length
+  }))()`);
+  assert.equal(emergencyStrategyUi.step, "strategy");
+  assert.equal(emergencyStrategyUi.planLabels.length, 2);
+  assert.equal(emergencyStrategyUi.selectedPlanCount, 1);
+  assert.equal(emergencyStrategyUi.loadoutLabels.length, 4);
+  assert.equal(emergencyStrategyUi.selectedLoadoutCount, 2);
+  const emergencyStrategyEvidence = await capturePreRunEvidence(
     browser,
     "04-hospital-emergency",
+    "strategy",
+  );
+  await advancePreRunStep(browser, "strategy", "briefing");
+  const emergencyBriefingEvidence = await capturePreRunEvidence(
+    browser,
+    "04-hospital-emergency",
+    "briefing",
   );
 
-  await browser.evaluate("window.__CHASING_QA__.start()");
-  await browser.waitFor(
-    "window.__CHASING_QA__?.getState()?.game?.phase === 'playing'",
-  );
+  await advancePreRunStep(browser, "briefing", "playing");
   const emergencyInteractionObservations =
     await completePlanThroughPlayerInteractions(
       browser,
@@ -952,6 +1097,19 @@ try {
       label: resultSwitchLabel,
       usedPlayerFacingButton: true,
     },
+    preRunFlow: {
+      orderedSteps: ["chapter", "strategy", "briefing"],
+      pharmacy: {
+        chapter: pharmacyChapterEvidence.progress,
+        strategy: pharmacyStrategyEvidence.progress,
+        briefing: pharmacyBriefingEvidence.progress,
+      },
+      emergencyResultReplay: {
+        entryStep: emergencyStrategyEvidence.step,
+        strategy: emergencyStrategyEvidence.progress,
+        briefing: emergencyBriefingEvidence.progress,
+      },
+    },
     missions: {
       pharmacy: {
         ...planReport(pharmacyCompleted),
@@ -970,19 +1128,28 @@ try {
         `gameplay:hospital-secondary-exit:${emergencyExpected.secondaryExitId}`,
     },
     mobileLayouts: {
-      pharmacyReady: pharmacyReadyEvidence.layout,
+      pharmacyChapter: pharmacyChapterEvidence.layout,
+      pharmacyStrategy: pharmacyStrategyEvidence.layout,
+      pharmacyBriefing: pharmacyBriefingEvidence.layout,
       pharmacyRunning: pharmacyRunningEvidence.layout,
-      emergencyReady: emergencyReadyEvidence.layout,
+      emergencyStrategy: emergencyStrategyEvidence.layout,
+      emergencyBriefing: emergencyBriefingEvidence.layout,
       emergencyRunning: emergencyRunningEvidence.layout,
     },
     screenshots: [
-      pharmacyReadyEvidence.desktop,
-      pharmacyReadyEvidence.mobile,
+      pharmacyChapterEvidence.desktop,
+      pharmacyChapterEvidence.mobile,
+      pharmacyStrategyEvidence.desktop,
+      pharmacyStrategyEvidence.mobile,
+      pharmacyBriefingEvidence.desktop,
+      pharmacyBriefingEvidence.mobile,
       pharmacyRunningEvidence.desktop,
       pharmacyRunningEvidence.mobile,
       pharmacyResult,
-      emergencyReadyEvidence.desktop,
-      emergencyReadyEvidence.mobile,
+      emergencyStrategyEvidence.desktop,
+      emergencyStrategyEvidence.mobile,
+      emergencyBriefingEvidence.desktop,
+      emergencyBriefingEvidence.mobile,
       emergencyRunningEvidence.desktop,
       emergencyRunningEvidence.mobile,
     ],

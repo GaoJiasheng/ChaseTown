@@ -80,6 +80,55 @@ test("hide disturbance has a formal persistent scene treatment", () => {
   assert.match(GAME, /disturbanceRatio\s*\*\s*0\.09/u);
 });
 
+test("hospital narrative, featured, shared and ambient art use the footprint slot planner", () => {
+  assert.match(GAME, /const narrativeAnchorKeys = new Set/u);
+  assert.match(
+    GAME,
+    /const ambientRoomAnchors = roomSafeDecorAnchors\.filter[\s\S]*?!narrativeAnchorKeys\.has/u,
+  );
+  assert.match(
+    GAME,
+    /const hospitalDressingLayout = campaignLevel\.campaign\.theme === "hospital"[\s\S]*?planHospitalDressingLayout\(/u,
+  );
+  assert.match(
+    GAME,
+    /supportsFootprint:\s*\(footprint\)\s*=>\s*roomFloorSupportForFootprint\([\s\S]*?footprint,[\s\S]*?\)\.supported/u,
+  );
+  assert.match(
+    GAME,
+    /if \(hospitalDressingLayout\?\.unplacedIds\.length\)[\s\S]*?throw new Error/u,
+  );
+  assert.match(
+    GAME,
+    /const hospitalFeaturedRoomAnchors = new Map[\s\S]*?category === "featured"/u,
+  );
+  assert.match(
+    GAME,
+    /const hospitalSharedRoomAnchors = new Map[\s\S]*?category === "shared"/u,
+  );
+  assert.match(
+    GAME,
+    /const ambientClusterRoomAnchors = campaignLevel\.campaign\.theme === "hospital"[\s\S]*?category === "ambient"[\s\S]*?: ambientRoomAnchors/u,
+  );
+  assert.match(
+    GAME,
+    /const ambientClusterCount = Math\.min\(\s*ambientClusterRoomAnchors\.length/u,
+  );
+  assert.match(GAME, /const anchor = ambientClusterRoomAnchors\[index\]/u);
+  assert.match(
+    GAME,
+    /campaignLevel\.campaign\.theme === "hospital"[\s\S]*?\? hospitalFeaturedRoomAnchors\.get\(spec\.node\)/u,
+  );
+  assert.match(
+    GAME,
+    /campaignLevel\.campaign\.theme === "hospital"[\s\S]*?\? hospitalSharedRoomAnchors\.get\(name\)/u,
+  );
+  assert.doesNotMatch(
+    GAME,
+    /const anchor = roomSafeDecorAnchors\[artLayout\.landmarkNodes\.length \+ index\]/u,
+  );
+});
+
 test("browser QA pays real task costs instead of using the completion bypass", () => {
   assert.doesNotMatch(VISUAL_QA, /__CHASING_QA__\.completeMission\(\)/u);
   assert.match(
@@ -101,6 +150,10 @@ test("browser QA pays real task costs instead of using the completion bypass", (
   assert.match(VISUAL_QA, /did not lock movement during its commitment/u);
   assert.match(VISUAL_QA, /did not emit its authored public sound/u);
   assert.match(VISUAL_QA, /did not retain post-interaction exposure/u);
+  assert.match(
+    GAME,
+    /registeredLight\?\.sourceIntensity \?\? view\.light\.intensity[\s\S]*?registeredLight\?\.appliedIntensity/u,
+  );
 });
 
 test("mobile and high-contrast controls preserve selection and hit targets", () => {

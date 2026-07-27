@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { gzipSync } from "node:zlib";
 
 import {
   AssetLoadError,
@@ -9,6 +10,7 @@ import {
   classifyAssetHttpStatus,
   createQaAssetFaultInjector,
   createSceneAssetLoader,
+  decodeRuntimeGlbTransport,
   externalAssetUrisFromGlb,
   FIRST_PLAYABLE_BUDGET_TARGET,
 } from "../app/game/asset-loading.ts";
@@ -32,6 +34,13 @@ function glbWithDocument(document) {
   return buffer;
 }
 
+function exactArrayBuffer(view) {
+  return view.buffer.slice(
+    view.byteOffset,
+    view.byteOffset + view.byteLength,
+  );
+}
+
 test("binary glTF dependencies are discoverable before Three.js parsing", () => {
   const glb = glbWithDocument({
     buffers: [{ byteLength: 12 }, { uri: "geometry.bin" }],
@@ -47,6 +56,76 @@ test("binary glTF dependencies are discoverable before Three.js parsing", () => 
     ["geometry.bin", "../textures/wall.ktx2", "locker.png"],
   );
   assert.deepEqual(externalAssetUrisFromGlb(new ArrayBuffer(8)), []);
+});
+
+test("runtime GLB transport accepts identity bytes without copying", async () => {
+  const glb = glbWithDocument({ buffers: [{ byteLength: 0 }] });
+  const decoded = await decodeRuntimeGlbTransport(glb, {
+    url: "/models/identity.glb",
+  });
+  assert.equal(decoded, glb);
+});
+
+test("runtime GLB transport restores a gzip envelope byte-for-byte", async () => {
+  const glb = glbWithDocument({
+    images: [{ uri: "../textures/wall.ktx2" }],
+  });
+  const encoded = exactArrayBuffer(gzipSync(new Uint8Array(glb), { level: 9 }));
+  const decoded = await decodeRuntimeGlbTransport(encoded, {
+    url: "/models/enveloped.glb",
+  });
+  assert.deepEqual(new Uint8Array(decoded), new Uint8Array(glb));
+  assert.deepEqual(externalAssetUrisFromGlb(decoded), ["../textures/wall.ktx2"]);
+});
+
+test("runtime GLB transport reports unsupported decompression with recoverable copy", async () => {
+  const glb = glbWithDocument({});
+  const encoded = exactArrayBuffer(gzipSync(new Uint8Array(glb), { level: 9 }));
+  await assert.rejects(
+    decodeRuntimeGlbTransport(encoded, {
+      url: "/models/unsupported.glb",
+      decompressionStreamAvailable: false,
+    }),
+    (error) => {
+      assert.ok(error instanceof AssetLoadError);
+      assert.equal(error.code, "ASSET_DECOMPRESSION_UNSUPPORTED");
+      assert.equal(error.retryable, false);
+      assert.match(assetLoadRecoveryMessage(error), /升级或更换浏览器.*原地重试/u);
+      return true;
+    },
+  );
+});
+
+test("runtime GLB transport rejects corrupt envelopes and declared-length drift", async () => {
+  await assert.rejects(
+    decodeRuntimeGlbTransport(bytes(0x1f, 0x8b, 0x08, 0x00), {
+      url: "/models/corrupt.glb",
+    }),
+    (error) => {
+      assert.ok(error instanceof AssetLoadError);
+      assert.equal(error.code, "ASSET_DECODE");
+      assert.match(assetLoadRecoveryMessage(error), /校验失败.*原地重试/u);
+      return true;
+    },
+  );
+
+  const invalidLength = glbWithDocument({});
+  new DataView(invalidLength).setUint32(
+    8,
+    invalidLength.byteLength - 1,
+    true,
+  );
+  await assert.rejects(
+    decodeRuntimeGlbTransport(invalidLength, {
+      url: "/models/invalid-length.glb",
+    }),
+    (error) => {
+      assert.ok(error instanceof AssetLoadError);
+      assert.equal(error.code, "ASSET_DECODE");
+      assert.match(error.message, /declared .* received/u);
+      return true;
+    },
+  );
 });
 
 test("HTTP retry classification is explicit and conservative", () => {
@@ -413,12 +492,12 @@ test("invalid loader policies fail before starting network work", () => {
   );
 });
 
-test("10 Mbps first-playable manifest fits the eight-second release gate", () => {
+test("10 Mbps first-playable manifest fits the 6.5 MiB release gate", () => {
   const mebibyte = 1024 * 1024;
   const manifest = [
     { id: "app-shell", url: "/app.js?v=1", transferBytes: 1 * mebibyte, phase: "shell", category: "shell" },
     { id: "collision", url: "/levels/01.nav", transferBytes: 0.4 * mebibyte, phase: "first-playable", category: "navigation" },
-    { id: "kid-lod1", url: "/actors/kid-lod1.glb", transferBytes: 2 * mebibyte, phase: "first-playable", category: "player" },
+    { id: "kid-lod1", url: "/actors/kid-lod1.glb", transferBytes: 1.5 * mebibyte, phase: "first-playable", category: "player" },
     { id: "villain-lod1", url: "/actors/villain-lod1.glb", transferBytes: 1.5 * mebibyte, phase: "first-playable", category: "threat" },
     { id: "locker-core", url: "/props/locker-core.glb", transferBytes: 0.6 * mebibyte, phase: "first-playable", category: "hide-spot" },
     { id: "campus-core", url: "/themes/campus-core.glb", transferBytes: 1.25 * mebibyte, phase: "first-playable", category: "theme" },
@@ -426,7 +505,7 @@ test("10 Mbps first-playable manifest fits the eight-second release gate", () =>
   ].map((entry) => ({ ...entry, transferBytes: Math.round(entry.transferBytes) }));
   const audit = auditFirstPlayableAssetBudget(manifest);
   assert.equal(audit.fits, true);
-  assert.equal(audit.criticalTransferBytes, Math.round(6.75 * mebibyte));
+  assert.equal(audit.criticalTransferBytes, Math.round(6.25 * mebibyte));
   assert.equal(audit.deferredTransferBytes, 12 * mebibyte);
   assert.ok(audit.estimatedSeconds < FIRST_PLAYABLE_BUDGET_TARGET.maximumSeconds);
   assert.deepEqual(audit.exceededCategories, []);

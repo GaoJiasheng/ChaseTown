@@ -8,17 +8,24 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { extname, relative, resolve, sep } from "node:path";
-import { gzipSync } from "node:zlib";
+import { gzipSync, gunzipSync } from "node:zlib";
 
 import type { RuntimePreloadAsset } from "../app/game/runtime-assets";
 
-export const MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES = 8 * 1024 * 1024;
+export const MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES =
+  6.5 * 1024 * 1024;
 export const MAX_EAGER_FIRST_CAMPAIGN_TRANSFER_BYTES = 9 * 1024 * 1024;
 export const SERVER_RENDERED_HTML_TRANSFER_RESERVE_BYTES = 32 * 1024;
 
 const BASIS_TRANSCODER_OUTPUT =
   /^assets\/basis_transcoder-[^/]+\.(?:js|wasm)$/u;
 const CLIENT_TEXT_ASSET = /\.(?:css|js)$/u;
+const RUNTIME_GLB_ASSET = /\.glb$/u;
+const GLB_MAGIC = 0x46546c67;
+const GLB_VERSION = 2;
+const GLB_HEADER_BYTES = 12;
+const GZIP_ID1 = 0x1f;
+const GZIP_ID2 = 0x8b;
 
 export type ReleaseAssetKind =
   | "css"
@@ -34,8 +41,22 @@ export type ReleaseAssetRecord = Readonly<{
   phase: "critical" | "eager";
   rawBytes: number;
   estimatedTransferBytes: number;
-  transferEncoding: "already-compressed" | "gzip" | "identity" | "reserved";
+  transferEncoding:
+    | "already-compressed"
+    | "gzip"
+    | "gzip-envelope"
+    | "identity"
+    | "reserved";
   sha256: string | null;
+}>;
+
+export type RuntimeGlbTransportRecord = Readonly<{
+  path: string;
+  encoding: "gzip-envelope";
+  decodedBytes: number;
+  encodedBytes: number;
+  decodedSha256: string;
+  encodedSha256: string;
 }>;
 
 export type FirstPlayableBudget = Readonly<{
@@ -82,6 +103,99 @@ function digest(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
+function isGzipEnvelope(bytes: Uint8Array): boolean {
+  return bytes.byteLength >= 2
+    && bytes[0] === GZIP_ID1
+    && bytes[1] === GZIP_ID2;
+}
+
+function deterministicGzipEnvelope(bytes: Uint8Array): Buffer {
+  const encoded = Buffer.from(gzipSync(bytes, { level: 9 }));
+  // RFC 1952 leaves the originating OS byte encoder-defined. zlib emits a
+  // platform value, which makes otherwise identical macOS/Linux release
+  // artifacts hash differently. MTIME=0 and OS=unknown make the transport
+  // envelope canonical without changing its decoded payload or checksum.
+  encoded.fill(0, 4, 8);
+  encoded[9] = 0xff;
+  return encoded;
+}
+
+function assertValidGlb(bytes: Uint8Array, publicPath: string): void {
+  if (bytes.byteLength < GLB_HEADER_BYTES) {
+    throw new Error(`${publicPath} is shorter than the binary glTF header`);
+  }
+  const view = new DataView(
+    bytes.buffer,
+    bytes.byteOffset,
+    bytes.byteLength,
+  );
+  if (view.getUint32(0, true) !== GLB_MAGIC) {
+    throw new Error(`${publicPath} does not contain binary glTF magic`);
+  }
+  if (view.getUint32(4, true) !== GLB_VERSION) {
+    throw new Error(`${publicPath} does not contain a glTF 2.0 payload`);
+  }
+  const declaredLength = view.getUint32(8, true);
+  if (declaredLength !== bytes.byteLength) {
+    throw new Error(
+      `${publicPath} declares ${declaredLength} bytes but contains `
+      + `${bytes.byteLength}`,
+    );
+  }
+}
+
+/**
+ * Replaces every deployed runtime GLB with a deterministic gzip envelope while
+ * retaining its public URL. Source files in `public/` are never touched.
+ *
+ * The pass is deliberately idempotent because Vite can invoke `closeBundle`
+ * for more than one build environment. Existing envelopes are decoded,
+ * validated, and reproduced byte-for-byte rather than being compressed twice.
+ */
+export async function encodeRuntimeGlbTransports(
+  clientOutputDirectory: string,
+): Promise<readonly RuntimeGlbTransportRecord[]> {
+  const modelDirectory = resolve(clientOutputDirectory, "models");
+  const modelFiles = (await filesBelow(modelDirectory))
+    .filter((pathname) => RUNTIME_GLB_ASSET.test(pathname));
+  const records: RuntimeGlbTransportRecord[] = [];
+
+  for (const pathname of modelFiles) {
+    const publicPath =
+      `/${toPosixPath(relative(clientOutputDirectory, pathname))}`;
+    const current = await readFile(pathname);
+    let decoded: Buffer;
+    if (isGzipEnvelope(current)) {
+      try {
+        decoded = gunzipSync(current);
+      } catch (error) {
+        throw new Error(
+          `${publicPath} contains an invalid gzip transport envelope`,
+          { cause: error },
+        );
+      }
+    } else {
+      decoded = current;
+    }
+    assertValidGlb(decoded, publicPath);
+
+    const encoded = deterministicGzipEnvelope(decoded);
+    if (!current.equals(encoded)) {
+      await writeFile(pathname, encoded);
+    }
+    records.push(Object.freeze({
+      path: publicPath,
+      encoding: "gzip-envelope",
+      decodedBytes: decoded.byteLength,
+      encodedBytes: encoded.byteLength,
+      decodedSha256: digest(decoded),
+      encodedSha256: digest(encoded),
+    }));
+  }
+
+  return Object.freeze(records);
+}
+
 function runtimePath(href: string): string {
   return new URL(href, "https://runtime.invalid")
     .pathname
@@ -107,6 +221,7 @@ async function fileRecord(
 ): Promise<ReleaseAssetRecord> {
   const bytes = await readFile(pathname);
   const gzip = isTextAsset(pathname);
+  const gzipEnvelope = kind === "model" && isGzipEnvelope(bytes);
   return Object.freeze({
     path: publicPath,
     kind,
@@ -115,7 +230,11 @@ async function fileRecord(
     estimatedTransferBytes: gzip
       ? gzipSync(bytes, { level: 9 }).byteLength
       : bytes.byteLength,
-    transferEncoding: gzip ? "gzip" : "already-compressed",
+    transferEncoding: gzip
+      ? "gzip"
+      : gzipEnvelope
+        ? "gzip-envelope"
+        : "already-compressed",
     sha256: digest(bytes),
   });
 }
