@@ -3,1006 +3,100 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
-type Point = { x: number; y: number };
-type Phase = "ready" | "playing" | "caught" | "won" | "lost";
-type ActorName = "kid" | "villain" | "police";
-type AiState = "delay" | "chase" | "search" | "patrol";
-type AiMemory = {
-  state: AiState;
-  lastKnown: Point | null;
-  searchArrivedAt: number | null;
-};
-type ActorMotionRuntime = {
-  gaitWeight: number;
-  gaitPhase: number;
-  actualSpeed: number;
-  heading: number;
-  targetHeading: number;
-  visualY: number;
-  baseVisualY: number;
-};
-type GridPathCache = {
-  signature: string;
-  route: Point[];
-  cursor: number;
-  activeWaypoint: Point | null;
-  recomputes: number;
-  cacheHits: number;
-  lastInvalidationReason: string;
-};
-type GpuMemorySnapshot = {
-  geometries: number;
-  textures: number;
-  programs: number;
-};
-type ResourceDisposalReport = {
-  reason: string;
-  geometries: number;
-  materials: number;
-  textures: number;
-  skeletons: number;
-  externalTargets: number;
-  before: GpuMemorySnapshot;
-  after: GpuMemorySnapshot;
-  completedAt: number;
-  alreadyDisposed: boolean;
-  contextLost: boolean;
-};
+import {
+  BLOCKING_ACTOR_SPECS,
+  CORE_ASSETS,
+  DETAIL_ASSETS,
+  EXIT,
+  P0_TUNING,
+  P1_SHADOW_CASTERS,
+  P1_TUNING,
+  P2_TUNING,
+  PATROL,
+  POLICE_POINT,
+  START,
+  VILLAIN_START,
+} from "./game/config/index.js";
+import type {
+  ActorMotionRuntime,
+  ActorName,
+  AiMemory,
+  GpuMemorySnapshot,
+  GridPathCache,
+  Phase,
+  Point,
+  ResourceDisposalReport,
+} from "./game/core/types.js";
+import {
+  canPlayerOccupy,
+  canWalk,
+  distance,
+  findGridPath,
+  gridPathDistanceMeters,
+  hasLineOfSight,
+  roundedCell,
+  world,
+} from "./game/level/maze.js";
+import {
+  CAMERA_DIRECTION,
+  SCREEN_RIGHT,
+  SCREEN_UP,
+  finalThreat,
+  proximityThreat,
+  threatStateFactor,
+  vignetteStrength,
+} from "./game/camera/index.js";
+import { screenAlignedMove } from "./game/input/index.js";
+import {
+  pathCacheInvalidationReason,
+  pathCacheSignature,
+  planVillainAi,
+  stepVillainToward,
+} from "./game/ai/index.js";
+import {
+  poseRig,
+  setActorLabel,
+  setActorMarkerOpacity,
+  shouldPoliceTrack,
+  syncActor,
+} from "./game/player/actors.js";
+import { makeSynthAudioRuntime } from "./game/audio/index.js";
+import { disposeObjectResources } from "./game/core/resources.js";
+import { createSceneArtRuntime } from "./game/art/scene-runtime.js";
+import { markerTargetOpacity } from "./game/ui/feedback.js";
+import {
+  makeRenderBreakdown,
+  trackRenderCategory,
+  type RenderCategory,
+} from "./game/ui/render-fx.js";
 
-export const P0_TUNING = Object.freeze({
-  playerSpeed: 3.7,
-  villainSpeed: 3.4,
-  perceptionRadius: 5.5,
-  startDelayMs: 1500,
-  searchHoldMs: 2500,
-  villainTurnSpeed: 3.2,
-  sharpTurnSpeedMultiplier: 0.45,
-  playerCollisionMargin: 0.18,
-  captureFreezeMs: 600,
-  lineOfSightSampleStep: 0.25,
-});
-
-export const P1_TUNING = Object.freeze({
-  villainCollisionMargin: 0.14,
-  gaitBlendSeconds: 0.15,
-  gaitRadiansPerGridUnit: 3.5,
-  playerTurnDamping: 12,
-  policeTurnDamping: 7,
-  markerDelayMs: 4000,
-  markerFadeDamping: 8,
-  policeTrackingDistance: 4,
-  environmentIntensity: 1,
-  exposure: 1,
-  hemisphereIntensity: 2.2,
-  sunIntensity: 2.9,
-  rimIntensity: 1.36,
-  sunShadowBias: -0.0005,
-  sunShadowNormalBias: 0.02,
-});
-
-export const P2_TUNING = Object.freeze({
-  threatNearDistance: 4.5,
-  threatFarDistance: 9,
-  unawareStateFactor: 0.25,
-  vignetteDeadzone: 0.25,
-  vignetteUiIntervalMs: 120,
-  heartbeatSlowSeconds: 1.05,
-  heartbeatFastSeconds: 0.5,
-  heartbeatQuietGain: 0.018,
-  heartbeatLoudGain: 0.078,
-  footstepPhaseRadians: Math.PI,
-  pathWaypointTolerance: 0.34,
-  pathTurnMinimumMultiplier: 0.08,
-});
-
-const SIZE = 25;
-const CELL = 2;
-const START = { x: 1, y: 1 };
-const EXIT = { x: 23, y: 23 };
-const VILLAIN_START = { x: 7, y: 1 };
-const POLICE_POINT = { x: 23, y: 22.25 };
-const PATROL = [
-  { x: 7, y: 7 },
-  { x: 15, y: 3 },
-  { x: 21, y: 10 },
-  { x: 17, y: 19 },
-  { x: 9, y: 20 },
-];
-
-const ACTOR_SPECS = [
-  { name: "kid" as const, url: "/models/characters/kid.glb?v=21", height: 2.12, color: 0x4d9fff, label: "你" },
-  { name: "villain" as const, url: "/models/characters/villain.glb?v=21", height: 2.28, color: 0xff4f5e, label: "追捕者" },
-  { name: "police" as const, url: "/models/characters/police.glb?v=21", height: 2.18, color: 0x35e5f2, label: "警察" },
-] as const;
-const BLOCKING_ACTOR_SPECS = ACTOR_SPECS.filter((spec) => spec.name !== "police");
-
-const CORE_ASSETS = {
-  wall: "/models/environment/wall.glb",
-  wallCorner: "/models/environment/wall-corner.glb",
-  wallEnd: "/models/environment/wall-end.glb",
-  floor: "/models/environment/floor.glb",
-  exit: "/models/environment/exit.glb",
-  frontGate: "/models/environment/front-gate.glb",
-  classroomFloor: "/models/environment/classroom-floor.glb",
-  playgroundFloor: "/models/environment/playground-floor.glb",
-  grassFloor: "/models/environment/grass-floor.glb",
-} as const;
-
-const DETAIL_ASSETS = {
-  locker: "/models/environment/locker.glb",
-  bench: "/models/environment/bench.glb",
-  car: "/models/environment/police-car.glb",
-  tree: "/models/environment/tree.glb",
-  classroomDoor: "/models/environment/classroom-door.glb",
-  ceilingLight: "/models/environment/ceiling-light.glb",
-  basketball: "/models/environment/basketball.glb",
-  deskChair: "/models/environment/desk-chair.glb",
-  blackboard: "/models/environment/blackboard.glb",
-  bulletin: "/models/environment/bulletin.glb",
-  podium: "/models/environment/podium.glb",
-  extinguisher: "/models/environment/extinguisher.glb",
-  trash: "/models/environment/trash.glb",
-  books: "/models/environment/books.glb",
-  backpack: "/models/environment/backpack.glb",
-  shrub: "/models/environment/shrub.glb",
-  station: "/models/environment/station.glb",
-} as const;
-export const P1_SHADOW_CASTERS = ["car", "tree", "station", "locker", "basketball", "bench", "blackboard", "podium"] as const;
-const largeShadowProps = new Set<keyof typeof DETAIL_ASSETS>(P1_SHADOW_CASTERS);
-
-function carve(grid: boolean[][], points: Point[]) {
-  for (let i = 1; i < points.length; i += 1) {
-    let { x, y } = points[i - 1];
-    const target = points[i];
-    while (x !== target.x || y !== target.y) {
-      grid[y][x] = true;
-      if (x !== target.x) x += Math.sign(target.x - x);
-      else y += Math.sign(target.y - y);
-    }
-    grid[y][x] = true;
-  }
-}
-
-function makeMaze() {
-  const grid = Array.from({ length: SIZE }, () => Array<boolean>(SIZE).fill(false));
-  carve(grid, [{ x: 1, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 7 }, { x: 11, y: 7 }, { x: 11, y: 13 }, { x: 17, y: 13 }, { x: 17, y: 19 }, { x: 23, y: 19 }, { x: 23, y: 23 }]);
-  carve(grid, [{ x: 1, y: 1 }, { x: 1, y: 10 }, { x: 5, y: 10 }, { x: 5, y: 16 }, { x: 13, y: 16 }, { x: 13, y: 23 }, { x: 23, y: 23 }]);
-  carve(grid, [{ x: 7, y: 7 }, { x: 7, y: 3 }, { x: 15, y: 3 }, { x: 15, y: 10 }, { x: 21, y: 10 }, { x: 21, y: 23 }, { x: 23, y: 23 }]);
-  carve(grid, [{ x: 3, y: 10 }, { x: 3, y: 14 }]);
-  carve(grid, [{ x: 9, y: 13 }, { x: 9, y: 20 }]);
-  carve(grid, [{ x: 15, y: 3 }, { x: 20, y: 3 }]);
-  carve(grid, [{ x: 17, y: 16 }, { x: 22, y: 16 }]);
-  carve(grid, [{ x: 11, y: 7 }, { x: 14, y: 7 }]);
-  return grid;
-}
-
-const MAZE = makeMaze();
-const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
-const pointKey = (point: Point) => `${point.x},${point.y}`;
-const canWalk = (x: number, y: number) => MAZE[Math.round(y)]?.[Math.round(x)] ?? false;
-const world = (point: Point) => new THREE.Vector3((point.x - (SIZE - 1) / 2) * CELL, 0, (point.y - (SIZE - 1) / 2) * CELL);
-const CAMERA_DIRECTION = Object.freeze({ x: 0.446, y: 0.668, z: 0.595 });
-const cameraGroundLength = Math.hypot(CAMERA_DIRECTION.x, CAMERA_DIRECTION.z);
-const SCREEN_UP = Object.freeze({
-  x: -CAMERA_DIRECTION.x / cameraGroundLength,
-  y: -CAMERA_DIRECTION.z / cameraGroundLength,
-});
-const SCREEN_RIGHT = Object.freeze({ x: -SCREEN_UP.y, y: SCREEN_UP.x });
-
-export function threatStateFactor(state: AiState) {
-  return state === "chase" || state === "search" ? 1 : P2_TUNING.unawareStateFactor;
-}
-
-export function proximityThreat(enemyDistance: number) {
-  const span = P2_TUNING.threatFarDistance - P2_TUNING.threatNearDistance;
-  const ratio = THREE.MathUtils.clamp((enemyDistance - P2_TUNING.threatNearDistance) / span, 0, 1);
-  const smooth = ratio * ratio * (3 - 2 * ratio);
-  return 1 - smooth;
-}
-
-export function finalThreat(enemyDistance: number, state: AiState, phase: Phase = "playing") {
-  if (phase !== "playing") return 0;
-  return proximityThreat(enemyDistance) * threatStateFactor(state);
-}
-
-export function vignetteStrength(threat: number) {
-  return THREE.MathUtils.clamp(
-    (threat - P2_TUNING.vignetteDeadzone) / (1 - P2_TUNING.vignetteDeadzone),
-    0,
-    1,
-  );
-}
-
-export function hasLineOfSight(a: Point, b: Point) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const span = Math.hypot(dx, dy);
-  const steps = Math.max(1, Math.ceil(span / P0_TUNING.lineOfSightSampleStep));
-  for (let index = 0; index <= steps; index += 1) {
-    const progress = index / steps;
-    if (!canWalk(a.x + dx * progress, a.y + dy * progress)) return false;
-  }
-  return true;
-}
-
-export function canPlayerOccupy(x: number, y: number, margin = P0_TUNING.playerCollisionMargin) {
-  return [
-    { x: x - margin, y: y - margin },
-    { x: x + margin, y: y - margin },
-    { x: x - margin, y: y + margin },
-    { x: x + margin, y: y + margin },
-  ].every((sample) => canWalk(sample.x, sample.y));
-}
-
-export function screenAlignedMove(dx: number, dy: number) {
-  const length = Math.hypot(dx, dy);
-  if (length === 0) return { x: 0, y: 0 };
-  const inputX = dx / length;
-  const inputY = dy / length;
-  return {
-    x: SCREEN_RIGHT.x * inputX + SCREEN_UP.x * -inputY,
-    y: SCREEN_RIGHT.y * inputX + SCREEN_UP.y * -inputY,
-  };
-}
-
-function shortestAngle(from: number, to: number) {
-  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
-}
-
-export function dampAngle(from: number, to: number, damping: number, delta: number) {
-  return from + shortestAngle(from, to) * (1 - Math.exp(-damping * Math.max(0, delta)));
-}
-
-export function advanceGaitWeight(current: number, moving: boolean, delta: number) {
-  const target = moving ? 1 : 0;
-  const step = Math.max(0, delta) / P1_TUNING.gaitBlendSeconds;
-  return current + THREE.MathUtils.clamp(target - current, -step, step);
-}
-
-export function advanceGaitPhase(phase: number, actualGridSpeed: number, delta: number) {
-  if (actualGridSpeed <= 0 || delta <= 0) return phase;
-  return phase + actualGridSpeed * P1_TUNING.gaitRadiansPerGridUnit * delta;
-}
-
-export function markerTargetOpacity(phase: Phase, playingElapsedMs: number, threat: number, villainMarker: boolean) {
-  if (phase !== "playing") return 1;
-  if (villainMarker && threat > 0.6) return 1;
-  return playingElapsedMs < P1_TUNING.markerDelayMs ? 1 : 0;
-}
-
-export function gridQuarterTurn(x: number, y: number, salt = 0) {
-  let hash = (Math.imul(x + 101, 374761393) ^ Math.imul(y + 211, 668265263) ^ Math.imul(salt + 17, 2246822519)) | 0;
-  hash = Math.imul(hash ^ (hash >>> 13), 1274126177);
-  return ((hash ^ (hash >>> 16)) >>> 0) & 3;
-}
-
-export function shouldPoliceTrack(playerPoint: Point) {
-  return distance(playerPoint, EXIT) < P1_TUNING.policeTrackingDistance;
-}
-
-function neighbors(point: Point) {
-  return [
-    { x: point.x + 1, y: point.y },
-    { x: point.x - 1, y: point.y },
-    { x: point.x, y: point.y + 1 },
-    { x: point.x, y: point.y - 1 },
-  ].filter((candidate) => canWalk(candidate.x, candidate.y));
-}
-
-export function findGridPath(from: Point, to: Point) {
-  const start = { x: Math.round(from.x), y: Math.round(from.y) };
-  const goal = { x: Math.round(to.x), y: Math.round(to.y) };
-  const queue = [start];
-  const cameFrom = new Map<string, Point | null>([[pointKey(start), null]]);
-  for (let i = 0; i < queue.length; i += 1) {
-    const current = queue[i];
-    if (pointKey(current) === pointKey(goal)) break;
-    for (const next of neighbors(current)) {
-      if (!cameFrom.has(pointKey(next))) {
-        cameFrom.set(pointKey(next), current);
-        queue.push(next);
-      }
-    }
-  }
-  if (!cameFrom.has(pointKey(goal))) return [];
-  const route: Point[] = [];
-  let current: Point | null = goal;
-  while (current) {
-    route.push(current);
-    current = cameFrom.get(pointKey(current)) ?? null;
-  }
-  return route.reverse();
-}
-
-const roundedCell = (point: Point) => ({ x: Math.round(point.x), y: Math.round(point.y) });
-
-export function pathCacheSignature(state: AiState, from: Point, target: Point) {
-  const start = roundedCell(from);
-  const goal = roundedCell(target);
-  return `${state}:${start.x},${start.y}>${goal.x},${goal.y}`;
-}
-
-export function pathCacheInvalidationReason(previousSignature: string, nextSignature: string) {
-  if (!previousSignature) return "empty-cache";
-  if (previousSignature === nextSignature) return null;
-  const [previousState, previousCells] = previousSignature.split(":");
-  const [nextState, nextCells] = nextSignature.split(":");
-  if (previousState !== nextState) return "ai-state";
-  const [previousFrom, previousTarget] = previousCells.split(">");
-  const [nextFrom, nextTarget] = nextCells.split(">");
-  if (previousFrom !== nextFrom) return "villain-cell";
-  if (previousTarget !== nextTarget) return "target-cell";
-  return "signature";
-}
-
-export function gridPathDistanceMeters(from: Point, to: Point) {
-  const route = findGridPath(from, to);
-  return route.length ? (route.length - 1) * CELL : null;
-}
-
-export function stepVillainToward(
-  entity: Point,
-  target: Point,
-  heading: number,
-  speed: number,
-  delta: number,
-  cachedRoute?: readonly Point[],
-) {
-  const route = cachedRoute ?? findGridPath(entity, target);
-  const next = route[1] ?? target;
-  if (!route.length) {
-    return { point: entity, heading, turnError: 0, speedMultiplier: 1 };
-  }
-  const dx = next.x - entity.x;
-  const dy = next.y - entity.y;
-  const length = Math.hypot(dx, dy) || 1;
-  const desiredHeading = Math.atan2(dx, dy);
-  const turnError = shortestAngle(heading, desiredHeading);
-  const turn = THREE.MathUtils.clamp(
-    turnError,
-    -P0_TUNING.villainTurnSpeed * delta,
-    P0_TUNING.villainTurnSpeed * delta,
-  );
-  const nextHeading = heading + turn;
-  const sharpTurnMultiplier = Math.abs(turnError) > Math.PI / 2
-    ? P0_TUNING.sharpTurnSpeedMultiplier
-    : 1;
-  const pathAlignmentMultiplier = cachedRoute === undefined
-    ? 1
-    : THREE.MathUtils.clamp(Math.cos(Math.abs(turnError)), P2_TUNING.pathTurnMinimumMultiplier, 1);
-  const speedMultiplier = sharpTurnMultiplier * pathAlignmentMultiplier;
-  const step = Math.min(speed * speedMultiplier * delta, length);
-  const candidateX = entity.x + Math.sin(nextHeading) * step;
-  const candidateY = entity.y + Math.cos(nextHeading) * step;
-  const point = { ...entity };
-  if (canPlayerOccupy(candidateX, point.y, P1_TUNING.villainCollisionMargin)) point.x = candidateX;
-  if (canPlayerOccupy(point.x, candidateY, P1_TUNING.villainCollisionMargin)) point.y = candidateY;
-  return { point, heading: nextHeading, turnError, speedMultiplier };
-}
-
-export function planVillainAi(
-  memory: AiMemory,
-  villainPoint: Point,
-  playerPoint: Point,
-  now: number,
-  startTime: number,
-) {
-  if (now - startTime < P0_TUNING.startDelayMs) {
-    return {
-      memory: { state: "delay" as const, lastKnown: null, searchArrivedAt: null },
-      target: null,
-      seesPlayer: false,
-    };
-  }
-
-  const seesPlayer = distance(villainPoint, playerPoint) < P0_TUNING.perceptionRadius
-    && hasLineOfSight(villainPoint, playerPoint);
-  if (seesPlayer) {
-    return {
-      memory: { state: "chase" as const, lastKnown: { ...playerPoint }, searchArrivedAt: null },
-      target: { ...playerPoint },
-      seesPlayer: true,
-    };
-  }
-
-  if (memory.state === "chase" && memory.lastKnown) {
-    return {
-      memory: { state: "search" as const, lastKnown: { ...memory.lastKnown }, searchArrivedAt: null },
-      target: { ...memory.lastKnown },
-      seesPlayer: false,
-    };
-  }
-
-  if (memory.state === "search" && memory.lastKnown) {
-    if (distance(villainPoint, memory.lastKnown) >= 0.2) {
-      return {
-        memory: { ...memory, searchArrivedAt: null },
-        target: { ...memory.lastKnown },
-        seesPlayer: false,
-      };
-    }
-    const arrivedAt = memory.searchArrivedAt ?? now;
-    if (now - arrivedAt < P0_TUNING.searchHoldMs) {
-      return {
-        memory: { ...memory, searchArrivedAt: arrivedAt },
-        target: null,
-        seesPlayer: false,
-      };
-    }
-  }
-
-  return {
-    memory: { state: "patrol" as const, lastKnown: null, searchArrivedAt: null },
-    target: null,
-    seesPlayer: false,
-  };
-}
-
-function tuneMeshes(root: THREE.Object3D, disableCulling = false, castShadow = true) {
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-    object.castShadow = castShadow;
-    object.receiveShadow = true;
-    if (disableCulling) object.frustumCulled = false;
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    for (const material of materials) {
-      if (material instanceof THREE.MeshStandardMaterial) {
-        material.envMapIntensity = P1_TUNING.environmentIntensity;
-        material.roughness = Math.min(material.roughness, 0.9);
-      }
-    }
-  });
-}
-
-function flattenStatic(root: THREE.Object3D, castShadow = false) {
-  let hasSkinnedMesh = false;
-  root.traverse((object) => { if (object instanceof THREE.SkinnedMesh) hasSkinnedMesh = true; });
-  if (hasSkinnedMesh) return root;
-  root.updateMatrixWorld(true);
-  const flat = new THREE.Group();
-  const flatMeshes: THREE.Mesh[] = [];
-  const buckets = new Map<string, { material: THREE.Material; geometries: THREE.BufferGeometry[] }>();
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-    if (Array.isArray(object.material) || Object.keys(object.geometry.morphAttributes).length) {
-      const geometry = object.geometry.clone().applyMatrix4(object.matrixWorld);
-      const mesh = new THREE.Mesh(geometry, object.material);
-      mesh.castShadow = false;
-      mesh.receiveShadow = true;
-      flat.add(mesh);
-      flatMeshes.push(mesh);
-      return;
-    }
-    const attributes = (Object.entries(object.geometry.attributes) as [string, THREE.BufferAttribute | THREE.InterleavedBufferAttribute][])
-      .map(([name, attribute]) => {
-        const array = attribute instanceof THREE.InterleavedBufferAttribute ? attribute.data.array : attribute.array;
-        return `${name}:${attribute.itemSize}:${attribute.normalized}:${array.constructor.name}`;
-      })
-      .sort()
-      .join("|");
-    const signature = `${object.material.uuid}:${object.geometry.index ? "indexed" : "plain"}:${attributes}`;
-    const bucket = buckets.get(signature) ?? { material: object.material, geometries: [] };
-    bucket.geometries.push(object.geometry.clone().applyMatrix4(object.matrixWorld));
-    buckets.set(signature, bucket);
-  });
-  for (const { material, geometries } of buckets.values()) {
-    const geometry = geometries.length === 1 ? geometries[0] : mergeGeometries(geometries, false);
-    if (!geometry) {
-      for (const sourceGeometry of geometries) sourceGeometry.dispose();
-      continue;
-    }
-    if (geometries.length > 1) {
-      for (const sourceGeometry of geometries) sourceGeometry.dispose();
-    }
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = false;
-    mesh.receiveShadow = true;
-    flat.add(mesh);
-    flatMeshes.push(mesh);
-  }
-  if (castShadow && flatMeshes.length) {
-    const shadowScore = (mesh: THREE.Mesh) => {
-      mesh.geometry.computeBoundingBox();
-      const size = mesh.geometry.boundingBox?.getSize(new THREE.Vector3()) ?? new THREE.Vector3();
-      return size.x * size.y + size.x * size.z + size.y * size.z;
-    };
-    [...flatMeshes]
-      .sort((left, right) => shadowScore(right) - shadowScore(left))
-      .slice(0, 2)
-      .forEach((mesh) => { mesh.castShadow = true; });
-  }
-  return flat;
-}
-
-function geometrySchema(geometry: THREE.BufferGeometry) {
-  return (Object.entries(geometry.attributes) as [string, THREE.BufferAttribute | THREE.InterleavedBufferAttribute][])
-    .map(([name, attribute]) => {
-      const array = attribute instanceof THREE.InterleavedBufferAttribute ? attribute.data.array : attribute.array;
-      return `${name}:${attribute.itemSize}:${attribute.normalized}:${array.constructor.name}`;
-    })
-    .sort()
-    .join("|");
-}
-
-function textureSourceKey(texture: THREE.Texture | null) {
-  if (!texture) return "none";
-  const source = texture.source.data as { currentSrc?: string; src?: string } | undefined;
-  return [
-    source?.currentSrc ?? source?.src ?? texture.name ?? "embedded",
-    texture.wrapS,
-    texture.wrapT,
-    texture.repeat.x,
-    texture.repeat.y,
-    texture.offset.x,
-    texture.offset.y,
-    texture.rotation,
-    texture.colorSpace,
-  ].join(":");
-}
-
-function semanticMaterialKey(material: THREE.Material) {
-  const standard = material instanceof THREE.MeshStandardMaterial ? material : null;
-  const basic = material instanceof THREE.MeshBasicMaterial ? material : null;
-  const normalizedName = material.name.replace(/[._-]?\d+$/u, "").toLowerCase();
-  return [
-    material.type,
-    normalizedName,
-    material.side,
-    material.transparent,
-    material.opacity,
-    material.alphaTest,
-    material.depthTest,
-    material.depthWrite,
-    standard?.color.getHexString() ?? basic?.color.getHexString() ?? "none",
-    standard?.emissive.getHexString() ?? "none",
-    standard?.emissiveIntensity ?? 0,
-    standard?.roughness ?? 0,
-    standard?.metalness ?? 0,
-    textureSourceKey(standard?.map ?? basic?.map ?? null),
-    textureSourceKey(standard?.normalMap ?? null),
-    textureSourceKey(standard?.roughnessMap ?? null),
-    textureSourceKey(standard?.metalnessMap ?? null),
-    textureSourceKey(standard?.emissiveMap ?? null),
-    textureSourceKey(standard?.aoMap ?? null),
-  ].join("|");
-}
-
-function mergePlacedProps(root: THREE.Object3D) {
-  root.updateMatrixWorld(true);
-  const buckets = new Map<string, {
-    material: THREE.Material;
-    castShadow: boolean;
-    geometries: THREE.BufferGeometry[];
-  }>();
-  const oldGeometries = new Set<THREE.BufferGeometry>();
-  let beforeMeshes = 0;
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh) || object instanceof THREE.SkinnedMesh) return;
-    beforeMeshes += 1;
-    oldGeometries.add(object.geometry);
-    const material = Array.isArray(object.material) ? null : object.material;
-    const materialKey = material ? semanticMaterialKey(material) : object.uuid;
-    const signature = [
-      materialKey,
-      geometrySchema(object.geometry),
-      object.geometry.index ? "indexed" : "plain",
-      object.castShadow ? "shadow" : "no-shadow",
-    ].join("|");
-    const bucket = buckets.get(signature) ?? {
-      material: material ?? object.material[0],
-      castShadow: object.castShadow,
-      geometries: [],
-    };
-    bucket.geometries.push(object.geometry.clone().applyMatrix4(object.matrixWorld));
-    buckets.set(signature, bucket);
-  });
-  const merged = new THREE.Group();
-  merged.name = "merged-environment-props";
-  for (const bucket of buckets.values()) {
-    const geometry = bucket.geometries.length === 1
-      ? bucket.geometries[0]
-      : mergeGeometries(bucket.geometries, false);
-    if (!geometry) {
-      for (const sourceGeometry of bucket.geometries) sourceGeometry.dispose();
-      continue;
-    }
-    if (bucket.geometries.length > 1) {
-      for (const sourceGeometry of bucket.geometries) sourceGeometry.dispose();
-    }
-    const mesh = new THREE.Mesh(geometry, bucket.material);
-    mesh.castShadow = bucket.castShadow;
-    mesh.receiveShadow = true;
-    merged.add(mesh);
-  }
-  for (const geometry of oldGeometries) geometry.dispose();
-  return {
-    root: merged,
-    beforeMeshes,
-    afterMeshes: merged.children.length,
-    materialBuckets: buckets.size,
-  };
-}
-
-function retainLargestActorShadowMeshes(root: THREE.Object3D, limit = 3) {
-  const meshes: THREE.Mesh[] = [];
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-    object.castShadow = false;
-    meshes.push(object);
-  });
-  const triangleCount = (mesh: THREE.Mesh) => (
-    (mesh.geometry.index?.count ?? mesh.geometry.getAttribute("position")?.count ?? 0) / 3
-  );
-  const retained = [...meshes].sort((left, right) => triangleCount(right) - triangleCount(left)).slice(0, limit);
-  for (const mesh of retained) mesh.castShadow = true;
-  return { before: meshes.length, after: retained.length };
-}
-
-export function disposeObjectResources(roots: Iterable<THREE.Object3D>) {
-  const geometries = new Set<THREE.BufferGeometry>();
-  const materials = new Set<THREE.Material>();
-  const textures = new Set<THREE.Texture>();
-  const skeletons = new Set<THREE.Skeleton>();
-  const collectTexture = (value: unknown) => {
-    if (value instanceof THREE.Texture) textures.add(value);
-  };
-  for (const root of roots) {
-    root.traverse((object) => {
-      if (object instanceof THREE.Mesh || object instanceof THREE.Sprite || object instanceof THREE.Points || object instanceof THREE.Line) {
-        if ("geometry" in object && object.geometry instanceof THREE.BufferGeometry) geometries.add(object.geometry);
-        const objectMaterial = "material" in object ? object.material : undefined;
-        const objectMaterials = Array.isArray(objectMaterial) ? objectMaterial : objectMaterial ? [objectMaterial] : [];
-        for (const material of objectMaterials) {
-          if (!(material instanceof THREE.Material)) continue;
-          materials.add(material);
-          for (const value of Object.values(material)) collectTexture(value);
-          if (material instanceof THREE.ShaderMaterial) {
-            for (const uniform of Object.values(material.uniforms)) collectTexture(uniform.value);
-          }
-        }
-      }
-      if (object instanceof THREE.SkinnedMesh) skeletons.add(object.skeleton);
-    });
-  }
-  for (const geometry of geometries) geometry.dispose();
-  for (const texture of textures) texture.dispose();
-  for (const material of materials) material.dispose();
-  for (const skeleton of skeletons) skeleton.dispose();
-  return {
-    geometries: geometries.size,
-    materials: materials.size,
-    textures: textures.size,
-    skeletons: skeletons.size,
-  };
-}
-
-function fitActor(source: THREE.Object3D, height: number, hideNodes: string[] = []) {
-  const visual = new THREE.Group();
-  visual.name = "fitted-character";
-  visual.add(source);
-  if (hideNodes.length) {
-    source.traverse((object) => {
-      const name = object.name.toLowerCase();
-      if (hideNodes.some((needle) => name.includes(needle))) object.visible = false;
-    });
-  }
-  tuneMeshes(source, true);
-  const original = new THREE.Box3().setFromObject(visual);
-  const originalSize = original.getSize(new THREE.Vector3());
-  visual.scale.setScalar(height / Math.max(originalSize.y, 0.001));
-  const fitted = new THREE.Box3().setFromObject(visual);
-  const center = fitted.getCenter(new THREE.Vector3());
-  visual.position.set(-center.x, -fitted.min.y, -center.z);
-  visual.userData.baseY = visual.position.y;
-  const actor = new THREE.Group();
-  actor.add(visual);
-  actor.userData.visual = visual;
-  actor.userData.shadowBudget = retainLargestActorShadowMeshes(actor, 3);
-  return actor;
-}
-
-function fitProp(source: THREE.Object3D, height: number, castShadow = false) {
-  const model = source.clone(true);
-  tuneMeshes(model, false, castShadow);
-  const visual = new THREE.Group();
-  visual.add(model);
-  const original = new THREE.Box3().setFromObject(visual);
-  const size = original.getSize(new THREE.Vector3());
-  visual.scale.setScalar(height / Math.max(size.y, 0.001));
-  const fitted = new THREE.Box3().setFromObject(visual);
-  const center = fitted.getCenter(new THREE.Vector3());
-  visual.position.set(-center.x, -fitted.min.y, -center.z);
-  return flattenStatic(visual, castShadow);
-}
-
-function fitModule(source: THREE.Object3D, size: THREE.Vector3) {
-  const root = source.clone(true);
-  tuneMeshes(root);
-  const box = new THREE.Box3().setFromObject(root);
-  const current = box.getSize(new THREE.Vector3());
-  root.scale.set(size.x / Math.max(current.x, 0.001), size.y / Math.max(current.y, 0.001), size.z / Math.max(current.z, 0.001));
-  const fitted = new THREE.Box3().setFromObject(root);
-  root.position.sub(fitted.getCenter(new THREE.Vector3()));
-  root.position.y += size.y / 2;
-  return root;
-}
-
-type ModulePlacement = { position: THREE.Vector3; rotation: number };
-
-function addInstancedModules(
-  source: THREE.Object3D,
-  size: THREE.Vector3,
-  placements: ModulePlacement[],
-  parent: THREE.Object3D,
-  castShadow: boolean,
-) {
-  if (!placements.length) return;
-  const template = flattenStatic(fitModule(source, size), false);
-  template.updateMatrixWorld(true);
-  const placementMatrix = new THREE.Matrix4();
-  const rotation = new THREE.Quaternion();
-  const scale = new THREE.Vector3(1, 1, 1);
-  template.traverse((object) => {
-    if (!(object instanceof THREE.Mesh) || object instanceof THREE.SkinnedMesh) return;
-    const instances = new THREE.InstancedMesh(object.geometry, object.material, placements.length);
-    instances.name = `instanced-${object.name || "module"}`;
-    placements.forEach((placement, index) => {
-      rotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), placement.rotation);
-      placementMatrix.compose(placement.position, rotation, scale);
-      instances.setMatrixAt(index, placementMatrix.clone().multiply(object.matrixWorld));
-    });
-    instances.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-    instances.instanceMatrix.needsUpdate = true;
-    instances.castShadow = castShadow;
-    instances.receiveShadow = true;
-    instances.computeBoundingBox();
-    instances.computeBoundingSphere();
-    parent.add(instances);
-  });
-}
-
-function makeLabel(text: string, color: string) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 384;
-  canvas.height = 128;
-  const context = canvas.getContext("2d");
-  if (!context) return new THREE.Sprite();
-  const paint = (nextText: string, nextColor: string) => {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "rgba(5, 12, 9, .88)";
-    context.fillRect(8, 12, 368, 104);
-    context.strokeStyle = nextColor;
-    context.lineWidth = 6;
-    context.strokeRect(8, 12, 368, 104);
-    context.fillStyle = nextColor;
-    context.font = '800 48px Arial, "PingFang SC", sans-serif';
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.fillText(nextText, 192, 66);
-  };
-  paint(text, color);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.needsUpdate = true;
-  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false });
-  const sprite = new THREE.Sprite(material);
-  sprite.scale.set(1.3, 0.43, 1);
-  sprite.renderOrder = 999;
-  sprite.userData.labelText = text;
-  sprite.userData.labelColor = color;
-  sprite.userData.setLabel = (nextText: string, nextColor: string) => {
-    if (sprite.userData.labelText === nextText && sprite.userData.labelColor === nextColor) return;
-    paint(nextText, nextColor);
-    sprite.userData.labelText = nextText;
-    sprite.userData.labelColor = nextColor;
-    texture.needsUpdate = true;
-  };
-  return sprite;
-}
-
-function setActorLabel(actor: THREE.Object3D | undefined, text: string, color: string) {
-  const badge = actor?.userData.badge as THREE.Sprite | undefined;
-  const update = badge?.userData.setLabel as ((nextText: string, nextColor: string) => void) | undefined;
-  update?.(text, color);
-}
-
-function setActorMarkerOpacity(actor: THREE.Object3D | undefined, opacity: number) {
-  if (!actor) return;
-  const badge = actor.userData.badge as THREE.Sprite | undefined;
-  const ring = actor.userData.ring as THREE.Mesh | undefined;
-  const badgeMaterial = badge?.material as THREE.SpriteMaterial | undefined;
-  const ringMaterial = ring?.material as THREE.MeshBasicMaterial | undefined;
-  if (badgeMaterial) badgeMaterial.opacity = opacity;
-  if (ringMaterial) ringMaterial.opacity = opacity * 0.95;
-  actor.userData.markerOpacity = opacity;
-}
-
-function decorateActor(actor: THREE.Object3D, height: number, color: number, label: string) {
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.55, 0.7, 40),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthTest: false, depthWrite: false }),
-  );
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.035;
-  ring.renderOrder = 998;
-  actor.add(ring);
-  const badge = makeLabel(label, `#${color.toString(16).padStart(6, "0")}`);
-  badge.position.y = height + 0.58;
-  actor.add(badge);
-  actor.userData.badge = badge;
-  actor.userData.ring = ring;
-  actor.userData.markerOpacity = 1;
-  actor.userData.markerTargetOpacity = 1;
-  const fill = new THREE.PointLight(label === "追捕者" ? 0xffcfc7 : 0xffeadc, label === "追捕者" ? 1.55 : 1.2, 5.5, 2);
-  fill.position.y = 1.45;
-  actor.add(fill);
-  const rig: Record<string, { bone: THREE.Object3D; rest: THREE.Quaternion }> = {};
-  const animatedBones = new Set(["LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg"]);
-  actor.traverse((object) => {
-    if (animatedBones.has(object.name)) rig[object.name] = { bone: object, rest: object.quaternion.clone() };
-  });
-  actor.userData.rig = rig;
-}
-
-function poseRig(actor: THREE.Object3D, gaitWave: number, gaitWeight: number) {
-  const rig = actor.userData.rig as Record<string, { bone: THREE.Object3D; rest: THREE.Quaternion }> | undefined;
-  if (!rig) return;
-  const axis = new THREE.Vector3(1, 0, 0);
-  const delta = new THREE.Quaternion();
-  const apply = (name: string, angle: number) => {
-    const joint = rig[name];
-    if (!joint) return;
-    joint.bone.quaternion.copy(joint.rest).multiply(delta.setFromAxisAngle(axis, angle));
-  };
-  const gait = gaitWave * gaitWeight;
-  apply("LeftUpperLeg", gait * 0.52);
-  apply("RightUpperLeg", -gait * 0.52);
-  apply("LeftLowerLeg", Math.max(0, -gait) * 0.38);
-  apply("RightLowerLeg", Math.max(0, gait) * 0.38);
-  apply("LeftUpperArm", -gait * 0.38);
-  apply("RightUpperArm", gait * 0.38);
-  apply("LeftLowerArm", (-0.12 - Math.max(0, gaitWave) * 0.16) * gaitWeight);
-  apply("RightLowerArm", (-0.12 - Math.max(0, -gaitWave) * 0.16) * gaitWeight);
-}
-
-type SynthContext = {
-  currentTime: number;
-  state: "closed" | "running" | "suspended" | "interrupted";
-  destination: AudioDestinationNode;
-  createOscillator: () => OscillatorNode;
-  createGain: () => GainNode;
-  resume: () => Promise<void>;
-  suspend: () => Promise<void>;
-  close: () => Promise<void>;
-};
-type SynthConstructor = new () => SynthContext;
-
-function makeSynthAudioRuntime(target: Window) {
-  let context: SynthContext | null = null;
-  let nextHeartbeatAt = 0;
-  let lastStepIndex = 0;
-  let lastPhase: Phase = "ready";
-  const sources = new Set<OscillatorNode>();
-  const snapshot = {
-    created: false,
-    state: "not-created",
-    unlocks: 0,
-    heartbeats: 0,
-    footsteps: 0,
-    winStingers: 0,
-    lossStingers: 0,
-    activeSources: 0,
-    heartbeatIntervalSeconds: P2_TUNING.heartbeatSlowSeconds,
-    lastThreat: 0,
-  };
-  const syncSnapshot = () => {
-    snapshot.state = context?.state ?? "not-created";
-    snapshot.activeSources = sources.size;
-  };
-  const tone = (frequency: number, gainValue: number, duration: number, delay = 0, wave: OscillatorType = "sine") => {
-    if (!context || context.state !== "running") return;
-    const startsAt = context.currentTime + delay;
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = wave;
-    oscillator.frequency.setValueAtTime(frequency, startsAt);
-    gain.gain.setValueAtTime(0.0001, startsAt);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, gainValue), startsAt + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, startsAt + duration);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    sources.add(oscillator);
-    oscillator.onended = () => {
-      sources.delete(oscillator);
-      oscillator.disconnect();
-      gain.disconnect();
-      syncSnapshot();
-    };
-    oscillator.start(startsAt);
-    oscillator.stop(startsAt + duration + 0.015);
-    syncSnapshot();
-  };
-  const stopSources = () => {
-    for (const source of [...sources]) {
-      source.onended = null;
-      try { source.stop(); } catch { /* The node may already have ended. */ }
-      source.disconnect();
-      sources.delete(source);
-    }
-    syncSnapshot();
-  };
-  const unlock = async () => {
-    if (!context) {
-      const contextKey = ["Audio", "Context"].join("");
-      const constructor = (target as unknown as Record<string, unknown>)[contextKey] as SynthConstructor | undefined;
-      if (!constructor) return;
-      context = new constructor();
-      snapshot.created = true;
-      nextHeartbeatAt = context.currentTime + 0.12;
-    }
-    if (context.state === "suspended" || context.state === "interrupted") await context.resume();
-    snapshot.unlocks += 1;
-    syncSnapshot();
-  };
-  const update = (threat: number, motion: ActorMotionRuntime | undefined) => {
-    snapshot.lastThreat = threat;
-    if (!context || context.state !== "running" || lastPhase !== "playing") return;
-    const heartbeatInterval = THREE.MathUtils.lerp(
-      P2_TUNING.heartbeatSlowSeconds,
-      P2_TUNING.heartbeatFastSeconds,
-      threat,
-    );
-    snapshot.heartbeatIntervalSeconds = heartbeatInterval;
-    if (threat > 0.08 && context.currentTime >= nextHeartbeatAt) {
-      const gain = THREE.MathUtils.lerp(P2_TUNING.heartbeatQuietGain, P2_TUNING.heartbeatLoudGain, threat);
-      tone(68 + threat * 12, gain, 0.09, 0, "sine");
-      tone(52 + threat * 8, gain * 0.72, 0.1, 0.12, "sine");
-      snapshot.heartbeats += 1;
-      nextHeartbeatAt = context.currentTime + heartbeatInterval;
-    }
-    if (motion && motion.gaitWeight > 0.3 && motion.actualSpeed > 0.2) {
-      const stepIndex = Math.floor(motion.gaitPhase / P2_TUNING.footstepPhaseRadians);
-      if (stepIndex !== lastStepIndex) {
-        lastStepIndex = stepIndex;
-        tone(92 + (stepIndex & 1) * 12, 0.025 * motion.gaitWeight, 0.045, 0, "triangle");
-        snapshot.footsteps += 1;
-      }
-    } else if (motion) {
-      lastStepIndex = Math.floor(motion.gaitPhase / P2_TUNING.footstepPhaseRadians);
-    }
-    syncSnapshot();
-  };
-  const onPhase = (next: Phase) => {
-    if (next === lastPhase) return;
-    lastPhase = next;
-    if (next !== "playing") stopSources();
-    if (next === "won") {
-      tone(392, 0.055, 0.16, 0, "triangle");
-      tone(523.25, 0.06, 0.2, 0.14, "triangle");
-      tone(659.25, 0.065, 0.32, 0.3, "triangle");
-      snapshot.winStingers += 1;
-    } else if (next === "lost") {
-      tone(196, 0.065, 0.2, 0, "sawtooth");
-      tone(146.83, 0.055, 0.38, 0.17, "sawtooth");
-      snapshot.lossStingers += 1;
-    }
-    syncSnapshot();
-  };
-  const suspend = async () => {
-    stopSources();
-    if (context?.state === "running") await context.suspend();
-    syncSnapshot();
-  };
-  const dispose = async () => {
-    stopSources();
-    if (context && context.state !== "closed") await context.close();
-    syncSnapshot();
-  };
-  return { unlock, update, onPhase, suspend, dispose, getSnapshot: () => ({ ...snapshot }) };
-}
+export {
+  P0_TUNING,
+  P1_SHADOW_CASTERS,
+  P1_TUNING,
+  P2_TUNING,
+  advanceGaitPhase,
+  advanceGaitWeight,
+  canPlayerOccupy,
+  dampAngle,
+  disposeObjectResources,
+  finalThreat,
+  findGridPath,
+  gridPathDistanceMeters,
+  gridQuarterTurn,
+  hasLineOfSight,
+  markerTargetOpacity,
+  pathCacheInvalidationReason,
+  pathCacheSignature,
+  planVillainAi,
+  proximityThreat,
+  screenAlignedMove,
+  shouldPoliceTrack,
+  stepVillainToward,
+  threatStateFactor,
+  vignetteStrength,
+} from "./game/index.js";
 
 export function ChasingGame() {
   const mount = useRef<HTMLDivElement>(null);
@@ -1142,7 +236,6 @@ export function ChasingGame() {
     let last = performance.now();
     let lastHudUpdate = 0;
     let lastVignetteUpdate = 0;
-    let beacon: THREE.Group | undefined;
     let observer: ResizeObserver | null = null;
     readyRef.current = false;
     actors.current = {};
@@ -1167,7 +260,7 @@ export function ChasingGame() {
     const threatRuntime = {
       distance: distance(player.current, villain.current),
       proximity: 0,
-      stateFactor: P2_TUNING.unawareStateFactor,
+      stateFactor: P2_TUNING.unawareStateFactor as number,
       final: 0,
       vignette: 0,
       cssValue: "0.000",
@@ -1196,11 +289,6 @@ export function ChasingGame() {
     const hemisphere = new THREE.HemisphereLight(0xe4f7ff, 0x405846, P1_TUNING.hemisphereIntensity);
     const sun = new THREE.DirectionalLight(0xffefd0, P1_TUNING.sunIntensity);
     const rim = new THREE.DirectionalLight(0x9bc8ff, P1_TUNING.rimIntensity);
-    const loadedAssetRoots = new Set<THREE.Object3D>();
-    const propTemplates = new Map<string, THREE.Object3D>();
-    const propsRoot = new THREE.Group();
-    propsRoot.name = "environment-props";
-    scene.add(propsRoot);
     let gpuReleased = false;
     let lastDisposal: ResourceDisposalReport | null = null;
     const readPreviousDisposal = () => {
@@ -1216,8 +304,8 @@ export function ChasingGame() {
       const before = gpuMemory();
       const disposedResources = disposeObjectResources([
         scene,
-        ...loadedAssetRoots,
-        ...propTemplates.values(),
+        ...artRuntime.loadedAssetRoots,
+        ...artRuntime.propTemplates.values(),
       ]);
       scene.environment = null;
       environmentTarget.dispose();
@@ -1248,21 +336,11 @@ export function ChasingGame() {
       }
       return lastDisposal;
     };
-    const shadowCasterCounts: Partial<Record<keyof typeof DETAIL_ASSETS, number>> = {};
-    const shadowCasterMeshCounts: Partial<Record<keyof typeof DETAIL_ASSETS, number>> = {};
-    const floorRotationEvidence = {
-      samples: [] as { x: number; y: number; floor: string; quarterTurn: number }[],
-      histogram: [0, 0, 0, 0],
-      checksum: 2166136261 >>> 0,
-      wallRandomized: false,
-    };
     const policeRuntime = {
       trackingPlayer: false,
       distanceToExit: distance(player.current, EXIT),
       targetHeading: Math.PI,
     };
-    let detailsLoaded = 0;
-    const detailTotal = Object.keys(DETAIL_ASSETS).length + 1;
     const qaWindow = window as typeof window & {
       __CHASING_QA__?: {
         getState: () => unknown;
@@ -1279,15 +357,6 @@ export function ChasingGame() {
       capturedAt: 0,
       memory: gpuMemory(),
     };
-    type RenderCategory = "actors" | "maze" | "props" | "fx" | "other";
-    type RenderCategoryBudget = { mainCalls: number; mainTriangles: number; shadowCalls: number; shadowTriangles: number };
-    const makeRenderBreakdown = () => ({
-      actors: { mainCalls: 0, mainTriangles: 0, shadowCalls: 0, shadowTriangles: 0 },
-      maze: { mainCalls: 0, mainTriangles: 0, shadowCalls: 0, shadowTriangles: 0 },
-      props: { mainCalls: 0, mainTriangles: 0, shadowCalls: 0, shadowTriangles: 0 },
-      fx: { mainCalls: 0, mainTriangles: 0, shadowCalls: 0, shadowTriangles: 0 },
-      other: { mainCalls: 0, mainTriangles: 0, shadowCalls: 0, shadowTriangles: 0 },
-    } satisfies Record<RenderCategory, RenderCategoryBudget>);
     let activeRenderBreakdown = makeRenderBreakdown();
     let qaRenderBreakdown = makeRenderBreakdown();
     let qaRenderReconciliation = {
@@ -1296,32 +365,8 @@ export function ChasingGame() {
       callsDelta: 0,
       trianglesDelta: 0,
     };
-    const propMergeRuntime = { beforeMeshes: 0, afterMeshes: 0, materialBuckets: 0, complete: false };
-    const drawnTriangles = (object: THREE.Object3D, geometry: THREE.BufferGeometry, group?: THREE.Group | null) => {
-      const available = geometry.index?.count ?? geometry.getAttribute("position")?.count ?? 0;
-      const drawStart = Math.max(geometry.drawRange.start, group?.start ?? 0);
-      const drawEnd = Math.min(
-        Number.isFinite(geometry.drawRange.count) ? geometry.drawRange.start + geometry.drawRange.count : available,
-        group ? group.start + group.count : available,
-      );
-      const instances = object instanceof THREE.InstancedMesh ? object.count : 1;
-      return Math.max(0, drawEnd - drawStart) / 3 * instances;
-    };
-    const trackRenderCategory = (root: THREE.Object3D, category: RenderCategory) => {
-      root.traverse((object) => {
-        if (!(object instanceof THREE.Mesh) && !(object instanceof THREE.Sprite)) return;
-        object.userData.renderCategory = category;
-        object.onBeforeRender = (_renderer, _scene, _camera, geometry, _material, group) => {
-          const bucket = activeRenderBreakdown[category];
-          bucket.mainCalls += 1;
-          bucket.mainTriangles += drawnTriangles(object, geometry, group);
-        };
-        object.onBeforeShadow = (_renderer, _scene, _camera, _shadowCamera, geometry, _material, group) => {
-          const bucket = activeRenderBreakdown[category];
-          bucket.shadowCalls += 1;
-          bucket.shadowTriangles += drawnTriangles(object, geometry, group);
-        };
-      });
+    const trackSceneRenderCategory = (root: THREE.Object3D, category: RenderCategory) => {
+      trackRenderCategory(root, category, () => activeRenderBreakdown);
     };
     const qaMotionSamples: { at: number; weight: number; phase: number; speed: number; heading: number; targetHeading: number }[] = [];
     const qaPathSamples: {
@@ -1423,9 +468,9 @@ export function ChasingGame() {
         },
         audio: audioRuntime.getSnapshot(),
         assets: {
-          detailsLoaded,
-          detailTotal,
-          detailsComplete: detailsLoaded === detailTotal,
+          detailsLoaded: artRuntime.detailsLoaded,
+          detailTotal: artRuntime.detailTotal,
+          detailsComplete: artRuntime.detailsLoaded === artRuntime.detailTotal,
         },
         actors: Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => [name, actor?.position.toArray()])),
         motion,
@@ -1445,15 +490,15 @@ export function ChasingGame() {
           sunShadowNormalBias: sun.shadow.normalBias,
           sunShadowMapSize: sun.shadow.mapSize.toArray(),
           shadowCasterNames: [...P1_SHADOW_CASTERS],
-          shadowCasterInstances: { ...shadowCasterCounts },
-          shadowCasterMeshes: { ...shadowCasterMeshCounts },
+          shadowCasterInstances: { ...artRuntime.shadowCasterCounts },
+          shadowCasterMeshes: { ...artRuntime.shadowCasterMeshCounts },
           shadowCasterStrategy: "two-largest-bounds-per-prop",
         },
         layout: {
-          floorRotationSamples: floorRotationEvidence.samples,
-          quarterTurnHistogram: [...floorRotationEvidence.histogram],
-          floorRotationChecksum: floorRotationEvidence.checksum,
-          wallRandomized: floorRotationEvidence.wallRandomized,
+          floorRotationSamples: artRuntime.floorRotationEvidence.samples,
+          quarterTurnHistogram: [...artRuntime.floorRotationEvidence.histogram],
+          floorRotationChecksum: artRuntime.floorRotationEvidence.checksum,
+          wallRandomized: artRuntime.floorRotationEvidence.wallRandomized,
         },
         police: {
           ...policeRuntime,
@@ -1468,7 +513,7 @@ export function ChasingGame() {
           breakdown: structuredClone(qaRenderBreakdown),
           reconciliation: { ...qaRenderReconciliation },
           optimization: {
-            propMerge: { ...propMergeRuntime },
+            propMerge: { ...artRuntime.propMergeRuntime },
             actorShadowStrategy: "three-largest-triangle-meshes-per-actor",
             actorShadowBudgets: Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => [name, actor?.userData.shadowBudget ?? null])),
           },
@@ -1547,268 +592,23 @@ export function ChasingGame() {
     rim.position.set(18, 16, 22);
     scene.add(rim);
 
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(80, 80),
-      new THREE.MeshStandardMaterial({ color: 0x496b4f, roughness: 1 }),
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.08;
-    ground.receiveShadow = true;
-    trackRenderCategory(ground, "maze");
-    scene.add(ground);
-    const mazeRoot = new THREE.Group();
-    scene.add(mazeRoot);
-
-    const loader = new GLTFLoader();
-    const load = async (url: string) => {
-      const root = (await loader.loadAsync(url)).scene;
-      loadedAssetRoots.add(root);
-      if (disposed) disposeObjectResources([root]);
-      return root;
-    };
-    const totalBlocking = BLOCKING_ACTOR_SPECS.length + Object.keys(CORE_ASSETS).length;
-    let loadedBlocking = 0;
-    const markBlockingLoaded = (kind: string) => {
-      loadedBlocking += 1;
-      if (!disposed) setLoadProgress({ done: loadedBlocking, total: totalBlocking, message: `正在载入项目美术资产：${kind} ${loadedBlocking}/${totalBlocking}` });
-    };
-
-    const placeActor = (name: ActorName, model: THREE.Object3D) => {
-      const spec = ACTOR_SPECS.find((candidate) => candidate.name === name)!;
-      const hideNodes = name === "police" ? ["shoulderepaulet", "epauletbutton", "sleevepatch", "sleevepatchinset"] : [];
-      const actor = fitActor(model, spec.height, hideNodes);
-      decorateActor(actor, spec.height, spec.color, spec.label);
-      trackRenderCategory(actor, "actors");
-      actors.current[name] = actor;
-      if (name === "kid") actor.position.copy(world(player.current));
-      if (name === "villain") actor.position.copy(world(villain.current));
-      if (name === "police") {
-        actor.position.copy(world(POLICE_POINT));
-        actor.rotation.y = Math.PI;
-      }
-      scene.add(actor);
-    };
-
-    const buildCore = (assets: Record<keyof typeof CORE_ASSETS, THREE.Object3D>) => {
-      const floorSalt: Record<"floor" | "grassFloor" | "classroomFloor" | "playgroundFloor", number> = {
-        floor: 0,
-        grassFloor: 11,
-        classroomFloor: 23,
-        playgroundFloor: 37,
-      };
-      const batches: Record<"wall" | "wallCorner" | "wallEnd" | "floor" | "grassFloor" | "classroomFloor" | "playgroundFloor", ModulePlacement[]> = {
-        wall: [], wallCorner: [], wallEnd: [], floor: [], grassFloor: [], classroomFloor: [], playgroundFloor: [],
-      };
-      for (let y = 0; y < SIZE; y += 1) {
-        for (let x = 0; x < SIZE; x += 1) {
-          const position = world({ x, y });
-          if (MAZE[y][x]) {
-            const floorName = x <= 4 && y >= 10 && y <= 14
-              ? "grassFloor"
-              : x >= 8 && x <= 10 && y >= 17
-                ? "classroomFloor"
-                : x >= 16 && x <= 20 && y <= 4
-                  ? "playgroundFloor"
-                  : "floor";
-            const quarterTurn = gridQuarterTurn(x, y, floorSalt[floorName]);
-            batches[floorName].push({ position, rotation: quarterTurn * Math.PI / 2 });
-            floorRotationEvidence.histogram[quarterTurn] += 1;
-            floorRotationEvidence.checksum = Math.imul(
-              floorRotationEvidence.checksum ^ (x + 1) ^ Math.imul(y + 1, 31) ^ Math.imul(quarterTurn + 1, 131),
-              16777619,
-            ) >>> 0;
-            if (floorRotationEvidence.samples.length < 24) {
-              floorRotationEvidence.samples.push({ x, y, floor: floorName, quarterTurn });
-            }
-          } else {
-            const up = Boolean(MAZE[y - 1]?.[x]);
-            const down = Boolean(MAZE[y + 1]?.[x]);
-            const left = Boolean(MAZE[y]?.[x - 1]);
-            const right = Boolean(MAZE[y]?.[x + 1]);
-            const openings = [up, down, left, right].filter(Boolean).length;
-            let wallName: "wall" | "wallCorner" | "wallEnd" = "wall";
-            let wallRotation = 0;
-            if (openings === 1) {
-              wallName = "wallEnd";
-              wallRotation = down ? 0 : right ? Math.PI / 2 : up ? Math.PI : -Math.PI / 2;
-            } else if (openings === 2 && !((up && down) || (left && right))) {
-              wallName = "wallCorner";
-              wallRotation = down && right ? 0 : right && up ? Math.PI / 2 : up && left ? Math.PI : -Math.PI / 2;
-            } else if (left && right) {
-              wallRotation = Math.PI / 2;
-            }
-            batches[wallName].push({ position, rotation: wallRotation });
-          }
-        }
-      }
-      addInstancedModules(assets.wall, new THREE.Vector3(CELL, 1.12, CELL), batches.wall, mazeRoot, true);
-      addInstancedModules(assets.wallCorner, new THREE.Vector3(CELL, 1.12, CELL), batches.wallCorner, mazeRoot, true);
-      addInstancedModules(assets.wallEnd, new THREE.Vector3(CELL, 1.12, CELL), batches.wallEnd, mazeRoot, true);
-      addInstancedModules(assets.floor, new THREE.Vector3(CELL, 0.12, CELL), batches.floor, mazeRoot, false);
-      addInstancedModules(assets.grassFloor, new THREE.Vector3(CELL, 0.12, CELL), batches.grassFloor, mazeRoot, false);
-      addInstancedModules(assets.classroomFloor, new THREE.Vector3(CELL, 0.12, CELL), batches.classroomFloor, mazeRoot, false);
-      addInstancedModules(assets.playgroundFloor, new THREE.Vector3(CELL, 0.12, CELL), batches.playgroundFloor, mazeRoot, false);
-      const exitDoor = flattenStatic(fitModule(assets.exit, new THREE.Vector3(1.8, 2.5, 0.55)), false);
-      exitDoor.traverse((object) => { if (object instanceof THREE.Mesh) object.castShadow = true; });
-      exitDoor.position.add(world(EXIT)).add(new THREE.Vector3(0, 0, CELL * 0.45));
-      mazeRoot.add(exitDoor);
-      trackRenderCategory(exitDoor, "maze");
-      const gate = flattenStatic(fitModule(assets.frontGate, new THREE.Vector3(1.8, 2.4, 0.55)), false);
-      gate.traverse((object) => { if (object instanceof THREE.Mesh) object.castShadow = true; });
-      gate.position.add(world(START)).add(new THREE.Vector3(0, 0, -CELL * 0.45));
-      mazeRoot.add(gate);
-      trackRenderCategory(gate, "maze");
-      trackRenderCategory(mazeRoot, "maze");
-
-      beacon = new THREE.Group();
-      beacon.position.copy(world(EXIT));
-      const beaconPad = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.65, 0.65, 0.1, 40),
-        new THREE.MeshStandardMaterial({ color: 0x41f28d, emissive: 0x18aa5c, emissiveIntensity: 3 }),
-      );
-      beaconPad.position.y = 0.08;
-      beacon.add(beaconPad);
-      const beam = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.22, 0.7, 4.5, 24, 1, true),
-        new THREE.MeshBasicMaterial({ color: 0x66ffad, transparent: true, opacity: 0.17, depthWrite: false, side: THREE.DoubleSide }),
-      );
-      beam.position.y = 2.25;
-      beacon.add(beam);
-      const exitLabel = makeLabel("出口", "#63ffad");
-      exitLabel.position.y = 3.25;
-      beacon.add(exitLabel);
-      const exitLight = new THREE.PointLight(0x53f59e, 3.2, 9, 2);
-      exitLight.position.y = 1.7;
-      beacon.add(exitLight);
-      trackRenderCategory(beacon, "fx");
-      scene.add(beacon);
-    };
-
-    const addProp = (
-      model: THREE.Object3D,
-      point: Point,
-      height: number,
-      rotation = 0,
-      offset = new THREE.Vector3(),
-      castShadow = false,
-      shadowName?: keyof typeof DETAIL_ASSETS,
-    ) => {
-      const cacheKey = `${model.uuid}:${height}:${castShadow ? "shadow" : "no-shadow"}`;
-      const template = propTemplates.get(cacheKey) ?? fitProp(model, height, castShadow);
-      propTemplates.set(cacheKey, template);
-      const object = template.clone(true);
-      object.position.add(world(point)).add(offset);
-      object.rotation.y = rotation;
-      if (shadowName) {
-        let meshCount = 0;
-        object.traverse((candidate) => {
-          if (candidate instanceof THREE.Mesh && candidate.castShadow) meshCount += 1;
-        });
-        shadowCasterMeshCounts[shadowName] = (shadowCasterMeshCounts[shadowName] ?? 0) + meshCount;
-      }
-      trackRenderCategory(object, "props");
-      propsRoot.add(object);
-    };
-
-    const placeDetail = (name: keyof typeof DETAIL_ASSETS, model: THREE.Object3D) => {
-      const castShadow = largeShadowProps.has(name);
-      const addDetailProp = (point: Point, height: number, rotation = 0, offset = new THREE.Vector3()) => {
-        addProp(model, point, height, rotation, offset, castShadow, castShadow ? name : undefined);
-        if (castShadow) shadowCasterCounts[name] = (shadowCasterCounts[name] ?? 0) + 1;
-      };
-      switch (name) {
-        case "locker":
-          addDetailProp({ x: 7, y: 5 }, 1.8, Math.PI / 2);
-          addDetailProp({ x: 13, y: 19 }, 1.8, -Math.PI / 2);
-          break;
-        case "bench": addDetailProp({ x: 18, y: 16 }, 1.05, Math.PI / 2); break;
-        case "tree": addDetailProp({ x: 3, y: 14 }, 3.5); break;
-        case "shrub": addDetailProp({ x: 3, y: 12 }, 0.9); break;
-        case "car": addDetailProp({ x: 22, y: 23 }, 1.6, Math.PI / 2, new THREE.Vector3(CELL * 0.75, 0, CELL * 0.75)); break;
-        case "station": addDetailProp({ x: 23, y: 23 }, 3.2, Math.PI, new THREE.Vector3(0, 0, CELL * 1.6)); break;
-        case "basketball": addDetailProp({ x: 20, y: 3 }, 2.6, -Math.PI / 2); break;
-        case "classroomDoor": addDetailProp({ x: 9, y: 17 }, 2.2, Math.PI / 2, new THREE.Vector3(-CELL * 0.44, 0, 0)); break;
-        case "deskChair": addDetailProp({ x: 9, y: 18 }, 1.2); break;
-        case "blackboard": addDetailProp({ x: 9, y: 20 }, 1.5, Math.PI); break;
-        case "podium": addDetailProp({ x: 9, y: 19 }, 1.1, Math.PI); break;
-        case "bulletin": addDetailProp({ x: 11, y: 11 }, 1.25, -Math.PI / 2); break;
-        case "extinguisher": addDetailProp({ x: 11, y: 10 }, 0.8, -Math.PI / 2); break;
-        case "trash": addDetailProp({ x: 11, y: 12 }, 0.75, -Math.PI / 2); break;
-        case "books": addDetailProp({ x: 11, y: 13 }, 0.18); break;
-        case "backpack": addDetailProp({ x: 13, y: 16 }, 0.5); break;
-        case "ceilingLight":
-          for (const point of [{ x: 7, y: 4 }, { x: 15, y: 5 }, { x: 21, y: 12 }, { x: 17, y: 17 }]) {
-            addDetailProp(point, 0.16, 0, new THREE.Vector3(0, 2.25, 0));
-            const lamp = new THREE.PointLight(0xffe5b0, 1.2, 8, 2);
-            lamp.position.copy(world(point)).add(new THREE.Vector3(0, 2.1, 0));
-            mazeRoot.add(lamp);
-          }
-          break;
-      }
-    };
-
-    const setup = async () => {
-      try {
-        const actorTask = Promise.all(BLOCKING_ACTOR_SPECS.map(async (spec) => {
-          const model = await load(spec.url);
-          if (!disposed) placeActor(spec.name, model);
-          markBlockingLoaded(spec.label);
-        }));
-        const core = {} as Partial<Record<keyof typeof CORE_ASSETS, THREE.Object3D>>;
-        const coreTask = Promise.all((Object.entries(CORE_ASSETS) as [keyof typeof CORE_ASSETS, string][]).map(async ([name, url]) => {
-          core[name] = await load(url);
-          markBlockingLoaded("校园结构");
-        }));
-        await Promise.all([actorTask, coreTask]);
-        if (disposed) return;
-        buildCore(core as Record<keyof typeof CORE_ASSETS, THREE.Object3D>);
+    const artRuntime = createSceneArtRuntime({
+      scene,
+      actors: actors.current,
+      getPlayer: () => player.current,
+      getVillain: () => villain.current,
+      isDisposed: () => disposed,
+      onLoadProgress: setLoadProgress,
+      onDetailProgress: setDetailProgress,
+      onReady: () => {
         readyRef.current = true;
         setLoading(false);
         if (new URLSearchParams(window.location.search).get("autostart") === "1") reset();
-
-        const policeTask = (async () => {
-          try {
-            const police = ACTOR_SPECS.find((spec) => spec.name === "police")!;
-            const model = await load(police.url);
-            if (!disposed) placeActor("police", model);
-          } catch (error) {
-            console.warn("Exit police asset failed", error);
-          } finally {
-            detailsLoaded += 1;
-            if (!disposed) setDetailProgress(detailsLoaded);
-          }
-        })();
-        const detailTasks = (Object.entries(DETAIL_ASSETS) as [keyof typeof DETAIL_ASSETS, string][]).map(async ([name, url]) => {
-          try {
-            const model = await load(url);
-            if (!disposed) placeDetail(name, model);
-          } catch (error) {
-            console.warn(`Optional environment asset failed: ${name}`, error);
-          } finally {
-            detailsLoaded += 1;
-            if (!disposed) setDetailProgress(detailsLoaded);
-          }
-        });
-        await Promise.all([policeTask, ...detailTasks]);
-        if (!disposed) {
-          const mergedProps = mergePlacedProps(propsRoot);
-          propsRoot.clear();
-          propsRoot.add(mergedProps.root);
-          propTemplates.clear();
-          Object.assign(propMergeRuntime, {
-            beforeMeshes: mergedProps.beforeMeshes,
-            afterMeshes: mergedProps.afterMeshes,
-            materialBuckets: mergedProps.materialBuckets,
-            complete: true,
-          });
-          trackRenderCategory(mergedProps.root, "props");
-        }
-      } catch (error) {
-        console.error("Failed to load required 3D assets", error);
-        if (!disposed) setLoadError("角色或校园模型载入失败，请刷新后重试。控制台已记录具体素材。");
-      }
-    };
-    void setup();
+      },
+      onLoadError: setLoadError,
+      trackRenderCategory: trackSceneRenderCategory,
+    });
+    void artRuntime.setup();
 
     const resize = () => {
       const bounds = host.getBoundingClientRect();
@@ -1825,70 +625,6 @@ export function ChasingGame() {
       cameraZoom.current = THREE.MathUtils.clamp(cameraZoom.current * Math.exp(event.deltaY * 0.0007), 0.78, 1.55);
     };
     host.addEventListener("wheel", adjustZoom, { passive: false });
-
-    const syncActor = (
-      actor: THREE.Object3D | undefined,
-      point: Point,
-      phaseOffset: number,
-      delta: number,
-      options: {
-        authoredHeading?: number;
-        dampHeading?: boolean;
-        headingDamping?: number;
-        freezePose?: boolean;
-      } = {},
-    ) => {
-      if (!actor) return;
-      const target = world(point);
-      const dx = target.x - actor.position.x;
-      const dz = target.z - actor.position.z;
-      const moving = dx * dx + dz * dz > 0.00001;
-      actor.position.x = target.x;
-      actor.position.z = target.z;
-      actor.position.y = 0;
-      const visual = actor.userData.visual as THREE.Group | undefined;
-      const baseVisualY = visual?.userData.baseY as number | undefined;
-      const motion = (actor.userData.motion as ActorMotionRuntime | undefined) ?? {
-        gaitWeight: 0,
-        gaitPhase: 0,
-        actualSpeed: 0,
-        heading: actor.rotation.y,
-        targetHeading: actor.rotation.y,
-        visualY: 0,
-        baseVisualY: baseVisualY ?? 0,
-      };
-      actor.userData.motion = motion;
-      const desiredHeading = options.authoredHeading ?? (moving ? Math.atan2(dx, dz) : motion.targetHeading);
-      motion.targetHeading = desiredHeading;
-      const finishingDampedTurn = options.dampHeading && Math.abs(shortestAngle(motion.heading, desiredHeading)) > 0.001;
-      if (options.authoredHeading !== undefined || moving || finishingDampedTurn) {
-        motion.heading = options.dampHeading
-          ? dampAngle(motion.heading, desiredHeading, options.headingDamping ?? P1_TUNING.playerTurnDamping, delta)
-          : desiredHeading;
-        actor.rotation.y = motion.heading;
-      }
-      if (options.freezePose) return;
-      const motionTime = performance.now();
-      const actualGridSpeed = moving ? Math.hypot(dx, dz) / (CELL * Math.max(delta, 0.001)) : 0;
-      motion.actualSpeed = actualGridSpeed;
-      motion.gaitWeight = advanceGaitWeight(motion.gaitWeight, moving, delta);
-      motion.gaitPhase = advanceGaitPhase(
-        motion.gaitPhase,
-        Math.min(actualGridSpeed, P0_TUNING.playerSpeed * 1.25),
-        delta,
-      );
-      const gaitWave = Math.sin(motion.gaitPhase + phaseOffset);
-      if (visual) {
-        const baseY = visual.userData.baseY as number;
-        const idleBreath = Math.sin(motionTime * 0.003 + phaseOffset) * 0.018 * (1 - motion.gaitWeight);
-        visual.position.y = baseY + Math.abs(gaitWave) * 0.07 * motion.gaitWeight + idleBreath;
-        visual.rotation.z = gaitWave * 0.035 * motion.gaitWeight;
-        visual.rotation.x = -0.035 * motion.gaitWeight;
-        motion.baseVisualY = baseY;
-        motion.visualY = visual.position.y - baseY;
-      }
-      poseRig(actor, gaitWave, motion.gaitWeight);
-    };
 
     const animate = (now: number) => {
       const delta = Math.min((now - last) / 1000, 0.04);
@@ -2101,10 +837,10 @@ export function ChasingGame() {
         actor.userData.markerTargetOpacity = targetOpacity;
         setActorMarkerOpacity(actor, opacity);
       }
-      if (beacon) {
-        beacon.rotation.y += delta * 0.45;
+      if (artRuntime.beacon) {
+        artRuntime.beacon.rotation.y += delta * 0.45;
         const pulse = 1 + Math.sin(now * 0.004) * 0.08;
-        beacon.scale.setScalar(pulse);
+        artRuntime.beacon.scale.setScalar(pulse);
       }
       activeRenderBreakdown = makeRenderBreakdown();
       renderer.info.reset();

@@ -4,6 +4,8 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { readGameSource } from "./helpers/game-module-harness.mjs";
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MODELS_ROOT = path.join(ROOT, "public", "models");
 
@@ -43,7 +45,7 @@ function readGlbJson(buffer, filename) {
 }
 
 test("every shipped GLB is referenced, valid, and has all external textures", async () => {
-  const gameSource = await readFile(path.join(ROOT, "app", "chasing-game.tsx"), "utf8");
+  const gameSource = await readGameSource(ROOT);
   const referenced = new Set(
     [...gameSource.matchAll(/["'](\/models\/[^"'?]+\.glb)(?:\?[^"']*)?["']/gu)]
       .map((match) => match[1]),

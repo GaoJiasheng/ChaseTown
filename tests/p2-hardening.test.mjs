@@ -1,35 +1,19 @@
 import assert from "node:assert/strict";
-import { readFile, unlink, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import * as THREE from "three";
-import ts from "typescript";
+
+import { loadGameModule, readGameSource } from "./helpers/game-module-harness.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SOURCE_FILE = path.join(ROOT, "app", "chasing-game.tsx");
 const CSS_FILE = path.join(ROOT, "app", "globals.css");
-const COMPILED_FILE = path.join(ROOT, "tests", `.p2-hardening-${process.pid}.mjs`);
 const [source, css] = await Promise.all([
-  readFile(SOURCE_FILE, "utf8"),
+  readGameSource(ROOT),
   readFile(CSS_FILE, "utf8"),
 ]);
-const compiled = ts.transpileModule(source, {
-  compilerOptions: {
-    jsx: ts.JsxEmit.ReactJSX,
-    module: ts.ModuleKind.ESNext,
-    target: ts.ScriptTarget.ES2022,
-  },
-  fileName: SOURCE_FILE,
-}).outputText;
-
-await writeFile(COMPILED_FILE, compiled);
-let game;
-try {
-  game = await import(`${pathToFileURL(COMPILED_FILE).href}?test=${Date.now()}`);
-} finally {
-  await unlink(COMPILED_FILE).catch(() => {});
-}
+const game = await loadGameModule(ROOT, "p2-hardening");
 
 test("P2-1 threat uses the approved state factors and keeps unaware vignette at zero", () => {
   assert.equal(game.P2_TUNING.threatNearDistance, 4.5);

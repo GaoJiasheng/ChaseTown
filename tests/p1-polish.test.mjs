@@ -1,30 +1,13 @@
 import assert from "node:assert/strict";
-import { readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import ts from "typescript";
+import { fileURLToPath } from "node:url";
+
+import { loadGameModule, readGameSource } from "./helpers/game-module-harness.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SOURCE_FILE = path.join(ROOT, "app", "chasing-game.tsx");
-const COMPILED_FILE = path.join(ROOT, "tests", `.p1-polish-${process.pid}.mjs`);
-const source = await readFile(SOURCE_FILE, "utf8");
-const compiled = ts.transpileModule(source, {
-  compilerOptions: {
-    jsx: ts.JsxEmit.ReactJSX,
-    module: ts.ModuleKind.ESNext,
-    target: ts.ScriptTarget.ES2022,
-  },
-  fileName: SOURCE_FILE,
-}).outputText;
-
-await writeFile(COMPILED_FILE, compiled);
-let game;
-try {
-  game = await import(`${pathToFileURL(COMPILED_FILE).href}?test=${Date.now()}`);
-} finally {
-  await unlink(COMPILED_FILE).catch(() => {});
-}
+const source = await readGameSource(ROOT);
+const game = await loadGameModule(ROOT, "p1-polish");
 
 test("P1 tuning remains inside the approved polish envelope", () => {
   assert.deepEqual(game.P1_TUNING, {
