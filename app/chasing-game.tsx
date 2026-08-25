@@ -2,18 +2,66 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 type Point = { x: number; y: number };
-type Phase = "ready" | "playing" | "won" | "lost";
+type Phase = "ready" | "playing" | "caught" | "won" | "lost";
 type ActorName = "kid" | "villain" | "police";
+type AiState = "delay" | "chase" | "search" | "patrol";
+type AiMemory = {
+  state: AiState;
+  lastKnown: Point | null;
+  searchArrivedAt: number | null;
+};
+type ActorMotionRuntime = {
+  gaitWeight: number;
+  gaitPhase: number;
+  actualSpeed: number;
+  heading: number;
+  targetHeading: number;
+  visualY: number;
+  baseVisualY: number;
+};
+
+export const P0_TUNING = Object.freeze({
+  playerSpeed: 3.7,
+  villainSpeed: 3.4,
+  perceptionRadius: 5.5,
+  startDelayMs: 1500,
+  searchHoldMs: 2500,
+  villainTurnSpeed: 3.2,
+  sharpTurnSpeedMultiplier: 0.45,
+  playerCollisionMargin: 0.18,
+  captureFreezeMs: 600,
+  lineOfSightSampleStep: 0.25,
+});
+
+export const P1_TUNING = Object.freeze({
+  villainCollisionMargin: 0.14,
+  gaitBlendSeconds: 0.15,
+  gaitRadiansPerGridUnit: 3.5,
+  playerTurnDamping: 12,
+  policeTurnDamping: 7,
+  markerDelayMs: 4000,
+  markerFadeDamping: 8,
+  policeTrackingDistance: 4,
+  environmentIntensity: 1,
+  exposure: 1,
+  hemisphereIntensity: 2.2,
+  sunIntensity: 2.9,
+  rimIntensity: 1.36,
+  sunShadowBias: -0.0005,
+  sunShadowNormalBias: 0.02,
+});
 
 const SIZE = 25;
 const CELL = 2;
 const START = { x: 1, y: 1 };
 const EXIT = { x: 23, y: 23 };
-const VILLAIN_START = { x: 1, y: 7 };
+const VILLAIN_START = { x: 7, y: 1 };
+const POLICE_POINT = { x: 23, y: 22.25 };
 const PATROL = [
   { x: 7, y: 7 },
   { x: 15, y: 3 },
@@ -60,6 +108,8 @@ const DETAIL_ASSETS = {
   shrub: "/models/environment/shrub.glb",
   station: "/models/environment/station.glb",
 } as const;
+export const P1_SHADOW_CASTERS = ["car", "tree", "station", "locker", "basketball", "bench", "blackboard", "podium"] as const;
+const largeShadowProps = new Set<keyof typeof DETAIL_ASSETS>(P1_SHADOW_CASTERS);
 
 function carve(grid: boolean[][], points: Point[]) {
   for (let i = 1; i < points.length; i += 1) {
@@ -92,6 +142,80 @@ const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 const pointKey = (point: Point) => `${point.x},${point.y}`;
 const canWalk = (x: number, y: number) => MAZE[Math.round(y)]?.[Math.round(x)] ?? false;
 const world = (point: Point) => new THREE.Vector3((point.x - (SIZE - 1) / 2) * CELL, 0, (point.y - (SIZE - 1) / 2) * CELL);
+const CAMERA_DIRECTION = Object.freeze({ x: 0.446, y: 0.668, z: 0.595 });
+const cameraGroundLength = Math.hypot(CAMERA_DIRECTION.x, CAMERA_DIRECTION.z);
+const SCREEN_UP = Object.freeze({
+  x: -CAMERA_DIRECTION.x / cameraGroundLength,
+  y: -CAMERA_DIRECTION.z / cameraGroundLength,
+});
+const SCREEN_RIGHT = Object.freeze({ x: -SCREEN_UP.y, y: SCREEN_UP.x });
+
+export function hasLineOfSight(a: Point, b: Point) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const span = Math.hypot(dx, dy);
+  const steps = Math.max(1, Math.ceil(span / P0_TUNING.lineOfSightSampleStep));
+  for (let index = 0; index <= steps; index += 1) {
+    const progress = index / steps;
+    if (!canWalk(a.x + dx * progress, a.y + dy * progress)) return false;
+  }
+  return true;
+}
+
+export function canPlayerOccupy(x: number, y: number, margin = P0_TUNING.playerCollisionMargin) {
+  return [
+    { x: x - margin, y: y - margin },
+    { x: x + margin, y: y - margin },
+    { x: x - margin, y: y + margin },
+    { x: x + margin, y: y + margin },
+  ].every((sample) => canWalk(sample.x, sample.y));
+}
+
+export function screenAlignedMove(dx: number, dy: number) {
+  const length = Math.hypot(dx, dy);
+  if (length === 0) return { x: 0, y: 0 };
+  const inputX = dx / length;
+  const inputY = dy / length;
+  return {
+    x: SCREEN_RIGHT.x * inputX + SCREEN_UP.x * -inputY,
+    y: SCREEN_RIGHT.y * inputX + SCREEN_UP.y * -inputY,
+  };
+}
+
+function shortestAngle(from: number, to: number) {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+}
+
+export function dampAngle(from: number, to: number, damping: number, delta: number) {
+  return from + shortestAngle(from, to) * (1 - Math.exp(-damping * Math.max(0, delta)));
+}
+
+export function advanceGaitWeight(current: number, moving: boolean, delta: number) {
+  const target = moving ? 1 : 0;
+  const step = Math.max(0, delta) / P1_TUNING.gaitBlendSeconds;
+  return current + THREE.MathUtils.clamp(target - current, -step, step);
+}
+
+export function advanceGaitPhase(phase: number, actualGridSpeed: number, delta: number) {
+  if (actualGridSpeed <= 0 || delta <= 0) return phase;
+  return phase + actualGridSpeed * P1_TUNING.gaitRadiansPerGridUnit * delta;
+}
+
+export function markerTargetOpacity(phase: Phase, playingElapsedMs: number, threat: number, villainMarker: boolean) {
+  if (phase !== "playing") return 1;
+  if (villainMarker && threat > 0.6) return 1;
+  return playingElapsedMs < P1_TUNING.markerDelayMs ? 1 : 0;
+}
+
+export function gridQuarterTurn(x: number, y: number, salt = 0) {
+  let hash = (Math.imul(x + 101, 374761393) ^ Math.imul(y + 211, 668265263) ^ Math.imul(salt + 17, 2246822519)) | 0;
+  hash = Math.imul(hash ^ (hash >>> 13), 1274126177);
+  return ((hash ^ (hash >>> 16)) >>> 0) & 3;
+}
+
+export function shouldPoliceTrack(playerPoint: Point) {
+  return distance(playerPoint, EXIT) < P1_TUNING.policeTrackingDistance;
+}
 
 function neighbors(point: Point) {
   return [
@@ -127,15 +251,97 @@ function path(from: Point, to: Point) {
   return route.reverse();
 }
 
-function moveAlong(entity: Point, target: Point, speed: number, delta: number) {
+export function stepVillainToward(
+  entity: Point,
+  target: Point,
+  heading: number,
+  speed: number,
+  delta: number,
+) {
   const route = path(entity, target);
-  const next = route[1] ?? route[0];
-  if (!next) return entity;
+  const next = route[1] ?? target;
+  if (!route.length) {
+    return { point: entity, heading, turnError: 0, speedMultiplier: 1 };
+  }
   const dx = next.x - entity.x;
   const dy = next.y - entity.y;
   const length = Math.hypot(dx, dy) || 1;
-  const step = Math.min(speed * delta, length);
-  return { x: entity.x + (dx / length) * step, y: entity.y + (dy / length) * step };
+  const desiredHeading = Math.atan2(dx, dy);
+  const turnError = shortestAngle(heading, desiredHeading);
+  const turn = THREE.MathUtils.clamp(
+    turnError,
+    -P0_TUNING.villainTurnSpeed * delta,
+    P0_TUNING.villainTurnSpeed * delta,
+  );
+  const nextHeading = heading + turn;
+  const speedMultiplier = Math.abs(turnError) > Math.PI / 2
+    ? P0_TUNING.sharpTurnSpeedMultiplier
+    : 1;
+  const step = Math.min(speed * speedMultiplier * delta, length);
+  const candidateX = entity.x + Math.sin(nextHeading) * step;
+  const candidateY = entity.y + Math.cos(nextHeading) * step;
+  const point = { ...entity };
+  if (canPlayerOccupy(candidateX, point.y, P1_TUNING.villainCollisionMargin)) point.x = candidateX;
+  if (canPlayerOccupy(point.x, candidateY, P1_TUNING.villainCollisionMargin)) point.y = candidateY;
+  return { point, heading: nextHeading, turnError, speedMultiplier };
+}
+
+export function planVillainAi(
+  memory: AiMemory,
+  villainPoint: Point,
+  playerPoint: Point,
+  now: number,
+  startTime: number,
+) {
+  if (now - startTime < P0_TUNING.startDelayMs) {
+    return {
+      memory: { state: "delay" as const, lastKnown: null, searchArrivedAt: null },
+      target: null,
+      seesPlayer: false,
+    };
+  }
+
+  const seesPlayer = distance(villainPoint, playerPoint) < P0_TUNING.perceptionRadius
+    && hasLineOfSight(villainPoint, playerPoint);
+  if (seesPlayer) {
+    return {
+      memory: { state: "chase" as const, lastKnown: { ...playerPoint }, searchArrivedAt: null },
+      target: { ...playerPoint },
+      seesPlayer: true,
+    };
+  }
+
+  if (memory.state === "chase" && memory.lastKnown) {
+    return {
+      memory: { state: "search" as const, lastKnown: { ...memory.lastKnown }, searchArrivedAt: null },
+      target: { ...memory.lastKnown },
+      seesPlayer: false,
+    };
+  }
+
+  if (memory.state === "search" && memory.lastKnown) {
+    if (distance(villainPoint, memory.lastKnown) >= 0.2) {
+      return {
+        memory: { ...memory, searchArrivedAt: null },
+        target: { ...memory.lastKnown },
+        seesPlayer: false,
+      };
+    }
+    const arrivedAt = memory.searchArrivedAt ?? now;
+    if (now - arrivedAt < P0_TUNING.searchHoldMs) {
+      return {
+        memory: { ...memory, searchArrivedAt: arrivedAt },
+        target: null,
+        seesPlayer: false,
+      };
+    }
+  }
+
+  return {
+    memory: { state: "patrol" as const, lastKnown: null, searchArrivedAt: null },
+    target: null,
+    seesPlayer: false,
+  };
 }
 
 function tuneMeshes(root: THREE.Object3D, disableCulling = false, castShadow = true) {
@@ -147,19 +353,20 @@ function tuneMeshes(root: THREE.Object3D, disableCulling = false, castShadow = t
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (material instanceof THREE.MeshStandardMaterial) {
-        material.envMapIntensity = 1.25;
+        material.envMapIntensity = P1_TUNING.environmentIntensity;
         material.roughness = Math.min(material.roughness, 0.9);
       }
     }
   });
 }
 
-function flattenStatic(root: THREE.Object3D) {
+function flattenStatic(root: THREE.Object3D, castShadow = false) {
   let hasSkinnedMesh = false;
   root.traverse((object) => { if (object instanceof THREE.SkinnedMesh) hasSkinnedMesh = true; });
   if (hasSkinnedMesh) return root;
   root.updateMatrixWorld(true);
   const flat = new THREE.Group();
+  const flatMeshes: THREE.Mesh[] = [];
   const buckets = new Map<string, { material: THREE.Material; geometries: THREE.BufferGeometry[] }>();
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
@@ -169,6 +376,7 @@ function flattenStatic(root: THREE.Object3D) {
       mesh.castShadow = false;
       mesh.receiveShadow = true;
       flat.add(mesh);
+      flatMeshes.push(mesh);
       return;
     }
     const attributes = (Object.entries(object.geometry.attributes) as [string, THREE.BufferAttribute | THREE.InterleavedBufferAttribute][])
@@ -190,6 +398,18 @@ function flattenStatic(root: THREE.Object3D) {
     mesh.castShadow = false;
     mesh.receiveShadow = true;
     flat.add(mesh);
+    flatMeshes.push(mesh);
+  }
+  if (castShadow && flatMeshes.length) {
+    const shadowScore = (mesh: THREE.Mesh) => {
+      mesh.geometry.computeBoundingBox();
+      const size = mesh.geometry.boundingBox?.getSize(new THREE.Vector3()) ?? new THREE.Vector3();
+      return size.x * size.y + size.x * size.z + size.y * size.z;
+    };
+    [...flatMeshes]
+      .sort((left, right) => shadowScore(right) - shadowScore(left))
+      .slice(0, 2)
+      .forEach((mesh) => { mesh.castShadow = true; });
   }
   return flat;
 }
@@ -218,9 +438,9 @@ function fitActor(source: THREE.Object3D, height: number, hideNodes: string[] = 
   return actor;
 }
 
-function fitProp(source: THREE.Object3D, height: number) {
+function fitProp(source: THREE.Object3D, height: number, castShadow = false) {
   const model = source.clone(true);
-  tuneMeshes(model, false, false);
+  tuneMeshes(model, false, castShadow);
   const visual = new THREE.Group();
   visual.add(model);
   const original = new THREE.Box3().setFromObject(visual);
@@ -229,7 +449,7 @@ function fitProp(source: THREE.Object3D, height: number) {
   const fitted = new THREE.Box3().setFromObject(visual);
   const center = fitted.getCenter(new THREE.Vector3());
   visual.position.set(-center.x, -fitted.min.y, -center.z);
-  return flattenStatic(visual);
+  return flattenStatic(visual, castShadow);
 }
 
 function fitModule(source: THREE.Object3D, size: THREE.Vector3) {
@@ -284,16 +504,20 @@ function makeLabel(text: string, color: string) {
   canvas.height = 128;
   const context = canvas.getContext("2d");
   if (!context) return new THREE.Sprite();
-  context.fillStyle = "rgba(5, 12, 9, .88)";
-  context.fillRect(8, 12, 368, 104);
-  context.strokeStyle = color;
-  context.lineWidth = 6;
-  context.strokeRect(8, 12, 368, 104);
-  context.fillStyle = color;
-  context.font = '800 48px Arial, "PingFang SC", sans-serif';
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.fillText(text, 192, 66);
+  const paint = (nextText: string, nextColor: string) => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "rgba(5, 12, 9, .88)";
+    context.fillRect(8, 12, 368, 104);
+    context.strokeStyle = nextColor;
+    context.lineWidth = 6;
+    context.strokeRect(8, 12, 368, 104);
+    context.fillStyle = nextColor;
+    context.font = '800 48px Arial, "PingFang SC", sans-serif';
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(nextText, 192, 66);
+  };
+  paint(text, color);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
@@ -301,7 +525,33 @@ function makeLabel(text: string, color: string) {
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(1.3, 0.43, 1);
   sprite.renderOrder = 999;
+  sprite.userData.labelText = text;
+  sprite.userData.labelColor = color;
+  sprite.userData.setLabel = (nextText: string, nextColor: string) => {
+    if (sprite.userData.labelText === nextText && sprite.userData.labelColor === nextColor) return;
+    paint(nextText, nextColor);
+    sprite.userData.labelText = nextText;
+    sprite.userData.labelColor = nextColor;
+    texture.needsUpdate = true;
+  };
   return sprite;
+}
+
+function setActorLabel(actor: THREE.Object3D | undefined, text: string, color: string) {
+  const badge = actor?.userData.badge as THREE.Sprite | undefined;
+  const update = badge?.userData.setLabel as ((nextText: string, nextColor: string) => void) | undefined;
+  update?.(text, color);
+}
+
+function setActorMarkerOpacity(actor: THREE.Object3D | undefined, opacity: number) {
+  if (!actor) return;
+  const badge = actor.userData.badge as THREE.Sprite | undefined;
+  const ring = actor.userData.ring as THREE.Mesh | undefined;
+  const badgeMaterial = badge?.material as THREE.SpriteMaterial | undefined;
+  const ringMaterial = ring?.material as THREE.MeshBasicMaterial | undefined;
+  if (badgeMaterial) badgeMaterial.opacity = opacity;
+  if (ringMaterial) ringMaterial.opacity = opacity * 0.95;
+  actor.userData.markerOpacity = opacity;
 }
 
 function decorateActor(actor: THREE.Object3D, height: number, color: number, label: string) {
@@ -316,6 +566,10 @@ function decorateActor(actor: THREE.Object3D, height: number, color: number, lab
   const badge = makeLabel(label, `#${color.toString(16).padStart(6, "0")}`);
   badge.position.y = height + 0.58;
   actor.add(badge);
+  actor.userData.badge = badge;
+  actor.userData.ring = ring;
+  actor.userData.markerOpacity = 1;
+  actor.userData.markerTargetOpacity = 1;
   const fill = new THREE.PointLight(label === "追捕者" ? 0xffcfc7 : 0xffeadc, label === "追捕者" ? 1.55 : 1.2, 5.5, 2);
   fill.position.y = 1.45;
   actor.add(fill);
@@ -327,7 +581,7 @@ function decorateActor(actor: THREE.Object3D, height: number, color: number, lab
   actor.userData.rig = rig;
 }
 
-function poseRig(actor: THREE.Object3D, gait: number, moving: boolean) {
+function poseRig(actor: THREE.Object3D, gaitWave: number, gaitWeight: number) {
   const rig = actor.userData.rig as Record<string, { bone: THREE.Object3D; rest: THREE.Quaternion }> | undefined;
   if (!rig) return;
   const axis = new THREE.Vector3(1, 0, 0);
@@ -335,16 +589,17 @@ function poseRig(actor: THREE.Object3D, gait: number, moving: boolean) {
   const apply = (name: string, angle: number) => {
     const joint = rig[name];
     if (!joint) return;
-    joint.bone.quaternion.copy(joint.rest).multiply(delta.setFromAxisAngle(axis, moving ? angle : 0));
+    joint.bone.quaternion.copy(joint.rest).multiply(delta.setFromAxisAngle(axis, angle));
   };
+  const gait = gaitWave * gaitWeight;
   apply("LeftUpperLeg", gait * 0.52);
   apply("RightUpperLeg", -gait * 0.52);
   apply("LeftLowerLeg", Math.max(0, -gait) * 0.38);
   apply("RightLowerLeg", Math.max(0, gait) * 0.38);
   apply("LeftUpperArm", -gait * 0.38);
   apply("RightUpperArm", gait * 0.38);
-  apply("LeftLowerArm", -0.12 - Math.max(0, gait) * 0.16);
-  apply("RightLowerArm", -0.12 - Math.max(0, -gait) * 0.16);
+  apply("LeftLowerArm", (-0.12 - Math.max(0, gaitWave) * 0.16) * gaitWeight);
+  apply("RightLowerArm", (-0.12 - Math.max(0, -gaitWave) * 0.16) * gaitWeight);
 }
 
 export function ChasingGame() {
@@ -353,6 +608,14 @@ export function ChasingGame() {
   const player = useRef<Point>({ ...START });
   const villain = useRef<Point>({ ...VILLAIN_START });
   const patrol = useRef(0);
+  const aiMemory = useRef<AiMemory>({ state: "delay", lastKnown: null, searchArrivedAt: null });
+  const villainHeading = useRef(Math.PI / 2);
+  const villainTarget = useRef<Point | null>(null);
+  const villainSeesPlayer = useRef(false);
+  const villainTurn = useRef({ error: 0, speedMultiplier: 1 });
+  const lastInputIntent = useRef<Point>({ x: 0, y: 0 });
+  const lastPlayerDelta = useRef<Point>({ x: 0, y: 0 });
+  const caughtAt = useRef<number | null>(null);
   const started = useRef(0);
   const readyRef = useRef(false);
   const phaseRef = useRef<Phase>("ready");
@@ -376,7 +639,39 @@ export function ChasingGame() {
     player.current = { ...START };
     villain.current = { ...VILLAIN_START };
     patrol.current = 0;
+    aiMemory.current = { state: "delay", lastKnown: null, searchArrivedAt: null };
+    villainHeading.current = Math.PI / 2;
+    villainTarget.current = null;
+    villainSeesPlayer.current = false;
+    villainTurn.current = { error: 0, speedMultiplier: 1 };
+    lastInputIntent.current = { x: 0, y: 0 };
+    lastPlayerDelta.current = { x: 0, y: 0 };
+    caughtAt.current = null;
     started.current = performance.now();
+    for (const [name, actor] of Object.entries(actors.current)) {
+      if (!actor) continue;
+      const resetPoint = name === "kid" ? START : name === "villain" ? VILLAIN_START : POLICE_POINT;
+      const resetHeading = name === "villain" ? Math.PI / 2 : name === "police" ? Math.PI : 0;
+      actor.position.copy(world(resetPoint));
+      actor.rotation.y = resetHeading;
+      const motion = actor?.userData.motion as ActorMotionRuntime | undefined;
+      if (motion) {
+        motion.gaitWeight = 0;
+        motion.gaitPhase = 0;
+        motion.actualSpeed = 0;
+        motion.heading = resetHeading;
+        motion.targetHeading = motion.heading;
+      }
+      const visual = actor.userData.visual as THREE.Group | undefined;
+      if (visual) {
+        const baseY = visual.userData.baseY as number;
+        visual.position.y = baseY;
+        visual.rotation.set(0, 0, 0);
+      }
+      poseRig(actor, 0, 0);
+      actor.userData.markerTargetOpacity = 1;
+      setActorMarkerOpacity(actor, 1);
+    }
     setElapsed(0);
     setObjectiveDistance(Math.round(distance(START, EXIT) * CELL));
     changePhase("playing");
@@ -416,7 +711,7 @@ export function ChasingGame() {
     scene.background = new THREE.Color(0x91aa99);
     scene.fog = new THREE.Fog(0x91aa99, 25, 62);
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 130);
-    const cameraDirection = new THREE.Vector3(0.446, 0.668, 0.595).normalize();
+    const cameraDirection = new THREE.Vector3(CAMERA_DIRECTION.x, CAMERA_DIRECTION.y, CAMERA_DIRECTION.z).normalize();
     const cameraRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
     const cameraUp = new THREE.Vector3().crossVectors(cameraDirection, cameraRight).normalize();
     const cameraFocus = world(START).add(new THREE.Vector3(0, 1.02, 0));
@@ -427,31 +722,205 @@ export function ChasingGame() {
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.info.autoReset = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.28;
+    renderer.toneMappingExposure = P1_TUNING.exposure;
     host.appendChild(renderer.domElement);
-    const qaWindow = window as typeof window & { __CHASING_QA__?: { getState: () => unknown; setPositions: (next: { player?: Point; villain?: Point }) => void } };
-    if (new URLSearchParams(window.location.search).has("qa")) {
-      qaWindow.__CHASING_QA__ = {
-        getState: () => ({
-          phase: phaseRef.current,
-          player: { ...player.current },
-          villain: { ...villain.current },
-          ready: readyRef.current,
-          actors: Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => [name, actor?.position.toArray()])),
-          render: { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles },
-          camera: { position: camera.position.toArray(), fov: camera.fov, zoom: cameraZoom.current, threat: cameraRuntime.threat, targetDistance: cameraRuntime.targetDistance },
-        }),
-        setPositions: (next) => {
-          if (next.player && canWalk(next.player.x, next.player.y)) player.current = { ...next.player };
-          if (next.villain && canWalk(next.villain.x, next.villain.y)) villain.current = { ...next.villain };
+    const roomEnvironment = new RoomEnvironment();
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    const environmentTarget = pmremGenerator.fromScene(roomEnvironment, 0.04);
+    scene.environment = environmentTarget.texture;
+    roomEnvironment.dispose();
+    pmremGenerator.dispose();
+    const hemisphere = new THREE.HemisphereLight(0xe4f7ff, 0x405846, P1_TUNING.hemisphereIntensity);
+    const sun = new THREE.DirectionalLight(0xffefd0, P1_TUNING.sunIntensity);
+    const rim = new THREE.DirectionalLight(0x9bc8ff, P1_TUNING.rimIntensity);
+    const shadowCasterCounts: Partial<Record<keyof typeof DETAIL_ASSETS, number>> = {};
+    const shadowCasterMeshCounts: Partial<Record<keyof typeof DETAIL_ASSETS, number>> = {};
+    const floorRotationEvidence = {
+      samples: [] as { x: number; y: number; floor: string; quarterTurn: number }[],
+      histogram: [0, 0, 0, 0],
+      checksum: 2166136261 >>> 0,
+      wallRandomized: false,
+    };
+    const policeRuntime = {
+      trackingPlayer: false,
+      distanceToExit: distance(player.current, EXIT),
+      targetHeading: Math.PI,
+    };
+    let detailsLoaded = 0;
+    const detailTotal = Object.keys(DETAIL_ASSETS).length + 1;
+    const qaWindow = window as typeof window & {
+      __CHASING_QA__?: {
+        getState: () => unknown;
+        setPositions: (next: { player?: Point; villain?: Point }) => void;
+      };
+    };
+    let qaApi: typeof qaWindow.__CHASING_QA__;
+    let qaLastSnapshotUpdate = 0;
+    const qaRenderSnapshot = { calls: 0, triangles: 0, frame: 0, capturedAt: 0 };
+    const qaMotionSamples: { at: number; weight: number; phase: number; speed: number; heading: number; targetHeading: number }[] = [];
+    let qaInput: HTMLInputElement | undefined;
+    let qaButton: HTMLButtonElement | undefined;
+    const getQaState = () => {
+      const snapshotNow = performance.now();
+      const lastKnown = aiMemory.current.lastKnown;
+      const badge = actors.current.villain?.userData.badge as THREE.Sprite | undefined;
+      const motion = Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => {
+        const state = actor?.userData.motion as ActorMotionRuntime | undefined;
+        return [name, state ? { ...state } : null];
+      }));
+      const markers = Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => {
+        const actorBadge = actor?.userData.badge as THREE.Sprite | undefined;
+        const actorRing = actor?.userData.ring as THREE.Mesh | undefined;
+        const badgeMaterial = actorBadge?.material as THREE.SpriteMaterial | undefined;
+        const ringMaterial = actorRing?.material as THREE.MeshBasicMaterial | undefined;
+        return [name, {
+          targetOpacity: actor?.userData.markerTargetOpacity ?? null,
+          opacity: actor?.userData.markerOpacity ?? null,
+          badgeOpacity: badgeMaterial?.opacity ?? null,
+          ringOpacity: ringMaterial?.opacity ?? null,
+        }];
+      }));
+      const villainMargin = P1_TUNING.villainCollisionMargin;
+      return {
+        phase: phaseRef.current,
+        player: { ...player.current },
+        villain: { ...villain.current },
+        distance: distance(player.current, villain.current),
+        lineOfSight: hasLineOfSight(villain.current, player.current),
+        aiState: aiMemory.current.state,
+        lastKnown: lastKnown ? { ...lastKnown } : null,
+        ai: {
+          state: aiMemory.current.state,
+          lastKnown: lastKnown ? { ...lastKnown } : null,
+          seesPlayer: villainSeesPlayer.current,
+          target: villainTarget.current ? { ...villainTarget.current } : null,
+          heading: villainHeading.current,
+          turnError: villainTurn.current.error,
+          speedMultiplier: villainTurn.current.speedMultiplier,
+          searchElapsedMs: aiMemory.current.searchArrivedAt === null
+            ? null
+            : snapshotNow - aiMemory.current.searchArrivedAt,
+        },
+        ready: readyRef.current,
+        startedElapsedMs: started.current === 0 ? 0 : snapshotNow - started.current,
+        delayRemainingMs: Math.max(0, P0_TUNING.startDelayMs - (snapshotNow - started.current)),
+        villainLabel: badge?.userData.labelText ?? null,
+        input: {
+          screenUp: { ...SCREEN_UP },
+          screenRight: { ...SCREEN_RIGHT },
+          intent: { ...lastInputIntent.current },
+          playerDelta: { ...lastPlayerDelta.current },
+        },
+        collision: {
+          margin: P0_TUNING.playerCollisionMargin,
+          villainMargin,
+          villainOccupancy: canPlayerOccupy(villain.current.x, villain.current.y, villainMargin),
+          villainCornerSamples: [
+            { x: villain.current.x - villainMargin, y: villain.current.y - villainMargin },
+            { x: villain.current.x + villainMargin, y: villain.current.y - villainMargin },
+            { x: villain.current.x - villainMargin, y: villain.current.y + villainMargin },
+            { x: villain.current.x + villainMargin, y: villain.current.y + villainMargin },
+          ],
+        },
+        capture: {
+          startedAt: caughtAt.current,
+          elapsedMs: caughtAt.current === null ? null : snapshotNow - caughtAt.current,
+          freezeMs: P0_TUNING.captureFreezeMs,
+        },
+        tuning: { ...P0_TUNING },
+        polishTuning: { ...P1_TUNING },
+        assets: {
+          detailsLoaded,
+          detailTotal,
+          detailsComplete: detailsLoaded === detailTotal,
+        },
+        actors: Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => [name, actor?.position.toArray()])),
+        motion,
+        motionSamples: qaMotionSamples.slice(-60),
+        markers,
+        environment: {
+          enabled: scene.environment === environmentTarget.texture,
+          mapping: environmentTarget.texture.mapping,
+          envMapIntensity: P1_TUNING.environmentIntensity,
+        },
+        lighting: {
+          exposure: renderer.toneMappingExposure,
+          hemisphereIntensity: hemisphere.intensity,
+          sunIntensity: sun.intensity,
+          rimIntensity: rim.intensity,
+          sunShadowBias: sun.shadow.bias,
+          sunShadowNormalBias: sun.shadow.normalBias,
+          sunShadowMapSize: sun.shadow.mapSize.toArray(),
+          shadowCasterNames: [...P1_SHADOW_CASTERS],
+          shadowCasterInstances: { ...shadowCasterCounts },
+          shadowCasterMeshes: { ...shadowCasterMeshCounts },
+          shadowCasterStrategy: "two-largest-bounds-per-prop",
+        },
+        layout: {
+          floorRotationSamples: floorRotationEvidence.samples,
+          quarterTurnHistogram: [...floorRotationEvidence.histogram],
+          floorRotationChecksum: floorRotationEvidence.checksum,
+          wallRandomized: floorRotationEvidence.wallRandomized,
+        },
+        police: {
+          ...policeRuntime,
+          heading: actors.current.police?.rotation.y ?? null,
+          visualYOffset: (actors.current.police?.userData.motion as ActorMotionRuntime | undefined)?.visualY ?? null,
+        },
+        render: { calls: qaRenderSnapshot.calls,
+          triangles: qaRenderSnapshot.triangles,
+          frame: qaRenderSnapshot.frame,
+          capturedAt: qaRenderSnapshot.capturedAt,
+        },
+        camera: {
+          position: camera.position.toArray(),
+          direction: cameraDirection.toArray(),
+          fov: camera.fov,
+          zoom: cameraZoom.current,
+          threat: cameraRuntime.threat,
+          targetDistance: cameraRuntime.targetDistance,
         },
       };
+    };
+    const setQaPositions = (next: { player?: Point; villain?: Point }) => {
+      if (next.player && Number.isFinite(next.player.x) && Number.isFinite(next.player.y) && canWalk(next.player.x, next.player.y)) {
+        player.current = { ...next.player };
+      }
+      if (next.villain && Number.isFinite(next.villain.x) && Number.isFinite(next.villain.y) && canWalk(next.villain.x, next.villain.y)) {
+        villain.current = { ...next.villain };
+      }
+    };
+    if (new URLSearchParams(window.location.search).has("qa")) {
+      qaApi = {
+        getState: getQaState,
+        setPositions: setQaPositions,
+      };
+      qaWindow.__CHASING_QA__ = qaApi;
+      host.dataset.qaEnabled = "true";
+      qaInput = document.createElement("input");
+      qaInput.className = "qa-position-input";
+      qaInput.setAttribute("aria-label", "QA 坐标命令");
+      qaInput.autocomplete = "off";
+      qaButton = document.createElement("button");
+      qaButton.className = "qa-position-apply";
+      qaButton.type = "button";
+      qaButton.setAttribute("aria-label", "执行 QA 坐标");
+      qaButton.textContent = "QA";
+      qaButton.addEventListener("click", () => {
+        try {
+          qaApi?.setPositions(JSON.parse(qaInput?.value ?? "{}") as { player?: Point; villain?: Point });
+          host.dataset.qaPlacementState = JSON.stringify(qaApi?.getState());
+        } catch {
+          // Invalid test input is ignored just like an invalid setPositions payload.
+        }
+      });
+      host.append(qaInput, qaButton);
     }
 
-    scene.add(new THREE.HemisphereLight(0xe4f7ff, 0x405846, 2.75));
-    const sun = new THREE.DirectionalLight(0xffefd0, 3.5);
+    scene.add(hemisphere);
     sun.position.set(-16, 26, -12);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
@@ -459,8 +928,9 @@ export function ChasingGame() {
     sun.shadow.camera.right = 34;
     sun.shadow.camera.top = 34;
     sun.shadow.camera.bottom = -34;
+    sun.shadow.bias = P1_TUNING.sunShadowBias;
+    sun.shadow.normalBias = P1_TUNING.sunShadowNormalBias;
     scene.add(sun);
-    const rim = new THREE.DirectionalLight(0x9bc8ff, 1.7);
     rim.position.set(18, 16, 22);
     scene.add(rim);
 
@@ -493,13 +963,19 @@ export function ChasingGame() {
       if (name === "kid") actor.position.copy(world(player.current));
       if (name === "villain") actor.position.copy(world(villain.current));
       if (name === "police") {
-        actor.position.copy(world({ x: 23, y: 22.25 }));
+        actor.position.copy(world(POLICE_POINT));
         actor.rotation.y = Math.PI;
       }
       scene.add(actor);
     };
 
     const buildCore = (assets: Record<keyof typeof CORE_ASSETS, THREE.Object3D>) => {
+      const floorSalt: Record<"floor" | "grassFloor" | "classroomFloor" | "playgroundFloor", number> = {
+        floor: 0,
+        grassFloor: 11,
+        classroomFloor: 23,
+        playgroundFloor: 37,
+      };
       const batches: Record<"wall" | "wallCorner" | "wallEnd" | "floor" | "grassFloor" | "classroomFloor" | "playgroundFloor", ModulePlacement[]> = {
         wall: [], wallCorner: [], wallEnd: [], floor: [], grassFloor: [], classroomFloor: [], playgroundFloor: [],
       };
@@ -514,7 +990,16 @@ export function ChasingGame() {
                 : x >= 16 && x <= 20 && y <= 4
                   ? "playgroundFloor"
                   : "floor";
-            batches[floorName].push({ position, rotation: 0 });
+            const quarterTurn = gridQuarterTurn(x, y, floorSalt[floorName]);
+            batches[floorName].push({ position, rotation: quarterTurn * Math.PI / 2 });
+            floorRotationEvidence.histogram[quarterTurn] += 1;
+            floorRotationEvidence.checksum = Math.imul(
+              floorRotationEvidence.checksum ^ (x + 1) ^ Math.imul(y + 1, 31) ^ Math.imul(quarterTurn + 1, 131),
+              16777619,
+            ) >>> 0;
+            if (floorRotationEvidence.samples.length < 24) {
+              floorRotationEvidence.samples.push({ x, y, floor: floorName, quarterTurn });
+            }
           } else {
             const up = Boolean(MAZE[y - 1]?.[x]);
             const down = Boolean(MAZE[y + 1]?.[x]);
@@ -574,40 +1059,60 @@ export function ChasingGame() {
     };
 
     const propTemplates = new Map<string, THREE.Object3D>();
-    const addProp = (model: THREE.Object3D, point: Point, height: number, rotation = 0, offset = new THREE.Vector3()) => {
-      const cacheKey = `${model.uuid}:${height}`;
-      const template = propTemplates.get(cacheKey) ?? fitProp(model, height);
+    const addProp = (
+      model: THREE.Object3D,
+      point: Point,
+      height: number,
+      rotation = 0,
+      offset = new THREE.Vector3(),
+      castShadow = false,
+      shadowName?: keyof typeof DETAIL_ASSETS,
+    ) => {
+      const cacheKey = `${model.uuid}:${height}:${castShadow ? "shadow" : "no-shadow"}`;
+      const template = propTemplates.get(cacheKey) ?? fitProp(model, height, castShadow);
       propTemplates.set(cacheKey, template);
       const object = template.clone(true);
       object.position.add(world(point)).add(offset);
       object.rotation.y = rotation;
+      if (shadowName) {
+        let meshCount = 0;
+        object.traverse((candidate) => {
+          if (candidate instanceof THREE.Mesh && candidate.castShadow) meshCount += 1;
+        });
+        shadowCasterMeshCounts[shadowName] = (shadowCasterMeshCounts[shadowName] ?? 0) + meshCount;
+      }
       mazeRoot.add(object);
     };
 
     const placeDetail = (name: keyof typeof DETAIL_ASSETS, model: THREE.Object3D) => {
+      const castShadow = largeShadowProps.has(name);
+      const addDetailProp = (point: Point, height: number, rotation = 0, offset = new THREE.Vector3()) => {
+        addProp(model, point, height, rotation, offset, castShadow, castShadow ? name : undefined);
+        if (castShadow) shadowCasterCounts[name] = (shadowCasterCounts[name] ?? 0) + 1;
+      };
       switch (name) {
         case "locker":
-          addProp(model, { x: 7, y: 5 }, 1.8, Math.PI / 2);
-          addProp(model, { x: 13, y: 19 }, 1.8, -Math.PI / 2);
+          addDetailProp({ x: 7, y: 5 }, 1.8, Math.PI / 2);
+          addDetailProp({ x: 13, y: 19 }, 1.8, -Math.PI / 2);
           break;
-        case "bench": addProp(model, { x: 18, y: 16 }, 1.05, Math.PI / 2); break;
-        case "tree": addProp(model, { x: 3, y: 14 }, 3.5); break;
-        case "shrub": addProp(model, { x: 3, y: 12 }, 0.9); break;
-        case "car": addProp(model, { x: 22, y: 23 }, 1.6, Math.PI / 2, new THREE.Vector3(CELL * 0.75, 0, CELL * 0.75)); break;
-        case "station": addProp(model, { x: 23, y: 23 }, 3.2, Math.PI, new THREE.Vector3(0, 0, CELL * 1.6)); break;
-        case "basketball": addProp(model, { x: 20, y: 3 }, 2.6, -Math.PI / 2); break;
-        case "classroomDoor": addProp(model, { x: 9, y: 17 }, 2.2, Math.PI / 2, new THREE.Vector3(-CELL * 0.44, 0, 0)); break;
-        case "deskChair": addProp(model, { x: 9, y: 18 }, 1.2); break;
-        case "blackboard": addProp(model, { x: 9, y: 20 }, 1.5, Math.PI); break;
-        case "podium": addProp(model, { x: 9, y: 19 }, 1.1, Math.PI); break;
-        case "bulletin": addProp(model, { x: 11, y: 11 }, 1.25, -Math.PI / 2); break;
-        case "extinguisher": addProp(model, { x: 11, y: 10 }, 0.8, -Math.PI / 2); break;
-        case "trash": addProp(model, { x: 11, y: 12 }, 0.75, -Math.PI / 2); break;
-        case "books": addProp(model, { x: 11, y: 13 }, 0.18); break;
-        case "backpack": addProp(model, { x: 13, y: 16 }, 0.5); break;
+        case "bench": addDetailProp({ x: 18, y: 16 }, 1.05, Math.PI / 2); break;
+        case "tree": addDetailProp({ x: 3, y: 14 }, 3.5); break;
+        case "shrub": addDetailProp({ x: 3, y: 12 }, 0.9); break;
+        case "car": addDetailProp({ x: 22, y: 23 }, 1.6, Math.PI / 2, new THREE.Vector3(CELL * 0.75, 0, CELL * 0.75)); break;
+        case "station": addDetailProp({ x: 23, y: 23 }, 3.2, Math.PI, new THREE.Vector3(0, 0, CELL * 1.6)); break;
+        case "basketball": addDetailProp({ x: 20, y: 3 }, 2.6, -Math.PI / 2); break;
+        case "classroomDoor": addDetailProp({ x: 9, y: 17 }, 2.2, Math.PI / 2, new THREE.Vector3(-CELL * 0.44, 0, 0)); break;
+        case "deskChair": addDetailProp({ x: 9, y: 18 }, 1.2); break;
+        case "blackboard": addDetailProp({ x: 9, y: 20 }, 1.5, Math.PI); break;
+        case "podium": addDetailProp({ x: 9, y: 19 }, 1.1, Math.PI); break;
+        case "bulletin": addDetailProp({ x: 11, y: 11 }, 1.25, -Math.PI / 2); break;
+        case "extinguisher": addDetailProp({ x: 11, y: 10 }, 0.8, -Math.PI / 2); break;
+        case "trash": addDetailProp({ x: 11, y: 12 }, 0.75, -Math.PI / 2); break;
+        case "books": addDetailProp({ x: 11, y: 13 }, 0.18); break;
+        case "backpack": addDetailProp({ x: 13, y: 16 }, 0.5); break;
         case "ceilingLight":
           for (const point of [{ x: 7, y: 4 }, { x: 15, y: 5 }, { x: 21, y: 12 }, { x: 17, y: 17 }]) {
-            addProp(model, point, 0.16, 0, new THREE.Vector3(0, 2.25, 0));
+            addDetailProp(point, 0.16, 0, new THREE.Vector3(0, 2.25, 0));
             const lamp = new THREE.PointLight(0xffe5b0, 1.2, 8, 2);
             lamp.position.copy(world(point)).add(new THREE.Vector3(0, 2.1, 0));
             mazeRoot.add(lamp);
@@ -635,7 +1140,6 @@ export function ChasingGame() {
         setLoading(false);
         if (new URLSearchParams(window.location.search).get("autostart") === "1") reset();
 
-        let detailsLoaded = 0;
         const policeTask = (async () => {
           try {
             const police = ACTOR_SPECS.find((spec) => spec.name === "police")!;
@@ -683,7 +1187,18 @@ export function ChasingGame() {
     };
     host.addEventListener("wheel", adjustZoom, { passive: false });
 
-    const syncActor = (actor: THREE.Object3D | undefined, point: Point, phaseOffset: number) => {
+    const syncActor = (
+      actor: THREE.Object3D | undefined,
+      point: Point,
+      phaseOffset: number,
+      delta: number,
+      options: {
+        authoredHeading?: number;
+        dampHeading?: boolean;
+        headingDamping?: number;
+        freezePose?: boolean;
+      } = {},
+    ) => {
       if (!actor) return;
       const target = world(point);
       const dx = target.x - actor.position.x;
@@ -692,17 +1207,48 @@ export function ChasingGame() {
       actor.position.x = target.x;
       actor.position.z = target.z;
       actor.position.y = 0;
-      if (moving) actor.rotation.y = Math.atan2(dx, dz);
-      const motionTime = performance.now();
-      const gait = Math.sin(motionTime * 0.013 + phaseOffset);
       const visual = actor.userData.visual as THREE.Group | undefined;
+      const baseVisualY = visual?.userData.baseY as number | undefined;
+      const motion = (actor.userData.motion as ActorMotionRuntime | undefined) ?? {
+        gaitWeight: 0,
+        gaitPhase: 0,
+        actualSpeed: 0,
+        heading: actor.rotation.y,
+        targetHeading: actor.rotation.y,
+        visualY: 0,
+        baseVisualY: baseVisualY ?? 0,
+      };
+      actor.userData.motion = motion;
+      const desiredHeading = options.authoredHeading ?? (moving ? Math.atan2(dx, dz) : motion.targetHeading);
+      motion.targetHeading = desiredHeading;
+      const finishingDampedTurn = options.dampHeading && Math.abs(shortestAngle(motion.heading, desiredHeading)) > 0.001;
+      if (options.authoredHeading !== undefined || moving || finishingDampedTurn) {
+        motion.heading = options.dampHeading
+          ? dampAngle(motion.heading, desiredHeading, options.headingDamping ?? P1_TUNING.playerTurnDamping, delta)
+          : desiredHeading;
+        actor.rotation.y = motion.heading;
+      }
+      if (options.freezePose) return;
+      const motionTime = performance.now();
+      const actualGridSpeed = moving ? Math.hypot(dx, dz) / (CELL * Math.max(delta, 0.001)) : 0;
+      motion.actualSpeed = actualGridSpeed;
+      motion.gaitWeight = advanceGaitWeight(motion.gaitWeight, moving, delta);
+      motion.gaitPhase = advanceGaitPhase(
+        motion.gaitPhase,
+        Math.min(actualGridSpeed, P0_TUNING.playerSpeed * 1.25),
+        delta,
+      );
+      const gaitWave = Math.sin(motion.gaitPhase + phaseOffset);
       if (visual) {
         const baseY = visual.userData.baseY as number;
-        visual.position.y = baseY + (moving ? Math.abs(gait) * 0.07 : Math.sin(motionTime * 0.003 + phaseOffset) * 0.018);
-        visual.rotation.z = moving ? gait * 0.035 : 0;
-        visual.rotation.x = moving ? -0.035 : 0;
+        const idleBreath = Math.sin(motionTime * 0.003 + phaseOffset) * 0.018 * (1 - motion.gaitWeight);
+        visual.position.y = baseY + Math.abs(gaitWave) * 0.07 * motion.gaitWeight + idleBreath;
+        visual.rotation.z = gaitWave * 0.035 * motion.gaitWeight;
+        visual.rotation.x = -0.035 * motion.gaitWeight;
+        motion.baseVisualY = baseY;
+        motion.visualY = visual.position.y - baseY;
       }
-      poseRig(actor, gait, moving);
+      poseRig(actor, gaitWave, motion.gaitWeight);
     };
 
     const animate = (now: number) => {
@@ -715,65 +1261,166 @@ export function ChasingGame() {
         if (keys.current.has("d") || keys.current.has("arrowright")) dx += 1;
         if (keys.current.has("w") || keys.current.has("arrowup")) dy -= 1;
         if (keys.current.has("s") || keys.current.has("arrowdown")) dy += 1;
-        const length = Math.hypot(dx, dy) || 1;
+        const move = screenAlignedMove(dx, dy);
+        lastInputIntent.current = { ...move };
         const current = player.current;
-        const nextX = current.x + (dx / length) * 3.7 * delta;
-        const nextY = current.y + (dy / length) * 3.7 * delta;
-        if (canWalk(nextX, current.y)) current.x = nextX;
-        if (canWalk(current.x, nextY)) current.y = nextY;
-        if (now - started.current > 1500) {
-          const seesPlayer = distance(current, villain.current) < 7;
-          const target = seesPlayer ? current : PATROL[patrol.current];
-          villain.current = moveAlong(villain.current, target, 3.4, delta);
-          if (!seesPlayer && distance(villain.current, target) < 0.25) patrol.current = (patrol.current + 1) % PATROL.length;
+        const previous = { ...current };
+        const nextX = current.x + move.x * P0_TUNING.playerSpeed * delta;
+        const nextY = current.y + move.y * P0_TUNING.playerSpeed * delta;
+        if (canPlayerOccupy(nextX, current.y)) current.x = nextX;
+        if (canPlayerOccupy(current.x, nextY)) current.y = nextY;
+        lastPlayerDelta.current = { x: current.x - previous.x, y: current.y - previous.y };
+
+        const decision = planVillainAi(aiMemory.current, villain.current, current, now, started.current);
+        aiMemory.current = decision.memory;
+        villainSeesPlayer.current = decision.seesPlayer;
+        let target = decision.target;
+        if (aiMemory.current.state === "patrol") target = PATROL[patrol.current];
+        villainTarget.current = target ? { ...target } : null;
+        if (target) {
+          const step = stepVillainToward(
+            villain.current,
+            target,
+            villainHeading.current,
+            P0_TUNING.villainSpeed,
+            delta,
+          );
+          villain.current = step.point;
+          villainHeading.current = step.heading;
+          villainTurn.current = { error: step.turnError, speedMultiplier: step.speedMultiplier };
+          if (aiMemory.current.state === "patrol" && distance(villain.current, target) < 0.25) {
+            patrol.current = (patrol.current + 1) % PATROL.length;
+          }
+        } else {
+          villainTurn.current = { error: 0, speedMultiplier: 1 };
         }
-        if (distance(current, villain.current) < 0.58) changePhase("lost");
-        else if (distance(current, EXIT) < 0.62) changePhase("won");
+
+        if (distance(current, villain.current) < 0.58) {
+          caughtAt.current = now;
+          changePhase("caught");
+        } else if (distance(current, EXIT) < 0.62) {
+          const seconds = Math.max(0, Math.floor((now - started.current) / 1000));
+          setElapsed(seconds);
+          changePhase("won");
+        }
         if (now - lastHudUpdate > 180) {
           const seconds = Math.max(0, Math.floor((now - started.current) / 1000));
           setElapsed((value) => value === seconds ? value : seconds);
           setObjectiveDistance(Math.round(distance(current, EXIT) * CELL));
           lastHudUpdate = now;
         }
+      } else if (
+        phaseRef.current === "caught"
+        && caughtAt.current !== null
+        && now - caughtAt.current >= P0_TUNING.captureFreezeMs
+      ) {
+        changePhase("lost");
       }
-      syncActor(actors.current.kid, player.current, 0);
-      syncActor(actors.current.villain, villain.current, 2);
-      const playerAnchor = world(player.current).add(new THREE.Vector3(0, 1.02, 0));
-      const villainAnchor = world(villain.current).add(new THREE.Vector3(0, 1.02, 0));
-      const enemyDistance = distance(player.current, villain.current);
-      const threat = phaseRef.current === "playing" ? 1 - THREE.MathUtils.smoothstep(enemyDistance, 4.5, 9) : 0;
-      const targetFocus = playerAnchor.clone().lerp(villainAnchor, threat * 0.42);
-      const focusAlpha = 1 - Math.exp(-7 * delta);
-      cameraFocus.lerp(targetFocus, focusAlpha);
 
-      const verticalTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
-      const horizontalTangent = verticalTangent * Math.max(camera.aspect, 0.4);
-      const aspectDistance = 5 / Math.max(horizontalTangent, 0.01);
-      const baseDistance = THREE.MathUtils.clamp(Math.max(15.6, aspectDistance), 15.6, 26);
-      let fitDistance = baseDistance;
-      for (const anchor of [playerAnchor, villainAnchor]) {
-        const relative = anchor.clone().sub(targetFocus);
-        const depthShift = relative.dot(cameraDirection);
-        fitDistance = Math.max(
-          fitDistance,
-          depthShift + (Math.abs(relative.dot(cameraRight)) + 1.2) / Math.max(horizontalTangent, 0.01),
-          depthShift + (Math.abs(relative.dot(cameraUp)) + 1.8) / Math.max(verticalTangent, 0.01),
+      const delayRemaining = P0_TUNING.startDelayMs - (now - started.current);
+      if (phaseRef.current === "playing" && delayRemaining > 0) {
+        const tenths = Math.max(1, Math.ceil(delayRemaining / 100));
+        setActorLabel(actors.current.villain, `${(tenths / 10).toFixed(1)}s`, "#f6c965");
+      } else {
+        setActorLabel(actors.current.villain, "追捕者", "#ff4f5e");
+      }
+      const freezeCapturedPose = phaseRef.current === "caught";
+      syncActor(actors.current.kid, player.current, 0, delta, {
+        dampHeading: true,
+        headingDamping: P1_TUNING.playerTurnDamping,
+        freezePose: freezeCapturedPose,
+      });
+      syncActor(actors.current.villain, villain.current, 2, delta, {
+        authoredHeading: villainHeading.current,
+        freezePose: freezeCapturedPose,
+      });
+      policeRuntime.distanceToExit = distance(player.current, EXIT);
+      policeRuntime.trackingPlayer = shouldPoliceTrack(player.current);
+      if (policeRuntime.trackingPlayer) {
+        policeRuntime.targetHeading = Math.atan2(
+          player.current.x - POLICE_POINT.x,
+          player.current.y - POLICE_POINT.y,
         );
       }
-      const automaticDistance = Math.max(baseDistance + threat * 2.8, THREE.MathUtils.lerp(baseDistance, fitDistance, threat));
-      const targetDistance = THREE.MathUtils.clamp(automaticDistance * cameraZoom.current, 12.2, 34);
-      cameraRuntime.threat = threat;
-      cameraRuntime.targetDistance = targetDistance;
-      cameraDistance = THREE.MathUtils.lerp(cameraDistance, targetDistance, 1 - Math.exp(-3.2 * delta));
-      const desired = cameraFocus.clone().addScaledVector(cameraDirection, cameraDistance);
-      camera.position.lerp(desired, 1 - Math.exp(-6 * delta));
-      camera.lookAt(cameraFocus);
+      syncActor(actors.current.police, POLICE_POINT, 4, delta, {
+        authoredHeading: policeRuntime.trackingPlayer ? policeRuntime.targetHeading : undefined,
+        dampHeading: true,
+        headingDamping: P1_TUNING.policeTurnDamping,
+        freezePose: freezeCapturedPose,
+      });
+      const kidMotion = actors.current.kid?.userData.motion as ActorMotionRuntime | undefined;
+      if (qaApi && kidMotion) {
+        qaMotionSamples.push({
+          at: now,
+          weight: kidMotion.gaitWeight,
+          phase: kidMotion.gaitPhase,
+          speed: kidMotion.actualSpeed,
+          heading: kidMotion.heading,
+          targetHeading: kidMotion.targetHeading,
+        });
+        if (qaMotionSamples.length > 60) qaMotionSamples.shift();
+      }
+      if (phaseRef.current !== "caught") {
+        const playerAnchor = world(player.current).add(new THREE.Vector3(0, 1.02, 0));
+        const villainAnchor = world(villain.current).add(new THREE.Vector3(0, 1.02, 0));
+        const enemyDistance = distance(player.current, villain.current);
+        const threat = phaseRef.current === "playing" ? 1 - THREE.MathUtils.smoothstep(enemyDistance, 4.5, 9) : 0;
+        const targetFocus = playerAnchor.clone().lerp(villainAnchor, threat * 0.42);
+        const focusAlpha = 1 - Math.exp(-7 * delta);
+        cameraFocus.lerp(targetFocus, focusAlpha);
+
+        const verticalTangent = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
+        const horizontalTangent = verticalTangent * Math.max(camera.aspect, 0.4);
+        const aspectDistance = 5 / Math.max(horizontalTangent, 0.01);
+        const baseDistance = THREE.MathUtils.clamp(Math.max(15.6, aspectDistance), 15.6, 26);
+        let fitDistance = baseDistance;
+        for (const anchor of [playerAnchor, villainAnchor]) {
+          const relative = anchor.clone().sub(targetFocus);
+          const depthShift = relative.dot(cameraDirection);
+          fitDistance = Math.max(
+            fitDistance,
+            depthShift + (Math.abs(relative.dot(cameraRight)) + 1.2) / Math.max(horizontalTangent, 0.01),
+            depthShift + (Math.abs(relative.dot(cameraUp)) + 1.8) / Math.max(verticalTangent, 0.01),
+          );
+        }
+        const automaticDistance = Math.max(baseDistance + threat * 2.8, THREE.MathUtils.lerp(baseDistance, fitDistance, threat));
+        const targetDistance = THREE.MathUtils.clamp(automaticDistance * cameraZoom.current, 12.2, 34);
+        cameraRuntime.threat = threat;
+        cameraRuntime.targetDistance = targetDistance;
+        cameraDistance = THREE.MathUtils.lerp(cameraDistance, targetDistance, 1 - Math.exp(-3.2 * delta));
+        const desired = cameraFocus.clone().addScaledVector(cameraDirection, cameraDistance);
+        camera.position.lerp(desired, 1 - Math.exp(-6 * delta));
+        camera.lookAt(cameraFocus);
+      }
+      const markerElapsedMs = started.current === 0 ? 0 : now - started.current;
+      for (const [name, actor] of Object.entries(actors.current)) {
+        if (!actor) continue;
+        const targetOpacity = markerTargetOpacity(
+          phaseRef.current,
+          markerElapsedMs,
+          cameraRuntime.threat,
+          name === "villain",
+        );
+        const currentOpacity = actor.userData.markerOpacity as number ?? 1;
+        const opacity = currentOpacity + (targetOpacity - currentOpacity) * (1 - Math.exp(-P1_TUNING.markerFadeDamping * delta));
+        actor.userData.markerTargetOpacity = targetOpacity;
+        setActorMarkerOpacity(actor, opacity);
+      }
       if (beacon) {
         beacon.rotation.y += delta * 0.45;
         const pulse = 1 + Math.sin(now * 0.004) * 0.08;
         beacon.scale.setScalar(pulse);
       }
+      renderer.info.reset();
       renderer.render(scene, camera);
+      qaRenderSnapshot.calls = renderer.info.render.calls;
+      qaRenderSnapshot.triangles = renderer.info.render.triangles;
+      qaRenderSnapshot.frame += 1;
+      qaRenderSnapshot.capturedAt = now;
+      if (qaApi && now - qaLastSnapshotUpdate >= 50) {
+        qaLastSnapshotUpdate = now;
+        host.dataset.qaState = JSON.stringify(qaApi.getState());
+      }
       frame = requestAnimationFrame(animate);
     };
     frame = requestAnimationFrame(animate);
@@ -784,8 +1431,17 @@ export function ChasingGame() {
       cancelAnimationFrame(frame);
       observer.disconnect();
       host.removeEventListener("wheel", adjustZoom);
+      scene.environment = null;
+      environmentTarget.dispose();
       renderer.dispose();
-      if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
+      if (qaWindow.__CHASING_QA__ === qaApi) delete qaWindow.__CHASING_QA__;
+      if (qaApi) {
+        delete host.dataset.qaEnabled;
+        delete host.dataset.qaPlacementState;
+        delete host.dataset.qaState;
+        qaInput?.remove();
+        qaButton?.remove();
+      }
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);
     };
   }, [changePhase, reset]);
@@ -826,11 +1482,12 @@ export function ChasingGame() {
         {!loading && detailProgress < Object.keys(DETAIL_ASSETS).length + 1 && (
           <div className="detail-loading">校园细节与出口角色 {detailProgress}/{Object.keys(DETAIL_ASSETS).length + 1}</div>
         )}
-        {phase !== "playing" && !loading && (
+        <div className={`capture-transition${phase === "caught" ? " active" : ""}`} aria-hidden="true" />
+        {phase !== "playing" && phase !== "caught" && !loading && (
           <div className={`overlay ${phase}`}>
             <div className="overlay-card">
               <span className={`result ${phase}`}>{phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : "3D 逃生演练"}</span>
-              <h2>{phase === "won" ? "警察在出口等到了你" : phase === "lost" ? "别停，换条路线再试一次" : "躲开追捕者，跑到绿色出口"}</h2>
+              <h2>{phase === "won" ? `警察在出口等到了你 · 用时 ${elapsed}s` : phase === "lost" ? "别停，换条路线再试一次" : "躲开追捕者，跑到绿色出口"}</h2>
               <p>蓝色标记是你，红色是追捕者。镜头会在追逐时自动拉远，也可用滚轮调节视野。</p>
               <button className="primary" type="button" onClick={reset}>{phase === "ready" ? "开始逃跑" : "再来一次"}<kbd>Enter</kbd></button>
             </div>
