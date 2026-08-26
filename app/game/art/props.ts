@@ -2,6 +2,47 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { P1_TUNING } from "../config/index.js";
+
+function canonicalFloatAttribute(
+  attribute: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+) {
+  const sourceArray = attribute instanceof THREE.InterleavedBufferAttribute
+    ? attribute.data.array
+    : attribute.array;
+  if (
+    attribute instanceof THREE.BufferAttribute
+    && sourceArray instanceof Float32Array
+    && attribute.gpuType === THREE.FloatType
+  ) {
+    return attribute;
+  }
+  const values = new Float32Array(attribute.count * attribute.itemSize);
+  for (let index = 0; index < attribute.count; index += 1) {
+    const offset = index * attribute.itemSize;
+    values[offset] = attribute.getX(index);
+    if (attribute.itemSize > 1) values[offset + 1] = attribute.getY(index);
+    if (attribute.itemSize > 2) values[offset + 2] = attribute.getZ(index);
+    if (attribute.itemSize > 3) values[offset + 3] = attribute.getW(index);
+  }
+  const result = new THREE.Float32BufferAttribute(values, attribute.itemSize);
+  result.name = attribute.name;
+  return result;
+}
+
+export function cloneGeometryForWorldTransform(source: THREE.BufferGeometry) {
+  const geometry = source.clone();
+  for (const [name, attribute] of Object.entries(geometry.attributes)) {
+    geometry.setAttribute(name, canonicalFloatAttribute(attribute));
+  }
+  const morphAttributes = geometry.morphAttributes as Record<string, THREE.BufferAttribute[]>;
+  for (const [name, attributes] of Object.entries(morphAttributes)) {
+    morphAttributes[name] = attributes.map((attribute) => (
+      canonicalFloatAttribute(attribute)
+    ));
+  }
+  return geometry;
+}
+
 export function tuneMeshes(root: THREE.Object3D, disableCulling = false, castShadow = true) {
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
@@ -29,7 +70,7 @@ export function flattenStatic(root: THREE.Object3D, castShadow = false) {
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
     if (Array.isArray(object.material) || Object.keys(object.geometry.morphAttributes).length) {
-      const geometry = object.geometry.clone().applyMatrix4(object.matrixWorld);
+      const geometry = cloneGeometryForWorldTransform(object.geometry).applyMatrix4(object.matrixWorld);
       const mesh = new THREE.Mesh(geometry, object.material);
       mesh.castShadow = false;
       mesh.receiveShadow = true;
@@ -46,7 +87,7 @@ export function flattenStatic(root: THREE.Object3D, castShadow = false) {
       .join("|");
     const signature = `${object.material.uuid}:${object.geometry.index ? "indexed" : "plain"}:${attributes}`;
     const bucket = buckets.get(signature) ?? { material: object.material, geometries: [] as THREE.BufferGeometry[] };
-    bucket.geometries.push(object.geometry.clone().applyMatrix4(object.matrixWorld));
+    bucket.geometries.push(cloneGeometryForWorldTransform(object.geometry).applyMatrix4(object.matrixWorld));
     buckets.set(signature, bucket);
   });
   for (const { material, geometries } of buckets.values()) {
@@ -157,7 +198,7 @@ export function mergePlacedProps(root: THREE.Object3D) {
       castShadow: object.castShadow,
       geometries: [] as THREE.BufferGeometry[],
     };
-    bucket.geometries.push(object.geometry.clone().applyMatrix4(object.matrixWorld));
+    bucket.geometries.push(cloneGeometryForWorldTransform(object.geometry).applyMatrix4(object.matrixWorld));
     buckets.set(signature, bucket);
   });
   const merged = new THREE.Group();

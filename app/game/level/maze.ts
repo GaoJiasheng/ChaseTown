@@ -31,7 +31,11 @@ export const MAZE = makeMaze();
 export const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 export const pointKey = (point: Point) => `${point.x},${point.y}`;
 export const canWalk = (x: number, y: number) => MAZE[Math.round(y)]?.[Math.round(x)] ?? false;
-export const world = (point: Point) => new THREE.Vector3((point.x - (SIZE - 1) / 2) * CELL, 0, (point.y - (SIZE - 1) / 2) * CELL);
+export const world = (point: Point, out = new THREE.Vector3()) => out.set(
+  (point.x - (SIZE - 1) / 2) * CELL,
+  0,
+  (point.y - (SIZE - 1) / 2) * CELL,
+);
 
 export function hasLineOfSight(a: Point, b: Point) {
   const dx = b.x - a.x;
@@ -46,12 +50,10 @@ export function hasLineOfSight(a: Point, b: Point) {
 }
 
 export function canPlayerOccupy(x: number, y: number, margin: number = P0_TUNING.playerCollisionMargin) {
-  return [
-    { x: x - margin, y: y - margin },
-    { x: x + margin, y: y - margin },
-    { x: x - margin, y: y + margin },
-    { x: x + margin, y: y + margin },
-  ].every((sample) => canWalk(sample.x, sample.y));
+  return canWalk(x - margin, y - margin)
+    && canWalk(x + margin, y - margin)
+    && canWalk(x - margin, y + margin)
+    && canWalk(x + margin, y + margin);
 }
 
 export function gridQuarterTurn(x: number, y: number, salt = 0) {

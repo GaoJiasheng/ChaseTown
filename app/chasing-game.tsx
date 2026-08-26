@@ -13,6 +13,7 @@ import {
   P1_SHADOW_CASTERS,
   P1_TUNING,
   P2_TUNING,
+  P3_TUNING,
   PATROL,
   POLICE_POINT,
   START,
@@ -35,7 +36,6 @@ import {
   findGridPath,
   gridPathDistanceMeters,
   hasLineOfSight,
-  roundedCell,
   world,
 } from "./game/level/maze.js";
 import {
@@ -63,10 +63,15 @@ import {
 } from "./game/player/actors.js";
 import { makeSynthAudioRuntime } from "./game/audio/index.js";
 import { disposeObjectResources } from "./game/core/resources.js";
+import type { LoadProgressSnapshot } from "./game/art/loading.js";
 import { createSceneArtRuntime } from "./game/art/scene-runtime.js";
-import { markerTargetOpacity } from "./game/ui/feedback.js";
+import { markerTargetOpacity, searchLookOffset } from "./game/ui/feedback.js";
 import {
+  copyRenderBreakdown,
   makeRenderBreakdown,
+  makeRenderTotals,
+  resetRenderBreakdown,
+  sumRenderBreakdown,
   trackRenderCategory,
   type RenderCategory,
 } from "./game/ui/render-fx.js";
@@ -76,6 +81,7 @@ export {
   P1_SHADOW_CASTERS,
   P1_TUNING,
   P2_TUNING,
+  P3_TUNING,
   advanceGaitPhase,
   advanceGaitWeight,
   canPlayerOccupy,
@@ -87,6 +93,7 @@ export {
   gridQuarterTurn,
   hasLineOfSight,
   markerTargetOpacity,
+  searchLookOffset,
   pathCacheInvalidationReason,
   pathCacheSignature,
   planVillainAi,
@@ -97,6 +104,12 @@ export {
   threatStateFactor,
   vignetteStrength,
 } from "./game/index.js";
+
+const formatLoadBytes = (bytes: number) => {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+const ACTOR_NAMES: readonly ActorName[] = ["kid", "villain", "police"];
 
 export function ChasingGame() {
   const mount = useRef<HTMLDivElement>(null);
@@ -122,6 +135,8 @@ export function ChasingGame() {
   const lastPlayerDelta = useRef<Point>({ x: 0, y: 0 });
   const inputSafety = useRef({ clearCount: 0, lastClearReason: null as string | null });
   const caughtAt = useRef<number | null>(null);
+  const wonAt = useRef<number | null>(null);
+  const winPanelVisibleRef = useRef(false);
   const started = useRef(0);
   const readyRef = useRef(false);
   const phaseRef = useRef<Phase>("ready");
@@ -133,8 +148,17 @@ export function ChasingGame() {
   const [objectiveDistance, setObjectiveDistance] = useState(gridPathDistanceMeters(START, EXIT) ?? 0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [loadProgress, setLoadProgress] = useState({ done: 0, total: BLOCKING_ACTOR_SPECS.length + Object.keys(CORE_ASSETS).length, message: "正在载入项目美术资产：人物与校园…" });
+  const [loadProgress, setLoadProgress] = useState<LoadProgressSnapshot & { message: string }>({
+    done: 0,
+    total: BLOCKING_ACTOR_SPECS.length + Object.keys(CORE_ASSETS).length,
+    loadedBytes: 0,
+    totalBytes: null,
+    mode: "files",
+    ratio: 0,
+    message: "正在载入项目美术资产：人物与校园…",
+  });
   const [detailProgress, setDetailProgress] = useState(0);
+  const [winPanelVisible, setWinPanelVisible] = useState(false);
 
   const changePhase = useCallback((next: Phase) => {
     phaseRef.current = next;
@@ -163,6 +187,9 @@ export function ChasingGame() {
     lastInputIntent.current = { x: 0, y: 0 };
     lastPlayerDelta.current = { x: 0, y: 0 };
     caughtAt.current = null;
+    wonAt.current = null;
+    winPanelVisibleRef.current = false;
+    setWinPanelVisible(false);
     started.current = performance.now();
     for (const [name, actor] of Object.entries(actors.current)) {
       if (!actor) continue;
@@ -231,6 +258,9 @@ export function ChasingGame() {
   useEffect(() => {
     const host = mount.current;
     if (!host) return;
+    const shell = host.closest<HTMLElement>(".game-shell");
+    const safeAreaSimulation = new URLSearchParams(window.location.search).get("qaSafeArea") === "1";
+    if (shell && safeAreaSimulation) shell.dataset.qaSafeArea = "true";
     let disposed = false;
     let frame = 0;
     let last = performance.now();
@@ -257,6 +287,41 @@ export function ChasingGame() {
     const cameraFocus = world(START).add(new THREE.Vector3(0, 1.02, 0));
     let cameraDistance = 15.6;
     const cameraRuntime = { threat: 0, targetDistance: cameraDistance };
+    const searchLookRuntime = { offset: 0, visualHeading: villainHeading.current };
+    const inputMove: Point = { x: 0, y: 0 };
+    const villainStepRoute: Point[] = [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+    const emptyVillainStepRoute: Point[] = [];
+    const villainStepResult = {
+      point: { ...villain.current },
+      heading: villainHeading.current,
+      turnError: 0,
+      speedMultiplier: 1,
+    };
+    const kidSyncOptions = {
+      dampHeading: true,
+      headingDamping: P1_TUNING.playerTurnDamping,
+      freezePose: false,
+    };
+    const villainSyncOptions = {
+      authoredHeading: villainHeading.current,
+      freezePose: false,
+    };
+    const policeSyncOptions: {
+      authoredHeading?: number;
+      dampHeading: boolean;
+      headingDamping: number;
+      freezePose: boolean;
+    } = {
+      authoredHeading: undefined,
+      dampHeading: true,
+      headingDamping: P1_TUNING.policeTurnDamping,
+      freezePose: false,
+    };
+    const playerAnchor = new THREE.Vector3();
+    const villainAnchor = new THREE.Vector3();
+    const targetFocus = new THREE.Vector3();
+    const relativeAnchor = new THREE.Vector3();
+    const desiredCamera = new THREE.Vector3();
     const threatRuntime = {
       distance: distance(player.current, villain.current),
       proximity: 0,
@@ -275,11 +340,13 @@ export function ChasingGame() {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = P1_TUNING.exposure;
     host.appendChild(renderer.domElement);
-    const gpuMemory = (): GpuMemorySnapshot => ({
-      geometries: renderer.info.memory.geometries,
-      textures: renderer.info.memory.textures,
-      programs: renderer.info.programs?.length ?? 0,
-    });
+    const gpuMemory = (target?: GpuMemorySnapshot): GpuMemorySnapshot => {
+      const snapshot = target ?? { geometries: 0, textures: 0, programs: 0 };
+      snapshot.geometries = renderer.info.memory.geometries;
+      snapshot.textures = renderer.info.memory.textures;
+      snapshot.programs = renderer.info.programs?.length ?? 0;
+      return snapshot;
+    };
     const roomEnvironment = new RoomEnvironment();
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     const environmentTarget = pmremGenerator.fromScene(roomEnvironment, 0.04);
@@ -357,9 +424,11 @@ export function ChasingGame() {
       capturedAt: 0,
       memory: gpuMemory(),
     };
-    let activeRenderBreakdown = makeRenderBreakdown();
-    let qaRenderBreakdown = makeRenderBreakdown();
-    let qaRenderReconciliation = {
+    const activeRenderBreakdown = makeRenderBreakdown();
+    const qaRenderBreakdown = makeRenderBreakdown();
+    const activeRenderTotals = makeRenderTotals();
+    const qaRenderTotals = makeRenderTotals();
+    const qaRenderReconciliation = {
       rawUnclassifiedCalls: 0,
       rawUnclassifiedTriangles: 0,
       callsDelta: 0,
@@ -420,6 +489,8 @@ export function ChasingGame() {
           searchElapsedMs: aiMemory.current.searchArrivedAt === null
             ? null
             : snapshotNow - aiMemory.current.searchArrivedAt,
+          searchLookOffset: searchLookRuntime.offset,
+          visualHeading: searchLookRuntime.visualHeading,
         },
         ready: readyRef.current,
         startedElapsedMs: started.current === 0 ? 0 : snapshotNow - started.current,
@@ -450,9 +521,16 @@ export function ChasingGame() {
           elapsedMs: caughtAt.current === null ? null : snapshotNow - caughtAt.current,
           freezeMs: P0_TUNING.captureFreezeMs,
         },
+        victory: {
+          startedAt: wonAt.current,
+          elapsedMs: wonAt.current === null ? null : snapshotNow - wonAt.current,
+          freezeMs: P3_TUNING.victoryFreezeMs,
+          panelVisible: winPanelVisibleRef.current,
+        },
         tuning: { ...P0_TUNING },
         polishTuning: { ...P1_TUNING },
         hardeningTuning: { ...P2_TUNING },
+        optimizationTuning: { ...P3_TUNING },
         threat: {
           ...threatRuntime,
           aiState: aiMemory.current.state,
@@ -471,6 +549,11 @@ export function ChasingGame() {
           detailsLoaded: artRuntime.detailsLoaded,
           detailTotal: artRuntime.detailTotal,
           detailsComplete: artRuntime.detailsLoaded === artRuntime.detailTotal,
+          version: artRuntime.assetVersion,
+          requestedUrls: [...artRuntime.requestedAssetUrls].sort(),
+          degradedTextures: [...artRuntime.degradedTextures].sort(),
+          retryAttempts: { ...artRuntime.retryAttempts },
+          blockingProgress: { ...artRuntime.blockingProgress },
         },
         actors: Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => [name, actor?.position.toArray()])),
         motion,
@@ -499,6 +582,7 @@ export function ChasingGame() {
           quarterTurnHistogram: [...artRuntime.floorRotationEvidence.histogram],
           floorRotationChecksum: artRuntime.floorRotationEvidence.checksum,
           wallRandomized: artRuntime.floorRotationEvidence.wallRandomized,
+          safeAreaSimulation,
         },
         police: {
           ...policeRuntime,
@@ -514,6 +598,7 @@ export function ChasingGame() {
           reconciliation: { ...qaRenderReconciliation },
           optimization: {
             propMerge: { ...artRuntime.propMergeRuntime },
+            mazeShadowProxy: artRuntime.shadowProxy ? { ...artRuntime.shadowProxy } : null,
             actorShadowStrategy: "three-largest-triangle-meshes-per-actor",
             actorShadowBudgets: Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => [name, actor?.userData.shadowBudget ?? null])),
           },
@@ -636,22 +721,32 @@ export function ChasingGame() {
         if (keys.current.has("d") || keys.current.has("arrowright")) dx += 1;
         if (keys.current.has("w") || keys.current.has("arrowup")) dy -= 1;
         if (keys.current.has("s") || keys.current.has("arrowdown")) dy += 1;
-        const move = screenAlignedMove(dx, dy);
-        lastInputIntent.current = { ...move };
+        const move = screenAlignedMove(dx, dy, inputMove);
+        lastInputIntent.current.x = move.x;
+        lastInputIntent.current.y = move.y;
         const current = player.current;
-        const previous = { ...current };
+        const previousX = current.x;
+        const previousY = current.y;
         const nextX = current.x + move.x * P0_TUNING.playerSpeed * delta;
         const nextY = current.y + move.y * P0_TUNING.playerSpeed * delta;
         if (canPlayerOccupy(nextX, current.y)) current.x = nextX;
         if (canPlayerOccupy(current.x, nextY)) current.y = nextY;
-        lastPlayerDelta.current = { x: current.x - previous.x, y: current.y - previous.y };
+        lastPlayerDelta.current.x = current.x - previousX;
+        lastPlayerDelta.current.y = current.y - previousY;
 
         const decision = planVillainAi(aiMemory.current, villain.current, current, now, started.current);
         aiMemory.current = decision.memory;
         villainSeesPlayer.current = decision.seesPlayer;
         let target = decision.target;
         if (aiMemory.current.state === "patrol") target = PATROL[patrol.current];
-        villainTarget.current = target ? { ...target } : null;
+        if (target) {
+          const targetSnapshot = villainTarget.current ?? { x: target.x, y: target.y };
+          targetSnapshot.x = target.x;
+          targetSnapshot.y = target.y;
+          villainTarget.current = targetSnapshot;
+        } else {
+          villainTarget.current = null;
+        }
         if (target) {
           const signature = pathCacheSignature(aiMemory.current.state, villain.current, target);
           const invalidationReason = pathCacheInvalidationReason(villainPathCache.current.signature, signature);
@@ -672,21 +767,29 @@ export function ChasingGame() {
           if (cachedWaypoint && distance(villain.current, cachedWaypoint) <= P2_TUNING.pathWaypointTolerance) {
             villainPathCache.current.cursor += 1;
           }
-          villainPathCache.current.activeWaypoint = villainPathCache.current.route[villainPathCache.current.cursor]
-            ?? target;
+          const activeWaypoint = villainPathCache.current.route[villainPathCache.current.cursor] ?? target;
+          villainPathCache.current.activeWaypoint = activeWaypoint;
+          const cachedRoute = villainPathCache.current.route.length
+            ? villainStepRoute
+            : emptyVillainStepRoute;
+          if (villainPathCache.current.route.length) {
+            villainStepRoute[0].x = Math.round(villain.current.x);
+            villainStepRoute[0].y = Math.round(villain.current.y);
+            villainStepRoute[1] = activeWaypoint;
+          }
           const step = stepVillainToward(
             villain.current,
             target,
             villainHeading.current,
             P0_TUNING.villainSpeed,
             delta,
-            villainPathCache.current.route.length
-              ? [roundedCell(villain.current), villainPathCache.current.activeWaypoint]
-              : [],
+            cachedRoute,
+            villainStepResult,
           );
           villain.current = step.point;
           villainHeading.current = step.heading;
-          villainTurn.current = { error: step.turnError, speedMultiplier: step.speedMultiplier };
+          villainTurn.current.error = step.turnError;
+          villainTurn.current.speedMultiplier = step.speedMultiplier;
           if (aiMemory.current.state === "patrol" && distance(villain.current, target) < 0.25) {
             patrol.current = (patrol.current + 1) % PATROL.length;
           }
@@ -705,7 +808,8 @@ export function ChasingGame() {
             if (qaPathSamples.length > 80) qaPathSamples.shift();
           }
         } else {
-          villainTurn.current = { error: 0, speedMultiplier: 1 };
+          villainTurn.current.error = 0;
+          villainTurn.current.speedMultiplier = 1;
           villainPathCache.current.activeWaypoint = null;
         }
 
@@ -715,6 +819,9 @@ export function ChasingGame() {
         } else if (distance(current, EXIT) < 0.62) {
           const seconds = Math.max(0, Math.floor((now - started.current) / 1000));
           setElapsed(seconds);
+          wonAt.current = now;
+          winPanelVisibleRef.current = false;
+          setWinPanelVisible(false);
           changePhase("won");
         }
         if (now - lastHudUpdate > 180) {
@@ -730,6 +837,14 @@ export function ChasingGame() {
         && now - caughtAt.current >= P0_TUNING.captureFreezeMs
       ) {
         changePhase("lost");
+      } else if (
+        phaseRef.current === "won"
+        && wonAt.current !== null
+        && !winPanelVisibleRef.current
+        && now - wonAt.current >= P3_TUNING.victoryFreezeMs
+      ) {
+        winPanelVisibleRef.current = true;
+        setWinPanelVisible(true);
       }
 
       const delayRemaining = P0_TUNING.startDelayMs - (now - started.current);
@@ -739,16 +854,18 @@ export function ChasingGame() {
       } else {
         setActorLabel(actors.current.villain, "追捕者", "#ff4f5e");
       }
-      const freezeCapturedPose = phaseRef.current === "caught";
-      syncActor(actors.current.kid, player.current, 0, delta, {
-        dampHeading: true,
-        headingDamping: P1_TUNING.playerTurnDamping,
-        freezePose: freezeCapturedPose,
-      });
-      syncActor(actors.current.villain, villain.current, 2, delta, {
-        authoredHeading: villainHeading.current,
-        freezePose: freezeCapturedPose,
-      });
+      const freezeSettledPose = phaseRef.current === "caught" || phaseRef.current === "won";
+      kidSyncOptions.freezePose = freezeSettledPose;
+      syncActor(actors.current.kid, player.current, 0, delta, kidSyncOptions);
+      searchLookRuntime.offset = searchLookOffset(
+        aiMemory.current.state,
+        aiMemory.current.searchArrivedAt,
+        now,
+      );
+      searchLookRuntime.visualHeading = villainHeading.current + searchLookRuntime.offset;
+      villainSyncOptions.authoredHeading = searchLookRuntime.visualHeading;
+      villainSyncOptions.freezePose = freezeSettledPose;
+      syncActor(actors.current.villain, villain.current, 2, delta, villainSyncOptions);
       policeRuntime.distanceToExit = distance(player.current, EXIT);
       policeRuntime.trackingPlayer = shouldPoliceTrack(player.current);
       if (policeRuntime.trackingPlayer) {
@@ -757,12 +874,9 @@ export function ChasingGame() {
           player.current.y - POLICE_POINT.y,
         );
       }
-      syncActor(actors.current.police, POLICE_POINT, 4, delta, {
-        authoredHeading: policeRuntime.trackingPlayer ? policeRuntime.targetHeading : undefined,
-        dampHeading: true,
-        headingDamping: P1_TUNING.policeTurnDamping,
-        freezePose: freezeCapturedPose,
-      });
+      policeSyncOptions.authoredHeading = policeRuntime.trackingPlayer ? policeRuntime.targetHeading : undefined;
+      policeSyncOptions.freezePose = freezeSettledPose;
+      syncActor(actors.current.police, POLICE_POINT, 4, delta, policeSyncOptions);
       const kidMotion = actors.current.kid?.userData.motion as ActorMotionRuntime | undefined;
       if (qaApi && kidMotion) {
         qaMotionSamples.push({
@@ -793,11 +907,11 @@ export function ChasingGame() {
         host.style.setProperty("--danger-level", threatRuntime.cssValue);
         lastVignetteUpdate = now;
       }
-      if (phaseRef.current !== "caught") {
-        const playerAnchor = world(player.current).add(new THREE.Vector3(0, 1.02, 0));
-        const villainAnchor = world(villain.current).add(new THREE.Vector3(0, 1.02, 0));
+      if (phaseRef.current !== "caught" && phaseRef.current !== "won") {
+        world(player.current, playerAnchor).y = 1.02;
+        world(villain.current, villainAnchor).y = 1.02;
         const threat = currentThreat;
-        const targetFocus = playerAnchor.clone().lerp(villainAnchor, threat * 0.42);
+        targetFocus.copy(playerAnchor).lerp(villainAnchor, threat * 0.42);
         const focusAlpha = 1 - Math.exp(-7 * delta);
         cameraFocus.lerp(targetFocus, focusAlpha);
 
@@ -806,25 +920,27 @@ export function ChasingGame() {
         const aspectDistance = 5 / Math.max(horizontalTangent, 0.01);
         const baseDistance = THREE.MathUtils.clamp(Math.max(15.6, aspectDistance), 15.6, 26);
         let fitDistance = baseDistance;
-        for (const anchor of [playerAnchor, villainAnchor]) {
-          const relative = anchor.clone().sub(targetFocus);
-          const depthShift = relative.dot(cameraDirection);
+        for (let anchorIndex = 0; anchorIndex < 2; anchorIndex += 1) {
+          const anchor = anchorIndex === 0 ? playerAnchor : villainAnchor;
+          relativeAnchor.copy(anchor).sub(targetFocus);
+          const depthShift = relativeAnchor.dot(cameraDirection);
           fitDistance = Math.max(
             fitDistance,
-            depthShift + (Math.abs(relative.dot(cameraRight)) + 1.2) / Math.max(horizontalTangent, 0.01),
-            depthShift + (Math.abs(relative.dot(cameraUp)) + 1.8) / Math.max(verticalTangent, 0.01),
+            depthShift + (Math.abs(relativeAnchor.dot(cameraRight)) + 1.2) / Math.max(horizontalTangent, 0.01),
+            depthShift + (Math.abs(relativeAnchor.dot(cameraUp)) + 1.8) / Math.max(verticalTangent, 0.01),
           );
         }
         const automaticDistance = Math.max(baseDistance + threat * 2.8, THREE.MathUtils.lerp(baseDistance, fitDistance, threat));
         const targetDistance = THREE.MathUtils.clamp(automaticDistance * cameraZoom.current, 12.2, 34);
         cameraRuntime.targetDistance = targetDistance;
         cameraDistance = THREE.MathUtils.lerp(cameraDistance, targetDistance, 1 - Math.exp(-3.2 * delta));
-        const desired = cameraFocus.clone().addScaledVector(cameraDirection, cameraDistance);
-        camera.position.lerp(desired, 1 - Math.exp(-6 * delta));
+        desiredCamera.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
+        camera.position.lerp(desiredCamera, 1 - Math.exp(-6 * delta));
         camera.lookAt(cameraFocus);
       }
       const markerElapsedMs = started.current === 0 ? 0 : now - started.current;
-      for (const [name, actor] of Object.entries(actors.current)) {
+      for (const name of ACTOR_NAMES) {
+        const actor = actors.current[name];
         if (!actor) continue;
         const targetOpacity = markerTargetOpacity(
           phaseRef.current,
@@ -842,39 +958,25 @@ export function ChasingGame() {
         const pulse = 1 + Math.sin(now * 0.004) * 0.08;
         artRuntime.beacon.scale.setScalar(pulse);
       }
-      activeRenderBreakdown = makeRenderBreakdown();
+      resetRenderBreakdown(activeRenderBreakdown);
       renderer.info.reset();
       renderer.render(scene, camera);
       qaRenderSnapshot.calls = renderer.info.render.calls;
       qaRenderSnapshot.triangles = renderer.info.render.triangles;
       qaRenderSnapshot.frame += 1;
       qaRenderSnapshot.capturedAt = now;
-      qaRenderSnapshot.memory = gpuMemory();
-      const classifiedCalls = Object.values(activeRenderBreakdown).reduce(
-        (total, budget) => total + budget.mainCalls + budget.shadowCalls,
-        0,
-      );
-      const classifiedTriangles = Object.values(activeRenderBreakdown).reduce(
-        (total, budget) => total + budget.mainTriangles + budget.shadowTriangles,
-        0,
-      );
-      const unclassifiedCalls = renderer.info.render.calls - classifiedCalls;
-      const unclassifiedTriangles = renderer.info.render.triangles - classifiedTriangles;
+      gpuMemory(qaRenderSnapshot.memory);
+      sumRenderBreakdown(activeRenderBreakdown, activeRenderTotals);
+      const unclassifiedCalls = renderer.info.render.calls - activeRenderTotals.calls;
+      const unclassifiedTriangles = renderer.info.render.triangles - activeRenderTotals.triangles;
       activeRenderBreakdown.other.mainCalls += unclassifiedCalls;
       activeRenderBreakdown.other.mainTriangles += unclassifiedTriangles;
-      qaRenderBreakdown = structuredClone(activeRenderBreakdown);
-      qaRenderReconciliation = {
-        rawUnclassifiedCalls: unclassifiedCalls,
-        rawUnclassifiedTriangles: unclassifiedTriangles,
-        callsDelta: renderer.info.render.calls - Object.values(qaRenderBreakdown).reduce(
-          (total, budget) => total + budget.mainCalls + budget.shadowCalls,
-          0,
-        ),
-        trianglesDelta: renderer.info.render.triangles - Object.values(qaRenderBreakdown).reduce(
-          (total, budget) => total + budget.mainTriangles + budget.shadowTriangles,
-          0,
-        ),
-      };
+      copyRenderBreakdown(qaRenderBreakdown, activeRenderBreakdown);
+      sumRenderBreakdown(qaRenderBreakdown, qaRenderTotals);
+      qaRenderReconciliation.rawUnclassifiedCalls = unclassifiedCalls;
+      qaRenderReconciliation.rawUnclassifiedTriangles = unclassifiedTriangles;
+      qaRenderReconciliation.callsDelta = renderer.info.render.calls - qaRenderTotals.calls;
+      qaRenderReconciliation.trianglesDelta = renderer.info.render.triangles - qaRenderTotals.triangles;
       if (qaApi && now - qaLastSnapshotUpdate >= 50) {
         qaLastSnapshotUpdate = now;
         host.dataset.qaState = JSON.stringify(qaApi.getState());
@@ -904,6 +1006,7 @@ export function ChasingGame() {
         qaButton?.remove();
       }
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);
+      if (shell && safeAreaSimulation) delete shell.dataset.qaSafeArea;
     };
   }, [changePhase, reset]);
 
@@ -911,7 +1014,10 @@ export function ChasingGame() {
     if (active) keys.current.add(key);
     else keys.current.delete(key);
   };
-  const loadPercent = Math.round((loadProgress.done / loadProgress.total) * 100);
+  const loadPercent = Math.round(loadProgress.ratio * 100);
+  const loadBytesLabel = loadProgress.mode === "bytes" && loadProgress.totalBytes !== null
+    ? `${formatLoadBytes(loadProgress.loadedBytes)} / ${formatLoadBytes(loadProgress.totalBytes)}`
+    : `${loadProgress.done} / ${loadProgress.total} 个核心文件`;
 
   return (
     <main className="game-shell">
@@ -935,7 +1041,7 @@ export function ChasingGame() {
             <div>
               <strong>{loadError || loadProgress.message}</strong>
               {!loadError && <div className="load-bar"><i style={{ width: `${loadPercent}%` }} /></div>}
-              {!loadError && <small>高精角色正在直接加入场景 · {loadPercent}%</small>}
+              {!loadError && <small>高精角色正在直接加入场景 · {loadBytesLabel} · {loadPercent}%</small>}
               {loadError && <button type="button" onClick={() => window.location.reload()}>刷新重试</button>}
             </div>
           </div>
@@ -944,7 +1050,7 @@ export function ChasingGame() {
           <div className="detail-loading">校园细节与出口角色 {detailProgress}/{Object.keys(DETAIL_ASSETS).length + 1}</div>
         )}
         <div className={`capture-transition${phase === "caught" ? " active" : ""}`} aria-hidden="true" />
-        {phase !== "playing" && phase !== "caught" && !loading && (
+        {phase !== "playing" && phase !== "caught" && !loading && (phase !== "won" || winPanelVisible) && (
           <div className={`overlay ${phase}`}>
             <div className="overlay-card">
               <span className={`result ${phase}`}>{phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : "3D 逃生演练"}</span>
@@ -965,7 +1071,7 @@ export function ChasingGame() {
         <span><i className="kid" />玩家</span>
         <span><i className="villain" />追捕者</span>
         <span><i className="police" />警察 / 出口</span>
-        <small>WASD / 方向键移动 · 滚轮调视野 · 0 重置镜头 · R 重新开始</small>
+        <small>WASD / 方向键移动 · 滚轮 / + / - 调视野 · 0 重置镜头 · R 重新开始</small>
       </footer>
     </main>
   );

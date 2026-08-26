@@ -44,6 +44,35 @@ export const P2_TUNING = Object.freeze({
   pathTurnMinimumMultiplier: 0.08,
 });
 
+export const P3_TUNING = Object.freeze({
+  retryDelaysMs: [500, 1500] as const,
+  searchLookAmplitude: 0.24,
+  searchLookPeriodMs: 1250,
+  victoryFreezeMs: 600,
+});
+
+export const ASSET_VERSION = "22";
+
+export function versionAssetUrl(url: string, version = ASSET_VERSION) {
+  if (/^(?:data|blob):/u.test(url)) return url;
+  const hashIndex = url.indexOf("#");
+  const hash = hashIndex >= 0 ? url.slice(hashIndex) : "";
+  const withoutHash = hashIndex >= 0 ? url.slice(0, hashIndex) : url;
+  const queryIndex = withoutHash.indexOf("?");
+  const pathname = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
+  const params = new URLSearchParams(queryIndex >= 0 ? withoutHash.slice(queryIndex + 1) : "");
+  params.set("v", version);
+  return `${pathname}?${params.toString()}${hash}`;
+}
+
+export function runtimeAssetUrl(url: string, version = ASSET_VERSION) {
+  const webpUrl = url.replace(
+    /(\/models\/)(?:[^/?#]+\/\.\.\/)*(SharedTextures\/[^?#]+)\.png(?=[?#]|$)/u,
+    "$1$2.webp",
+  );
+  return versionAssetUrl(webpUrl, version);
+}
+
 export const SIZE = 25;
 export const CELL = 2;
 export const START = { x: 1, y: 1 };
@@ -59,42 +88,42 @@ export const PATROL = [
 ];
 
 export const ACTOR_SPECS = [
-  { name: "kid" as const, url: "/models/characters/kid.glb?v=21", height: 2.12, color: 0x4d9fff, label: "你" },
-  { name: "villain" as const, url: "/models/characters/villain.glb?v=21", height: 2.28, color: 0xff4f5e, label: "追捕者" },
-  { name: "police" as const, url: "/models/characters/police.glb?v=21", height: 2.18, color: 0x35e5f2, label: "警察" },
+  { name: "kid" as const, url: versionAssetUrl("/models/characters/kid.glb"), height: 2.12, color: 0x4d9fff, label: "你" },
+  { name: "villain" as const, url: versionAssetUrl("/models/characters/villain.glb"), height: 2.28, color: 0xff4f5e, label: "追捕者" },
+  { name: "police" as const, url: versionAssetUrl("/models/characters/police.glb"), height: 2.18, color: 0x35e5f2, label: "警察" },
 ] as const;
 export const BLOCKING_ACTOR_SPECS = ACTOR_SPECS.filter((spec) => spec.name !== "police");
 
 export const CORE_ASSETS = {
-  wall: "/models/environment/wall.glb",
-  wallCorner: "/models/environment/wall-corner.glb",
-  wallEnd: "/models/environment/wall-end.glb",
-  floor: "/models/environment/floor.glb",
-  exit: "/models/environment/exit.glb",
-  frontGate: "/models/environment/front-gate.glb",
-  classroomFloor: "/models/environment/classroom-floor.glb",
-  playgroundFloor: "/models/environment/playground-floor.glb",
-  grassFloor: "/models/environment/grass-floor.glb",
+  wall: versionAssetUrl("/models/environment/wall.glb"),
+  wallCorner: versionAssetUrl("/models/environment/wall-corner.glb"),
+  wallEnd: versionAssetUrl("/models/environment/wall-end.glb"),
+  floor: versionAssetUrl("/models/environment/floor.glb"),
+  exit: versionAssetUrl("/models/environment/exit.glb"),
+  frontGate: versionAssetUrl("/models/environment/front-gate.glb"),
+  classroomFloor: versionAssetUrl("/models/environment/classroom-floor.glb"),
+  playgroundFloor: versionAssetUrl("/models/environment/playground-floor.glb"),
+  grassFloor: versionAssetUrl("/models/environment/grass-floor.glb"),
 } as const;
 
 export const DETAIL_ASSETS = {
-  locker: "/models/environment/locker.glb",
-  bench: "/models/environment/bench.glb",
-  car: "/models/environment/police-car.glb",
-  tree: "/models/environment/tree.glb",
-  classroomDoor: "/models/environment/classroom-door.glb",
-  ceilingLight: "/models/environment/ceiling-light.glb",
-  basketball: "/models/environment/basketball.glb",
-  deskChair: "/models/environment/desk-chair.glb",
-  blackboard: "/models/environment/blackboard.glb",
-  bulletin: "/models/environment/bulletin.glb",
-  podium: "/models/environment/podium.glb",
-  extinguisher: "/models/environment/extinguisher.glb",
-  trash: "/models/environment/trash.glb",
-  books: "/models/environment/books.glb",
-  backpack: "/models/environment/backpack.glb",
-  shrub: "/models/environment/shrub.glb",
-  station: "/models/environment/station.glb",
+  locker: versionAssetUrl("/models/environment/locker.glb"),
+  bench: versionAssetUrl("/models/environment/bench.glb"),
+  car: versionAssetUrl("/models/environment/police-car.glb"),
+  tree: versionAssetUrl("/models/environment/tree.glb"),
+  classroomDoor: versionAssetUrl("/models/environment/classroom-door.glb"),
+  ceilingLight: versionAssetUrl("/models/environment/ceiling-light.glb"),
+  basketball: versionAssetUrl("/models/environment/basketball.glb"),
+  deskChair: versionAssetUrl("/models/environment/desk-chair.glb"),
+  blackboard: versionAssetUrl("/models/environment/blackboard.glb"),
+  bulletin: versionAssetUrl("/models/environment/bulletin.glb"),
+  podium: versionAssetUrl("/models/environment/podium.glb"),
+  extinguisher: versionAssetUrl("/models/environment/extinguisher.glb"),
+  trash: versionAssetUrl("/models/environment/trash.glb"),
+  books: versionAssetUrl("/models/environment/books.glb"),
+  backpack: versionAssetUrl("/models/environment/backpack.glb"),
+  shrub: versionAssetUrl("/models/environment/shrub.glb"),
+  station: versionAssetUrl("/models/environment/station.glb"),
 } as const;
 export const P1_SHADOW_CASTERS = ["car", "tree", "station", "locker", "basketball", "bench", "blackboard", "podium"] as const;
 export const largeShadowProps = new Set<keyof typeof DETAIL_ASSETS>(P1_SHADOW_CASTERS);

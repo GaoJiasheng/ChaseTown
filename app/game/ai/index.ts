@@ -3,11 +3,9 @@ import * as THREE from "three";
 import { P0_TUNING, P1_TUNING, P2_TUNING } from "../config/index.js";
 import type { AiMemory, AiState, Point } from "../core/types.js";
 import { shortestAngle } from "../camera/index.js";
-import { canPlayerOccupy, distance, findGridPath, hasLineOfSight, roundedCell } from "../level/maze.js";
+import { canPlayerOccupy, distance, findGridPath, hasLineOfSight } from "../level/maze.js";
 export function pathCacheSignature(state: AiState, from: Point, target: Point) {
-  const start = roundedCell(from);
-  const goal = roundedCell(target);
-  return `${state}:${start.x},${start.y}>${goal.x},${goal.y}`;
+  return `${state}:${Math.round(from.x)},${Math.round(from.y)}>${Math.round(target.x)},${Math.round(target.y)}`;
 }
 export function pathCacheInvalidationReason(previousSignature: string, nextSignature: string) {
   if (!previousSignature) return "empty-cache";
@@ -29,11 +27,23 @@ export function stepVillainToward(
   speed: number,
   delta: number,
   cachedRoute?: readonly Point[],
+  reusable?: {
+    point: Point;
+    heading: number;
+    turnError: number;
+    speedMultiplier: number;
+  },
 ) {
   const route = cachedRoute ?? findGridPath(entity, target);
   const next = route[1] ?? target;
   if (!route.length) {
-    return { point: entity, heading, turnError: 0, speedMultiplier: 1 };
+    if (!reusable) return { point: entity, heading, turnError: 0, speedMultiplier: 1 };
+    reusable.point.x = entity.x;
+    reusable.point.y = entity.y;
+    reusable.heading = heading;
+    reusable.turnError = 0;
+    reusable.speedMultiplier = 1;
+    return reusable;
   }
   const dx = next.x - entity.x;
   const dy = next.y - entity.y;
@@ -56,10 +66,16 @@ export function stepVillainToward(
   const step = Math.min(speed * speedMultiplier * delta, length);
   const candidateX = entity.x + Math.sin(nextHeading) * step;
   const candidateY = entity.y + Math.cos(nextHeading) * step;
-  const point = { ...entity };
+  const point = reusable?.point ?? { ...entity };
+  point.x = entity.x;
+  point.y = entity.y;
   if (canPlayerOccupy(candidateX, point.y, P1_TUNING.villainCollisionMargin)) point.x = candidateX;
   if (canPlayerOccupy(point.x, candidateY, P1_TUNING.villainCollisionMargin)) point.y = candidateY;
-  return { point, heading: nextHeading, turnError, speedMultiplier };
+  if (!reusable) return { point, heading: nextHeading, turnError, speedMultiplier };
+  reusable.heading = nextHeading;
+  reusable.turnError = turnError;
+  reusable.speedMultiplier = speedMultiplier;
+  return reusable;
 }
 
 export function planVillainAi(

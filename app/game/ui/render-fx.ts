@@ -8,6 +8,12 @@ export type RenderCategoryBudget = {
   shadowTriangles: number;
 };
 export type RenderBreakdown = Record<RenderCategory, RenderCategoryBudget>;
+export type RenderTotals = {
+  calls: number;
+  triangles: number;
+};
+
+const RENDER_CATEGORIES: RenderCategory[] = ["actors", "maze", "props", "fx", "other"];
 
 export const makeRenderBreakdown = () => ({
   actors: { mainCalls: 0, mainTriangles: 0, shadowCalls: 0, shadowTriangles: 0 },
@@ -16,6 +22,42 @@ export const makeRenderBreakdown = () => ({
   fx: { mainCalls: 0, mainTriangles: 0, shadowCalls: 0, shadowTriangles: 0 },
   other: { mainCalls: 0, mainTriangles: 0, shadowCalls: 0, shadowTriangles: 0 },
 } satisfies RenderBreakdown);
+
+export const makeRenderTotals = (): RenderTotals => ({ calls: 0, triangles: 0 });
+
+export function resetRenderBreakdown(target: RenderBreakdown) {
+  for (const category of RENDER_CATEGORIES) {
+    const budget = target[category];
+    budget.mainCalls = 0;
+    budget.mainTriangles = 0;
+    budget.shadowCalls = 0;
+    budget.shadowTriangles = 0;
+  }
+  return target;
+}
+
+export function copyRenderBreakdown(target: RenderBreakdown, source: RenderBreakdown) {
+  for (const category of RENDER_CATEGORIES) {
+    const targetBudget = target[category];
+    const sourceBudget = source[category];
+    targetBudget.mainCalls = sourceBudget.mainCalls;
+    targetBudget.mainTriangles = sourceBudget.mainTriangles;
+    targetBudget.shadowCalls = sourceBudget.shadowCalls;
+    targetBudget.shadowTriangles = sourceBudget.shadowTriangles;
+  }
+  return target;
+}
+
+export function sumRenderBreakdown(source: RenderBreakdown, target: RenderTotals = makeRenderTotals()) {
+  target.calls = 0;
+  target.triangles = 0;
+  for (const category of RENDER_CATEGORIES) {
+    const budget = source[category];
+    target.calls += budget.mainCalls + budget.shadowCalls;
+    target.triangles += budget.mainTriangles + budget.shadowTriangles;
+  }
+  return target;
+}
 
 export const drawnTriangles = (
   object: THREE.Object3D,

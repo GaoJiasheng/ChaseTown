@@ -1,15 +1,19 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
 import {
   ACTOR_SPECS,
+  ASSET_VERSION,
   BLOCKING_ACTOR_SPECS,
   CELL,
   CORE_ASSETS,
   DETAIL_ASSETS,
   EXIT,
   largeShadowProps,
+  P3_TUNING,
   POLICE_POINT,
+  runtimeAssetUrl,
   SIZE,
   START,
 } from "../config/index.js";
@@ -17,6 +21,8 @@ import type { ActorName, Point } from "../core/types.js";
 import { disposeObjectResources } from "../core/resources.js";
 import { gridQuarterTurn, MAZE, world } from "../level/maze.js";
 import { decorateActor, fitActor, makeLabel } from "../player/actors.js";
+import { createByteProgressAggregator, retryWithBackoff, type LoadProgressSnapshot } from "./loading.js";
+import { createBlockedGridShadowProxy } from "./shadow-proxy.js";
 import {
   addInstancedModules,
   fitModule,
@@ -33,7 +39,7 @@ type SceneArtOptions = {
   getPlayer: () => Point;
   getVillain: () => Point;
   isDisposed: () => boolean;
-  onLoadProgress: (progress: { done: number; total: number; message: string }) => void;
+  onLoadProgress: (progress: LoadProgressSnapshot & { message: string }) => void;
   onDetailProgress: (loaded: number) => void;
   onReady: () => void;
   onLoadError: (message: string) => void;
@@ -67,6 +73,14 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
     wallRandomized: false,
   };
   const propMergeRuntime = { beforeMeshes: 0, afterMeshes: 0, materialBuckets: 0, complete: false };
+  const requestedAssetUrls = new Set<string>();
+  const degradedTextures = new Set<string>();
+  const retryAttempts: Record<string, number> = {};
+  const blockingUrls = [
+    ...BLOCKING_ACTOR_SPECS.map((spec) => spec.url),
+    ...Object.values(CORE_ASSETS),
+  ];
+  const blockingAggregator = createByteProgressAggregator(blockingUrls);
   const runtime = {
     loadedAssetRoots,
     propTemplates,
@@ -75,6 +89,16 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
     shadowCasterMeshCounts,
     floorRotationEvidence,
     propMergeRuntime,
+    requestedAssetUrls,
+    degradedTextures,
+    retryAttempts,
+    assetVersion: ASSET_VERSION,
+    blockingProgress: blockingAggregator.snapshot(),
+    shadowProxy: null as {
+      rectangles: number;
+      blockedCells: number;
+      shadowTriangles: number;
+    } | null,
     detailsLoaded: 0,
     detailTotal: Object.keys(DETAIL_ASSETS).length + 1,
     beacon: undefined as THREE.Group | undefined,
@@ -92,21 +116,59 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
   const mazeRoot = new THREE.Group();
   scene.add(mazeRoot);
 
-  const loader = new GLTFLoader();
-  const load = async (url: string) => {
-    const root = (await loader.loadAsync(url)).scene;
+  const loadingManager = new THREE.LoadingManager();
+  loadingManager.setURLModifier((url) => {
+    const runtimeUrl = runtimeAssetUrl(url);
+    requestedAssetUrls.add(runtimeUrl);
+    return runtimeUrl;
+  });
+  loadingManager.onError = (url) => {
+    const runtimeUrl = runtimeAssetUrl(url);
+    if (/\.(?:png|webp)(?:[?#]|$)/u.test(runtimeUrl)) degradedTextures.add(runtimeUrl);
+  };
+  const loader = new GLTFLoader(loadingManager);
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  const loadOnce = (url: string, trackBlocking: boolean) => new Promise<THREE.Object3D>((resolve, reject) => {
+    loader.load(
+      url,
+      (gltf) => resolve(gltf.scene),
+      trackBlocking
+        ? (event) => {
+          const progress = blockingAggregator.update(url, {
+            loaded: event.loaded,
+            total: event.lengthComputable ? event.total : undefined,
+          });
+          runtime.blockingProgress = progress;
+          if (!isDisposed()) onLoadProgress({
+            ...progress,
+            message: progress.mode === "bytes"
+              ? "正在载入项目美术资产：校园与角色数据…"
+              : `正在载入项目美术资产：${progress.done}/${progress.total}`,
+          });
+        }
+        : undefined,
+      reject,
+    );
+  });
+  const load = async (url: string, required = false) => {
+    const task = async (attempt: number) => {
+      if (isDisposed()) throw new Error("scene-art-runtime-disposed");
+      if (required) retryAttempts[url] = attempt;
+      return loadOnce(url, required);
+    };
+    const root = required
+      ? await retryWithBackoff(task, P3_TUNING.retryDelaysMs)
+      : await task(1);
     loadedAssetRoots.add(root);
     if (isDisposed()) disposeObjectResources([root]);
     return root;
   };
-  const totalBlocking = BLOCKING_ACTOR_SPECS.length + Object.keys(CORE_ASSETS).length;
-  let loadedBlocking = 0;
-  const markBlockingLoaded = (kind: string) => {
-    loadedBlocking += 1;
+  const markBlockingLoaded = (kind: string, url: string) => {
+    const progress = blockingAggregator.complete(url);
+    runtime.blockingProgress = progress;
     if (!isDisposed()) onLoadProgress({
-      done: loadedBlocking,
-      total: totalBlocking,
-      message: `正在载入项目美术资产：${kind} ${loadedBlocking}/${totalBlocking}`,
+      ...progress,
+      message: `正在载入项目美术资产：${kind} ${progress.done}/${progress.total}`,
     });
   };
 
@@ -178,9 +240,9 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
         }
       }
     }
-    addInstancedModules(assets.wall, new THREE.Vector3(CELL, 1.12, CELL), batches.wall, mazeRoot, true);
-    addInstancedModules(assets.wallCorner, new THREE.Vector3(CELL, 1.12, CELL), batches.wallCorner, mazeRoot, true);
-    addInstancedModules(assets.wallEnd, new THREE.Vector3(CELL, 1.12, CELL), batches.wallEnd, mazeRoot, true);
+    addInstancedModules(assets.wall, new THREE.Vector3(CELL, 1.12, CELL), batches.wall, mazeRoot, false);
+    addInstancedModules(assets.wallCorner, new THREE.Vector3(CELL, 1.12, CELL), batches.wallCorner, mazeRoot, false);
+    addInstancedModules(assets.wallEnd, new THREE.Vector3(CELL, 1.12, CELL), batches.wallEnd, mazeRoot, false);
     addInstancedModules(assets.floor, new THREE.Vector3(CELL, 0.12, CELL), batches.floor, mazeRoot, false);
     addInstancedModules(assets.grassFloor, new THREE.Vector3(CELL, 0.12, CELL), batches.grassFloor, mazeRoot, false);
     addInstancedModules(assets.classroomFloor, new THREE.Vector3(CELL, 0.12, CELL), batches.classroomFloor, mazeRoot, false);
@@ -195,6 +257,13 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
     gate.position.add(world(START)).add(new THREE.Vector3(0, 0, -CELL * 0.45));
     mazeRoot.add(gate);
     trackRenderCategory(gate, "maze");
+    const mazeShadowProxy = createBlockedGridShadowProxy(MAZE, {
+      cellSize: CELL,
+      wallHeight: 1.12,
+      name: "maze-shadow-proxy",
+    });
+    runtime.shadowProxy = { ...mazeShadowProxy.userData.shadowProxy };
+    mazeRoot.add(mazeShadowProxy);
     trackRenderCategory(mazeRoot, "maze");
 
     runtime.beacon = new THREE.Group();
@@ -287,14 +356,14 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
   const setup = async () => {
     try {
       const actorTask = Promise.all(BLOCKING_ACTOR_SPECS.map(async (spec) => {
-        const model = await load(spec.url);
+        const model = await load(spec.url, true);
         if (!isDisposed()) placeActor(spec.name, model);
-        markBlockingLoaded(spec.label);
+        markBlockingLoaded(spec.label, spec.url);
       }));
       const core = {} as Partial<Record<keyof typeof CORE_ASSETS, THREE.Object3D>>;
       const coreTask = Promise.all((Object.entries(CORE_ASSETS) as [keyof typeof CORE_ASSETS, string][]).map(async ([name, url]) => {
-        core[name] = await load(url);
-        markBlockingLoaded("校园结构");
+        core[name] = await load(url, true);
+        markBlockingLoaded("校园结构", url);
       }));
       await Promise.all([actorTask, coreTask]);
       if (isDisposed()) return;
@@ -339,6 +408,7 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
         trackRenderCategory(mergedProps.root, "props");
       }
     } catch (error) {
+      if (isDisposed()) return;
       console.error("Failed to load required 3D assets", error);
       if (!isDisposed()) onLoadError("角色或校园模型载入失败，请刷新后重试。控制台已记录具体素材。");
     }

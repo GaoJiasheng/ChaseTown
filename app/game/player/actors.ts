@@ -5,6 +5,18 @@ import type { ActorMotionRuntime, Point } from "../core/types.js";
 import { dampAngle, shortestAngle } from "../camera/index.js";
 import { distance, world } from "../level/maze.js";
 import { retainLargestActorShadowMeshes, tuneMeshes } from "../art/props.js";
+
+const RIG_AXIS = new THREE.Vector3(1, 0, 0);
+const RIG_DELTA = new THREE.Quaternion();
+const ACTOR_WORLD_TARGET = new THREE.Vector3();
+type ActorRig = Record<string, { bone: THREE.Object3D; rest: THREE.Quaternion }>;
+
+function applyRigRotation(rig: ActorRig, name: string, angle: number) {
+  const joint = rig[name];
+  if (!joint) return;
+  joint.bone.quaternion.copy(joint.rest).multiply(RIG_DELTA.setFromAxisAngle(RIG_AXIS, angle));
+}
+
 export function advanceGaitWeight(current: number, moving: boolean, delta: number) {
   const target = moving ? 1 : 0;
   const step = Math.max(0, delta) / P1_TUNING.gaitBlendSeconds;
@@ -134,24 +146,17 @@ export function decorateActor(actor: THREE.Object3D, height: number, color: numb
 }
 
 export function poseRig(actor: THREE.Object3D, gaitWave: number, gaitWeight: number) {
-  const rig = actor.userData.rig as Record<string, { bone: THREE.Object3D; rest: THREE.Quaternion }> | undefined;
+  const rig = actor.userData.rig as ActorRig | undefined;
   if (!rig) return;
-  const axis = new THREE.Vector3(1, 0, 0);
-  const delta = new THREE.Quaternion();
-  const apply = (name: string, angle: number) => {
-    const joint = rig[name];
-    if (!joint) return;
-    joint.bone.quaternion.copy(joint.rest).multiply(delta.setFromAxisAngle(axis, angle));
-  };
   const gait = gaitWave * gaitWeight;
-  apply("LeftUpperLeg", gait * 0.52);
-  apply("RightUpperLeg", -gait * 0.52);
-  apply("LeftLowerLeg", Math.max(0, -gait) * 0.38);
-  apply("RightLowerLeg", Math.max(0, gait) * 0.38);
-  apply("LeftUpperArm", -gait * 0.38);
-  apply("RightUpperArm", gait * 0.38);
-  apply("LeftLowerArm", (-0.12 - Math.max(0, gaitWave) * 0.16) * gaitWeight);
-  apply("RightLowerArm", (-0.12 - Math.max(0, -gaitWave) * 0.16) * gaitWeight);
+  applyRigRotation(rig, "LeftUpperLeg", gait * 0.52);
+  applyRigRotation(rig, "RightUpperLeg", -gait * 0.52);
+  applyRigRotation(rig, "LeftLowerLeg", Math.max(0, -gait) * 0.38);
+  applyRigRotation(rig, "RightLowerLeg", Math.max(0, gait) * 0.38);
+  applyRigRotation(rig, "LeftUpperArm", -gait * 0.38);
+  applyRigRotation(rig, "RightUpperArm", gait * 0.38);
+  applyRigRotation(rig, "LeftLowerArm", (-0.12 - Math.max(0, gaitWave) * 0.16) * gaitWeight);
+  applyRigRotation(rig, "RightLowerArm", (-0.12 - Math.max(0, -gaitWave) * 0.16) * gaitWeight);
 }
 
 
@@ -169,7 +174,7 @@ export const syncActor = (
   } = {},
 ) => {
   if (!actor) return;
-  const target = world(point);
+  const target = world(point, ACTOR_WORLD_TARGET);
   const dx = target.x - actor.position.x;
   const dz = target.z - actor.position.z;
   const moving = dx * dx + dz * dz > 0.00001;
