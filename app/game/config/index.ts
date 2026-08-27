@@ -51,6 +51,19 @@ export const P3_TUNING = Object.freeze({
   victoryFreezeMs: 600,
 });
 
+export const P4_TUNING = Object.freeze({
+  shadowHalfExtent: 16,
+  shadowMapSize: 1024,
+  maxTextureAnisotropy: 8,
+  exitPulsePeriodMs: 1600,
+  victoryTurnDamping: 6,
+  readyCameraDistanceAmplitude: 0.34,
+  readyCameraLateralAmplitude: 0.18,
+  readyCameraPeriodMs: 9000,
+  readyCameraBlendDamping: 2.6,
+  reducedIdleBreathScale: 0.5,
+});
+
 export const ASSET_VERSION = "22";
 
 export function versionAssetUrl(url: string, version = ASSET_VERSION) {
@@ -80,11 +93,14 @@ export const EXIT = { x: 23, y: 23 };
 export const VILLAIN_START = { x: 7, y: 1 };
 export const POLICE_POINT = { x: 23, y: 22.25 };
 export const PATROL = [
+  { x: 21, y: 21.5 },
+  { x: 21, y: 16 },
+  { x: 9, y: 20 },
   { x: 7, y: 7 },
   { x: 15, y: 3 },
   { x: 21, y: 10 },
+  { x: 23, y: 22 },
   { x: 17, y: 19 },
-  { x: 9, y: 20 },
 ];
 
 export const ACTOR_SPECS = [

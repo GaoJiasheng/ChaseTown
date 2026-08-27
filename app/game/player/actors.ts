@@ -35,6 +35,10 @@ export function shouldPoliceTrack(playerPoint: Point) {
   return distance(playerPoint, EXIT) < P1_TUNING.policeTrackingDistance;
 }
 
+export function victoryAwayHeading(villainPoint: Point, exitPoint: Point = EXIT) {
+  return Math.atan2(villainPoint.x - exitPoint.x, villainPoint.y - exitPoint.y);
+}
+
 
 export function fitActor(source: THREE.Object3D, height: number, hideNodes: string[] = []) {
   const visual = new THREE.Group();
@@ -175,6 +179,7 @@ export const syncActor = (
     dampHeading?: boolean;
     headingDamping?: number;
     freezePose?: boolean;
+    idleBreathScale?: number;
   } = {},
 ) => {
   if (!actor) return;
@@ -219,7 +224,10 @@ export const syncActor = (
   const gaitWave = Math.sin(motion.gaitPhase + phaseOffset);
   if (visual) {
     const baseY = visual.userData.baseY as number;
-    const idleBreath = Math.sin(motionTime * 0.003 + phaseOffset) * 0.018 * (1 - motion.gaitWeight);
+    const idleBreath = Math.sin(motionTime * 0.003 + phaseOffset)
+      * 0.018
+      * (options.idleBreathScale ?? 1)
+      * (1 - motion.gaitWeight);
     visual.position.y = baseY + Math.abs(gaitWave) * 0.07 * motion.gaitWeight + idleBreath;
     visual.rotation.z = gaitWave * 0.035 * motion.gaitWeight;
     visual.rotation.x = -0.035 * motion.gaitWeight;

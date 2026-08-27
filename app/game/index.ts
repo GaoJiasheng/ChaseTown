@@ -4,6 +4,8 @@ export * from "./core/resources.js";
 export * from "./art/loading.js";
 export * from "./art/props.js";
 export * from "./art/shadow-proxy.js";
+export * from "./art/visual-polish.js";
+export * from "./art/exit-effects.js";
 export * from "./level/maze.js";
 export * from "./camera/index.js";
 export * from "./input/index.js";

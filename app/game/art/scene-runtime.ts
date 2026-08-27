@@ -12,6 +12,7 @@ import {
   EXIT,
   largeShadowProps,
   P3_TUNING,
+  P4_TUNING,
   POLICE_POINT,
   runtimeAssetUrl,
   SIZE,
@@ -22,7 +23,17 @@ import { disposeObjectResources } from "../core/resources.js";
 import { gridQuarterTurn, MAZE, world } from "../level/maze.js";
 import { decorateActor, fitActor, makeLabel } from "../player/actors.js";
 import { createByteProgressAggregator, retryWithBackoff, type LoadProgressSnapshot } from "./loading.js";
+import {
+  applyExitEffectAttributes,
+  createExitEffectRuntime,
+  getExitEffectQaReport,
+  patchExitEffectMaterials,
+  updateExitEffectPulse,
+  type ExitEffectAttributeReport,
+  type ExitEffectShaderReport,
+} from "./exit-effects.js";
 import { createBlockedGridShadowProxy } from "./shadow-proxy.js";
+import { applySurfaceTextureAnisotropy, type TextureAnisotropyReport } from "./visual-polish.js";
 import {
   addInstancedModules,
   fitModule,
@@ -44,6 +55,7 @@ type SceneArtOptions = {
   onReady: () => void;
   onLoadError: (message: string) => void;
   trackRenderCategory: (root: THREE.Object3D, category: RenderCategory) => void;
+  maxAnisotropy: number;
 };
 
 export function createSceneArtRuntime(options: SceneArtOptions) {
@@ -58,6 +70,7 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
     onReady,
     onLoadError,
     trackRenderCategory,
+    maxAnisotropy,
   } = options;
   const loadedAssetRoots = new Set<THREE.Object3D>();
   const propTemplates = new Map<string, THREE.Object3D>();
@@ -81,6 +94,12 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
     ...Object.values(CORE_ASSETS),
   ];
   const blockingAggregator = createByteProgressAggregator(blockingUrls);
+  const exitEffectRuntime = createExitEffectRuntime(P4_TUNING.exitPulsePeriodMs);
+  const exitEffectAttributes: Partial<Record<keyof typeof DETAIL_ASSETS, ExitEffectAttributeReport>> = {};
+  let exitEffectShaders: ExitEffectShaderReport | null = null;
+  let beaconPadMaterial: THREE.MeshStandardMaterial | null = null;
+  let beaconBeamMaterial: THREE.MeshBasicMaterial | null = null;
+  let beaconLight: THREE.PointLight | null = null;
   const runtime = {
     loadedAssetRoots,
     propTemplates,
@@ -94,6 +113,9 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
     retryAttempts,
     assetVersion: ASSET_VERSION,
     blockingProgress: blockingAggregator.snapshot(),
+    surfaceAnisotropy: null as TextureAnisotropyReport | null,
+    exitEffectRuntime,
+    exitEffectAttributes,
     shadowProxy: null as {
       rectangles: number;
       blockedCells: number;
@@ -142,8 +164,8 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
           if (!isDisposed()) onLoadProgress({
             ...progress,
             message: progress.mode === "bytes"
-              ? "正在载入项目美术资产：校园与角色数据…"
-              : `正在载入项目美术资产：${progress.done}/${progress.total}`,
+              ? "正在准备校园场景与角色…"
+              : `正在准备核心资源 ${progress.done}/${progress.total}`,
           });
         }
         : undefined,
@@ -168,7 +190,7 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
     runtime.blockingProgress = progress;
     if (!isDisposed()) onLoadProgress({
       ...progress,
-      message: `正在载入项目美术资产：${kind} ${progress.done}/${progress.total}`,
+      message: `正在准备${kind} ${progress.done}/${progress.total}`,
     });
   };
 
@@ -189,6 +211,19 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
   };
 
   const buildCore = (assets: Record<keyof typeof CORE_ASSETS, THREE.Object3D>) => {
+    runtime.surfaceAnisotropy = applySurfaceTextureAnisotropy(
+      [
+        assets.wall,
+        assets.wallCorner,
+        assets.wallEnd,
+        assets.floor,
+        assets.grassFloor,
+        assets.classroomFloor,
+        assets.playgroundFloor,
+      ],
+      maxAnisotropy,
+      P4_TUNING.maxTextureAnisotropy,
+    );
     const floorSalt: Record<"floor" | "grassFloor" | "classroomFloor" | "playgroundFloor", number> = {
       floor: 0,
       grassFloor: 11,
@@ -268,24 +303,26 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
 
     runtime.beacon = new THREE.Group();
     runtime.beacon.position.copy(world(EXIT));
+    beaconPadMaterial = new THREE.MeshStandardMaterial({ color: 0x41f28d, emissive: 0x18aa5c, emissiveIntensity: 3 });
     const beaconPad = new THREE.Mesh(
       new THREE.CylinderGeometry(0.65, 0.65, 0.1, 40),
-      new THREE.MeshStandardMaterial({ color: 0x41f28d, emissive: 0x18aa5c, emissiveIntensity: 3 }),
+      beaconPadMaterial,
     );
     beaconPad.position.y = 0.08;
     runtime.beacon.add(beaconPad);
+    beaconBeamMaterial = new THREE.MeshBasicMaterial({ color: 0x66ffad, transparent: true, opacity: 0.17, depthWrite: false, side: THREE.DoubleSide });
     const beam = new THREE.Mesh(
       new THREE.CylinderGeometry(0.22, 0.7, 4.5, 24, 1, true),
-      new THREE.MeshBasicMaterial({ color: 0x66ffad, transparent: true, opacity: 0.17, depthWrite: false, side: THREE.DoubleSide }),
+      beaconBeamMaterial,
     );
     beam.position.y = 2.25;
     runtime.beacon.add(beam);
     const exitLabel = makeLabel("出口", "#63ffad");
     exitLabel.position.y = 3.25;
     runtime.beacon.add(exitLabel);
-    const exitLight = new THREE.PointLight(0x53f59e, 3.2, 9, 2);
-    exitLight.position.y = 1.7;
-    runtime.beacon.add(exitLight);
+    beaconLight = new THREE.PointLight(0x53f59e, 3.2, 9, 2);
+    beaconLight.position.y = 1.7;
+    runtime.beacon.add(beaconLight);
     trackRenderCategory(runtime.beacon, "fx");
     scene.add(runtime.beacon);
   };
@@ -317,6 +354,7 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
   };
 
   const placeDetail = (name: keyof typeof DETAIL_ASSETS, model: THREE.Object3D) => {
+    exitEffectAttributes[name] = applyExitEffectAttributes(model);
     const castShadow = largeShadowProps.has(name);
     const addDetailProp = (point: Point, height: number, rotation = 0, offset = new THREE.Vector3()) => {
       addProp(model, point, height, rotation, offset, castShadow, castShadow ? name : undefined);
@@ -405,14 +443,31 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
           materialBuckets: mergedProps.materialBuckets,
           complete: true,
         });
+        exitEffectShaders = patchExitEffectMaterials(mergedProps.root, exitEffectRuntime);
         trackRenderCategory(mergedProps.root, "props");
       }
     } catch (error) {
       if (isDisposed()) return;
       console.error("Failed to load required 3D assets", error);
-      if (!isDisposed()) onLoadError("角色或校园模型载入失败，请刷新后重试。控制台已记录具体素材。");
+      if (!isDisposed()) onLoadError("核心场景加载失败，请检查网络后重新加载。");
     }
   };
 
-  return Object.assign(runtime, { setup });
+  const updateExitEffects = (now: number, reducedMotion: boolean) => {
+    updateExitEffectPulse(exitEffectRuntime, now, reducedMotion);
+    if (runtime.beacon) runtime.beacon.scale.setScalar(exitEffectRuntime.beaconScale);
+    if (beaconPadMaterial) beaconPadMaterial.emissiveIntensity = 2.5 + exitEffectRuntime.warmIntensity * 0.65;
+    if (beaconBeamMaterial) beaconBeamMaterial.opacity = 0.1 + exitEffectRuntime.blueIntensity * 0.055;
+    if (beaconLight) beaconLight.intensity = 2.55 + exitEffectRuntime.warmIntensity * 0.8;
+    return exitEffectRuntime;
+  };
+  const exitEffectQa = () => ({
+    ...getExitEffectQaReport(exitEffectRuntime, null, exitEffectShaders),
+    attributes: {
+      models: Object.keys(exitEffectAttributes).length,
+      reports: { ...exitEffectAttributes },
+    },
+  });
+
+  return Object.assign(runtime, { setup, updateExitEffects, exitEffectQa });
 }

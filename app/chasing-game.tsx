@@ -14,6 +14,7 @@ import {
   P1_TUNING,
   P2_TUNING,
   P3_TUNING,
+  P4_TUNING,
   PATROL,
   POLICE_POINT,
   START,
@@ -42,6 +43,7 @@ import {
   CAMERA_DIRECTION,
   SCREEN_RIGHT,
   SCREEN_UP,
+  shortestAngle,
   finalThreat,
   proximityThreat,
   threatStateFactor,
@@ -60,12 +62,14 @@ import {
   setActorMarkerOpacity,
   shouldPoliceTrack,
   syncActor,
+  victoryAwayHeading,
 } from "./game/player/actors.js";
 import { enableActorShadowLayer } from "./game/player/actor-batching.js";
 import { makeSynthAudioRuntime } from "./game/audio/index.js";
 import { disposeObjectResources } from "./game/core/resources.js";
 import type { LoadProgressSnapshot } from "./game/art/loading.js";
 import { createSceneArtRuntime } from "./game/art/scene-runtime.js";
+import { createShadowFollowRuntime, updateShadowFollow } from "./game/art/visual-polish.js";
 import { markerTargetOpacity, searchLookOffset } from "./game/ui/feedback.js";
 import {
   copyRenderBreakdown,
@@ -83,6 +87,7 @@ export {
   P1_TUNING,
   P2_TUNING,
   P3_TUNING,
+  P4_TUNING,
   advanceGaitPhase,
   advanceGaitWeight,
   canPlayerOccupy,
@@ -141,6 +146,9 @@ export function ChasingGame() {
   const started = useRef(0);
   const readyRef = useRef(false);
   const phaseRef = useRef<Phase>("ready");
+  const overlayAction = useRef<HTMLButtonElement>(null);
+  const announcementRef = useRef("游戏准备就绪");
+  const announcementSerialRef = useRef(0);
   const cameraZoom = useRef(1);
   const actors = useRef<Partial<Record<ActorName, THREE.Object3D>>>({});
   const objectiveDistanceRuntime = useRef(gridPathDistanceMeters(START, EXIT) ?? 0);
@@ -156,14 +164,30 @@ export function ChasingGame() {
     totalBytes: null,
     mode: "files",
     ratio: 0,
-    message: "正在载入项目美术资产：人物与校园…",
+    message: "正在载入项目美术资产，准备校园场景与角色…",
   });
   const [detailProgress, setDetailProgress] = useState(0);
   const [winPanelVisible, setWinPanelVisible] = useState(false);
+  const [announcement, setAnnouncement] = useState({ serial: 0, text: "游戏准备就绪" });
 
   const changePhase = useCallback((next: Phase) => {
+    const previous = phaseRef.current;
     phaseRef.current = next;
     setPhase(next);
+    const text = next === "playing"
+      ? previous === "ready" ? "逃跑开始" : "游戏已重新开始"
+      : next === "caught"
+        ? "你被追捕者抓住了"
+        : next === "won"
+          ? "成功逃脱，警察已在出口接应"
+          : next === "ready"
+            ? "游戏准备就绪"
+            : announcementRef.current;
+    if (text !== announcementRef.current || next === "playing") {
+      announcementRef.current = text;
+      announcementSerialRef.current += 1;
+      setAnnouncement({ serial: announcementSerialRef.current, text });
+    }
   }, []);
 
   const reset = useCallback(() => {
@@ -223,12 +247,27 @@ export function ChasingGame() {
   }, [changePhase]);
 
   useEffect(() => {
+    const overlayVisible = !loading
+      && phase !== "playing"
+      && phase !== "caught"
+      && (phase !== "won" || winPanelVisible);
+    if (!overlayVisible) return;
+    const focusFrame = requestAnimationFrame(() => overlayAction.current?.focus());
+    return () => cancelAnimationFrame(focusFrame);
+  }, [loading, phase, winPanelVisible]);
+
+  useEffect(() => {
     const clearKeys = (reason: string) => {
       keys.current.clear();
       inputSafety.current.clearCount += 1;
       inputSafety.current.lastClearReason = reason;
     };
     const keyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Element
+        && target.closest("button,input,select,textarea,a[href],[contenteditable='true']")
+      ) return;
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
       keys.current.add(event.key.toLowerCase());
       if (event.key.toLowerCase() === "r") reset();
@@ -262,6 +301,20 @@ export function ChasingGame() {
     const shell = host.closest<HTMLElement>(".game-shell");
     const safeAreaSimulation = new URLSearchParams(window.location.search).get("qaSafeArea") === "1";
     if (shell && safeAreaSimulation) shell.dataset.qaSafeArea = "true";
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const reducedMotionQaOverride = new URLSearchParams(window.location.search).get("qaReducedMotion") === "1";
+    const motionPreferenceRuntime = {
+      reduced: reducedMotionQaOverride || reducedMotionQuery.matches,
+      changes: 0,
+      qaOverride: reducedMotionQaOverride,
+    };
+    const syncReducedMotion = (event: MediaQueryListEvent | MediaQueryList) => {
+      motionPreferenceRuntime.reduced = reducedMotionQaOverride || event.matches;
+      motionPreferenceRuntime.changes += 1;
+      if (shell) shell.dataset.reducedMotion = String(motionPreferenceRuntime.reduced);
+    };
+    if (shell) shell.dataset.reducedMotion = String(motionPreferenceRuntime.reduced);
+    reducedMotionQuery.addEventListener("change", syncReducedMotion);
     let disposed = false;
     let frame = 0;
     let last = performance.now();
@@ -291,7 +344,13 @@ export function ChasingGame() {
     const cameraUp = new THREE.Vector3().crossVectors(cameraDirection, cameraRight).normalize();
     const cameraFocus = world(START).add(new THREE.Vector3(0, 1.02, 0));
     let cameraDistance = 15.6;
-    const cameraRuntime = { threat: 0, targetDistance: cameraDistance };
+    const cameraRuntime = {
+      threat: 0,
+      targetDistance: cameraDistance,
+      readyBlend: motionPreferenceRuntime.reduced ? 0 : 1,
+      readyDistanceOffset: 0,
+      readyLateralOffset: 0,
+    };
     const searchLookRuntime = { offset: 0, visualHeading: villainHeading.current };
     const inputMove: Point = { x: 0, y: 0 };
     const villainStepRoute: Point[] = [{ x: 0, y: 0 }, { x: 0, y: 0 }];
@@ -306,21 +365,27 @@ export function ChasingGame() {
       dampHeading: true,
       headingDamping: P1_TUNING.playerTurnDamping,
       freezePose: false,
+      idleBreathScale: 1,
     };
     const villainSyncOptions = {
       authoredHeading: villainHeading.current,
+      dampHeading: false,
+      headingDamping: P4_TUNING.victoryTurnDamping,
       freezePose: false,
+      idleBreathScale: 1,
     };
     const policeSyncOptions: {
       authoredHeading?: number;
       dampHeading: boolean;
       headingDamping: number;
       freezePose: boolean;
+      idleBreathScale: number;
     } = {
       authoredHeading: undefined,
       dampHeading: true,
       headingDamping: P1_TUNING.policeTurnDamping,
       freezePose: false,
+      idleBreathScale: 1,
     };
     const playerAnchor = new THREE.Vector3();
     const villainAnchor = new THREE.Vector3();
@@ -334,6 +399,13 @@ export function ChasingGame() {
       final: 0,
       vignette: 0,
       cssValue: "0.000",
+    };
+    const victoryRuntime = {
+      villainTargetHeading: null as number | null,
+      villainActorHeading: null as number | null,
+      villainHeadingError: null as number | null,
+      policeTargetHeading: Math.PI,
+      policeHeadingError: 0,
     };
     camera.position.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
 
@@ -361,6 +433,11 @@ export function ChasingGame() {
     const hemisphere = new THREE.HemisphereLight(0xe4f7ff, 0x405846, P1_TUNING.hemisphereIntensity);
     const sun = new THREE.DirectionalLight(0xffefd0, P1_TUNING.sunIntensity);
     const rim = new THREE.DirectionalLight(0x9bc8ff, P1_TUNING.rimIntensity);
+    const shadowFollow = createShadowFollowRuntime({
+      lightOffset: new THREE.Vector3(-16, 26, -12),
+      halfExtent: P4_TUNING.shadowHalfExtent,
+      mapSize: P4_TUNING.shadowMapSize,
+    });
     let gpuReleased = false;
     let lastDisposal: ResourceDisposalReport | null = null;
     const readPreviousDisposal = () => {
@@ -531,11 +608,22 @@ export function ChasingGame() {
           elapsedMs: wonAt.current === null ? null : snapshotNow - wonAt.current,
           freezeMs: P3_TUNING.victoryFreezeMs,
           panelVisible: winPanelVisibleRef.current,
+          presentation: {
+            gameplayHeading: villainHeading.current,
+            actorHeading: victoryRuntime.villainActorHeading,
+            targetAwayHeading: victoryRuntime.villainTargetHeading,
+            headingError: victoryRuntime.villainHeadingError,
+            villainGaitWeight: (actors.current.villain?.userData.motion as ActorMotionRuntime | undefined)?.gaitWeight ?? null,
+            policeHeading: actors.current.police?.rotation.y ?? null,
+            policeTargetHeading: victoryRuntime.policeTargetHeading,
+            policeHeadingError: victoryRuntime.policeHeadingError,
+          },
         },
         tuning: { ...P0_TUNING },
         polishTuning: { ...P1_TUNING },
         hardeningTuning: { ...P2_TUNING },
         optimizationTuning: { ...P3_TUNING },
+        finalPolishTuning: { ...P4_TUNING },
         threat: {
           ...threatRuntime,
           aiState: aiMemory.current.state,
@@ -577,6 +665,21 @@ export function ChasingGame() {
           sunShadowBias: sun.shadow.bias,
           sunShadowNormalBias: sun.shadow.normalBias,
           sunShadowMapSize: sun.shadow.mapSize.toArray(),
+          shadowCamera: {
+            left: sun.shadow.camera.left,
+            right: sun.shadow.camera.right,
+            top: sun.shadow.camera.top,
+            bottom: sun.shadow.camera.bottom,
+            halfExtent: shadowFollow.halfExtent,
+            worldUnitsPerTexel: shadowFollow.worldUnitsPerTexel,
+            requestedFocus: shadowFollow.requestedFocus.toArray(),
+            snappedFocus: shadowFollow.snappedFocus.toArray(),
+            lightPosition: sun.position.toArray(),
+            targetPosition: sun.target.position.toArray(),
+            updateCount: shadowFollow.updateCount,
+          },
+          surfaceAnisotropy: artRuntime.surfaceAnisotropy ? { ...artRuntime.surfaceAnisotropy } : null,
+          exitEffects: artRuntime.exitEffectQa(),
           shadowCasterNames: [...P1_SHADOW_CASTERS],
           shadowCasterInstances: { ...artRuntime.shadowCasterCounts },
           shadowCasterMeshes: { ...artRuntime.shadowCasterMeshCounts },
@@ -623,6 +726,17 @@ export function ChasingGame() {
           zoom: cameraZoom.current,
           threat: cameraRuntime.threat,
           targetDistance: cameraRuntime.targetDistance,
+          readyBlend: cameraRuntime.readyBlend,
+          readyDistanceOffset: cameraRuntime.readyDistanceOffset,
+          readyLateralOffset: cameraRuntime.readyLateralOffset,
+        },
+        accessibility: {
+          liveMessage: announcementRef.current,
+          liveSerial: announcementSerialRef.current,
+          overlayButtonFocused: document.activeElement === overlayAction.current,
+          reducedMotion: motionPreferenceRuntime.reduced,
+          preferenceChanges: motionPreferenceRuntime.changes,
+          qaOverride: motionPreferenceRuntime.qaOverride,
         },
       };
     };
@@ -671,16 +785,18 @@ export function ChasingGame() {
     }
 
     scene.add(hemisphere);
-    sun.position.set(-16, 26, -12);
+    sun.position.copy(shadowFollow.lightOffset);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
-    sun.shadow.camera.left = -34;
-    sun.shadow.camera.right = 34;
-    sun.shadow.camera.top = 34;
-    sun.shadow.camera.bottom = -34;
+    sun.shadow.mapSize.set(shadowFollow.mapSize, shadowFollow.mapSize);
+    sun.shadow.camera.left = -shadowFollow.halfExtent;
+    sun.shadow.camera.right = shadowFollow.halfExtent;
+    sun.shadow.camera.top = shadowFollow.halfExtent;
+    sun.shadow.camera.bottom = -shadowFollow.halfExtent;
+    sun.shadow.camera.updateProjectionMatrix();
     sun.shadow.bias = P1_TUNING.sunShadowBias;
     sun.shadow.normalBias = P1_TUNING.sunShadowNormalBias;
     scene.add(sun);
+    scene.add(sun.target);
     rim.position.set(18, 16, 22);
     scene.add(rim);
 
@@ -699,6 +815,7 @@ export function ChasingGame() {
       },
       onLoadError: setLoadError,
       trackRenderCategory: trackSceneRenderCategory,
+      maxAnisotropy: renderer.capabilities.getMaxAnisotropy(),
     });
     void artRuntime.setup();
 
@@ -861,18 +978,41 @@ export function ChasingGame() {
       } else {
         setActorLabel(actors.current.villain, "追捕者", "#ff4f5e");
       }
-      const freezeSettledPose = phaseRef.current === "caught" || phaseRef.current === "won";
+      const freezeSettledPose = phaseRef.current === "caught";
+      const idleBreathScale = motionPreferenceRuntime.reduced ? P4_TUNING.reducedIdleBreathScale : 1;
       kidSyncOptions.freezePose = freezeSettledPose;
+      kidSyncOptions.idleBreathScale = idleBreathScale;
       syncActor(actors.current.kid, player.current, 0, delta, kidSyncOptions);
-      searchLookRuntime.offset = searchLookOffset(
-        aiMemory.current.state,
-        aiMemory.current.searchArrivedAt,
-        now,
-      );
-      searchLookRuntime.visualHeading = villainHeading.current + searchLookRuntime.offset;
-      villainSyncOptions.authoredHeading = searchLookRuntime.visualHeading;
+      const victoryPresentation = phaseRef.current === "won";
+      if (victoryPresentation) {
+        searchLookRuntime.offset = 0;
+        victoryRuntime.villainTargetHeading = victoryAwayHeading(villain.current);
+        villainSyncOptions.authoredHeading = victoryRuntime.villainTargetHeading;
+        villainSyncOptions.dampHeading = true;
+      } else {
+        searchLookRuntime.offset = searchLookOffset(
+          aiMemory.current.state,
+          aiMemory.current.searchArrivedAt,
+          now,
+        );
+        searchLookRuntime.visualHeading = villainHeading.current + searchLookRuntime.offset;
+        villainSyncOptions.authoredHeading = searchLookRuntime.visualHeading;
+        villainSyncOptions.dampHeading = false;
+        victoryRuntime.villainTargetHeading = null;
+        victoryRuntime.villainActorHeading = null;
+        victoryRuntime.villainHeadingError = null;
+      }
       villainSyncOptions.freezePose = freezeSettledPose;
+      villainSyncOptions.idleBreathScale = idleBreathScale;
       syncActor(actors.current.villain, villain.current, 2, delta, villainSyncOptions);
+      const villainMotion = actors.current.villain?.userData.motion as ActorMotionRuntime | undefined;
+      if (victoryPresentation && victoryRuntime.villainTargetHeading !== null) {
+        victoryRuntime.villainActorHeading = villainMotion?.heading ?? actors.current.villain?.rotation.y ?? null;
+        victoryRuntime.villainHeadingError = victoryRuntime.villainActorHeading === null
+          ? null
+          : shortestAngle(victoryRuntime.villainActorHeading, victoryRuntime.villainTargetHeading);
+        searchLookRuntime.visualHeading = victoryRuntime.villainActorHeading ?? searchLookRuntime.visualHeading;
+      }
       policeRuntime.distanceToExit = distance(player.current, EXIT);
       policeRuntime.trackingPlayer = shouldPoliceTrack(player.current);
       if (policeRuntime.trackingPlayer) {
@@ -883,7 +1023,13 @@ export function ChasingGame() {
       }
       policeSyncOptions.authoredHeading = policeRuntime.trackingPlayer ? policeRuntime.targetHeading : undefined;
       policeSyncOptions.freezePose = freezeSettledPose;
+      policeSyncOptions.idleBreathScale = idleBreathScale;
       syncActor(actors.current.police, POLICE_POINT, 4, delta, policeSyncOptions);
+      victoryRuntime.policeTargetHeading = policeRuntime.targetHeading;
+      const policeHeading = (actors.current.police?.userData.motion as ActorMotionRuntime | undefined)?.heading
+        ?? actors.current.police?.rotation.y
+        ?? policeRuntime.targetHeading;
+      victoryRuntime.policeHeadingError = shortestAngle(policeHeading, policeRuntime.targetHeading);
       const kidMotion = actors.current.kid?.userData.motion as ActorMotionRuntime | undefined;
       if (qaApi && kidMotion) {
         qaMotionSamples.push({
@@ -914,11 +1060,22 @@ export function ChasingGame() {
         host.style.setProperty("--danger-level", threatRuntime.cssValue);
         lastVignetteUpdate = now;
       }
+      const readyCameraTarget = phaseRef.current === "ready" && !motionPreferenceRuntime.reduced ? 1 : 0;
+      cameraRuntime.readyBlend += (readyCameraTarget - cameraRuntime.readyBlend)
+        * (1 - Math.exp(-P4_TUNING.readyCameraBlendDamping * delta));
+      const readyCameraPhase = now / P4_TUNING.readyCameraPeriodMs * Math.PI * 2;
+      cameraRuntime.readyDistanceOffset = Math.sin(readyCameraPhase)
+        * P4_TUNING.readyCameraDistanceAmplitude
+        * cameraRuntime.readyBlend;
+      cameraRuntime.readyLateralOffset = Math.cos(readyCameraPhase)
+        * P4_TUNING.readyCameraLateralAmplitude
+        * cameraRuntime.readyBlend;
       if (phaseRef.current !== "caught" && phaseRef.current !== "won") {
         world(player.current, playerAnchor).y = 1.02;
         world(villain.current, villainAnchor).y = 1.02;
         const threat = currentThreat;
         targetFocus.copy(playerAnchor).lerp(villainAnchor, threat * 0.42);
+        targetFocus.addScaledVector(cameraRight, cameraRuntime.readyLateralOffset);
         const focusAlpha = 1 - Math.exp(-7 * delta);
         cameraFocus.lerp(targetFocus, focusAlpha);
 
@@ -938,7 +1095,11 @@ export function ChasingGame() {
           );
         }
         const automaticDistance = Math.max(baseDistance + threat * 2.8, THREE.MathUtils.lerp(baseDistance, fitDistance, threat));
-        const targetDistance = THREE.MathUtils.clamp(automaticDistance * cameraZoom.current, 12.2, 34);
+        const targetDistance = THREE.MathUtils.clamp(
+          automaticDistance * cameraZoom.current + cameraRuntime.readyDistanceOffset,
+          12.2,
+          34,
+        );
         cameraRuntime.targetDistance = targetDistance;
         cameraDistance = THREE.MathUtils.lerp(cameraDistance, targetDistance, 1 - Math.exp(-3.2 * delta));
         desiredCamera.copy(cameraFocus).addScaledVector(cameraDirection, cameraDistance);
@@ -961,10 +1122,10 @@ export function ChasingGame() {
         setActorMarkerOpacity(actor, opacity);
       }
       if (artRuntime.beacon) {
-        artRuntime.beacon.rotation.y += delta * 0.45;
-        const pulse = 1 + Math.sin(now * 0.004) * 0.08;
-        artRuntime.beacon.scale.setScalar(pulse);
+        if (!motionPreferenceRuntime.reduced) artRuntime.beacon.rotation.y += delta * 0.45;
       }
+      artRuntime.updateExitEffects(now, motionPreferenceRuntime.reduced);
+      updateShadowFollow(shadowFollow, cameraFocus, sun.position, sun.target.position);
       resetRenderBreakdown(activeRenderBreakdown);
       renderer.info.reset();
       renderer.render(scene, camera);
@@ -1001,6 +1162,7 @@ export function ChasingGame() {
       removeEventListener("pointerdown", unlockAudio);
       removeEventListener("keydown", unlockAudio);
       document.removeEventListener(audioVisibilityEvent, suspendAudioWhenHidden);
+      reducedMotionQuery.removeEventListener("change", syncReducedMotion);
       void audioRuntime.dispose();
       releaseGpuResources("react-cleanup");
       host.style.removeProperty("--danger-level");
@@ -1014,6 +1176,7 @@ export function ChasingGame() {
       }
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);
       if (shell && safeAreaSimulation) delete shell.dataset.qaSafeArea;
+      if (shell) delete shell.dataset.reducedMotion;
     };
   }, [changePhase, reset]);
 
@@ -1028,6 +1191,9 @@ export function ChasingGame() {
 
   return (
     <main className="game-shell">
+      <div className="sr-only" aria-live="assertive" aria-atomic="true">
+        <span key={announcement.serial}>{announcement.text}</span>
+      </div>
       <header className="hud">
         <div>
           <span className="eyebrow">CHASING · WEBGL</span>
@@ -1048,13 +1214,13 @@ export function ChasingGame() {
             <div>
               <strong>{loadError || loadProgress.message}</strong>
               {!loadError && <div className="load-bar"><i style={{ width: `${loadPercent}%` }} /></div>}
-              {!loadError && <small>高精角色正在直接加入场景 · {loadBytesLabel} · {loadPercent}%</small>}
-              {loadError && <button type="button" onClick={() => window.location.reload()}>刷新重试</button>}
+              {!loadError && <small>核心资源载入进度 · {loadBytesLabel} · {loadPercent}%</small>}
+              {loadError && <button type="button" onClick={() => window.location.reload()}>重新加载</button>}
             </div>
           </div>
         )}
         {!loading && detailProgress < Object.keys(DETAIL_ASSETS).length + 1 && (
-          <div className="detail-loading">校园细节与出口角色 {detailProgress}/{Object.keys(DETAIL_ASSETS).length + 1}</div>
+          <div className="detail-loading">正在补充场景细节 {detailProgress}/{Object.keys(DETAIL_ASSETS).length + 1}</div>
         )}
         <div className={`capture-transition${phase === "caught" ? " active" : ""}`} aria-hidden="true" />
         {phase !== "playing" && phase !== "caught" && !loading && (phase !== "won" || winPanelVisible) && (
@@ -1063,7 +1229,7 @@ export function ChasingGame() {
               <span className={`result ${phase}`}>{phase === "won" ? "成功逃脱" : phase === "lost" ? "被抓住了" : "3D 逃生演练"}</span>
               <h2>{phase === "won" ? `警察在出口等到了你 · 用时 ${elapsed}s` : phase === "lost" ? "别停，换条路线再试一次" : "躲开追捕者，跑到绿色出口"}</h2>
               <p>蓝色标记是你，红色是追捕者。镜头会在追逐时自动拉远，也可用滚轮调节视野。</p>
-              <button className="primary" type="button" onClick={reset}>{phase === "ready" ? "开始逃跑" : "再来一次"}<kbd>Enter</kbd></button>
+              <button ref={overlayAction} className="primary" type="button" onClick={reset}>{phase === "ready" ? "开始逃跑" : "再来一次"}<kbd>Enter</kbd></button>
             </div>
           </div>
         )}
