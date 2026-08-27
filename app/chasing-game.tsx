@@ -61,6 +61,7 @@ import {
   shouldPoliceTrack,
   syncActor,
 } from "./game/player/actors.js";
+import { enableActorShadowLayer } from "./game/player/actor-batching.js";
 import { makeSynthAudioRuntime } from "./game/audio/index.js";
 import { disposeObjectResources } from "./game/core/resources.js";
 import type { LoadProgressSnapshot } from "./game/art/loading.js";
@@ -281,6 +282,10 @@ export function ChasingGame() {
     scene.background = new THREE.Color(0x91aa99);
     scene.fog = new THREE.Fog(0x91aa99, 25, 62);
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 130);
+    // Three.js filters shadow casters with the render camera's layer mask.
+    // The proxy material writes neither color nor depth in the main pass, but
+    // remains visible to the shadow pass through this dedicated layer.
+    enableActorShadowLayer(camera);
     const cameraDirection = new THREE.Vector3(CAMERA_DIRECTION.x, CAMERA_DIRECTION.y, CAMERA_DIRECTION.z).normalize();
     const cameraRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
     const cameraUp = new THREE.Vector3().crossVectors(cameraDirection, cameraRight).normalize();
@@ -599,7 +604,9 @@ export function ChasingGame() {
           optimization: {
             propMerge: { ...artRuntime.propMergeRuntime },
             mazeShadowProxy: artRuntime.shadowProxy ? { ...artRuntime.shadowProxy } : null,
-            actorShadowStrategy: "three-largest-triangle-meshes-per-actor",
+            actorBatchStrategy: "guarded-compatible-skinned-meshes",
+            actorShadowStrategy: "one-articulated-low-poly-proxy-per-actor",
+            actorBatchBudgets: Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => [name, actor?.userData.actorBatch ?? null])),
             actorShadowBudgets: Object.fromEntries(Object.entries(actors.current).map(([name, actor]) => [name, actor?.userData.shadowBudget ?? null])),
           },
         },

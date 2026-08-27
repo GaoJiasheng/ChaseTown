@@ -9,5 +9,6 @@ export * from "./camera/index.js";
 export * from "./input/index.js";
 export * from "./ai/index.js";
 export * from "./player/actors.js";
+export * from "./player/actor-batching.js";
 export * from "./ui/feedback.js";
 export * from "./ui/render-fx.js";

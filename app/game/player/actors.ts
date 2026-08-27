@@ -4,7 +4,8 @@ import { CELL, EXIT, P0_TUNING, P1_TUNING } from "../config/index.js";
 import type { ActorMotionRuntime, Point } from "../core/types.js";
 import { dampAngle, shortestAngle } from "../camera/index.js";
 import { distance, world } from "../level/maze.js";
-import { retainLargestActorShadowMeshes, tuneMeshes } from "../art/props.js";
+import { tuneMeshes } from "../art/props.js";
+import { batchCompatibleActorSkins, createActorShadowProxy } from "./actor-batching.js";
 
 const RIG_AXIS = new THREE.Vector3(1, 0, 0);
 const RIG_DELTA = new THREE.Quaternion();
@@ -46,6 +47,7 @@ export function fitActor(source: THREE.Object3D, height: number, hideNodes: stri
     });
   }
   tuneMeshes(source, true);
+  const actorBatch = batchCompatibleActorSkins(source);
   const original = new THREE.Box3().setFromObject(visual);
   const originalSize = original.getSize(new THREE.Vector3());
   visual.scale.setScalar(height / Math.max(originalSize.y, 0.001));
@@ -56,7 +58,9 @@ export function fitActor(source: THREE.Object3D, height: number, hideNodes: stri
   const actor = new THREE.Group();
   actor.add(visual);
   actor.userData.visual = visual;
-  actor.userData.shadowBudget = retainLargestActorShadowMeshes(actor, 3);
+  const shadowProxy = createActorShadowProxy(actor);
+  actor.userData.actorBatch = actorBatch.budget;
+  actor.userData.shadowBudget = shadowProxy.budget;
   return actor;
 }
 
