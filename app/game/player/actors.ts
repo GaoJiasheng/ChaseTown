@@ -6,6 +6,26 @@ import { dampAngle, shortestAngle } from "../camera/index.js";
 import { distance, world } from "../level/maze.js";
 import { tuneMeshes } from "../art/props.js";
 import { batchCompatibleActorSkins, createActorShadowProxy } from "./actor-batching.js";
+import {
+  hasActorAnimations,
+  inferActorAnimationContext,
+  resetActorAnimations,
+  updateActorAnimations,
+} from "./actor-animation.js";
+
+export {
+  ACTOR_CLIP_NAMES,
+  advanceAnimationBlend,
+  attachActorAnimations,
+  canonicalActorClipName,
+  captureClipTimeScale,
+  disposeActorAnimations,
+  indexActorClips,
+  inferActorAnimationContext,
+  resetActorAnimations,
+  selectActorAnimationPlan,
+  updateActorAnimations,
+} from "./actor-animation.js";
 
 const RIG_AXIS = new THREE.Vector3(1, 0, 0);
 const RIG_DELTA = new THREE.Quaternion();
@@ -154,6 +174,10 @@ export function decorateActor(actor: THREE.Object3D, height: number, color: numb
 }
 
 export function poseRig(actor: THREE.Object3D, gaitWave: number, gaitWeight: number) {
+  if (hasActorAnimations(actor)) {
+    if (gaitWave === 0 && gaitWeight === 0) resetActorAnimations(actor);
+    return;
+  }
   const rig = actor.userData.rig as ActorRig | undefined;
   if (!rig) return;
   const gait = gaitWave * gaitWeight;
@@ -203,6 +227,7 @@ export const syncActor = (
   };
   actor.userData.motion = motion;
   const desiredHeading = options.authoredHeading ?? (moving ? Math.atan2(dx, dz) : motion.targetHeading);
+  const animationTurnDelta = shortestAngle(motion.heading, desiredHeading);
   motion.targetHeading = desiredHeading;
   const finishingDampedTurn = options.dampHeading && Math.abs(shortestAngle(motion.heading, desiredHeading)) > 0.001;
   if (options.authoredHeading !== undefined || moving || finishingDampedTurn) {
@@ -211,7 +236,19 @@ export const syncActor = (
       : desiredHeading;
     actor.rotation.y = motion.heading;
   }
-  if (options.freezePose) return;
+  if (options.freezePose) {
+    const animationContext = inferActorAnimationContext(
+      actor,
+      point,
+      moving,
+      motion.gaitWeight,
+      desiredHeading,
+      options,
+      animationTurnDelta,
+    );
+    if (animationContext) updateActorAnimations(actor, delta, motion.gaitPhase + phaseOffset, animationContext);
+    return;
+  }
   const motionTime = performance.now();
   const actualGridSpeed = moving ? Math.hypot(dx, dz) / (CELL * Math.max(delta, 0.001)) : 0;
   motion.actualSpeed = actualGridSpeed;
@@ -222,7 +259,13 @@ export const syncActor = (
     delta,
   );
   const gaitWave = Math.sin(motion.gaitPhase + phaseOffset);
-  if (visual) {
+  if (visual && hasActorAnimations(actor)) {
+    const baseY = visual.userData.baseY as number;
+    visual.position.y = baseY;
+    visual.rotation.set(0, 0, 0);
+    motion.baseVisualY = baseY;
+    motion.visualY = 0;
+  } else if (visual) {
     const baseY = visual.userData.baseY as number;
     const idleBreath = Math.sin(motionTime * 0.003 + phaseOffset)
       * 0.018
@@ -234,5 +277,15 @@ export const syncActor = (
     motion.baseVisualY = baseY;
     motion.visualY = visual.position.y - baseY;
   }
-  poseRig(actor, gaitWave, motion.gaitWeight);
+  const animationContext = inferActorAnimationContext(
+    actor,
+    point,
+    moving,
+    motion.gaitWeight,
+    desiredHeading,
+    options,
+    animationTurnDelta,
+  );
+  if (animationContext) updateActorAnimations(actor, delta, motion.gaitPhase + phaseOffset, animationContext);
+  else poseRig(actor, gaitWave, motion.gaitWeight);
 };

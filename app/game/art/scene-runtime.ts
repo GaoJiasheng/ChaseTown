@@ -21,7 +21,7 @@ import {
 import type { ActorName, Point } from "../core/types.js";
 import { disposeObjectResources } from "../core/resources.js";
 import { gridQuarterTurn, MAZE, world } from "../level/maze.js";
-import { decorateActor, fitActor, makeLabel } from "../player/actors.js";
+import { attachActorAnimations, decorateActor, fitActor, makeLabel } from "../player/actors.js";
 import { createByteProgressAggregator, retryWithBackoff, type LoadProgressSnapshot } from "./loading.js";
 import {
   applyExitEffectAttributes,
@@ -140,7 +140,10 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
 
   const loadingManager = new THREE.LoadingManager();
   loadingManager.setURLModifier((url) => {
-    const runtimeUrl = runtimeAssetUrl(url);
+    const version = /\/models\/characters\/[^/?#]+\.glb(?:[?#]|$)/u.test(url)
+      ? `${ASSET_VERSION}-a1-yaw`
+      : ASSET_VERSION;
+    const runtimeUrl = runtimeAssetUrl(url, version);
     requestedAssetUrls.add(runtimeUrl);
     return runtimeUrl;
   });
@@ -153,7 +156,10 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
   const loadOnce = (url: string, trackBlocking: boolean) => new Promise<THREE.Object3D>((resolve, reject) => {
     loader.load(
       url,
-      (gltf) => resolve(gltf.scene),
+      (gltf) => {
+        gltf.scene.animations = gltf.animations;
+        resolve(gltf.scene);
+      },
       trackBlocking
         ? (event) => {
           const progress = blockingAggregator.update(url, {
@@ -199,14 +205,18 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
     const hideNodes = name === "police" ? ["shoulderepaulet", "epauletbutton", "sleevepatch", "sleevepatchinset"] : [];
     const actor = fitActor(model, spec.height, hideNodes);
     decorateActor(actor, spec.height, spec.color, spec.label);
-    trackRenderCategory(actor, "actors");
-    actors[name] = actor;
     if (name === "kid") actor.position.copy(world(getPlayer()));
-    if (name === "villain") actor.position.copy(world(getVillain()));
+    if (name === "villain") {
+      actor.position.copy(world(getVillain()));
+      actor.rotation.y = Math.PI / 2;
+    }
     if (name === "police") {
       actor.position.copy(world(POLICE_POINT));
       actor.rotation.y = Math.PI;
     }
+    attachActorAnimations(actor, name, model.animations, getPlayer);
+    trackRenderCategory(actor, "actors");
+    actors[name] = actor;
     scene.add(actor);
   };
 
