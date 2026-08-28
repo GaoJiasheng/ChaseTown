@@ -1,0 +1,2102 @@
+{
+  "asset": "A1_true_animation_runtime",
+  "pipeline": {
+    "blender": "Blender 5.1.2",
+    "retarget": "Blender independently samples each FBX: inverse(canonicalRestLocal) * poseLocal; encoder writes targetRest * delta",
+    "compression": "preserve original Meshopt geometry payload; rotation-only tracks; constant-track removal; 0.001-radian quaternion RDP key reduction",
+    "fps": 30,
+    "rootMotion": false,
+    "retargetedProperties": [
+      "rotation"
+    ],
+    "baseRef": null,
+    "staticBaselineRef": "HEAD",
+    "idempotentRerun": true,
+    "validator": {
+      "package": "gltf-validator@2.0.0-dev.3.10",
+      "integrity": "sha512-odJ4k0tRkGXiDGn78yDBg+fBbAIvBnXxh3RwAta0emSxGtyagFE8B4xELB1oYe3S5RD8Ci3uZAsZaascH2LAEQ==",
+      "npmShasum": "9b09225db864fe3f0a584259f65d087e2213a93a"
+    }
+  },
+  "canonicalRig": {
+    "source": "art-source/_Shared/Animations/Rig_Humanoid_Shared.fbx",
+    "bytes": 29212,
+    "bones": 21,
+    "restLocalSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+  },
+  "sources": [
+    {
+      "clip": "Idle",
+      "source": "art-source/_Shared/Animations/Anim_Idle.fbx",
+      "bytes": 215164,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        61.0
+      ],
+      "sampleCount": 60,
+      "fps": 30,
+      "loop": true,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 89.999983,
+      "sourceBindVsCanonicalByBoneDegrees": {
+        "Hips": 89.999983,
+        "Chest": 1.333519,
+        "Head": 0.889108
+      },
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    },
+    {
+      "clip": "Run",
+      "source": "art-source/_Shared/Animations/Anim_Run.fbx",
+      "bytes": 175420,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        21.0
+      ],
+      "sampleCount": 20,
+      "fps": 30,
+      "loop": true,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 89.999983,
+      "sourceBindVsCanonicalByBoneDegrees": {
+        "Hips": 89.999983,
+        "LeftUpperArm": 27.999943,
+        "RightUpperArm": 28.000028,
+        "LeftUpperLeg": 33.999987,
+        "LeftLowerLeg": 28.0,
+        "RightUpperLeg": 33.999987,
+        "RightLowerLeg": 6.000053
+      },
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    },
+    {
+      "clip": "Walk",
+      "source": "art-source/_Shared/Animations/Anim_Walk.fbx",
+      "bytes": 193932,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        41.0
+      ],
+      "sampleCount": 40,
+      "fps": 30,
+      "loop": true,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 89.999983,
+      "sourceBindVsCanonicalByBoneDegrees": {
+        "Hips": 89.999983,
+        "LeftUpperArm": 9.979182,
+        "RightUpperArm": 9.979103,
+        "LeftUpperLeg": 12.117609,
+        "LeftLowerLeg": 9.979182,
+        "RightUpperLeg": 12.117479,
+        "RightLowerLeg": 2.137989
+      },
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    },
+    {
+      "clip": "TurnLeft",
+      "source": "art-source/_Shared/Animations/Anim_TurnLeft.fbx",
+      "bytes": 183340,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        25.0
+      ],
+      "sampleCount": 24,
+      "fps": 30,
+      "loop": false,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 179.999991,
+      "sourceBindVsCanonicalByBoneDegrees": {
+        "Hips": 179.999991
+      },
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    },
+    {
+      "clip": "TurnRight",
+      "source": "art-source/_Shared/Animations/Anim_TurnRight.fbx",
+      "bytes": 183340,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        25.0
+      ],
+      "sampleCount": 24,
+      "fps": 30,
+      "loop": false,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 0.0,
+      "sourceBindVsCanonicalByBoneDegrees": {},
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    },
+    {
+      "clip": "LookAround",
+      "source": "art-source/_Shared/Animations/Anim_LookAround.fbx",
+      "bytes": 242924,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        91.0
+      ],
+      "sampleCount": 90,
+      "fps": 30,
+      "loop": true,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 89.999983,
+      "sourceBindVsCanonicalByBoneDegrees": {
+        "Hips": 89.999983,
+        "Neck": 0.817565,
+        "Head": 1.907762
+      },
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    },
+    {
+      "clip": "ScaredCaught",
+      "source": "art-source/_Shared/Animations/Anim_ScaredCaught.fbx",
+      "bytes": 186604,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        37.0
+      ],
+      "sampleCount": 36,
+      "fps": 30,
+      "loop": false,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 89.999983,
+      "sourceBindVsCanonicalByBoneDegrees": {
+        "Hips": 89.999983,
+        "Chest": 15.655239,
+        "LeftUpperArm": 84.588325,
+        "LeftLowerArm": 44.999973,
+        "RightUpperArm": 84.588345,
+        "RightLowerArm": 44.999973
+      },
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    },
+    {
+      "clip": "Celebrate",
+      "source": "art-source/_Shared/Animations/Anim_Celebrate.fbx",
+      "bytes": 190380,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        41.0
+      ],
+      "sampleCount": 40,
+      "fps": 30,
+      "loop": false,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 123.993454,
+      "sourceBindVsCanonicalByBoneDegrees": {
+        "Hips": 89.999983,
+        "LeftUpperArm": 123.993446,
+        "LeftLowerArm": 17.99994,
+        "RightUpperArm": 123.993454,
+        "RightLowerArm": 17.99994
+      },
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    },
+    {
+      "clip": "PointAlert",
+      "source": "art-source/_Shared/Animations/Anim_PointAlert.fbx",
+      "bytes": 190700,
+      "importedAction": "Rig_Humanoid_Shared|Scene",
+      "importedFrameRange": [
+        2.0,
+        43.0
+      ],
+      "sampleCount": 42,
+      "fps": 30,
+      "loop": false,
+      "rootMotion": false,
+      "bones": 21,
+      "sourceBindVsCanonicalMaxDegrees": 89.999983,
+      "sourceBindVsCanonicalByBoneDegrees": {
+        "Hips": 89.999983,
+        "RightShoulder": 1.49982,
+        "RightUpperArm": 2.828324,
+        "RightLowerArm": 5.384637
+      },
+      "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+      "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+    }
+  ],
+  "sourceSemanticChecks": [
+    {
+      "label": "Run.LeftUpperLeg.first.x",
+      "actualDegrees": -33.999999,
+      "expectedDegrees": -34.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "Run.LeftUpperLeg.middle.x",
+      "actualDegrees": 34.000033,
+      "expectedDegrees": 34.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "Run.LeftUpperLeg.last.x",
+      "actualDegrees": -33.999999,
+      "expectedDegrees": -34.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "Walk.LeftUpperLeg.first.x",
+      "actualDegrees": -15.299981,
+      "expectedDegrees": -15.3,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "Walk.LeftUpperLeg.middle.x",
+      "actualDegrees": 15.300034,
+      "expectedDegrees": 15.3,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "Walk.LeftUpperLeg.last.x",
+      "actualDegrees": -15.299981,
+      "expectedDegrees": -15.3,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "LookAround.Head.first.z",
+      "actualDegrees": -27.999966,
+      "expectedDegrees": -28.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "LookAround.Head.middle.z",
+      "actualDegrees": 28.000063,
+      "expectedDegrees": 28.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "LookAround.Head.last.z",
+      "actualDegrees": -27.999966,
+      "expectedDegrees": -28.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "ScaredCaught.LeftUpperArm.first.magnitude",
+      "actualDegrees": 0.0,
+      "expectedDegrees": 0.0,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "ScaredCaught.LeftUpperArm.middle.magnitude",
+      "actualDegrees": 74.362819,
+      "expectedDegrees": 74.4,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "ScaredCaught.LeftUpperArm.last.magnitude",
+      "actualDegrees": 88.874523,
+      "expectedDegrees": 89.3,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "Celebrate.LeftUpperArm.first.magnitude",
+      "actualDegrees": 40.000001,
+      "expectedDegrees": 40.0,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "Celebrate.LeftUpperArm.middle.magnitude",
+      "actualDegrees": 125.579792,
+      "expectedDegrees": 125.8,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "Celebrate.LeftUpperArm.last.magnitude",
+      "actualDegrees": 110.305056,
+      "expectedDegrees": 110.4,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "PointAlert.RightUpperArm.first.magnitude",
+      "actualDegrees": 3.999956,
+      "expectedDegrees": 4.0,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "PointAlert.RightUpperArm.middle.magnitude",
+      "actualDegrees": 2.828324,
+      "expectedDegrees": 2.83,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "PointAlert.RightUpperArm.last.magnitude",
+      "actualDegrees": 2.828324,
+      "expectedDegrees": 2.83,
+      "toleranceDegrees": 0.75
+    },
+    {
+      "label": "TurnLeft.Hips.first.z",
+      "actualDegrees": 0.0,
+      "expectedDegrees": 0.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "TurnLeft.Hips.middle.z",
+      "actualDegrees": -45.000008,
+      "expectedDegrees": -45.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "TurnLeft.Hips.last.z",
+      "actualDegrees": -90.000009,
+      "expectedDegrees": -90.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "TurnRight.Hips.first.z",
+      "actualDegrees": 0.0,
+      "expectedDegrees": 0.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "TurnRight.Hips.middle.z",
+      "actualDegrees": 45.000001,
+      "expectedDegrees": 45.0,
+      "toleranceDegrees": 0.35
+    },
+    {
+      "label": "TurnRight.Hips.last.z",
+      "actualDegrees": 90.000009,
+      "expectedDegrees": 90.0,
+      "toleranceDegrees": 0.35
+    }
+  ],
+  "temporarySamples": {
+    "bytes": 595656,
+    "clips": [
+      "Idle",
+      "Run",
+      "Walk",
+      "TurnLeft",
+      "TurnRight",
+      "LookAround",
+      "ScaredCaught",
+      "Celebrate",
+      "PointAlert"
+    ],
+    "bones": 21,
+    "schema": "chasing-canonical-rest-animation-deltas-v1",
+    "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+  },
+  "retarget": {
+    "characters": [
+      {
+        "character": "kid",
+        "output": "public/models/characters/kid.glb",
+        "clips": [
+          {
+            "name": "Idle",
+            "durationSeconds": 1.9666666984558105,
+            "frames": 60,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 2,
+            "outputKeyframes": 14,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Chest",
+              "Head"
+            ],
+            "maxAngularDeltaRadians": 0.026179939709126316,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": 7.300048299977715e-08
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.6333333253860474,
+            "frames": 20,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 6,
+            "outputKeyframes": 112,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "maxAngularDeltaRadians": 0.5934125478754212,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "Walk",
+            "durationSeconds": 1.2999999523162842,
+            "frames": 40,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 6,
+            "outputKeyframes": 179,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "maxAngularDeltaRadians": 0.2670359262351094,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "TurnLeft",
+            "durationSeconds": 0.7666666507720947,
+            "frames": 24,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 1,
+            "outputKeyframes": 22,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Hips"
+            ],
+            "maxAngularDeltaRadians": 1.5707964953823048,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": "first independently sampled Hips delta",
+            "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y); authored Z yaw becomes Y yaw",
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "TurnRight",
+            "durationSeconds": 0.7666666507720947,
+            "frames": 24,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 1,
+            "outputKeyframes": 22,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Hips"
+            ],
+            "maxAngularDeltaRadians": 1.570796326794908,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": "first independently sampled Hips delta",
+            "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y); authored Z yaw becomes Y yaw",
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "LookAround",
+            "durationSeconds": 2.9666666984558105,
+            "frames": 90,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 2,
+            "outputKeyframes": 90,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Head",
+              "Neck"
+            ],
+            "maxAngularDeltaRadians": 0.4886932717061739,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "ScaredCaught",
+            "durationSeconds": 1.1666666269302368,
+            "frames": 36,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 5,
+            "outputKeyframes": 114,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Chest",
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 1.551153270674435,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "Celebrate",
+            "durationSeconds": 1.2999999523162842,
+            "frames": 40,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 4,
+            "outputKeyframes": 100,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 2.1917810512885154,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "PointAlert",
+            "durationSeconds": 1.3666666746139526,
+            "frames": 42,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 3,
+            "outputKeyframes": 20,
+            "animatedBonesOverPointZeroOneRadians": [
+              "RightLowerArm",
+              "RightShoulder",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 0.09398466028038666,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          }
+        ]
+      },
+      {
+        "character": "villain",
+        "output": "public/models/characters/villain.glb",
+        "clips": [
+          {
+            "name": "Idle",
+            "durationSeconds": 1.9666666984558105,
+            "frames": 60,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 2,
+            "outputKeyframes": 14,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Chest",
+              "Head"
+            ],
+            "maxAngularDeltaRadians": 0.026179939709126316,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": 0
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.6333333253860474,
+            "frames": 20,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 6,
+            "outputKeyframes": 112,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "maxAngularDeltaRadians": 0.5934125733552735,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "Walk",
+            "durationSeconds": 1.2999999523162842,
+            "frames": 40,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 6,
+            "outputKeyframes": 179,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "maxAngularDeltaRadians": 0.2670359085352389,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "TurnLeft",
+            "durationSeconds": 0.7666666507720947,
+            "frames": 24,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 1,
+            "outputKeyframes": 22,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Hips"
+            ],
+            "maxAngularDeltaRadians": 1.5707964953823048,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": "first independently sampled Hips delta",
+            "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y); authored Z yaw becomes Y yaw",
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "TurnRight",
+            "durationSeconds": 0.7666666507720947,
+            "frames": 24,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 1,
+            "outputKeyframes": 22,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Hips"
+            ],
+            "maxAngularDeltaRadians": 1.570796326794908,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": "first independently sampled Hips delta",
+            "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y); authored Z yaw becomes Y yaw",
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "LookAround",
+            "durationSeconds": 2.9666666984558105,
+            "frames": 90,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 2,
+            "outputKeyframes": 90,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Head",
+              "Neck"
+            ],
+            "maxAngularDeltaRadians": 0.4886932717061739,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "ScaredCaught",
+            "durationSeconds": 1.1666666269302368,
+            "frames": 36,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 5,
+            "outputKeyframes": 114,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Chest",
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 1.5511532775419443,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "Celebrate",
+            "durationSeconds": 1.2999999523162842,
+            "frames": 40,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 4,
+            "outputKeyframes": 100,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 2.1917810666183284,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "PointAlert",
+            "durationSeconds": 1.3666666746139526,
+            "frames": 42,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 3,
+            "outputKeyframes": 20,
+            "animatedBonesOverPointZeroOneRadians": [
+              "RightLowerArm",
+              "RightShoulder",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 0.09398466101408574,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          }
+        ]
+      },
+      {
+        "character": "police",
+        "output": "public/models/characters/police.glb",
+        "clips": [
+          {
+            "name": "Idle",
+            "durationSeconds": 1.9666666984558105,
+            "frames": 60,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 2,
+            "outputKeyframes": 14,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Chest",
+              "Head"
+            ],
+            "maxAngularDeltaRadians": 0.026179939709126316,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": 2.9802322387695312e-08
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.6333333253860474,
+            "frames": 20,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 6,
+            "outputKeyframes": 112,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "maxAngularDeltaRadians": 0.5934125277172976,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "Walk",
+            "durationSeconds": 1.2999999523162842,
+            "frames": 40,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 6,
+            "outputKeyframes": 180,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "maxAngularDeltaRadians": 0.2670359390348799,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "TurnLeft",
+            "durationSeconds": 0.7666666507720947,
+            "frames": 24,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 1,
+            "outputKeyframes": 22,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Hips"
+            ],
+            "maxAngularDeltaRadians": 1.570796495382304,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": "first independently sampled Hips delta",
+            "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y); authored Z yaw becomes Y yaw",
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "TurnRight",
+            "durationSeconds": 0.7666666507720947,
+            "frames": 24,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 1,
+            "outputKeyframes": 22,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Hips"
+            ],
+            "maxAngularDeltaRadians": 1.5707963267949068,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": "first independently sampled Hips delta",
+            "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y); authored Z yaw becomes Y yaw",
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "LookAround",
+            "durationSeconds": 2.9666666984558105,
+            "frames": 90,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 2,
+            "outputKeyframes": 90,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Head",
+              "Neck"
+            ],
+            "maxAngularDeltaRadians": 0.4886932717061739,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "ScaredCaught",
+            "durationSeconds": 1.1666666269302368,
+            "frames": 36,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 5,
+            "outputKeyframes": 114,
+            "animatedBonesOverPointZeroOneRadians": [
+              "Chest",
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 1.5511532796757759,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "Celebrate",
+            "durationSeconds": 1.2999999523162842,
+            "frames": 40,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 4,
+            "outputKeyframes": 100,
+            "animatedBonesOverPointZeroOneRadians": [
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 2.1917810655293573,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          },
+          {
+            "name": "PointAlert",
+            "durationSeconds": 1.3666666746139526,
+            "frames": 42,
+            "sourceRotationTracks": 21,
+            "rotationTracks": 3,
+            "outputKeyframes": 20,
+            "animatedBonesOverPointZeroOneRadians": [
+              "RightLowerArm",
+              "RightShoulder",
+              "RightUpperArm"
+            ],
+            "maxAngularDeltaRadians": 0.0939846600859282,
+            "localRetargetFormula": "Blender: inverse(canonicalRestLocal) * independently evaluated FBX poseLocal; encoder: targetRest * delta",
+            "turnNeutralSource": null,
+            "turnCoordinateBasis": null,
+            "idleFrameZeroMaxAngularErrorRadians": null
+          }
+        ]
+      }
+    ]
+  },
+  "characters": {
+    "kid": {
+      "before": {
+        "bytes": 2183264,
+        "sha256": "7610df2a2e2252f06498e4ca693f01ce438cfb4d3e1811393b45e0a326757e21"
+      },
+      "pipelineInput": {
+        "bytes": 2210876,
+        "sha256": "dc23e651e190558d1dc9bc3924f3fff0a77e1837508d8f34206791653d62c68c"
+      },
+      "after": {
+        "bytes": 2210876,
+        "sha256": "dc23e651e190558d1dc9bc3924f3fff0a77e1837508d8f34206791653d62c68c",
+        "skins": 1,
+        "joints": 21,
+        "meshes": 35,
+        "animations": [
+          {
+            "name": "Idle",
+            "durationSeconds": 1.966667,
+            "channels": 2,
+            "samplers": 2,
+            "targetBones": [
+              "Chest",
+              "Head"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Idle.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.633333,
+            "channels": 6,
+            "samplers": 6,
+            "targetBones": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Run.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Walk",
+            "durationSeconds": 1.3,
+            "channels": 6,
+            "samplers": 6,
+            "targetBones": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Walk.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "TurnLeft",
+            "durationSeconds": 0.766667,
+            "channels": 1,
+            "samplers": 1,
+            "targetBones": [
+              "Hips"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_TurnLeft.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "TurnRight",
+            "durationSeconds": 0.766667,
+            "channels": 1,
+            "samplers": 1,
+            "targetBones": [
+              "Hips"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_TurnRight.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "LookAround",
+            "durationSeconds": 2.966667,
+            "channels": 2,
+            "samplers": 2,
+            "targetBones": [
+              "Head",
+              "Neck"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_LookAround.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "ScaredCaught",
+            "durationSeconds": 1.166667,
+            "channels": 5,
+            "samplers": 5,
+            "targetBones": [
+              "Chest",
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_ScaredCaught.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Celebrate",
+            "durationSeconds": 1.3,
+            "channels": 4,
+            "samplers": 4,
+            "targetBones": [
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Celebrate.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "PointAlert",
+            "durationSeconds": 1.366667,
+            "channels": 3,
+            "samplers": 3,
+            "targetBones": [
+              "RightLowerArm",
+              "RightShoulder",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_PointAlert.fbx",
+              "retargetedTo": "kid",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          }
+        ],
+        "animationEncoding": {
+          "baseAccessorCount": 208,
+          "baseBufferViewCount": 9,
+          "baseBufferByteLength": 2142248,
+          "clipCount": 9,
+          "sourceFps": 30,
+          "encoding": "rotation-only float32; constant tracks removed; quaternion RDP key reduction",
+          "samplingSchema": "chasing-canonical-rest-animation-deltas-v1",
+          "canonicalRig": "art-source/_Shared/Animations/Rig_Humanoid_Shared.fbx",
+          "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5",
+          "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y)",
+          "constantTrackEpsilonRadians": 0.002,
+          "keyReductionEpsilonRadians": 0.001
+        },
+        "animationBufferBytes": 13460,
+        "static": {
+          "structureSha256": "db57eebdd2be107228c400f6bc8fa767bc3fcd4e4e4bffd8a0aabbbd464d4e15",
+          "binaryPrefixSha256": "921030638339930e9d81b07c44cdeda8b88c58a081b53d090ffa5419b0d8c67a",
+          "binaryPrefixBytes": 2142248,
+          "meshes": 35,
+          "primitives": 35,
+          "triangles": 140252,
+          "materials": 12,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 92,
+          "accessors": 208,
+          "bufferViews": 9
+        },
+        "meshoptRequired": true
+      },
+      "staticInvariance": {
+        "before": {
+          "structureSha256": "db57eebdd2be107228c400f6bc8fa767bc3fcd4e4e4bffd8a0aabbbd464d4e15",
+          "binaryPrefixSha256": "921030638339930e9d81b07c44cdeda8b88c58a081b53d090ffa5419b0d8c67a",
+          "binaryPrefixBytes": 2142248,
+          "meshes": 35,
+          "primitives": 35,
+          "triangles": 140252,
+          "materials": 12,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 92,
+          "accessors": 208,
+          "bufferViews": 9
+        },
+        "after": {
+          "structureSha256": "db57eebdd2be107228c400f6bc8fa767bc3fcd4e4e4bffd8a0aabbbd464d4e15",
+          "binaryPrefixSha256": "921030638339930e9d81b07c44cdeda8b88c58a081b53d090ffa5419b0d8c67a",
+          "binaryPrefixBytes": 2142248,
+          "meshes": 35,
+          "primitives": 35,
+          "triangles": 140252,
+          "materials": 12,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 92,
+          "accessors": 208,
+          "bufferViews": 9
+        },
+        "exact": true
+      },
+      "baselineGltfValidator": {
+        "validatorVersion": "2.0.0-dev.3.10",
+        "errors": 0,
+        "warningCount": 70,
+        "warnings": [
+          {
+            "code": "NODE_SKINNED_MESH_LOCAL_TRANSFORMS",
+            "count": 35,
+            "message": "Local transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited per-part bind transforms. A1 does not modify mesh nodes, bind matrices, geometry, or skin data; the exact static hash and P4 real-asset regression guard this baseline."
+          },
+          {
+            "code": "NODE_SKINNED_MESH_NON_ROOT",
+            "count": 35,
+            "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited character topology: each authored skinned part remains under its original static wrapper. A1 static structure and binary-prefix hashes are exact before/after, and P4 batching relies on these wrappers."
+          }
+        ],
+        "infos": 30,
+        "hints": 0
+      },
+      "gltfValidator": {
+        "validatorVersion": "2.0.0-dev.3.10",
+        "errors": 0,
+        "warningCount": 70,
+        "warnings": [
+          {
+            "code": "NODE_SKINNED_MESH_LOCAL_TRANSFORMS",
+            "count": 35,
+            "message": "Local transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited per-part bind transforms. A1 does not modify mesh nodes, bind matrices, geometry, or skin data; the exact static hash and P4 real-asset regression guard this baseline."
+          },
+          {
+            "code": "NODE_SKINNED_MESH_NON_ROOT",
+            "count": 35,
+            "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited character topology: each authored skinned part remains under its original static wrapper. A1 static structure and binary-prefix hashes are exact before/after, and P4 batching relies on these wrappers."
+          }
+        ],
+        "infos": 30,
+        "hints": 0
+      },
+      "noNewValidatorWarnings": true,
+      "idempotentInputMatchesOutput": true,
+      "deltaBytes": 27612
+    },
+    "villain": {
+      "before": {
+        "bytes": 1857760,
+        "sha256": "f573f5d7533a3dd111d4d1e0dd62f76e842765df9af81a0954faa94e92ab0662"
+      },
+      "pipelineInput": {
+        "bytes": 1885276,
+        "sha256": "4498eb36f29ca291099a0c2543467275ebd6694c0112d1e4d2d081eda8f44cb5"
+      },
+      "after": {
+        "bytes": 1885276,
+        "sha256": "4498eb36f29ca291099a0c2543467275ebd6694c0112d1e4d2d081eda8f44cb5",
+        "skins": 1,
+        "joints": 21,
+        "meshes": 12,
+        "animations": [
+          {
+            "name": "Idle",
+            "durationSeconds": 1.966667,
+            "channels": 2,
+            "samplers": 2,
+            "targetBones": [
+              "Chest",
+              "Head"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Idle.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.633333,
+            "channels": 6,
+            "samplers": 6,
+            "targetBones": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Run.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Walk",
+            "durationSeconds": 1.3,
+            "channels": 6,
+            "samplers": 6,
+            "targetBones": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Walk.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "TurnLeft",
+            "durationSeconds": 0.766667,
+            "channels": 1,
+            "samplers": 1,
+            "targetBones": [
+              "Hips"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_TurnLeft.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "TurnRight",
+            "durationSeconds": 0.766667,
+            "channels": 1,
+            "samplers": 1,
+            "targetBones": [
+              "Hips"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_TurnRight.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "LookAround",
+            "durationSeconds": 2.966667,
+            "channels": 2,
+            "samplers": 2,
+            "targetBones": [
+              "Head",
+              "Neck"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_LookAround.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "ScaredCaught",
+            "durationSeconds": 1.166667,
+            "channels": 5,
+            "samplers": 5,
+            "targetBones": [
+              "Chest",
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_ScaredCaught.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Celebrate",
+            "durationSeconds": 1.3,
+            "channels": 4,
+            "samplers": 4,
+            "targetBones": [
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Celebrate.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "PointAlert",
+            "durationSeconds": 1.366667,
+            "channels": 3,
+            "samplers": 3,
+            "targetBones": [
+              "RightLowerArm",
+              "RightShoulder",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_PointAlert.fbx",
+              "retargetedTo": "villain",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          }
+        ],
+        "animationEncoding": {
+          "baseAccessorCount": 75,
+          "baseBufferViewCount": 10,
+          "baseBufferByteLength": 1838412,
+          "clipCount": 9,
+          "sourceFps": 30,
+          "encoding": "rotation-only float32; constant tracks removed; quaternion RDP key reduction",
+          "samplingSchema": "chasing-canonical-rest-animation-deltas-v1",
+          "canonicalRig": "art-source/_Shared/Animations/Rig_Humanoid_Shared.fbx",
+          "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5",
+          "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y)",
+          "constantTrackEpsilonRadians": 0.002,
+          "keyReductionEpsilonRadians": 0.001
+        },
+        "animationBufferBytes": 13460,
+        "static": {
+          "structureSha256": "c74c6c60469825975d90c5c4367398798474f6b817f36129f6802d51e9ff2c6d",
+          "binaryPrefixSha256": "3b984374e5c2ddb5cdf53afb07a718179658f33eb1b394f130dcd554ec02d42a",
+          "binaryPrefixBytes": 1838412,
+          "meshes": 12,
+          "primitives": 12,
+          "triangles": 157148,
+          "materials": 6,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 46,
+          "accessors": 75,
+          "bufferViews": 10
+        },
+        "meshoptRequired": true
+      },
+      "staticInvariance": {
+        "before": {
+          "structureSha256": "c74c6c60469825975d90c5c4367398798474f6b817f36129f6802d51e9ff2c6d",
+          "binaryPrefixSha256": "3b984374e5c2ddb5cdf53afb07a718179658f33eb1b394f130dcd554ec02d42a",
+          "binaryPrefixBytes": 1838412,
+          "meshes": 12,
+          "primitives": 12,
+          "triangles": 157148,
+          "materials": 6,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 46,
+          "accessors": 75,
+          "bufferViews": 10
+        },
+        "after": {
+          "structureSha256": "c74c6c60469825975d90c5c4367398798474f6b817f36129f6802d51e9ff2c6d",
+          "binaryPrefixSha256": "3b984374e5c2ddb5cdf53afb07a718179658f33eb1b394f130dcd554ec02d42a",
+          "binaryPrefixBytes": 1838412,
+          "meshes": 12,
+          "primitives": 12,
+          "triangles": 157148,
+          "materials": 6,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 46,
+          "accessors": 75,
+          "bufferViews": 10
+        },
+        "exact": true
+      },
+      "baselineGltfValidator": {
+        "validatorVersion": "2.0.0-dev.3.10",
+        "errors": 0,
+        "warningCount": 24,
+        "warnings": [
+          {
+            "code": "NODE_SKINNED_MESH_LOCAL_TRANSFORMS",
+            "count": 12,
+            "message": "Local transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited per-part bind transforms. A1 does not modify mesh nodes, bind matrices, geometry, or skin data; the exact static hash and P4 real-asset regression guard this baseline."
+          },
+          {
+            "code": "NODE_SKINNED_MESH_NON_ROOT",
+            "count": 12,
+            "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited character topology: each authored skinned part remains under its original static wrapper. A1 static structure and binary-prefix hashes are exact before/after, and P4 batching relies on these wrappers."
+          }
+        ],
+        "infos": 12,
+        "hints": 0
+      },
+      "gltfValidator": {
+        "validatorVersion": "2.0.0-dev.3.10",
+        "errors": 0,
+        "warningCount": 24,
+        "warnings": [
+          {
+            "code": "NODE_SKINNED_MESH_LOCAL_TRANSFORMS",
+            "count": 12,
+            "message": "Local transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited per-part bind transforms. A1 does not modify mesh nodes, bind matrices, geometry, or skin data; the exact static hash and P4 real-asset regression guard this baseline."
+          },
+          {
+            "code": "NODE_SKINNED_MESH_NON_ROOT",
+            "count": 12,
+            "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited character topology: each authored skinned part remains under its original static wrapper. A1 static structure and binary-prefix hashes are exact before/after, and P4 batching relies on these wrappers."
+          }
+        ],
+        "infos": 12,
+        "hints": 0
+      },
+      "noNewValidatorWarnings": true,
+      "idempotentInputMatchesOutput": true,
+      "deltaBytes": 27516
+    },
+    "police": {
+      "before": {
+        "bytes": 1748252,
+        "sha256": "0c62726ada02c2b66abb467b5cf785b25b3f150b5c866c50a0855a12b749b5a2"
+      },
+      "pipelineInput": {
+        "bytes": 1775808,
+        "sha256": "c45fd79bb265556d0fc8ea035af2d2bc2cc52b2d863c6155de14e0de19864db7"
+      },
+      "after": {
+        "bytes": 1775808,
+        "sha256": "c45fd79bb265556d0fc8ea035af2d2bc2cc52b2d863c6155de14e0de19864db7",
+        "skins": 1,
+        "joints": 21,
+        "meshes": 22,
+        "animations": [
+          {
+            "name": "Idle",
+            "durationSeconds": 1.966667,
+            "channels": 2,
+            "samplers": 2,
+            "targetBones": [
+              "Chest",
+              "Head"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Idle.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.633333,
+            "channels": 6,
+            "samplers": 6,
+            "targetBones": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Run.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Walk",
+            "durationSeconds": 1.3,
+            "channels": 6,
+            "samplers": 6,
+            "targetBones": [
+              "LeftLowerLeg",
+              "LeftUpperArm",
+              "LeftUpperLeg",
+              "RightLowerLeg",
+              "RightUpperArm",
+              "RightUpperLeg"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Walk.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "TurnLeft",
+            "durationSeconds": 0.766667,
+            "channels": 1,
+            "samplers": 1,
+            "targetBones": [
+              "Hips"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_TurnLeft.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "TurnRight",
+            "durationSeconds": 0.766667,
+            "channels": 1,
+            "samplers": 1,
+            "targetBones": [
+              "Hips"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_TurnRight.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "LookAround",
+            "durationSeconds": 2.966667,
+            "channels": 2,
+            "samplers": 2,
+            "targetBones": [
+              "Head",
+              "Neck"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_LookAround.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "ScaredCaught",
+            "durationSeconds": 1.166667,
+            "channels": 5,
+            "samplers": 5,
+            "targetBones": [
+              "Chest",
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_ScaredCaught.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "Celebrate",
+            "durationSeconds": 1.3,
+            "channels": 4,
+            "samplers": 4,
+            "targetBones": [
+              "LeftLowerArm",
+              "LeftUpperArm",
+              "RightLowerArm",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_Celebrate.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          },
+          {
+            "name": "PointAlert",
+            "durationSeconds": 1.366667,
+            "channels": 3,
+            "samplers": 3,
+            "targetBones": [
+              "RightLowerArm",
+              "RightShoulder",
+              "RightUpperArm"
+            ],
+            "paths": [
+              "rotation"
+            ],
+            "extras": {
+              "source": "art-source/_Shared/Animations/Anim_PointAlert.fbx",
+              "retargetedTo": "police",
+              "fps": 30,
+              "rootMotion": false,
+              "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+            }
+          }
+        ],
+        "animationEncoding": {
+          "baseAccessorCount": 129,
+          "baseBufferViewCount": 9,
+          "baseBufferByteLength": 1719900,
+          "clipCount": 9,
+          "sourceFps": 30,
+          "encoding": "rotation-only float32; constant tracks removed; quaternion RDP key reduction",
+          "samplingSchema": "chasing-canonical-rest-animation-deltas-v1",
+          "canonicalRig": "art-source/_Shared/Animations/Rig_Humanoid_Shared.fbx",
+          "canonicalRestSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5",
+          "turnCoordinateBasis": "Blender (x,y,z) -> glTF/Three (x,z,-y)",
+          "constantTrackEpsilonRadians": 0.002,
+          "keyReductionEpsilonRadians": 0.001
+        },
+        "animationBufferBytes": 13480,
+        "static": {
+          "structureSha256": "01ff331f31b072ac0837488c97a27be7ab12f607bbe8d0867be1fc1d474cf56b",
+          "binaryPrefixSha256": "d0c34f9645fda4bfb0dac4a10b054844e04b037c2b92fc18242950020f53ce7f",
+          "binaryPrefixBytes": 1719900,
+          "meshes": 22,
+          "primitives": 22,
+          "triangles": 130400,
+          "materials": 9,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 66,
+          "accessors": 129,
+          "bufferViews": 9
+        },
+        "meshoptRequired": true
+      },
+      "staticInvariance": {
+        "before": {
+          "structureSha256": "01ff331f31b072ac0837488c97a27be7ab12f607bbe8d0867be1fc1d474cf56b",
+          "binaryPrefixSha256": "d0c34f9645fda4bfb0dac4a10b054844e04b037c2b92fc18242950020f53ce7f",
+          "binaryPrefixBytes": 1719900,
+          "meshes": 22,
+          "primitives": 22,
+          "triangles": 130400,
+          "materials": 9,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 66,
+          "accessors": 129,
+          "bufferViews": 9
+        },
+        "after": {
+          "structureSha256": "01ff331f31b072ac0837488c97a27be7ab12f607bbe8d0867be1fc1d474cf56b",
+          "binaryPrefixSha256": "d0c34f9645fda4bfb0dac4a10b054844e04b037c2b92fc18242950020f53ce7f",
+          "binaryPrefixBytes": 1719900,
+          "meshes": 22,
+          "primitives": 22,
+          "triangles": 130400,
+          "materials": 9,
+          "textures": 1,
+          "images": 1,
+          "skins": 1,
+          "nodes": 66,
+          "accessors": 129,
+          "bufferViews": 9
+        },
+        "exact": true
+      },
+      "baselineGltfValidator": {
+        "validatorVersion": "2.0.0-dev.3.10",
+        "errors": 0,
+        "warningCount": 44,
+        "warnings": [
+          {
+            "code": "NODE_SKINNED_MESH_LOCAL_TRANSFORMS",
+            "count": 22,
+            "message": "Local transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited per-part bind transforms. A1 does not modify mesh nodes, bind matrices, geometry, or skin data; the exact static hash and P4 real-asset regression guard this baseline."
+          },
+          {
+            "code": "NODE_SKINNED_MESH_NON_ROOT",
+            "count": 22,
+            "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited character topology: each authored skinned part remains under its original static wrapper. A1 static structure and binary-prefix hashes are exact before/after, and P4 batching relies on these wrappers."
+          }
+        ],
+        "infos": 16,
+        "hints": 0
+      },
+      "gltfValidator": {
+        "validatorVersion": "2.0.0-dev.3.10",
+        "errors": 0,
+        "warningCount": 44,
+        "warnings": [
+          {
+            "code": "NODE_SKINNED_MESH_LOCAL_TRANSFORMS",
+            "count": 22,
+            "message": "Local transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited per-part bind transforms. A1 does not modify mesh nodes, bind matrices, geometry, or skin data; the exact static hash and P4 real-asset regression guard this baseline."
+          },
+          {
+            "code": "NODE_SKINNED_MESH_NON_ROOT",
+            "count": 22,
+            "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+            "representativePointers": [
+              "/nodes/0",
+              "/nodes/1",
+              "/nodes/2"
+            ],
+            "explanation": "Inherited character topology: each authored skinned part remains under its original static wrapper. A1 static structure and binary-prefix hashes are exact before/after, and P4 batching relies on these wrappers."
+          }
+        ],
+        "infos": 16,
+        "hints": 0
+      },
+      "noNewValidatorWarnings": true,
+      "idempotentInputMatchesOutput": true,
+      "deltaBytes": 27556
+    }
+  },
+  "budget": {
+    "runtimeGlbCount": 29,
+    "publicModelsBeforeBytes": 9384183,
+    "publicModelsPipelineInputBytes": 9466867,
+    "publicModelsAfterBytes": 9466867,
+    "publicModelsLimitBytes": 12000000,
+    "publicModelsHeadroomBytes": 2533133,
+    "blockingCharacterBytes": 4096152,
+    "blockingCharacterDeltaBytes": 55128,
+    "firstScreen": {
+      "glbs": [
+        {
+          "path": "characters/kid.glb",
+          "bytes": 2210876
+        },
+        {
+          "path": "characters/villain.glb",
+          "bytes": 1885276
+        },
+        {
+          "path": "environment/wall.glb",
+          "bytes": 18532
+        },
+        {
+          "path": "environment/wall-corner.glb",
+          "bytes": 24204
+        },
+        {
+          "path": "environment/wall-end.glb",
+          "bytes": 19864
+        },
+        {
+          "path": "environment/floor.glb",
+          "bytes": 10940
+        },
+        {
+          "path": "environment/exit.glb",
+          "bytes": 20348
+        },
+        {
+          "path": "environment/front-gate.glb",
+          "bytes": 22432
+        },
+        {
+          "path": "environment/classroom-floor.glb",
+          "bytes": 9456
+        },
+        {
+          "path": "environment/playground-floor.glb",
+          "bytes": 8724
+        },
+        {
+          "path": "environment/grass-floor.glb",
+          "bytes": 9008
+        }
+      ],
+      "uniqueWebps": [
+        {
+          "path": "SharedTextures/Env_BluePaintedMetal_BaseColor_2K.webp",
+          "bytes": 3744
+        },
+        {
+          "path": "SharedTextures/Env_BluePaintedMetal_Normal_2K.webp",
+          "bytes": 5044
+        },
+        {
+          "path": "SharedTextures/Env_ClassroomWood_BaseColor_2K.webp",
+          "bytes": 8974
+        },
+        {
+          "path": "SharedTextures/Env_ClassroomWood_Normal_2K.webp",
+          "bytes": 19578
+        },
+        {
+          "path": "SharedTextures/Env_GlassBlue_BaseColor_2K.webp",
+          "bytes": 23332
+        },
+        {
+          "path": "SharedTextures/Env_GlassBlue_Normal_2K.webp",
+          "bytes": 71688
+        },
+        {
+          "path": "SharedTextures/Env_Grass_BaseColor_2K.webp",
+          "bytes": 30726
+        },
+        {
+          "path": "SharedTextures/Env_Grass_Normal_2K.webp",
+          "bytes": 150254
+        },
+        {
+          "path": "SharedTextures/Env_HallwayTile_BaseColor_2K.webp",
+          "bytes": 63464
+        },
+        {
+          "path": "SharedTextures/Env_HallwayTile_Normal_2K.webp",
+          "bytes": 71688
+        },
+        {
+          "path": "SharedTextures/Env_PaintedWall_BaseColor_2K.webp",
+          "bytes": 10210
+        },
+        {
+          "path": "SharedTextures/Env_PaintedWall_Normal_2K.webp",
+          "bytes": 43394
+        },
+        {
+          "path": "SharedTextures/Env_Paper_BaseColor_2K.webp",
+          "bytes": 6500
+        },
+        {
+          "path": "SharedTextures/Env_Paper_Normal_2K.webp",
+          "bytes": 43394
+        },
+        {
+          "path": "SharedTextures/Env_PlaygroundRubber_BaseColor_2K.webp",
+          "bytes": 1478
+        },
+        {
+          "path": "SharedTextures/Env_PlaygroundRubber_Normal_2K.webp",
+          "bytes": 79006
+        },
+        {
+          "path": "SharedTextures/Env_RedPaintedMetal_BaseColor_2K.webp",
+          "bytes": 5012
+        },
+        {
+          "path": "SharedTextures/Env_RedPaintedMetal_Normal_2K.webp",
+          "bytes": 5044
+        },
+        {
+          "path": "SharedTextures/Env_WoodTrim_BaseColor_2K.webp",
+          "bytes": 11640
+        },
+        {
+          "path": "SharedTextures/Env_WoodTrim_Normal_2K.webp",
+          "bytes": 34906
+        },
+        {
+          "path": "SharedTextures/Env_WornMetal_BaseColor_2K.webp",
+          "bytes": 16332
+        },
+        {
+          "path": "SharedTextures/Env_WornMetal_Normal_2K.webp",
+          "bytes": 54946
+        }
+      ],
+      "glbCount": 11,
+      "uniqueWebpCount": 22,
+      "glbBytes": 4239660,
+      "webpBytes": 760354,
+      "totalBytes": 5000014,
+      "limitBytes": 6000000,
+      "independentBaselineBytes": 4944886,
+      "projectedFromIndependentBaselineBytes": 5000014
+    }
+  }
+}

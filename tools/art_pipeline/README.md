@@ -27,3 +27,26 @@ python3 tools/art_pipeline/compress_runtime_assets.py \
 `vendor/gltfpack/` 只是离线构建工具，不会进入 Web bundle；其版本和许可证与脚本一起锁定，避免构建时临时下载。
 
 如需重新启用一条历史生成路线，先在仓库外的工作目录产出和评审，只把最终母版或游戏实际引用的结果提交回来。
+
+## A1 角色动画资产
+
+三套运行时角色的 9 个共享动作由下面的确定性入口生成：
+
+```bash
+python3 tools/art_pipeline/build_character_animation_assets.py
+```
+
+该入口先独立导入 `Rig_Humanoid_Shared.fbx` 取得 canonical rest，再用干净场景逐个真实导入
+`art-source/_Shared/Animations/Anim_*.fbx`。每个 FBX 都在它自己的 armature 上逐帧评估，用
+`inverse(canonicalRestLocal) * poseLocal` 提取旋转增量，然后写成 `targetRest * delta`。
+不会把 Action 挂到其他 FBX 的骨架上；非转身动作依照 root-motion-off 约定固定 Hips，
+左右转身则以各自首帧 Hips 归零，并把 Blender Z-up 下的 Z 轴 yaw 转换为
+glTF/Three.js Y-up 下的 Y 轴 yaw。管线和最终 GLB 测试都会校验 Run/Walk/LookAround/
+ScaredCaught/Celebrate/PointAlert/Turn 的关键帧方向与幅度，避免“有轨道但动作语义错误”。
+正式 GLB 只追加 quaternion 动画轨道；原有 Meshopt 几何、材质、图片、蒙皮和二进制前缀保持不变。
+动画压缩采用恒定轨道剔除与 0.001 弧度误差的关键帧精简，不重新打包角色几何。
+
+脚本会强制检查 29 个 GLB 文件数、12MB 总量、6MB 完整首屏、三角色静态结构/二进制哈希、
+官方 `gltf-validator@2.0.0-dev.3.10` Error=0，并输出
+`art-source/_Shared/Animations/Reports/A1_runtime_animation_report.json`。只有从旧提交恢复动画前基线时才使用
+`--base-ref <git-ref>`；正常重复运行不需要该参数且必须得到相同角色文件哈希。
