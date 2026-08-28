@@ -1,0 +1,116 @@
+{
+  "asset": "public/models/characters/villain.glb",
+  "assetBytes": 1090124,
+  "assetSha256": "75f42eee49450f5eb4bbd25dbc406ab9f09ac3e6202efffa117b4e66618c711b",
+  "runtimeTriangles": 28939,
+  "package": {
+    "package": "gltf-validator@2.0.0-dev.3.10",
+    "integrity": "sha512-odJ4k0tRkGXiDGn78yDBg+fBbAIvBnXxh3RwAta0emSxGtyagFE8B4xELB1oYe3S5RD8Ci3uZAsZaascH2LAEQ==",
+    "npmShasum": "9b09225db864fe3f0a584259f65d087e2213a93a"
+  },
+  "report": {
+    "uri": "villain-packed.glb",
+    "mimeType": "model/gltf-binary",
+    "validatorVersion": "2.0.0-dev.3.10",
+    "validatedAt": "2026-08-28T08:59:03.435Z",
+    "issues": {
+      "numErrors": 0,
+      "numWarnings": 1,
+      "numInfos": 1,
+      "numHints": 0,
+      "messages": [
+        {
+          "code": "UNSUPPORTED_EXTENSION",
+          "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+          "severity": 2,
+          "pointer": "/extensionsUsed/1"
+        },
+        {
+          "code": "NODE_SKINNED_MESH_NON_ROOT",
+          "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+          "severity": 1,
+          "pointer": "/nodes/21"
+        }
+      ],
+      "truncated": false
+    },
+    "info": {
+      "version": "2.0",
+      "generator": "gltfpack 1.2",
+      "extensionsUsed": [
+        "KHR_mesh_quantization",
+        "EXT_meshopt_compression",
+        "KHR_texture_transform",
+        "EXT_texture_webp"
+      ],
+      "extensionsRequired": [
+        "KHR_mesh_quantization",
+        "EXT_meshopt_compression",
+        "EXT_texture_webp"
+      ],
+      "resources": [
+        {
+          "pointer": "/buffers/0",
+          "mimeType": "application/gltf-buffer",
+          "storage": "glb",
+          "byteLength": 1067604
+        },
+        {
+          "pointer": "/buffers/1",
+          "mimeType": "application/gltf-buffer"
+        },
+        {
+          "pointer": "/images/0",
+          "mimeType": "image/webp",
+          "storage": "buffer-view",
+          "image": {
+            "width": 2048,
+            "height": 2048,
+            "format": "rgb",
+            "primaries": "srgb",
+            "transfer": "srgb",
+            "bits": 8
+          }
+        },
+        {
+          "pointer": "/images/1",
+          "mimeType": "image/webp",
+          "storage": "buffer-view",
+          "image": {
+            "width": 2048,
+            "height": 2048,
+            "format": "rgb",
+            "primaries": "srgb",
+            "transfer": "srgb",
+            "bits": 8
+          }
+        },
+        {
+          "pointer": "/images/2",
+          "mimeType": "image/webp",
+          "storage": "buffer-view",
+          "image": {
+            "width": 2048,
+            "height": 2048,
+            "format": "rgb",
+            "primaries": "srgb",
+            "transfer": "srgb",
+            "bits": 8
+          }
+        }
+      ],
+      "animationCount": 9,
+      "materialCount": 1,
+      "hasMorphTargets": false,
+      "hasSkins": true,
+      "hasTextures": true,
+      "hasDefaultScene": true,
+      "drawCallCount": 1,
+      "totalVertexCount": 21135,
+      "totalTriangleCount": 28939,
+      "maxUVs": 1,
+      "maxInfluences": 4,
+      "maxAttributes": 7
+    }
+  }
+}

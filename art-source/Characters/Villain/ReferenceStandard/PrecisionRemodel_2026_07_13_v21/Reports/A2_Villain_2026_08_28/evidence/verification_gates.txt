@@ -1,0 +1,48 @@
+A2 villain verification gates — 2026-08-28
+
+Reproducible asset build
+  command: python3 tools/art_pipeline/build_a2_villain_runtime.py --install
+  exit: 0
+  runtime GLB: 1,090,124 bytes
+  runtime triangles: 28,939
+  public/models: 8,671,715 bytes
+  SHA-256: 75f42eee49450f5eb4bbd25dbc406ab9f09ac3e6202efffa117b4e66618c711b
+
+Texture quality gates
+  BaseColor: stddev 8.72 >= 8.00 — PASS
+  Normal: stddev 59.91 >= 4.00 — PASS
+  AO: stddev 4.15 >= 3.00 — PASS
+
+Targeted A2 + P4 compatibility tests
+  command: node --test tests/a2-villain-asset.test.mjs tests/p4-actor-batching.test.mjs
+  result: 8 tests, 8 passed, 0 failed
+
+Project lint
+  command: npm run lint
+  exit: 0
+  result: ESLint completed with no findings
+
+Production build
+  command: npm run build
+  exit: 0
+  result: five vinext environments built successfully
+  note: existing non-fatal >500 kB chunk advisory remains; no A2 gameplay bundle was added
+
+Full regression
+  command: npm test
+  exit: 0
+  result: 81 tests, 81 passed, 0 failed, 0 skipped
+  baseline preservation: all 77 pre-A2 tests remained present and passed
+  new A2 tests: 4 passed
+
+Whitespace/scope guard
+  command: git diff --check
+  exit: 0
+  result: no whitespace errors
+
+Browser smoke
+  console errors: 0
+  console warnings: 0
+  observed resource 404s: 0
+  final draw calls: 71–72 (budget <=80)
+  details loaded: 18/18; degraded textures: 0

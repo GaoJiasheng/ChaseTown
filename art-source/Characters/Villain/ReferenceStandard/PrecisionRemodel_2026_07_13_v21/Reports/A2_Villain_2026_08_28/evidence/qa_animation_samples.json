@@ -1,0 +1,382 @@
+{
+  "assetSha256": "75f42eee49450f5eb4bbd25dbc406ab9f09ac3e6202efffa117b4e66618c711b",
+  "capturedAt": "2026-08-28",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "qaCoordinates": {
+    "player": {
+      "x": 5,
+      "y": 1
+    },
+    "villain": {
+      "x": 3,
+      "y": 1
+    }
+  },
+  "requestedIntervalMs": 220,
+  "note": "Browser screenshots include capture overhead, so clip-time deltas may exceed 220ms; Run wraps at 0.633333s.",
+  "samples": [
+    {
+      "clip": "Idle",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "Idle",
+      "activeClips": [
+        "Idle"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "Idle",
+      "frameAClipTime": 0.4122000000000001,
+      "frameBClipTime": 0.7622000000000002,
+      "rawDeltaSeconds": 0.3500000000000001,
+      "progressNote": "time advanced or one-shot reached clamp",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 71,
+        "triangles": 965053,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    },
+    {
+      "clip": "Walk",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "Walk",
+      "activeClips": [
+        "Walk"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "Walk",
+      "frameAClipTime": 0.5968000000000002,
+      "frameBClipTime": 0.9701000000000006,
+      "rawDeltaSeconds": 0.3733000000000004,
+      "progressNote": "time advanced or one-shot reached clamp",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 72,
+        "triangles": 965273,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    },
+    {
+      "clip": "Run",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "Run",
+      "activeClips": [
+        "Run"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "Run",
+      "frameAClipTime": 0.2661000000000004,
+      "frameBClipTime": 0.05276667461395297,
+      "rawDeltaSeconds": -0.21333332538604743,
+      "progressNote": "loop wrap observed; both frames are on the same looping Run action",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 71,
+        "triangles": 965053,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    },
+    {
+      "clip": "TurnLeft",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "TurnLeft",
+      "activeClips": [
+        "TurnLeft"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "TurnLeft",
+      "frameAClipTime": 0.6536999999999998,
+      "frameBClipTime": 0.7666666507720947,
+      "rawDeltaSeconds": 0.11296665077209489,
+      "progressNote": "time advanced or one-shot reached clamp",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 72,
+        "triangles": 965273,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    },
+    {
+      "clip": "TurnRight",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "TurnRight",
+      "activeClips": [
+        "TurnRight"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "TurnRight",
+      "frameAClipTime": 0.6527999999999997,
+      "frameBClipTime": 0.7666666507720947,
+      "rawDeltaSeconds": 0.11386665077209501,
+      "progressNote": "time advanced or one-shot reached clamp",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 72,
+        "triangles": 965273,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    },
+    {
+      "clip": "LookAround",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "LookAround",
+      "activeClips": [
+        "LookAround"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "LookAround",
+      "frameAClipTime": 0.6191999999999998,
+      "frameBClipTime": 1.0427,
+      "rawDeltaSeconds": 0.4235000000000002,
+      "progressNote": "time advanced or one-shot reached clamp",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 72,
+        "triangles": 965273,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    },
+    {
+      "clip": "ScaredCaught",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "ScaredCaught",
+      "activeClips": [
+        "ScaredCaught"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "ScaredCaught",
+      "frameAClipTime": 0.5969000000000001,
+      "frameBClipTime": 1.0360000000000007,
+      "rawDeltaSeconds": 0.4391000000000006,
+      "progressNote": "time advanced or one-shot reached clamp",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 72,
+        "triangles": 965273,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    },
+    {
+      "clip": "Celebrate",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "Celebrate",
+      "activeClips": [
+        "Celebrate"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "Celebrate",
+      "frameAClipTime": 0.5585999999999999,
+      "frameBClipTime": 0.9327999999999997,
+      "rawDeltaSeconds": 0.37419999999999987,
+      "progressNote": "time advanced or one-shot reached clamp",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 71,
+        "triangles": 965053,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    },
+    {
+      "clip": "PointAlert",
+      "source": "embedded-gltf",
+      "availableClips": [
+        "Idle",
+        "Run",
+        "Walk",
+        "TurnLeft",
+        "TurnRight",
+        "LookAround",
+        "ScaredCaught",
+        "Celebrate",
+        "PointAlert"
+      ],
+      "currentClip": "PointAlert",
+      "activeClips": [
+        "PointAlert"
+      ],
+      "weight": 1,
+      "transitionSeconds": 0.15,
+      "reason": "qa-audition",
+      "auditionClip": "PointAlert",
+      "frameAClipTime": 0.5390999999999998,
+      "frameBClipTime": 0.9625000000000006,
+      "rawDeltaSeconds": 0.4234000000000008,
+      "progressNote": "time advanced or one-shot reached clamp",
+      "batchMeshes": 1,
+      "shadowProxyCreated": true,
+      "shadowSkeletonShared": true,
+      "render": {
+        "calls": 72,
+        "triangles": 965273,
+        "actors": {
+          "mainCalls": 32,
+          "mainTriangles": 300787,
+          "shadowCalls": 3,
+          "shadowTriangles": 1032
+        }
+      }
+    }
+  ]
+}

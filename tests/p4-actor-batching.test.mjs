@@ -265,7 +265,7 @@ test("P4-3 real compressed actors meet the 30-batch and low-poly shadow budgets"
 
   const expected = {
     kid: { before: 35, after: 13, triangles: 140252 },
-    villain: { before: 12, after: 6, triangles: 157148 },
+    villain: { before: 1, after: 1, triangles: 28939 },
     police: { before: 22, after: 11, triangles: 130400 },
   };
   let combinedAfter = 0;
@@ -305,7 +305,7 @@ test("P4-3 real compressed actors meet the 30-batch and low-poly shadow budgets"
     result.meshes[0]?.skeleton.dispose();
   }
 
-  assert.equal(combinedAfter, 30);
-  assert.equal(combinedTriangles, 427800);
+  assert.equal(combinedAfter, 25);
+  assert.equal(combinedTriangles, 299591);
   assert.ok(combinedShadowTriangles <= 3000);
 });

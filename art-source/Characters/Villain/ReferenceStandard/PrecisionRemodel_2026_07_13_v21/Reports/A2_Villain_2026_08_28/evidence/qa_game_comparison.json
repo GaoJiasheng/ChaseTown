@@ -1,0 +1,68 @@
+{
+  "capturedAt": "2026-08-28",
+  "method": "Codex in-app Chromium, formal game camera, qa=1 fixed coordinates, phase=ready, qaReducedMotion=1",
+  "qaCoordinates": {
+    "player": { "x": 5, "y": 1 },
+    "villain": { "x": 3, "y": 1 }
+  },
+  "state": {
+    "phase": "ready",
+    "aiState": "delay",
+    "distance": 2,
+    "lineOfSight": true,
+    "threat": 0,
+    "gaitWeight": 0,
+    "readyCameraOffsets": { "blend": 0, "distance": 0, "lateral": 0 }
+  },
+  "assets": {
+    "before": {
+      "sha256": "4498eb36f29ca291099a0c2543467275ebd6694c0112d1e4d2d081eda8f44cb5",
+      "bytes": 1885276
+    },
+    "after": {
+      "sha256": "75f42eee49450f5eb4bbd25dbc406ab9f09ac3e6202efffa117b4e66618c711b",
+      "bytes": 1090124
+    }
+  },
+  "desktop": {
+    "viewport": { "width": 1280, "height": 720 },
+    "camera": {
+      "position": [-7.039493381603526, 11.44515341051312, -12.714122336444152],
+      "direction": [0.44618632169208233, 0.6682790647764821, 0.595248568176657],
+      "fov": 42,
+      "zoom": 1,
+      "targetDistance": 15.6
+    },
+    "before": {
+      "file": "game_before_desktop_1280x720.png",
+      "sha256": "c79c58d2838c3b09a923a85b95cc2bd144a837150edc422b260240568aa8c67c",
+      "render": { "calls": 77, "triangles": 1093482, "actorMainCalls": 37, "actorMainTriangles": 428996, "actorShadowCalls": 3, "actorShadowTriangles": 1032 }
+    },
+    "after": {
+      "file": "game_after_desktop_1280x720.png",
+      "sha256": "2ed706804c5d5bd2d122d5013ff18f5bb4f797d755103db8db0bee11c4a51e54",
+      "render": { "calls": 72, "triangles": 965273, "actorMainCalls": 32, "actorMainTriangles": 300787, "actorShadowCalls": 3, "actorShadowTriangles": 1032 }
+    }
+  },
+  "narrow": {
+    "viewport": { "width": 375, "height": 812 },
+    "camera": {
+      "position": [-2.556532111102257, 18.159543833595723, -6.733490148219371],
+      "direction": [0.44618632169208233, 0.6682790647764821, 0.595248568176657],
+      "fov": 42,
+      "zoom": 1,
+      "targetDistance": 25.647285298886867
+    },
+    "before": {
+      "file": "game_before_narrow_375x812.png",
+      "sha256": "5b97814e643e039ea072e00d52aae3b443e679035a5926469fd0c44e4296eca5",
+      "render": { "calls": 77, "triangles": 1093482, "actorMainCalls": 37, "actorMainTriangles": 428996, "actorShadowCalls": 3, "actorShadowTriangles": 1032 }
+    },
+    "after": {
+      "file": "game_after_narrow_375x812.png",
+      "sha256": "c74f11078d4c405d308f6fd3a6a21c4162eb3db2300ff56542e5985d740951c1",
+      "render": { "calls": 72, "triangles": 965273, "actorMainCalls": 32, "actorMainTriangles": 300787, "actorShadowCalls": 3, "actorShadowTriangles": 1032 }
+    }
+  },
+  "visualAssertion": "The after screenshots preserve the exact camera/state while replacing the old multi-part bright-faced silhouette with the broader, shadow-faced one-mesh A2 silhouette; the 375px view remains immediately identifiable by the red villain marker and hooded mass."
+}

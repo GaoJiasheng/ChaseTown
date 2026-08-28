@@ -1,0 +1,663 @@
+{
+  "asset": "villain_A2_visual_rework",
+  "style": "stylized-realistic ReferenceStandard (docs/02 20k-32k tris)",
+  "sourceMaster": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Villain_PrecisionRemodel_v21.blend",
+  "sourceLineage": {
+    "geometry": "Existing Hunyuan multiview-derived native body/garment sculpt",
+    "face": "Hunyuan-integrated face retained as the shadowed volume; a cropped MPFB CC0 nose/mouth relief patch replaces the former detached full-head mask",
+    "newGeometry": "No proxy primitives are added: the continuous source garment supplies coat/lapels/cuffs/pockets, while the integrated source boot soles are reshaped in place",
+    "textures": "ImageGen-authored 4x2 villain material study, deterministically normalized and converted to BaseColor/Normal/AO/ORM by Blender/Python",
+    "currentPassExternalDownloads": [],
+    "licenses": {
+      "hunyuan3D2": "Existing source master generated with Tencent Hunyuan3D-2; official terms: https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/LICENSE and NOTICE",
+      "mpfbFaceRelief": "Cropped MakeHuman/MPFB nose-mouth relief under CC0 1.0; local text: tools/third_party/mpfb2/LICENSE.ASSETS.md",
+      "imageGenMaterialAtlas": "OpenAI ImageGen output generated for this project on 2026-08-28 without reference images or external downloads"
+    },
+    "releaseReview": "Hunyuan3D-2 terms contain territory and distribution conditions; product release must complete a legal/territory review and package the required notices."
+  },
+  "designChanges": {
+    "silhouette": "Broader shoulder/chest/arms, flared long-coat hem, enlarged gloves, and integrated source outsoles reshaped by about 6 mm vertically / 8 mm laterally",
+    "hood": "Existing shell pushed forward, crown softened and lowered, hood lip smoothed in two local passes, native face recessed 38 mm, and the eye zone darkened 18% for a stable brow shadow",
+    "materialRead": "Authored UV0 carries a seamless ImageGen-derived leather PBR field; smooth A2Tint vertex colors separate coat/hood/pants/boots/skin/lining without triangle-edge atlas jumps",
+    "overlapCleanup": [
+      "Villain_v21_Brow_+1",
+      "Villain_v21_Brow_-1",
+      "Villain_v21_Eye_+1",
+      "Villain_v21_Eye_-1",
+      "Villain_v21_Glint_+1",
+      "Villain_v21_Glint_-1",
+      "Villain_v21_Iris_+1",
+      "Villain_v21_Iris_-1",
+      "Villain_v21_Pupil_+1",
+      "Villain_v21_Pupil_-1"
+    ]
+  },
+  "reshape": {
+    "maxDisplacementMeters": 0.061539,
+    "boundsAfterReshape": {
+      "min": [
+        -0.457433,
+        -0.287016,
+        -0.018
+      ],
+      "max": [
+        0.457433,
+        0.248923,
+        1.847
+      ],
+      "dimensions": [
+        0.914865,
+        0.535939,
+        1.865
+      ],
+      "widthHeightRatio": 0.490544
+    }
+  },
+  "hoodOpeningSmoothing": {
+    "iterations": 2,
+    "strength": 0.16,
+    "affectedVertices": 3210,
+    "maxDisplacementMeters": 0.022001
+  },
+  "faceCleanup": {
+    "verticesBefore": 4348,
+    "trianglesBefore": 8640,
+    "verticesAfter": 158,
+    "trianglesAfter": 244,
+    "ratio": 0.028241,
+    "purpose": "retain only a licensed MPFB nose/mouth relief patch; the integrated face supplies the shadowed head volume without a detached side-mask edge"
+  },
+  "floorCorrectionMeters": -0.017999999225139618,
+  "runtimeReduction": {
+    "method": "meshoptimizer simplification after authored high-source export",
+    "reason": "preserves the coat/hood/boot silhouette and avoids Blender global-Decimate faceting",
+    "target": "20k-32k triangles; enforced by the runtime asset test"
+  },
+  "textures": {
+    "resolution": [
+      2048,
+      2048
+    ],
+    "baseColor": {
+      "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_BaseColor_2K.png",
+      "mean": 19.9497,
+      "stddev": 8.7153,
+      "channelStddev": [
+        8.2478,
+        8.2389,
+        8.1943
+      ]
+    },
+    "normal": {
+      "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_Normal_2K.png",
+      "mean": 169.3329,
+      "stddev": 59.9071,
+      "channelStddev": [
+        3.3147,
+        1.6636,
+        0.0164
+      ]
+    },
+    "ao": {
+      "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_AO_2K.png",
+      "mean": 224.8769,
+      "stddev": 4.1495,
+      "channelStddev": [
+        4.1495,
+        4.1495,
+        4.1495
+      ]
+    },
+    "orm": {
+      "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_ORM_2K.png",
+      "mean": 133.8511,
+      "stddev": 96.7135,
+      "channelStddev": [
+        4.1495,
+        2.7322,
+        0.0
+      ]
+    },
+    "packing": "ORM: R=occlusion, G=roughness, B=metallic",
+    "source": "ImageGen-authored 4x2 villain material study, deterministically normalized and converted to BaseColor/Normal/AO/ORM by Blender/Python",
+    "sourceAtlas": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_A2_MaterialAtlas_Source.png",
+    "sourcePrompt": "Eight-cell flat PBR swatch atlas: shadowed adult skin, black scarf, muted brass, worn piping, trench leather, hood canvas, trouser wool, combat leather; no labels or objects"
+  },
+  "weights": {
+    "vertices": 67308,
+    "zeroWeightVertices": 0,
+    "zeroWeightRatio": 0.0,
+    "maxInfluences": 4,
+    "maxWeightSumError": 4.470348358154297e-08,
+    "leftHandNonzeroVertices": 7059,
+    "rightHandNonzeroVertices": 6611,
+    "fallbackAssignments": {}
+  },
+  "scene": {
+    "bones": 21,
+    "boneNames": [
+      "Hips",
+      "Spine",
+      "Chest",
+      "Neck",
+      "Head",
+      "LeftShoulder",
+      "LeftUpperArm",
+      "LeftLowerArm",
+      "LeftHand",
+      "RightShoulder",
+      "RightUpperArm",
+      "RightLowerArm",
+      "RightHand",
+      "LeftUpperLeg",
+      "LeftLowerLeg",
+      "LeftFoot",
+      "LeftToes",
+      "RightUpperLeg",
+      "RightLowerLeg",
+      "RightFoot",
+      "RightToes"
+    ],
+    "triangles": 134608,
+    "materials": 1,
+    "boundsBlenderZUp": {
+      "min": [
+        -0.457433,
+        -0.279764,
+        0.0
+      ],
+      "max": [
+        0.457433,
+        0.248923,
+        1.865
+      ],
+      "dimensions": [
+        0.914865,
+        0.528687,
+        1.865
+      ],
+      "widthHeightRatio": 0.490544
+    },
+    "rootScale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "forward": "Blender -Y; glTF export +Z",
+    "runtimeBudget": "20k-32k tris is enforced after silhouette-aware meshoptimizer simplification"
+  },
+  "previews": {
+    "threeQuarter": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Reports/A2_Villain_2026_08_28/evidence/dcc_after_threequarter.png",
+    "front": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Reports/A2_Villain_2026_08_28/evidence/dcc_after_front.png",
+    "side": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Reports/A2_Villain_2026_08_28/evidence/dcc_after_side.png",
+    "back": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Reports/A2_Villain_2026_08_28/evidence/dcc_after_back.png",
+    "wireframe": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Reports/A2_Villain_2026_08_28/evidence/dcc_after_wireframe.png"
+  },
+  "outputs": {
+    "authoringMaster": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Villain_PrecisionRemodel_v21_Rigged.blend",
+    "sourceMaster": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Villain_PrecisionRemodel_v21.blend",
+    "stagingStaticGlbBytes": 7082280,
+    "runtimeGlb": "public/models/characters/villain.glb",
+    "runtimeGlbBytes": 1090124,
+    "runtimeGlbSha256": "75f42eee49450f5eb4bbd25dbc406ab9f09ac3e6202efffa117b4e66618c711b",
+    "runtimeTriangles": 28939,
+    "publicModelsBytesAfterInstall": 8671715,
+    "installed": true
+  },
+  "runtimePipeline": {
+    "simplifier": "gltfpack meshoptimizer",
+    "simplifyRatio": 0.215,
+    "positionEncoding": "float (-vpf); no mesh-node quantization scale patch",
+    "tangents": "regenerated (-gt)",
+    "meshoptCompression": true,
+    "simplifyReport": {
+      "generator": "gltfpack 1.2",
+      "scene": {
+        "nodeCount": 23,
+        "meshCount": 1,
+        "materialCount": 1,
+        "textureCount": 3,
+        "animationCount": 0
+      },
+      "render": {
+        "drawCount": 1,
+        "instanceCount": 1,
+        "triangleCount": 28939
+      },
+      "data": {
+        "json": 6967,
+        "binary": 1698608,
+        "buffers": {
+          "vertex": 843720,
+          "index": 173634,
+          "animation": 0,
+          "transform": 1344,
+          "image": 679906
+        }
+      }
+    },
+    "packReport": {
+      "generator": "gltfpack 1.2",
+      "scene": {
+        "nodeCount": 23,
+        "meshCount": 1,
+        "materialCount": 1,
+        "textureCount": 3,
+        "animationCount": 0
+      },
+      "render": {
+        "drawCount": 1,
+        "instanceCount": 1,
+        "triangleCount": 28939
+      },
+      "data": {
+        "json": 8309,
+        "binary": 1054144,
+        "buffers": {
+          "vertex": 340422,
+          "index": 32639,
+          "animation": 0,
+          "transform": 1162,
+          "image": 679906
+        }
+      }
+    },
+    "animationSampleReport": {
+      "canonicalRig": {
+        "source": "art-source/_Shared/Animations/Rig_Humanoid_Shared.fbx",
+        "bytes": 29212,
+        "bones": 21,
+        "restLocalSha256": "f1c0c76432362318aa0ce850eb7ee9965757d79a3afdfd4d16c10f27325a6ae5"
+      },
+      "sources": [
+        {
+          "clip": "Idle",
+          "source": "art-source/_Shared/Animations/Anim_Idle.fbx",
+          "bytes": 215164,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            61.0
+          ],
+          "sampleCount": 60,
+          "fps": 30,
+          "loop": true,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 89.999983,
+          "sourceBindVsCanonicalByBoneDegrees": {
+            "Hips": 89.999983,
+            "Chest": 1.333519,
+            "Head": 0.889108
+          },
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        },
+        {
+          "clip": "Run",
+          "source": "art-source/_Shared/Animations/Anim_Run.fbx",
+          "bytes": 175420,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            21.0
+          ],
+          "sampleCount": 20,
+          "fps": 30,
+          "loop": true,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 89.999983,
+          "sourceBindVsCanonicalByBoneDegrees": {
+            "Hips": 89.999983,
+            "LeftUpperArm": 27.999943,
+            "RightUpperArm": 28.000028,
+            "LeftUpperLeg": 33.999987,
+            "LeftLowerLeg": 28.0,
+            "RightUpperLeg": 33.999987,
+            "RightLowerLeg": 6.000053
+          },
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        },
+        {
+          "clip": "Walk",
+          "source": "art-source/_Shared/Animations/Anim_Walk.fbx",
+          "bytes": 193932,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            41.0
+          ],
+          "sampleCount": 40,
+          "fps": 30,
+          "loop": true,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 89.999983,
+          "sourceBindVsCanonicalByBoneDegrees": {
+            "Hips": 89.999983,
+            "LeftUpperArm": 9.979182,
+            "RightUpperArm": 9.979103,
+            "LeftUpperLeg": 12.117609,
+            "LeftLowerLeg": 9.979182,
+            "RightUpperLeg": 12.117479,
+            "RightLowerLeg": 2.137989
+          },
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        },
+        {
+          "clip": "TurnLeft",
+          "source": "art-source/_Shared/Animations/Anim_TurnLeft.fbx",
+          "bytes": 183340,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            25.0
+          ],
+          "sampleCount": 24,
+          "fps": 30,
+          "loop": false,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 179.999991,
+          "sourceBindVsCanonicalByBoneDegrees": {
+            "Hips": 179.999991
+          },
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        },
+        {
+          "clip": "TurnRight",
+          "source": "art-source/_Shared/Animations/Anim_TurnRight.fbx",
+          "bytes": 183340,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            25.0
+          ],
+          "sampleCount": 24,
+          "fps": 30,
+          "loop": false,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 0.0,
+          "sourceBindVsCanonicalByBoneDegrees": {},
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        },
+        {
+          "clip": "LookAround",
+          "source": "art-source/_Shared/Animations/Anim_LookAround.fbx",
+          "bytes": 242924,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            91.0
+          ],
+          "sampleCount": 90,
+          "fps": 30,
+          "loop": true,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 89.999983,
+          "sourceBindVsCanonicalByBoneDegrees": {
+            "Hips": 89.999983,
+            "Neck": 0.817565,
+            "Head": 1.907762
+          },
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        },
+        {
+          "clip": "ScaredCaught",
+          "source": "art-source/_Shared/Animations/Anim_ScaredCaught.fbx",
+          "bytes": 186604,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            37.0
+          ],
+          "sampleCount": 36,
+          "fps": 30,
+          "loop": false,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 89.999983,
+          "sourceBindVsCanonicalByBoneDegrees": {
+            "Hips": 89.999983,
+            "Chest": 15.655239,
+            "LeftUpperArm": 84.588325,
+            "LeftLowerArm": 44.999973,
+            "RightUpperArm": 84.588345,
+            "RightLowerArm": 44.999973
+          },
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        },
+        {
+          "clip": "Celebrate",
+          "source": "art-source/_Shared/Animations/Anim_Celebrate.fbx",
+          "bytes": 190380,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            41.0
+          ],
+          "sampleCount": 40,
+          "fps": 30,
+          "loop": false,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 123.993454,
+          "sourceBindVsCanonicalByBoneDegrees": {
+            "Hips": 89.999983,
+            "LeftUpperArm": 123.993446,
+            "LeftLowerArm": 17.99994,
+            "RightUpperArm": 123.993454,
+            "RightLowerArm": 17.99994
+          },
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        },
+        {
+          "clip": "PointAlert",
+          "source": "art-source/_Shared/Animations/Anim_PointAlert.fbx",
+          "bytes": 190700,
+          "importedAction": "Rig_Humanoid_Shared|Scene",
+          "importedFrameRange": [
+            2.0,
+            43.0
+          ],
+          "sampleCount": 42,
+          "fps": 30,
+          "loop": false,
+          "rootMotion": false,
+          "bones": 21,
+          "sourceBindVsCanonicalMaxDegrees": 89.999983,
+          "sourceBindVsCanonicalByBoneDegrees": {
+            "Hips": 89.999983,
+            "RightShoulder": 1.49982,
+            "RightUpperArm": 2.828324,
+            "RightLowerArm": 5.384637
+          },
+          "sampling": "poseLocal = inverse(parentPose) * pose (root: armatureWorld * pose); delta = inverse(canonicalRestLocal) * poseLocal",
+          "rootPolicy": "Turn Hips is rebased to its first sample; all other Hips deltas are identity because the authored clips are root-motion off"
+        }
+      ],
+      "semanticChecks": [
+        {
+          "label": "Run.LeftUpperLeg.first.x",
+          "actualDegrees": -33.999999,
+          "expectedDegrees": -34.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "Run.LeftUpperLeg.middle.x",
+          "actualDegrees": 34.000033,
+          "expectedDegrees": 34.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "Run.LeftUpperLeg.last.x",
+          "actualDegrees": -33.999999,
+          "expectedDegrees": -34.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "Walk.LeftUpperLeg.first.x",
+          "actualDegrees": -15.299981,
+          "expectedDegrees": -15.3,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "Walk.LeftUpperLeg.middle.x",
+          "actualDegrees": 15.300034,
+          "expectedDegrees": 15.3,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "Walk.LeftUpperLeg.last.x",
+          "actualDegrees": -15.299981,
+          "expectedDegrees": -15.3,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "LookAround.Head.first.z",
+          "actualDegrees": -27.999966,
+          "expectedDegrees": -28.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "LookAround.Head.middle.z",
+          "actualDegrees": 28.000063,
+          "expectedDegrees": 28.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "LookAround.Head.last.z",
+          "actualDegrees": -27.999966,
+          "expectedDegrees": -28.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "ScaredCaught.LeftUpperArm.first.magnitude",
+          "actualDegrees": 0.0,
+          "expectedDegrees": 0.0,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "ScaredCaught.LeftUpperArm.middle.magnitude",
+          "actualDegrees": 74.362819,
+          "expectedDegrees": 74.4,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "ScaredCaught.LeftUpperArm.last.magnitude",
+          "actualDegrees": 88.874523,
+          "expectedDegrees": 89.3,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "Celebrate.LeftUpperArm.first.magnitude",
+          "actualDegrees": 40.000001,
+          "expectedDegrees": 40.0,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "Celebrate.LeftUpperArm.middle.magnitude",
+          "actualDegrees": 125.579792,
+          "expectedDegrees": 125.8,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "Celebrate.LeftUpperArm.last.magnitude",
+          "actualDegrees": 110.305056,
+          "expectedDegrees": 110.4,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "PointAlert.RightUpperArm.first.magnitude",
+          "actualDegrees": 3.999956,
+          "expectedDegrees": 4.0,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "PointAlert.RightUpperArm.middle.magnitude",
+          "actualDegrees": 2.828324,
+          "expectedDegrees": 2.83,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "PointAlert.RightUpperArm.last.magnitude",
+          "actualDegrees": 2.828324,
+          "expectedDegrees": 2.83,
+          "toleranceDegrees": 0.75
+        },
+        {
+          "label": "TurnLeft.Hips.first.z",
+          "actualDegrees": 0.0,
+          "expectedDegrees": 0.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "TurnLeft.Hips.middle.z",
+          "actualDegrees": -45.000008,
+          "expectedDegrees": -45.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "TurnLeft.Hips.last.z",
+          "actualDegrees": -90.000009,
+          "expectedDegrees": -90.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "TurnRight.Hips.first.z",
+          "actualDegrees": 0.0,
+          "expectedDegrees": 0.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "TurnRight.Hips.middle.z",
+          "actualDegrees": 45.000001,
+          "expectedDegrees": 45.0,
+          "toleranceDegrees": 0.35
+        },
+        {
+          "label": "TurnRight.Hips.last.z",
+          "actualDegrees": 90.000009,
+          "expectedDegrees": 90.0,
+          "toleranceDegrees": 0.35
+        }
+      ]
+    }
+  },
+  "validator": {
+    "package": "gltf-validator@2.0.0-dev.3.10",
+    "integrity": "sha512-odJ4k0tRkGXiDGn78yDBg+fBbAIvBnXxh3RwAta0emSxGtyagFE8B4xELB1oYe3S5RD8Ci3uZAsZaascH2LAEQ==",
+    "npmShasum": "9b09225db864fe3f0a584259f65d087e2213a93a",
+    "version": "2.0.0-dev.3.10",
+    "errors": 0,
+    "warnings": 1,
+    "infos": 1,
+    "hints": 0,
+    "messages": [
+      {
+        "code": "UNSUPPORTED_EXTENSION",
+        "message": "Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.",
+        "severity": 2,
+        "pointer": "/extensionsUsed/1"
+      },
+      {
+        "code": "NODE_SKINNED_MESH_NON_ROOT",
+        "message": "Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.",
+        "severity": 1,
+        "pointer": "/nodes/21"
+      }
+    ],
+    "warningExplanation": "NODE_SKINNED_MESH_NON_ROOT is the single visible skinned mesh parented below the transform-free canonical Rig_Humanoid_Shared node; GLTFLoader, all nine clips, batching, and the articulated shadow-proxy tests validate this hierarchy.",
+    "infoExplanation": "The pinned Validator does not decode EXT_meshopt_compression; the project MeshoptDecoder asset test and browser smoke test cover that extension."
+  }
+}

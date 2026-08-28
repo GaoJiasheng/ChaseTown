@@ -16,10 +16,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mesh", required=True)
     parser.add_argument("--out", required=True)
-    parser.add_argument("--view", choices=("front", "back", "left", "right", "top"), default="front")
+    parser.add_argument("--view", choices=("front", "threequarter", "back", "left", "right", "top"), default="front")
     parser.add_argument("--ortho-scale", type=float, default=2.05)
     parser.add_argument("--resolution-x", type=int, default=1100)
     parser.add_argument("--resolution-y", type=int, default=1500)
+    parser.add_argument("--grounded-character", action="store_true")
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
     return parser.parse_args(argv)
 
@@ -53,6 +54,8 @@ def look_at(obj: bpy.types.Object, target: Vector) -> None:
 def camera_location(view: str, distance: float, height: float) -> Vector:
     if view == "front":
         return Vector((0.0, -distance, height))
+    if view == "threequarter":
+        return Vector((distance * 0.56, -distance, height + 0.12))
     if view == "back":
         return Vector((0.0, distance, height))
     if view == "left":
@@ -72,12 +75,17 @@ def main() -> None:
 
     min_v, max_v = bounds_for(meshes)
     center = (min_v + max_v) * 0.5
-    for obj in meshes:
-        obj.location -= center
-        bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
-        bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
-        obj.select_set(False)
+    if not args.grounded_character:
+        # Move imported hierarchy roots as a unit. Moving skinned mesh children
+        # independently breaks their armature-space placement.
+        roots = set()
+        for mesh in meshes:
+            root = mesh
+            while root.parent is not None:
+                root = root.parent
+            roots.add(root)
+        for root in roots:
+            root.location -= center
 
     bpy.ops.object.light_add(type="AREA", location=(2.6, -3.2, 3.2))
     key = bpy.context.object
@@ -88,10 +96,14 @@ def main() -> None:
     fill.data.energy = 170
     fill.data.size = 5.0
 
-    distance = 4.0
-    camera_height = 0.0
-    target = Vector((0.0, 0.0, 0.0))
-    bpy.ops.object.camera_add(location=camera_location(args.view, distance, camera_height))
+    distance = 4.8 if args.grounded_character else 4.0
+    target = Vector((0.0, 0.0, 0.93)) if args.grounded_character else Vector((0.0, 0.0, 0.0))
+    if args.grounded_character and args.view == "threequarter":
+        location = Vector((2.7, -4.8, 2.18))
+    else:
+        camera_height = 1.16 if args.grounded_character and args.view != "top" else 0.0
+        location = camera_location(args.view, distance, camera_height)
+    bpy.ops.object.camera_add(location=location)
     camera = bpy.context.object
     look_at(camera, target)
     camera.data.type = "ORTHO"

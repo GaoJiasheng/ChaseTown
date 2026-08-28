@@ -140,9 +140,11 @@ export function createSceneArtRuntime(options: SceneArtOptions) {
 
   const loadingManager = new THREE.LoadingManager();
   loadingManager.setURLModifier((url) => {
-    const version = /\/models\/characters\/[^/?#]+\.glb(?:[?#]|$)/u.test(url)
-      ? `${ASSET_VERSION}-a1-yaw`
-      : ASSET_VERSION;
+    const version = /\/models\/characters\/villain\.glb(?:[?#]|$)/u.test(url)
+      ? `${ASSET_VERSION}-a2-villain-final`
+      : /\/models\/characters\/[^/?#]+\.glb(?:[?#]|$)/u.test(url)
+        ? `${ASSET_VERSION}-a1-yaw`
+        : ASSET_VERSION;
     const runtimeUrl = runtimeAssetUrl(url, version);
     requestedAssetUrls.add(runtimeUrl);
     return runtimeUrl;

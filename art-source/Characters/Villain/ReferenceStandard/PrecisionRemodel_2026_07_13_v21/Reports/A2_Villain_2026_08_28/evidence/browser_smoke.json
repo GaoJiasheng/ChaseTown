@@ -1,0 +1,234 @@
+{
+  "capturedAt": "2026-08-28",
+  "browser": "Codex in-app Chromium",
+  "url": "http://127.0.0.1:4173/?qa=1&qaReducedMotion=0&qaActor=villain&qaClip=PointAlert&a2Villain=final-75f42e&capture=8",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "console": {
+    "errors": 0,
+    "warnings": 0,
+    "infos": 25,
+    "debug": 75,
+    "errorEntries": []
+  },
+  "assets": {
+    "detailsComplete": true,
+    "detailsLoaded": 18,
+    "detailTotal": 18,
+    "degradedTextures": [],
+    "villainRequest": "/models/characters/villain.glb?v=22-a2-villain-final",
+    "blockingProgress": {
+      "done": 11,
+      "total": 11,
+      "loadedBytes": 3444508,
+      "totalBytes": 3444508,
+      "mode": "bytes",
+      "ratio": 1
+    }
+  },
+  "villainAnimation": {
+    "source": "embedded-gltf",
+    "availableClips": [
+      "Idle",
+      "Run",
+      "Walk",
+      "TurnLeft",
+      "TurnRight",
+      "LookAround",
+      "ScaredCaught",
+      "Celebrate",
+      "PointAlert"
+    ],
+    "missingClips": [],
+    "currentClip": "PointAlert",
+    "activeClips": [
+      "PointAlert"
+    ],
+    "weights": {
+      "Idle": 0,
+      "Run": 0,
+      "Walk": 0,
+      "TurnLeft": 0,
+      "TurnRight": 0,
+      "LookAround": 0,
+      "ScaredCaught": 0,
+      "Celebrate": 0,
+      "PointAlert": 1
+    },
+    "clipTimes": {
+      "Idle": 0,
+      "Run": 0,
+      "Walk": 0,
+      "TurnLeft": 0,
+      "TurnRight": 0,
+      "LookAround": 0,
+      "ScaredCaught": 0,
+      "Celebrate": 0,
+      "PointAlert": 1.3666666746139526
+    },
+    "timeScales": {
+      "Idle": 1,
+      "Run": 1,
+      "Walk": 1,
+      "TurnLeft": 1,
+      "TurnRight": 1,
+      "LookAround": 1,
+      "ScaredCaught": 1,
+      "Celebrate": 1,
+      "PointAlert": 1
+    },
+    "transitionSeconds": 0.15,
+    "reason": "qa-audition",
+    "reducedMotion": false,
+    "captureLatched": false,
+    "mixerUpdates": 15869,
+    "batchMeshes": 1,
+    "shadowProxyCreated": true,
+    "shadowSkeletonShared": true,
+    "cleanupBound": true,
+    "gameplayStarted": false,
+    "auditionClip": "PointAlert"
+  },
+  "render": {
+    "calls": 71,
+    "triangles": 965053,
+    "frame": 15880,
+    "capturedAt": 268538.2,
+    "memory": {
+      "geometries": 59,
+      "textures": 62,
+      "programs": 61
+    },
+    "breakdown": {
+      "actors": {
+        "mainCalls": 32,
+        "mainTriangles": 300787,
+        "shadowCalls": 3,
+        "shadowTriangles": 1032
+      },
+      "maze": {
+        "mainCalls": 21,
+        "mainTriangles": 643474,
+        "shadowCalls": 5,
+        "shadowTriangles": 1336
+      },
+      "props": {
+        "mainCalls": 5,
+        "mainTriangles": 10196,
+        "shadowCalls": 3,
+        "shadowTriangles": 8068
+      },
+      "fx": {
+        "mainCalls": 0,
+        "mainTriangles": 0,
+        "shadowCalls": 0,
+        "shadowTriangles": 0
+      },
+      "other": {
+        "mainCalls": 2,
+        "mainTriangles": 160,
+        "shadowCalls": 0,
+        "shadowTriangles": 0
+      }
+    },
+    "reconciliation": {
+      "rawUnclassifiedCalls": 2,
+      "rawUnclassifiedTriangles": 160,
+      "callsDelta": 0,
+      "trianglesDelta": 0
+    },
+    "optimization": {
+      "propMerge": {
+        "beforeMeshes": 78,
+        "afterMeshes": 46,
+        "materialBuckets": 46,
+        "complete": true
+      },
+      "mazeShadowProxy": {
+        "rectangles": 30,
+        "blockedCells": 482,
+        "shadowTriangles": 360
+      },
+      "actorBatchStrategy": "guarded-compatible-skinned-meshes",
+      "actorShadowStrategy": "one-articulated-low-poly-proxy-per-actor",
+      "actorBatchBudgets": {
+        "kid": {
+          "beforeMeshes": 35,
+          "afterMeshes": 13,
+          "mergedGroups": 11,
+          "mergedSourceMeshes": 33,
+          "singletonGroups": 2,
+          "trianglesBefore": 140252,
+          "trianglesAfter": 140252,
+          "disposedGeometries": 33,
+          "fallbacks": []
+        },
+        "villain": {
+          "beforeMeshes": 1,
+          "afterMeshes": 1,
+          "mergedGroups": 0,
+          "mergedSourceMeshes": 0,
+          "singletonGroups": 1,
+          "trianglesBefore": 28939,
+          "trianglesAfter": 28939,
+          "disposedGeometries": 0,
+          "fallbacks": []
+        },
+        "police": {
+          "beforeMeshes": 22,
+          "afterMeshes": 11,
+          "mergedGroups": 6,
+          "mergedSourceMeshes": 17,
+          "singletonGroups": 5,
+          "trianglesBefore": 130400,
+          "trianglesAfter": 130400,
+          "disposedGeometries": 17,
+          "fallbacks": []
+        }
+      },
+      "actorShadowBudgets": {
+        "kid": {
+          "created": true,
+          "sourceMeshes": 13,
+          "proxyMeshes": 1,
+          "proxyTriangles": 344,
+          "segments": 12,
+          "shadowLayer": 1
+        },
+        "villain": {
+          "created": true,
+          "sourceMeshes": 1,
+          "proxyMeshes": 1,
+          "proxyTriangles": 344,
+          "segments": 12,
+          "shadowLayer": 1
+        },
+        "police": {
+          "created": true,
+          "sourceMeshes": 11,
+          "proxyMeshes": 1,
+          "proxyTriangles": 344,
+          "segments": 12,
+          "shadowLayer": 1
+        }
+      }
+    }
+  },
+  "accessibility": {
+    "liveMessage": "游戏准备就绪",
+    "liveSerial": 0,
+    "overlayButtonFocused": true,
+    "reducedMotion": false,
+    "preferenceChanges": 0,
+    "qaOverride": false
+  },
+  "assertion": {
+    "consoleErrorFree": true,
+    "consoleWarningFree": true,
+    "resource404s": 0,
+    "threeJsLoadPassed": true,
+    "drawCallsAtOrBelow80": true
+  }
+}
