@@ -46,6 +46,21 @@ export const DEFAULT_REPORT = path.join(
   "reports",
   "character-bootstrap.json",
 );
+const VILLAIN_ANIMATION_REPORT = path.join(
+  ROOT,
+  "art-source",
+  "_Shared",
+  "Animations",
+  "Reports",
+  "villain_web_animation_set.json",
+);
+const CHARACTER_MESHOPT_REPORT = path.join(
+  ROOT,
+  "docs",
+  "art_production",
+  "reports",
+  "character-runtime-meshopt.json",
+);
 export const DETAIL_SIZE = 512;
 export const COMBINED_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -94,12 +109,22 @@ export const CHARACTER_BOOTSTRAP_CONTRACTS = Object.freeze({
   villain: Object.freeze({
     label: "Villain",
     referenceVariant: "lod1",
-    textureSource: "artSourcePng",
-    baseColorSize: 1024,
+    textureSource: "embeddedKtx2",
+    baseColorSize: 768,
     baseColorMode: "ETC1S",
+    // Keep the legacy policy label stable for report consumers; the explicit
+    // villain roleOverrides block records this first-paint derivative.
     baseColorPolicy: "1024px ETC1S quality 10",
+    detailSize: 384,
+    textureSizeOverrides: Object.freeze({
+      Char_Villain_PrecisionRemodel_v21_Normal_2K: 384,
+      Char_Villain_PrecisionRemodel_v21_ORM_2K: 384,
+    }),
     textureCount: 3,
-    maxBytes: Math.floor(1.6 * 1024 * 1024),
+    // Preserve the audited first-play transfer baseline. With every other
+    // blocking URL unchanged, this exact per-file ceiling keeps the aggregate
+    // encoded transfer at or below 8,309,819 bytes.
+    maxBytes: 1_474_540,
     clips: Object.freeze([
       "Alert",
       "Catch",
@@ -184,7 +209,9 @@ function parseArguments(argv) {
     sourceDirectory: DEFAULT_CHARACTER_DIRECTORY,
     outputDirectory: DEFAULT_CHARACTER_DIRECTORY,
     report: DEFAULT_REPORT,
+    reportExplicit: false,
     gltfpack: process.env.GLTFPACK_NATIVE,
+    role: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -200,12 +227,23 @@ function parseArguments(argv) {
     if (!value) throw new Error(`${argument} needs a value`);
     if (argument === "--source-dir") options.sourceDirectory = path.resolve(value);
     else if (argument === "--output-dir") options.outputDirectory = path.resolve(value);
-    else if (argument === "--report") options.report = path.resolve(value);
+    else if (argument === "--report") {
+      options.report = path.resolve(value);
+      options.reportExplicit = true;
+    }
     else if (argument === "--gltfpack") options.gltfpack = path.resolve(value);
+    else if (argument === "--role") options.role = value;
     else throw new Error(`Unknown argument: ${argument}`);
     index += 1;
   }
+  if (options.role !== null && !(options.role in CHARACTER_BOOTSTRAP_CONTRACTS)) {
+    throw new Error(`Unknown character role: ${options.role}`);
+  }
   return options;
+}
+
+function selectedRoles(options) {
+  return options.role ? [options.role] : Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS);
 }
 
 function sha256(payload) {
@@ -365,7 +403,9 @@ function textureClasses(asset) {
 function expectedTextureSize(role, imageName, textureClass) {
   const contract = CHARACTER_BOOTSTRAP_CONTRACTS[role];
   return contract.textureSizeOverrides?.[imageName]
-    ?? (textureClass === "baseColor" ? contract.baseColorSize : DETAIL_SIZE);
+    ?? (textureClass === "baseColor"
+      ? contract.baseColorSize
+      : contract.detailSize ?? DETAIL_SIZE);
 }
 
 async function loadBasisModule() {
@@ -418,7 +458,7 @@ async function loadBasisModule() {
   return basisModulePromise;
 }
 
-async function decodedKtx2Png(payload, size, label) {
+async function decodedKtx2Rgba(payload, label) {
   const basis = await loadBasisModule();
   const ktx2 = new basis.KTX2File(new Uint8Array(payload));
   try {
@@ -438,20 +478,30 @@ async function decodedKtx2Png(payload, size, label) {
       ktx2.getWidth() * ktx2.getHeight() * 4,
       `${label} RGBA32 payload has the wrong size`,
     );
-    return sharp(Buffer.from(rgba), {
+    return {
+      data: Buffer.from(rgba),
+      width: ktx2.getWidth(),
+      height: ktx2.getHeight(),
+      channels: 4,
+    };
+  } finally {
+    ktx2.close();
+    ktx2.delete();
+  }
+}
+
+async function decodedKtx2Png(payload, size, label) {
+  const decoded = await decodedKtx2Rgba(payload, label);
+  return sharp(decoded.data, {
       raw: {
-        width: ktx2.getWidth(),
-        height: ktx2.getHeight(),
-        channels: 4,
+        width: decoded.width,
+        height: decoded.height,
+        channels: decoded.channels,
       },
     })
       .resize(size, size, { fit: "fill", kernel: sharp.kernel.lanczos3 })
       .png({ compressionLevel: 9, adaptiveFiltering: true })
       .toBuffer();
-  } finally {
-    ktx2.close();
-    ktx2.delete();
-  }
 }
 
 function imagePayload(asset, image) {
@@ -826,7 +876,10 @@ function extractEncodedTextures(role, encodedAsset, sourceAsset) {
       expectedTextureSize(role, image.name, textureClass),
     );
     assert.equal(metadata.height, metadata.width);
-    assert.ok(metadata.levels >= 10);
+    assert.ok(
+      metadata.levels >= Math.floor(Math.log2(metadata.width)) + 1,
+      `${encodedAsset.filename}/${image.name} has an incomplete mip chain`,
+    );
     payloads.push(payload);
     textures.push({ name: image.name, textureClass, ...metadata });
   }
@@ -941,6 +994,211 @@ function animationContract(asset) {
   };
 }
 
+function animationDurations(asset) {
+  return Object.fromEntries((asset.json.animations ?? []).map((animation) => [
+    animation.name,
+    Math.max(...animation.samplers.map((sampler) => (
+      asset.json.accessors[sampler.input].max?.[0] ?? 0
+    ))),
+  ]));
+}
+
+const VILLAIN_A2_TEXTURE_DIRECTORY = path.join(
+  ROOT,
+  "art-source",
+  "Characters",
+  "Villain",
+  "ReferenceStandard",
+  "PrecisionRemodel_2026_07_13_v21",
+  "Textures",
+);
+
+function villainSourceTexture(imageName) {
+  const suffix = imageName.includes("BaseColor")
+    ? "BaseColor_2K.png"
+    : imageName.includes("Normal")
+      ? "Normal_2K.png"
+      : imageName.includes("ORM")
+        ? "ORM_2K.png"
+        : null;
+  assert.ok(suffix, `Unknown Villain A2 texture ${imageName}`);
+  return path.join(
+    VILLAIN_A2_TEXTURE_DIRECTORY,
+    `Char_Villain_PrecisionRemodel_v21_${suffix}`,
+  );
+}
+
+function rgbStatistics(data) {
+  let sum = 0;
+  let sumSquares = 0;
+  const channelSums = [0, 0, 0];
+  const channelSumSquares = [0, 0, 0];
+  let count = 0;
+  let pixels = 0;
+  for (let offset = 0; offset < data.length; offset += 4) {
+    for (let channel = 0; channel < 3; channel += 1) {
+      const value = data[offset + channel];
+      sum += value;
+      sumSquares += value * value;
+      channelSums[channel] += value;
+      channelSumSquares[channel] += value * value;
+      count += 1;
+    }
+    pixels += 1;
+  }
+  const mean = sum / count;
+  return {
+    mean: round(mean, 4),
+    stddev: round(Math.sqrt(Math.max(0, sumSquares / count - mean * mean)), 4),
+    channelStddev: channelSums.map((channelSum, channel) => {
+      const channelMean = channelSum / pixels;
+      return round(Math.sqrt(Math.max(
+        0,
+        channelSumSquares[channel] / pixels - channelMean * channelMean,
+      )), 4);
+    }),
+  };
+}
+
+function rgbComparison(actual, expected) {
+  assert.equal(actual.length, expected.length);
+  let squaredError = 0;
+  let maximumChannelDelta = 0;
+  let count = 0;
+  for (let offset = 0; offset < actual.length; offset += 4) {
+    for (let channel = 0; channel < 3; channel += 1) {
+      const delta = Math.abs(actual[offset + channel] - expected[offset + channel]);
+      squaredError += delta * delta;
+      maximumChannelDelta = Math.max(maximumChannelDelta, delta);
+      count += 1;
+    }
+  }
+  const rootMeanSquaredError = Math.sqrt(squaredError / count);
+  return {
+    rootMeanSquaredError: round(rootMeanSquaredError, 4),
+    peakSignalToNoiseRatioDb: round(
+      20 * Math.log10(255 / Math.max(rootMeanSquaredError, Number.EPSILON)),
+      4,
+    ),
+    maximumChannelDelta,
+  };
+}
+
+async function villainRuntimeTextureAudit(asset) {
+  const classes = textureClasses(asset);
+  return Promise.all((asset.json.images ?? []).map(async (image, imageIndex) => {
+    const payload = imagePayload(asset, image);
+    const decoded = await decodedKtx2Rgba(payload, `${asset.filename}/${image.name}`);
+    const sourcePath = villainSourceTexture(image.name);
+    const { data: sourcePixels, info } = await sharp(sourcePath)
+      .resize(decoded.width, decoded.height, { fit: "fill", kernel: sharp.kernel.lanczos3 })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    assert.deepEqual(
+      [info.width, info.height, info.channels],
+      [decoded.width, decoded.height, decoded.channels],
+    );
+    return {
+      name: image.name,
+      slot: classes.get(imageIndex),
+      ktx2Bytes: payload.length,
+      ktx2Sha256: sha256(payload),
+      width: decoded.width,
+      height: decoded.height,
+      decodedRgb: {
+        ...rgbStatistics(decoded.data),
+        pixelSha256: sha256(decoded.data),
+      },
+      scaledAuthoredSource: {
+        path: relativePath(sourcePath),
+        ...rgbComparison(decoded.data, sourcePixels),
+      },
+    };
+  }));
+}
+
+async function runtimeArtifactRecord(filename) {
+  const payload = await readFile(filename);
+  const asset = readGlb(payload, filename);
+  return {
+    path: relativePath(filename),
+    bytes: payload.length,
+    sha256: sha256(payload),
+    triangles: triangleCount(asset),
+    nodes: asset.json.nodes?.length ?? 0,
+    materials: asset.json.materials?.length ?? 0,
+    joints: skeleton(asset)[0]?.length ?? 0,
+    clips: (asset.json.animations ?? []).map((animation) => animation.name).sort(),
+    clipDurationsSeconds: animationDurations(asset),
+    textures: await villainRuntimeTextureAudit(asset),
+  };
+}
+
+export async function animationRuntimeSnapshot(directory) {
+  const variants = {
+    high: path.join(directory, "villain.glb"),
+    lod1: path.join(directory, "villain-lod1.glb"),
+    bootstrap: path.join(directory, "villain-bootstrap.glb"),
+  };
+  return Object.fromEntries(await Promise.all(
+    Object.entries(variants).map(async ([variant, filename]) => [
+      variant,
+      await runtimeArtifactRecord(filename),
+    ]),
+  ));
+}
+
+async function validateAnimationRuntimeReport(directory, report) {
+  assert.equal(report.role, "villain");
+  assert.equal(report.artifactStage, "preMeshoptAnimationBakedRealisticLod0Staging");
+  assert.equal(report.outputAtBuildTime?.ephemeral, false);
+  const meshoptReport = JSON.parse(await readFile(CHARACTER_MESHOPT_REPORT, "utf8"));
+  const meshoptSource = meshoptReport.characters.find(({ role }) => role === "villain")?.source;
+  assert.ok(meshoptSource, "Villain Meshopt source provenance is missing");
+  assert.equal(report.outputAtBuildTime.bytes, meshoptSource.bytes);
+  assert.equal(report.outputAtBuildTime.sha256, meshoptSource.sha256);
+  const finalRuntime = await animationRuntimeSnapshot(directory);
+  assert.deepEqual(report.finalRuntime, finalRuntime);
+  const expectedClips = report.clips.map(({ name }) => name).sort();
+  for (const [variant, artifact] of Object.entries(finalRuntime)) {
+    assert.deepEqual(artifact.clips, expectedClips, `${variant} clip set drifted`);
+    for (const clip of report.clips) {
+      assert.ok(
+        Math.abs(artifact.clipDurationsSeconds[clip.name] - clip.durationSeconds) <= 0.0001,
+        `${variant}/${clip.name} duration drifted`,
+      );
+    }
+    const baseColor = artifact.textures.find(({ slot }) => slot === "baseColor");
+    const normal = artifact.textures.find(({ slot }) => slot === "normal");
+    const orm = artifact.textures.find(({ slot }) => slot === "orm");
+    assert.ok(baseColor?.decodedRgb.stddev >= 8, `${variant} BaseColor stddev regressed`);
+    // Overall RGB variance cannot prove tangent-normal detail: a perfectly
+    // flat [128,128,255] map has high variance solely because blue differs
+    // from red/green.  Bind both authored lateral channels instead (the 2K
+    // source baselines are R≈3.315 and G≈1.664).  The thresholds bind the
+    // reviewed q8/384 px derivatives at >=66% and >=81% of those authored
+    // channel baselines while still rejecting a flat tangent-normal map (0/0).
+    assert.ok(normal?.decodedRgb.channelStddev[0] >= 2.2, `${variant} Normal R detail regressed`);
+    assert.ok(normal?.decodedRgb.channelStddev[1] >= 1.35, `${variant} Normal G detail regressed`);
+    assert.ok(orm?.decodedRgb.channelStddev[0] >= 3, `${variant} ORM AO(R) stddev regressed`);
+  }
+  return finalRuntime;
+}
+
+async function refreshAnimationRuntimeReport(directory) {
+  const report = JSON.parse(await readFile(VILLAIN_ANIMATION_REPORT, "utf8"));
+  report.finalRuntime = await animationRuntimeSnapshot(directory);
+  await validateAnimationRuntimeReport(directory, report);
+  const temporary = `${VILLAIN_ANIMATION_REPORT}.tmp-${process.pid}`;
+  try {
+    await writeFile(temporary, `${JSON.stringify(report, null, 2)}\n`);
+    await rename(temporary, VILLAIN_ANIMATION_REPORT);
+  } finally {
+    await rm(temporary, { force: true });
+  }
+}
+
 export async function auditBootstrapPair(role, referenceFilename, bootstrapFilename) {
   const contract = CHARACTER_BOOTSTRAP_CONTRACTS[role];
   assert.ok(contract, `No bootstrap contract exists for ${role}`);
@@ -1045,7 +1303,7 @@ export async function auditBootstrapPair(role, referenceFilename, bootstrapFilen
   };
 }
 
-function reportFor(entries, toolVersion, auditToolchain, generatedAt) {
+function reportFor(entries, toolVersion, auditToolchain, generation, generatedAt) {
   const referenceBytes = entries.reduce(
     (total, entry) => total + entry.reference.bytes,
     0,
@@ -1085,6 +1343,7 @@ function reportFor(entries, toolVersion, auditToolchain, generatedAt) {
       arguments: GLTFPACK_ARGUMENTS,
     },
     auditToolchain,
+    generation,
     budgets: {
       perCharacterBytes: Object.fromEntries(
         Object.entries(CHARACTER_BOOTSTRAP_CONTRACTS).map(([role, contract]) => [
@@ -1093,6 +1352,17 @@ function reportFor(entries, toolVersion, auditToolchain, generatedAt) {
         ]),
       ),
       combinedBytes: COMBINED_MAX_BYTES,
+    },
+    policyFieldScopes: {
+      "policy.baseColor.villain": "Legacy compatibility label retained for existing report consumers; roleOverrides.villain.baseColor is authoritative.",
+      "policy.normalAndOrm": "Global 512px default; roleOverrides.villain.normalAndOrm is authoritative for the Villain derivative.",
+    },
+    roleOverrides: {
+      villain: {
+        baseColor: "768px ETC1S quality 10",
+        normalAndOrm: "384px UASTC quality 10",
+        rationale: "Preserve literal unit-scale LOD transport inside the accepted first-playable byte ceiling.",
+      },
     },
     totals: {
       referenceBytes,
@@ -1104,25 +1374,34 @@ function reportFor(entries, toolVersion, auditToolchain, generatedAt) {
   };
 }
 
+function mergeCharacterEntries(existing, updates) {
+  const updatedByRole = new Map(updates.map((entry) => [entry.role, entry]));
+  const existingByRole = new Map(
+    (existing?.characters ?? []).map((entry) => [entry.role, entry]),
+  );
+  return Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS).map((role) => {
+    const entry = updatedByRole.get(role) ?? existingByRole.get(role);
+    assert.ok(entry, `The bootstrap report has no preserved ${role} entry`);
+    return entry;
+  });
+}
+
 async function resolveGltfpack(explicit) {
-  const candidates = [
-    explicit,
-    "/private/tmp/gltfpack-macos-v1.2/gltfpack",
-    "/opt/homebrew/bin/gltfpack",
-    path.join(ROOT, "node_modules", ".bin", "gltfpack"),
-  ].filter(Boolean);
-  for (const candidate of candidates) {
-    try {
-      await access(candidate);
-      const version = spawnSync(candidate, ["-v"], { encoding: "utf8" });
-      if (version.status === 0) {
-        return { executable: candidate, version: version.stdout.trim() };
-      }
-    } catch {
-      // Try the next pinned/local tool.
-    }
+  if (!explicit) {
+    throw new Error(
+      "Native gltfpack 1.2 is required; pass --gltfpack or GLTFPACK_NATIVE. Automatic host-path discovery is intentionally disabled.",
+    );
   }
-  throw new Error("Native gltfpack 1.2 is required; pass --gltfpack or GLTFPACK_NATIVE.");
+  await access(explicit);
+  const version = spawnSync(explicit, ["-v"], { encoding: "utf8" });
+  if (version.status !== 0) {
+    throw new Error(version.stderr || version.stdout || `Unable to run ${explicit}`);
+  }
+  return {
+    executable: explicit,
+    version: version.stdout.trim(),
+    binarySha256: sha256(await readFile(explicit)),
+  };
 }
 
 function encodeTextures(role, gltfpack, input, output) {
@@ -1144,7 +1423,11 @@ async function build(options) {
   const stagingDirectory = await mkdtemp(path.join(tmpdir(), "chasing-character-bootstrap-"));
   const staged = [];
   try {
-    for (const role of Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS)) {
+    const roles = selectedRoles(options);
+    const existing = roles.length === Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS).length
+      ? null
+      : JSON.parse(await readFile(options.report, "utf8"));
+    for (const role of roles) {
       const sourceFilename = referenceFilename(role, options.sourceDirectory);
       const reference = await loadGlb(sourceFilename);
       const derivatives = await textureDerivatives(role, reference);
@@ -1165,10 +1448,29 @@ async function build(options) {
       entry.bootstrap.path = relativePath(outputFilename);
       staged.push({ role, stagedFilename, outputFilename, entry });
     }
+    const previousRoleHashes = { ...(existing?.generation?.roleBinarySha256 ?? {}) };
+    if (existing?.generation?.nativeBinarySha256) {
+      for (const role of Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS)) {
+        previousRoleHashes[role] ??= existing.generation.nativeBinarySha256;
+      }
+    }
+    const roleBinarySha256 = { ...previousRoleHashes };
+    for (const role of roles) roleBinarySha256[role] = encoder.binarySha256;
+    for (const role of roles) {
+      assert.match(roleBinarySha256[role], /^[a-f0-9]{64}$/u);
+    }
+    const unrecordedLegacyRoles = Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS)
+      .filter((role) => roleBinarySha256[role] === undefined);
     const report = reportFor(
-      staged.map(({ entry }) => entry),
+      mergeCharacterEntries(existing, staged.map(({ entry }) => entry)),
       encoder.version,
       await auditToolchainSnapshot(),
+      {
+        roleBinarySha256,
+        unrecordedLegacyRoles,
+        lastBuildRoles: roles,
+        lastBuildBinarySha256: encoder.binarySha256,
+      },
       new Date().toISOString(),
     );
     assert.ok(
@@ -1181,6 +1483,12 @@ async function build(options) {
       await rename(asset.stagedFilename, asset.outputFilename);
     }
     await rename(stagedReport, options.report);
+    if (
+      roles.includes("villain")
+      && path.resolve(options.outputDirectory) === path.resolve(DEFAULT_CHARACTER_DIRECTORY)
+    ) {
+      await refreshAnimationRuntimeReport(options.outputDirectory);
+    }
     return report;
   } finally {
     await rm(stagingDirectory, { recursive: true, force: true });
@@ -1190,21 +1498,46 @@ async function build(options) {
 async function check(options) {
   const existing = JSON.parse(await readFile(options.report, "utf8"));
   assert.equal(existing.formatVersion, FORMAT_VERSION);
+  assert.match(existing.tool.version, /^gltfpack 1\.2(?:\b|$)/u);
   assert.deepEqual(existing.tool.arguments, GLTFPACK_ARGUMENTS);
+  const recordedRoles = Object.keys(existing.generation?.roleBinarySha256 ?? {});
+  const unrecordedRoles = existing.generation?.unrecordedLegacyRoles ?? [];
+  assert.deepEqual(
+    [...new Set([...recordedRoles, ...unrecordedRoles])].sort(),
+    Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS).sort(),
+  );
+  for (const binarySha256 of Object.values(existing.generation?.roleBinarySha256 ?? {})) {
+    assert.match(binarySha256, /^[a-f0-9]{64}$/u);
+  }
   const entries = await auditEntries(options);
   const current = reportFor(
-    entries,
+    mergeCharacterEntries(existing, entries),
     existing.tool.version,
     await auditToolchainSnapshot(),
+    existing.generation,
     existing.generatedAt,
   );
   assert.deepEqual(current, existing, `${options.report} does not match shipped bootstraps`);
+  if (options.role) {
+    if (
+      options.role === "villain"
+      && path.resolve(options.outputDirectory) === path.resolve(DEFAULT_CHARACTER_DIRECTORY)
+    ) {
+      const animationReport = JSON.parse(await readFile(VILLAIN_ANIMATION_REPORT, "utf8"));
+      await validateAnimationRuntimeReport(options.outputDirectory, animationReport);
+    }
+    return current;
+  }
+  if (path.resolve(options.outputDirectory) === path.resolve(DEFAULT_CHARACTER_DIRECTORY)) {
+    const animationReport = JSON.parse(await readFile(VILLAIN_ANIMATION_REPORT, "utf8"));
+    await validateAnimationRuntimeReport(options.outputDirectory, animationReport);
+  }
   return current;
 }
 
 async function auditEntries(options) {
   const entries = [];
-  for (const role of Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS)) {
+  for (const role of selectedRoles(options)) {
     entries.push(await auditBootstrapPair(
       role,
       referenceFilename(role, options.sourceDirectory),
@@ -1217,10 +1550,12 @@ async function auditEntries(options) {
 async function refreshReport(options) {
   const existing = JSON.parse(await readFile(options.report, "utf8"));
   assert.match(existing.tool?.version ?? "", /^gltfpack 1\.2(?:\b|$)/u);
+  const audited = await auditEntries(options);
   const report = reportFor(
-    await auditEntries(options),
+    mergeCharacterEntries(existing, audited),
     existing.tool.version,
     await auditToolchainSnapshot(),
+    existing.generation,
     new Date().toISOString(),
   );
   const temporaryReport = `${options.report}.tmp-${process.pid}`;
@@ -1240,6 +1575,16 @@ async function main() {
     false,
     "--check and --refresh-report are mutually exclusive",
   );
+  if (
+    !options.check
+    && path.resolve(options.outputDirectory) !== path.resolve(DEFAULT_CHARACTER_DIRECTORY)
+    && (
+      !options.reportExplicit
+      || path.resolve(options.report) === path.resolve(DEFAULT_REPORT)
+    )
+  ) {
+    throw new Error("A non-default --output-dir requires an explicit non-default --report path");
+  }
   const report = options.check
     ? await check(options)
     : options.refreshReport

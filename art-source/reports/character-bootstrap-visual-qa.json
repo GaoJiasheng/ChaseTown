@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-07-23T13:23:36.186Z",
-  "method": "Chromium WebGL2; actual Three.js Meshopt and KTX2 decode; matched Idle pose, camera, lights and exposure.",
-  "url": "http://localhost:4174/",
+  "generatedAt": "2026-08-28T15:36:33Z",
+  "method": "Chromium WebGL2; actual Three.js Meshopt and KTX2 decode (Three.js 0.185.0 with local Basis transcoder); matched Idle pose, camera, lights and exposure.",
+  "url": "http://localhost:3002/__m1-villain-final-qa.html?v=2193dc833f9b",
   "viewport": {
     "width": 1440,
     "height": 900,
@@ -25,13 +25,13 @@
     "villain": {
       "reference": {
         "path": "public/models/characters/villain-lod1.glb",
-        "bytes": 2570964,
-        "sha256": "0b0266b2c3b365cb286606dfdaea188fa2eeb2035dcc33d0ab7feff83a0cb4c2"
+        "bytes": 1526192,
+        "sha256": "66cccb2e32d0e771a7eef73a113ca8dd773d92563c665c983feba6dfae901352"
       },
       "bootstrap": {
         "path": "public/models/characters/villain-bootstrap.glb",
-        "bytes": 1474540,
-        "sha256": "91ad6c102194d06f6e4d6c5a8a7130e01dda42c5c0fa3ab1111c1942f0b9811f"
+        "bytes": 891784,
+        "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a"
       }
     },
     "police": {
@@ -50,21 +50,23 @@
   "result": {
     "kid": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.4405876654827252
+      "rgbMeanAbsoluteError": 0.4412587120737866
     },
     "villain": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.6699217997611618
+      "rgbMeanAbsoluteError": 0.6143900571361254
     },
     "police": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.5591789585925004
+      "rgbMeanAbsoluteError": 0.5675576375493708
     }
   },
   "gates": {
     "minimumSilhouetteIou": 0.9999,
     "maximumRgbMeanAbsoluteError": 1
   },
-  "screenshotSha256": "a1b665d881f48f9a6f532fdfac38519c1b633f11eabe0a86f052ba66c14c941f",
-  "screenshot": "/tmp/chasing-character-bootstrap-visual-qa-police-final/character-bootstrap-comparison.png"
+  "screenshotBytes": 79610,
+  "screenshotEncoding": "browser-captured JPEG byte stream retained under the historical .png evidence filename",
+  "screenshotSha256": "dd3cb0bf549d258c1252e5c7157fe07e611bb628fcaa75824b16891c0915d6a3",
+  "screenshot": "docs/porting/m1-villain/evidence/character-bootstrap-comparison-1440x900.png"
 }

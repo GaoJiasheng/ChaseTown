@@ -89,6 +89,11 @@ import {
   shouldIgnoreFocusedControlKey,
 } from "./game/input.ts";
 import {
+  parseQaDelaySeconds,
+  parseQaLevel,
+  parseQaPoint,
+} from "./game/qa-browser.ts";
+import {
   MASTERY_CHALLENGE_IDS,
   applyRunTelemetryFrame,
   createRunTelemetry,
@@ -3780,6 +3785,20 @@ export function ChasingGame() {
       gameplayCameraInsetsForViewport(cameraViewportWidth, cameraViewportHeight, touchLayoutMedia.matches),
     );
     const qaSearchParams = new URLSearchParams(location.search);
+    const qaPlayerScenario = qaSearchParams.has("qa")
+      ? parseQaPoint(qaSearchParams.get("qaPlayer"))
+      : null;
+    const qaChaserScenario = qaSearchParams.has("qa")
+      ? parseQaPoint(qaSearchParams.get("qaChaser"))
+      : null;
+    const qaLevelScenario = qaSearchParams.has("qa")
+      ? parseQaLevel(qaSearchParams.get("qaLevel"), CAMPAIGN_LEVELS.length)
+      : null;
+    const qaSpawnDelaySeconds = qaSearchParams.has("qa")
+      ? parseQaDelaySeconds(qaSearchParams.get("qaSpawnDelay"))
+      : 0;
+    let qaDomSnapshotTimer: ReturnType<typeof setInterval> | null = null;
+    let qaLevelSelectionTimer: ReturnType<typeof setTimeout> | null = null;
     const qaQualityValue = qaSearchParams.has("qa")
       ? qaSearchParams.get("qaQuality")
       : null;
@@ -11550,8 +11569,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         setDirectorEnabled: (enabled: boolean) => void;
       };
     };
+    let installedQaHook: NonNullable<typeof qaWindow.__CHASING_QA__> | null = null;
     if (new URLSearchParams(location.search).has("qa")) {
-      qaWindow.__CHASING_QA__ = {
+      installedQaHook = {
         getStealthProbe: () => ({
           ready,
           phase: latestState.phase,
@@ -12143,13 +12163,84 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           compileSettledQaScene();
         },
       };
+      qaWindow.__CHASING_QA__ = installedQaHook;
+      if (
+        qaLevelScenario !== null
+        && qaLevelScenario !== campaignLevel.campaign.levelNumber
+      ) {
+        const selectQaLevelAfterCurrentSceneSettles = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          if (
+            !ready
+            || !decorativeAssetsReady
+            || deferredDressingFade !== null
+            || pendingGlbLoadCount !== 0
+            || !dependencyLoadingManagerIdle
+          ) {
+            qaLevelSelectionTimer = setTimeout(selectQaLevelAfterCurrentSceneSettles, 100);
+            return;
+          }
+          installedQaHook.setUnlockedThrough(qaLevelScenario);
+          installedQaHook.selectLevel(qaLevelScenario - 1);
+        };
+        qaLevelSelectionTimer = setTimeout(selectQaLevelAfterCurrentSceneSettles, 0);
+      } else if (qaPlayerScenario && qaChaserScenario) {
+        queueMicrotask(() => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          installedQaHook.setScenario({
+            player: qaPlayerScenario,
+            chaser: qaChaserScenario,
+            spawnDelaySeconds: qaSpawnDelaySeconds,
+          });
+        });
+      }
+      const mirrorQaSnapshot = () => {
+        if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+        const snapshot = installedQaHook.getState() as {
+          ready?: boolean;
+          campaign?: unknown;
+          game?: {
+            phase?: unknown;
+            player?: unknown;
+            chaser?: unknown;
+          };
+          animations?: { villain?: unknown };
+          visibility?: { villain?: unknown };
+          assets?: unknown;
+          sceneIntegrity?: unknown;
+          camera?: unknown;
+          render?: unknown;
+          firstPlayableBudget?: unknown;
+        } | undefined;
+        if (!snapshot) return;
+        document.documentElement.dataset.chasingQaSnapshot = JSON.stringify({
+          ready: snapshot.ready,
+          campaign: snapshot.campaign,
+          game: {
+            phase: snapshot.game?.phase,
+            player: snapshot.game?.player,
+            chaser: snapshot.game?.chaser,
+          },
+          animations: { villain: snapshot.animations?.villain },
+          visibility: { villain: snapshot.visibility?.villain },
+          assets: snapshot.assets,
+          sceneIntegrity: snapshot.sceneIntegrity,
+          camera: snapshot.camera,
+          render: snapshot.render,
+          firstPlayableBudget: snapshot.firstPlayableBudget,
+        });
+      };
+      mirrorQaSnapshot();
+      qaDomSnapshotTimer = setInterval(mirrorQaSnapshot, 180);
     }
 
     void loadAll().catch((error: unknown) => {
+      // A level switch/unmount intentionally aborts in-flight loads. Reporting
+      // that expected cancellation as a production failure creates false
+      // console errors and obscures genuine asset faults.
+      if (disposed) return;
       console.error("Production asset load failed", error);
-      if (!disposed) {
-        setLoadError(assetLoadRecoveryMessage(error, navigator.onLine));
-      }
+      setLoadError(assetLoadRecoveryMessage(error, navigator.onLine));
     });
     frame = requestAnimationFrame(animate);
 
@@ -12169,9 +12260,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       removeEventListener("pageshow", resetFrameClock);
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
-      delete document.documentElement.dataset.chasingReady;
-      delete document.documentElement.dataset.chasingQuality;
-      delete document.documentElement.dataset.chasingEmergency;
+      const ownsQaHook = installedQaHook === null || qaWindow.__CHASING_QA__ === installedQaHook;
+      if (ownsQaHook) {
+        delete document.documentElement.dataset.chasingReady;
+        delete document.documentElement.dataset.chasingQuality;
+        delete document.documentElement.dataset.chasingEmergency;
+        delete document.documentElement.dataset.chasingQaSnapshot;
+      }
+      if (qaDomSnapshotTimer !== null) clearInterval(qaDomSnapshotTimer);
+      if (qaLevelSelectionTimer !== null) clearTimeout(qaLevelSelectionTimer);
       const runtimePlayfield = host.parentElement;
       if (runtimePlayfield?.classList.contains("playfield")) {
         runtimePlayfield.classList.remove(
@@ -12182,7 +12279,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         );
         runtimePlayfield.style.removeProperty("--director-progress");
       }
-      if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
+      if (installedQaHook && qaWindow.__CHASING_QA__ === installedQaHook) {
+        if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
+      }
       for (const actor of Object.values(actors)) actor?.animator.dispose();
       ghostActor?.animator.dispose();
       for (const locker of lockers.values()) locker.mixer.stopAllAction();

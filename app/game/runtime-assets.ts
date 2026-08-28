@@ -13,7 +13,7 @@ export type RuntimePreloadAsset = Readonly<{
  */
 export const FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS = Object.freeze({
   player: "/models/characters/kid-bootstrap.glb?v=1",
-  threat: "/models/characters/villain-bootstrap.glb?v=1",
+  threat: "/models/characters/villain-bootstrap.glb?v=5",
   theme: "/models/environment/themes/campus-kit-bootstrap.glb?v=1",
   locker: "/models/environment/locker.glb?v=32",
   cornerMirror: "/models/environment/stealth-corner-mirrors.glb?v=2",

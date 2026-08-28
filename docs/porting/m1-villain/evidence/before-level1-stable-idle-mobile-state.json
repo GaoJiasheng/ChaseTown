@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-08-28",
+  "sourceRevision": "origin/main@8d6b0ca",
+  "url": "http://localhost:3003/?qa=1&qaQuality=high&qaLevel=1&qaPlayer=6,5.9&qaChaser=1,12.4&qaSpawnDelay=60&autostart=1&m1=baseline-mobile-final-124",
+  "viewport": { "width": 375, "height": 812, "deviceScaleFactor": 1 },
+  "scenario": { "player": { "x": 6, "y": 5.9 }, "chaser": { "x": 1, "y": 12.4 }, "spawnDelaySeconds": 60 },
+  "phase": "playing",
+  "chaserMode": "spawn-delay",
+  "villainAnimation": { "state": "idle", "clip": "Idle", "clipDuration": 2.5, "playing": true },
+  "villainVisibility": {
+    "rootVisible": true,
+    "alpha": 1,
+    "worldRendered": true,
+    "pixelWidth": 28.142,
+    "pixelHeight": 66.72613925319,
+    "centerInFrustum": true,
+    "visibleSampleRatio": 1
+  },
+  "camera": { "fov": 56, "aspect": 0.4993006993006993, "distance": 12.805525625166752, "zoom": 1 },
+  "threatAsset": { "bytes": 1474540, "sha256": "91ad6c102194d06f6e4d6c5a8a7130e01dda42c5c0fa3ab1111c1942f0b9811f" },
+  "consoleWarnError": [],
+  "screenshot": {
+    "path": "docs/porting/m1-villain/evidence/before-level1-stable-idle-mobile-375x812.png",
+    "sha256": "6a60b031df6fc89854cab4b793cbd1528c44c1fb579082fe9607b27e25c5264c"
+  }
+}

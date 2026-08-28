@@ -1,0 +1,412 @@
+{
+  "formatVersion": 1,
+  "capturedAt": "2026-08-28T15:40:57Z",
+  "method": "Browser skill; formal production camera; Chromium WebGL2; 1512x982 CSS px; qaQuality=high; wait for ready + decorativeReady + deferredDressingSettled + compileCount=1 + prewarmCount=1 + unused=[]; levels 1/10 use zoom 1.65, level 5 zoom 1.0.",
+  "runtimeVillain": {
+    "high": {
+      "bytes": 3123624,
+      "sha256": "8ff6d59ab894a9b60d428e7d9a04f39ade20a69543b5a1ef9f0b2c98efb2e7fd"
+    },
+    "lod1": {
+      "bytes": 1526192,
+      "sha256": "66cccb2e32d0e771a7eef73a113ca8dd773d92563c665c983feba6dfae901352"
+    },
+    "bootstrap": {
+      "bytes": 891784,
+      "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a"
+    }
+  },
+  "samples": [
+    {
+      "level": 1,
+      "id": "school-maze-v1",
+      "theme": "campus",
+      "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPlayer=9,15&qaChaser=21,10&qaSpawnDelay=60&autostart=1&m1=smoke-l1-final-v5b",
+      "viewport": {
+        "height": 982,
+        "width": 1512
+      },
+      "game": {
+        "phase": "playing",
+        "player": {
+          "x": 9,
+          "y": 15
+        },
+        "chaser": {
+          "x": 21,
+          "y": 10
+        },
+        "chaserMode": "spawn-delay"
+      },
+      "assets": {
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compileCount": 1,
+        "prewarmCount": 1,
+        "unused": []
+      },
+      "sceneIntegrity": {
+        "expectedMovementBlockers": 7,
+        "renderedMovementBlockers": 7,
+        "expectedVisionObscurers": 1,
+        "renderedVisionObscurers": 1
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 1.6921296296296295,
+        "distance": 16.373256792287144,
+        "zoom": 1.65,
+        "position": {
+          "x": -0.31549825404765564,
+          "y": 12.825651186650822,
+          "z": -3.697091213683409
+        },
+        "focus": {
+          "x": -5.966671172084116,
+          "y": 0.858461477867731,
+          "z": 5.943144940614081
+        },
+        "direction": {
+          "x": 0.3451465392455413,
+          "y": 0.7308985536964403,
+          "z": -0.588779390477688
+        },
+        "azimuthDegrees": 149.62087398863164,
+        "occlusion": {
+          "groups": 20,
+          "obscured": [],
+          "maxStrength": 0
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 324,
+        "triangles": 587714,
+        "shadow": {
+          "shadowTriangles": 228415,
+          "shadowDrawCalls": 187
+        },
+        "memory": {
+          "geometries": 213,
+          "textures": 170
+        },
+        "programs": 84,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 222,
+          "canonicalTextures": 160,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      },
+      "firstPlayableBudget": {
+        "fits": true,
+        "fitsTransferBudget": true,
+        "fitsTimeBudget": true,
+        "criticalTransferBytes": 6691805,
+        "deferredTransferBytes": 0,
+        "requiredSavingsBytes": 0,
+        "estimatedSeconds": 6.633444,
+        "criticalRequestCount": 17,
+        "categoryTransferBytes": {
+          "shell": 40876,
+          "navigation": 1662640,
+          "player": 1573988,
+          "threat": 891784,
+          "hide-spot": 1213672,
+          "theme": 1308845
+        },
+        "exceededCategories": [],
+        "duplicateUrls": [
+          "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+          "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2"
+        ],
+        "invalidEntryIds": []
+      },
+      "console": [],
+      "screenshot": {
+        "path": "docs/porting/m1-villain/evidence/smoke-level1-1512x982.png",
+        "bytes": 207491,
+        "sha256": "e1358058d94d196a1eb89195ee0b7a60f07ed991af6b3e49006cde1c09b9ef8d"
+      }
+    },
+    {
+      "level": 5,
+      "id": "hospital-isolation-basement",
+      "theme": "hospital",
+      "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=5&qaPlayer=7,9&qaChaser=11,13&qaSpawnDelay=60&autostart=1&m1=smoke-l5-final-v5",
+      "viewport": {
+        "height": 982,
+        "width": 1512
+      },
+      "game": {
+        "phase": "playing",
+        "player": {
+          "x": 7,
+          "y": 9
+        },
+        "chaser": {
+          "x": 11,
+          "y": 13
+        },
+        "chaserMode": "spawn-delay"
+      },
+      "assets": {
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compileCount": 1,
+        "prewarmCount": 1,
+        "unused": []
+      },
+      "sceneIntegrity": {
+        "expectedMovementBlockers": 0,
+        "renderedMovementBlockers": 0,
+        "expectedVisionObscurers": 8,
+        "renderedVisionObscurers": 8
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 1.6921296296296295,
+        "distance": 14.8,
+        "zoom": 1,
+        "position": {
+          "x": -4.871631729867366,
+          "y": 11.700002152048096,
+          "z": -14.748392931402728
+        },
+        "focus": {
+          "x": -9.979800510701375,
+          "y": 0.8827035573407782,
+          "z": -6.034457952332945
+        },
+        "direction": {
+          "x": 0.3451465392455413,
+          "y": 0.7308985536964403,
+          "z": -0.588779390477688
+        },
+        "azimuthDegrees": 149.62087398863164,
+        "occlusion": {
+          "groups": 6,
+          "obscured": [
+            "hospital-walls"
+          ],
+          "maxStrength": 0.9999999999999994
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 305,
+        "triangles": 609920,
+        "shadow": {
+          "shadowTriangles": 264421,
+          "shadowDrawCalls": 192
+        },
+        "memory": {
+          "geometries": 194,
+          "textures": 167
+        },
+        "programs": 85,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      },
+      "firstPlayableBudget": {
+        "fits": true,
+        "fitsTransferBudget": true,
+        "fitsTimeBudget": true,
+        "criticalTransferBytes": 5939725,
+        "deferredTransferBytes": 0,
+        "requiredSavingsBytes": 0,
+        "estimatedSeconds": 5.87178,
+        "criticalRequestCount": 10,
+        "categoryTransferBytes": {
+          "shell": 40876,
+          "navigation": 1102244,
+          "player": 1573988,
+          "threat": 891784,
+          "hide-spot": 1213672,
+          "theme": 1117161
+        },
+        "exceededCategories": [],
+        "duplicateUrls": [
+          "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+          "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2"
+        ],
+        "invalidEntryIds": []
+      },
+      "console": [],
+      "screenshot": {
+        "path": "docs/porting/m1-villain/evidence/smoke-level5-1512x982.png",
+        "bytes": 222792,
+        "sha256": "880f103818ee8755642d4f740703107f38637f2b957d4c564a83a6a61e178bf1"
+      }
+    },
+    {
+      "level": 10,
+      "id": "factory-foundry-final-run",
+      "theme": "factory",
+      "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=10&qaPlayer=5,10&qaChaser=9,13&qaSpawnDelay=60&autostart=1&m1=smoke-l10-final-v5",
+      "viewport": {
+        "height": 982,
+        "width": 1512
+      },
+      "game": {
+        "phase": "playing",
+        "player": {
+          "x": 5,
+          "y": 10
+        },
+        "chaser": {
+          "x": 9,
+          "y": 13
+        },
+        "chaserMode": "spawn-delay"
+      },
+      "assets": {
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compileCount": 1,
+        "prewarmCount": 1,
+        "unused": []
+      },
+      "sceneIntegrity": {
+        "expectedMovementBlockers": 0,
+        "renderedMovementBlockers": 0,
+        "expectedVisionObscurers": 10,
+        "renderedVisionObscurers": 10
+      },
+      "camera": {
+        "fov": 56,
+        "aspect": 1.6921296296296295,
+        "distance": 16.373227357795916,
+        "zoom": 1.65,
+        "position": {
+          "x": -8.315508760402807,
+          "y": 12.825630313989237,
+          "z": -13.697073291077569
+        },
+        "focus": {
+          "x": -13.966671519226486,
+          "y": 0.8584621188332127,
+          "z": -4.056854467201882
+        },
+        "direction": {
+          "x": 0.3451465392455413,
+          "y": 0.7308985536964403,
+          "z": -0.588779390477688
+        },
+        "azimuthDegrees": 149.62087398863164,
+        "occlusion": {
+          "groups": 6,
+          "obscured": [
+            "factory-walls"
+          ],
+          "maxStrength": 0.999999999999732
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 354,
+        "triangles": 802008,
+        "shadow": {
+          "shadowTriangles": 288509,
+          "shadowDrawCalls": 205
+        },
+        "memory": {
+          "geometries": 205,
+          "textures": 156
+        },
+        "programs": 82,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      },
+      "firstPlayableBudget": {
+        "fits": true,
+        "fitsTransferBudget": true,
+        "fitsTimeBudget": true,
+        "criticalTransferBytes": 6192177,
+        "deferredTransferBytes": 0,
+        "requiredSavingsBytes": 0,
+        "estimatedSeconds": 6.0737416,
+        "criticalRequestCount": 10,
+        "categoryTransferBytes": {
+          "shell": 40876,
+          "navigation": 1102244,
+          "player": 1573988,
+          "threat": 891784,
+          "hide-spot": 1213672,
+          "theme": 1369613
+        },
+        "exceededCategories": [],
+        "duplicateUrls": [
+          "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+          "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2"
+        ],
+        "invalidEntryIds": []
+      },
+      "console": [],
+      "screenshot": {
+        "path": "docs/porting/m1-villain/evidence/smoke-level10-1512x982.png",
+        "bytes": 230774,
+        "sha256": "3f2234e215e2def66de3dc2b4aa9df08331a460370cccd6a5dc2419ab2e17472"
+      }
+    }
+  ]
+}

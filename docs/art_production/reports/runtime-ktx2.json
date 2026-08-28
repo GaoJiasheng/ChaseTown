@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-07-23T09:24:34.173Z",
+  "generatedAt": "2026-08-28T14:21:37.592Z",
   "policy": {
     "geometryRepacked": false,
     "semanticHierarchyByteStable": true,
@@ -12,21 +12,53 @@
     "sourceTextureFallbacks": false,
     "cumulativeRepacking": false
   },
+  "policyFieldScopes": {
+    "cumulativeRepacking": "Scoped to this KTX2 optimization pass: geometry and already-KTX2 payloads are not recompressed. The M1 Villain input is a prior gltfpack WebP derivative decoded through Sharp before KTX2, so the end-to-end Villain chain contains two lossy texture stages.",
+    "sourceTextureFallbacks": "The shipped GLB keeps no PNG/WebP fallback beside KHR_texture_basisu; this does not describe the authoring input format."
+  },
+  "roleOverrides": {
+    "villain": {
+      "textureMaxDimension": 768,
+      "baseColorTextures": "UASTC quality 10 with Zstandard supercompression",
+      "normalAndAttributeTextures": "UASTC quality 8 with Zstandard supercompression",
+      "endToEndTextureChain": "Authored PNG -> native gltfpack WebP quality 10 at 768 px -> Sharp decode to temporary PNG -> KTX2 UASTC (base color quality 10; normal/attribute quality 8). Both WebP and KTX2 are lossy stages.",
+      "method": "Within the KTX2 stage, a second gltfpack pass replaces only normal/attribute payloads from the base-color quality-10 output."
+    }
+  },
   "tool": {
     "name": "gltfpack",
     "version": "gltfpack 1.2",
     "nativeBinaryCommitted": false,
     "encoderInput": "Pinned Sharp 0.35.0 converts legacy WebP sources to temporary PNG only."
   },
+  "actualToolchain": {
+    "sharpVersion": "0.35.2",
+    "assetGltfpackBinarySha256": {
+      "public/models/characters/villain.glb": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
+    },
+    "unrecordedLegacyTargets": [
+      "public/models/characters/kid.glb",
+      "public/models/characters/police.glb",
+      "public/models/environment/themes/campus-kit.glb",
+      "public/models/environment/themes/hospital-kit.glb",
+      "public/models/environment/themes/fire-station-kit.glb",
+      "public/models/environment/themes/factory-kit.glb"
+    ],
+    "lastBuildBinarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+    "lastBuildTargets": [
+      "public/models/characters/villain.glb"
+    ],
+    "legacyToolLabelCompatibility": "tool.encoderInput is retained verbatim for the existing remote-trunk report contract; actual Sharp is recorded here from the loaded package."
+  },
   "totals": {
-    "sourceAssetBytes": 24263340,
-    "outputAssetBytes": 20948296,
+    "sourceAssetBytes": 21974292,
+    "outputAssetBytes": 19845964,
     "sharedTextureBytes": 2572090,
-    "deploymentBytes": 23520386,
-    "uncachedAllThemesBytes": 29543769,
+    "deploymentBytes": 22418054,
+    "uncachedAllThemesBytes": 28441437,
     "deduplicatedBytes": 6023383,
-    "savedBytes": 742954,
-    "savedPercent": 3.062
+    "savedBytes": -443762,
+    "savedPercent": -2.019
   },
   "sharedTextures": [
     {
@@ -423,29 +455,63 @@
         "4"
       ],
       "source": {
-        "bytes": 4669516,
-        "sha256": "06f8e90ed2e34e2dce9d9d1a57b1dd3e88eda8afa275d69d00c70d7a032807d4",
-        "embeddedImageBytes": 2164782
+        "bytes": 2380468,
+        "sha256": "33769f721a212b1d081a31e4e94b914823181fc21d7734dd1e114bdfdbdbb8c2",
+        "embeddedImageBytes": 323554
       },
       "output": {
-        "bytes": 4225956,
-        "sha256": "5a3244fa2e8a09c3b3476a912f0d4b5f21f21cdc14669a867257baa43e445871",
-        "embeddedImageBytes": 1721100,
+        "bytes": 3123624,
+        "sha256": "8ff6d59ab894a9b60d428e7d9a04f39ade20a69543b5a1ef9f0b2c98efb2e7fd",
+        "embeddedImageBytes": 1066721,
         "externalTextureBytes": 0,
-        "uncachedFirstLoadBytes": 4225956,
-        "savedBytes": 443560,
-        "savedPercent": 9.499
+        "uncachedFirstLoadBytes": 3123624,
+        "savedBytes": -743156,
+        "savedPercent": -31.219
       },
       "gpuUploadEstimate": {
-        "decodedRgbaBytesBefore": 28661060,
-        "blockCompressedBytesAfter": 7165265,
-        "savedBytes": 21495795,
+        "decodedRgbaBytesBefore": 9437160,
+        "blockCompressedBytesAfter": 2359290,
+        "savedBytes": 7077870,
         "savedPercent": 75
+      },
+      "uastcAttributePass": {
+        "quality": 8,
+        "textureClasses": [
+          "normal",
+          "attrib"
+        ],
+        "arguments": [
+          "-c",
+          "-kn",
+          "-km",
+          "-ke",
+          "-noq",
+          "-af",
+          "0",
+          "-at",
+          "24",
+          "-ar",
+          "16",
+          "-as",
+          "24",
+          "-tu",
+          "-tq",
+          "color",
+          "10",
+          "-tq",
+          "normal,attrib",
+          "8",
+          "-tj",
+          "4"
+        ],
+        "beforeBytes": 1536544,
+        "afterBytes": 1066721,
+        "savedBytes": 469823
       },
       "structure": {
         "nodes": {
           "count": 34,
-          "sha256": "afaf901d016608a5a0b010fee78c7342b0110c2e01fa5f9e4be738d0b916622e"
+          "sha256": "1f6e35061aec5e4cc1e05b79366c475788df90e169a70e15495c9e7f0289665a"
         },
         "meshes": {
           "count": 12,
@@ -453,7 +519,7 @@
         },
         "materials": {
           "count": 6,
-          "sha256": "cb03907b36fcad9c9eabbee8c5fa13f27a5207131e434c1dbabade7390c2ebe5"
+          "sha256": "a80495e9781fea383a984313b60b75ddcd62af24ca6aafa1656e42f8b204f206"
         },
         "animations": {
           "count": 8,
@@ -463,41 +529,41 @@
           "count": 1,
           "sha256": "d053563dbe1aca8af70c4680cebc7a27ba95f1b44a4912f17638d345457638b0"
         },
-        "semanticJsonSha256": "01ca514f17c0f731485dec6865bdadd8c938ad77569d02f7e7406e13fd0f4887"
+        "semanticJsonSha256": "a8c58c448dbdbd5b17983c48f458b809780979f21870c675782e19fcb2dbe44b"
       },
       "textures": [
         {
-          "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+          "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
           "expectedMode": "UASTC",
-          "bytes": 594845,
+          "bytes": 263414,
           "width": 768,
           "height": 768,
           "levels": 10,
           "supercompressionScheme": 2,
           "mode": "UASTC",
-          "sha256": "ab458195524d518b2acd8b0d37040503c589e1c7952986f10f2b515896820989"
-        },
-        {
-          "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
-          "expectedMode": "UASTC",
-          "bytes": 565991,
-          "width": 768,
-          "height": 768,
-          "levels": 10,
-          "supercompressionScheme": 2,
-          "mode": "UASTC",
-          "sha256": "74437c7125eb0b1d430eb6f556520b2d9491345e28772dda0be2ba416ba3fae0"
+          "sha256": "eccfa05aed2d675bfe3cf1e8accb515ad947d4cdd092f9069fccff1a0379f3fd"
         },
         {
           "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
           "expectedMode": "UASTC",
-          "bytes": 560264,
-          "width": 2048,
-          "height": 2048,
-          "levels": 12,
+          "bytes": 568847,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
           "supercompressionScheme": 2,
           "mode": "UASTC",
-          "sha256": "65a56bbaedfe76449c909f9bd51c52194557123d20dfadc34257d18aeabb46e6"
+          "sha256": "f5cbade6d044146ecada7e2181e40d6d7d1ef66c9dbc796844efd65ce361b40b"
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+          "expectedMode": "UASTC",
+          "bytes": 234460,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "56921db961e9d6b3bd7f00bb667d7a241bc032d3286a3695fa8cd9c0cb709592"
         }
       ]
     },

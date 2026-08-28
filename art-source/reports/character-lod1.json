@@ -1,6 +1,6 @@
 {
-  "formatVersion": 1,
-  "generatedAt": "2026-07-23T11:06:20.123Z",
+  "formatVersion": 2,
+  "generatedAt": "2026-08-28T15:23:39.419Z",
   "policy": {
     "derivativeOnly": true,
     "sourceAssetsUnmodified": true,
@@ -14,49 +14,103 @@
   "tool": {
     "name": "gltfpack",
     "version": "gltfpack 1.2",
-    "arguments": [
-      "-c",
-      "-kn",
-      "-km",
-      "-ke",
-      "-si",
-      "0.65",
-      "-se",
-      "0.002",
-      "-tu",
-      "-tq",
-      "9",
-      "-ts",
-      "0.75",
-      "-tj",
-      "4",
-      "-af",
-      "0",
-      "-at",
-      "24",
-      "-ar",
-      "16",
-      "-as",
-      "24"
-    ]
+    "arguments": {
+      "kid": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-si",
+        "0.65",
+        "-se",
+        "0.002",
+        "-tu",
+        "-tq",
+        "9",
+        "-ts",
+        "0.75",
+        "-tj",
+        "4",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24"
+      ],
+      "villain": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-si",
+        "0.343",
+        "-se",
+        "0.008",
+        "-tu",
+        "-tq",
+        "9",
+        "-ts",
+        "0.75",
+        "-tj",
+        "4",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24"
+      ]
+    }
+  },
+  "generation": {
+    "roleBinarySha256": {
+      "kid": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+      "villain": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
+    },
+    "unrecordedLegacyRoles": [],
+    "lastBuildRoles": [
+      "villain"
+    ],
+    "lastBuildBinarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
   },
   "budgets": {
     "kid": {
       "maxBytes": 3050000,
+      "simplifyRatio": 0.65,
+      "simplificationError": 0.002,
+      "geometryQuantization": true,
       "minimumTriangleRatio": 0.64,
       "maximumTriangleRatio": 0.69
     },
     "villain": {
       "maxBytes": 2700000,
-      "minimumTriangleRatio": 0.63,
-      "maximumTriangleRatio": 0.68
+      "simplifyRatio": 0.343,
+      "simplificationError": 0.008,
+      "geometryQuantization": true,
+      "minimumTriangleRatio": 0.33,
+      "maximumTriangleRatio": 0.35,
+      "minimumTriangles": 20000,
+      "maximumTriangles": 32000
+    }
+  },
+  "roleOverrides": {
+    "villain": {
+      "targetTriangleRatio": 0.343,
+      "maximumSimplificationError": 0.008,
+      "geometryQuantization": true,
+      "rationale": "Derive a 25.5–26k first-paint silhouette from the docs/02-compliant realistic LOD0 while preserving literal unit transforms and the existing combined >=35% LOD saving contract."
     }
   },
   "totals": {
-    "sourceBytes": 8718120,
-    "lodBytes": 5517548,
-    "savedBytes": 3200572,
-    "savedPercent": 36.712
+    "sourceBytes": 7615788,
+    "lodBytes": 4472776,
+    "savedBytes": 3143012,
+    "savedPercent": 41.27
   },
   "characters": [
     {
@@ -231,54 +285,54 @@
       "role": "villain",
       "source": {
         "path": "public/models/characters/villain.glb",
-        "bytes": 4225956,
-        "sha256": "5a3244fa2e8a09c3b3476a912f0d4b5f21f21cdc14669a867257baa43e445871",
-        "triangles": 157148
+        "bytes": 3123624,
+        "sha256": "8ff6d59ab894a9b60d428e7d9a04f39ade20a69543b5a1ef9f0b2c98efb2e7fd",
+        "triangles": 74660
       },
       "lod": {
         "path": "public/models/characters/villain-lod1.glb",
-        "bytes": 2570964,
-        "sha256": "0b0266b2c3b365cb286606dfdaea188fa2eeb2035dcc33d0ab7feff83a0cb4c2",
-        "savedBytes": 1654992,
-        "savedPercent": 39.163,
-        "triangles": 102131,
-        "triangleRatio": 0.649903
+        "bytes": 1526192,
+        "sha256": "66cccb2e32d0e771a7eef73a113ca8dd773d92563c665c983feba6dfae901352",
+        "savedBytes": 1597432,
+        "savedPercent": 51.14,
+        "triangles": 25599,
+        "triangleRatio": 0.342874
       },
       "quality": {
         "namedNodes": 34,
         "joints": 21,
         "materials": [
-          "M_Villain_EyeWhite_EyeGloss",
-          "M_Villain_FaceLine",
-          "M_Villain_Iris_EyeGloss",
-          "M_Villain_PrecisionRemodel_v21_URP",
-          "M_Villain_Pupil_EyeGloss",
-          "M_Villain_Skin"
+          "M_Villain_A2_boots",
+          "M_Villain_A2_coat",
+          "M_Villain_A2_face_shadow",
+          "M_Villain_A2_hood",
+          "M_Villain_A2_lining_hardware",
+          "M_Villain_A2_pants"
         ],
         "textures": [
           {
-            "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
-            "bytes": 594845,
-            "sha256": "ab458195524d518b2acd8b0d37040503c589e1c7952986f10f2b515896820989",
-            "width": 768,
-            "height": 768,
-            "levels": 10
-          },
-          {
-            "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
-            "bytes": 565991,
-            "sha256": "74437c7125eb0b1d430eb6f556520b2d9491345e28772dda0be2ba416ba3fae0",
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
+            "bytes": 263414,
+            "sha256": "eccfa05aed2d675bfe3cf1e8accb515ad947d4cdd092f9069fccff1a0379f3fd",
             "width": 768,
             "height": 768,
             "levels": 10
           },
           {
             "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
-            "bytes": 560264,
-            "sha256": "65a56bbaedfe76449c909f9bd51c52194557123d20dfadc34257d18aeabb46e6",
-            "width": 2048,
-            "height": 2048,
-            "levels": 12
+            "bytes": 568847,
+            "sha256": "f5cbade6d044146ecada7e2181e40d6d7d1ef66c9dbc796844efd65ce361b40b",
+            "width": 768,
+            "height": 768,
+            "levels": 10
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+            "bytes": 234460,
+            "sha256": "56921db961e9d6b3bd7f00bb667d7a241bc032d3286a3695fa8cd9c0cb709592",
+            "width": 768,
+            "height": 768,
+            "levels": 10
           }
         ],
         "clips": [
@@ -295,50 +349,50 @@
           "Alert": {
             "durationSeconds": 0.6,
             "animatedJointChannels": 21,
-            "rotationTravelDegrees": 205.87133,
+            "rotationTravelDegrees": 205.87279,
             "translationTravelMeters": 0.063703,
             "scaleTravel": 0
           },
           "Catch": {
             "durationSeconds": 1.2000001,
             "animatedJointChannels": 21,
-            "rotationTravelDegrees": 547.20599,
+            "rotationTravelDegrees": 547.20601,
             "translationTravelMeters": 0.1059541,
             "scaleTravel": 0
           },
           "CheckHide": {
             "durationSeconds": 2.2666666,
             "animatedJointChannels": 21,
-            "rotationTravelDegrees": 724.08703,
+            "rotationTravelDegrees": 724.08694,
             "translationTravelMeters": 0.0364718,
             "scaleTravel": 0
           },
           "Idle": {
             "durationSeconds": 2.5,
             "animatedJointChannels": 21,
-            "rotationTravelDegrees": 280.61997,
+            "rotationTravelDegrees": 280.61999,
             "translationTravelMeters": 0.0501424,
             "scaleTravel": 0
           },
           "LostSight": {
             "durationSeconds": 1.7666666,
             "animatedJointChannels": 21,
-            "rotationTravelDegrees": 149.84256,
+            "rotationTravelDegrees": 149.84192,
             "translationTravelMeters": 0.022329,
             "scaleTravel": 0
           },
           "PatrolWalk": {
             "durationSeconds": 1.4666667,
             "animatedJointChannels": 21,
-            "rotationTravelDegrees": 1344.55951,
+            "rotationTravelDegrees": 1344.55949,
             "translationTravelMeters": 0.212076,
             "scaleTravel": 0
           },
           "Run": {
             "durationSeconds": 0.8666667,
             "animatedJointChannels": 21,
-            "rotationTravelDegrees": 2595.38506,
-            "translationTravelMeters": 1.1972144,
+            "rotationTravelDegrees": 2595.38557,
+            "translationTravelMeters": 1.1972141,
             "scaleTravel": 0
           },
           "Search": {
@@ -349,7 +403,7 @@
             "scaleTravel": 0
           }
         },
-        "boundsMaxDeltaMeters": 0.000910097,
+        "boundsMaxDeltaMeters": 0.000688841,
         "animationDeviation": {
           "maxRotationDegrees": 0.0000034,
           "maxTranslationMeters": 0,

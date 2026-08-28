@@ -29,6 +29,8 @@ const DEFAULT_REPORT = path.join(
   "runtime-ktx2.json",
 );
 const FORMAT_VERSION = 1;
+const VILLAIN_TEXTURE_MAX_DIMENSION = 768;
+const VILLAIN_ATTRIBUTE_UASTC_QUALITY = 8;
 const KTX2_SIGNATURE = Buffer.from([
   0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
@@ -55,6 +57,18 @@ const UASTC_ARGUMENTS = Object.freeze([
   "-tj",
   "4",
 ]);
+const VILLAIN_ATTRIBUTE_UASTC_ARGUMENTS = Object.freeze([
+  ...BASE_ARGUMENTS,
+  "-tu",
+  "-tq",
+  "color",
+  "10",
+  "-tq",
+  "normal,attrib",
+  String(VILLAIN_ATTRIBUTE_UASTC_QUALITY),
+  "-tj",
+  "4",
+]);
 const THEME_ARGUMENTS = Object.freeze([
   ...BASE_ARGUMENTS,
   "-tc",
@@ -72,7 +86,14 @@ const THEME_ARGUMENTS = Object.freeze([
 ]);
 const TARGETS = Object.freeze([
   { relative: "models/characters/kid.glb", policy: "uastc" },
-  { relative: "models/characters/villain.glb", policy: "uastc" },
+  {
+    relative: "models/characters/villain.glb",
+    policy: "uastc",
+    // Match the existing character LOD texture contract while avoiding the
+    // 2K source-map transfer/GPU cost at the production 34–58 px silhouette.
+    textureMaxDimension: VILLAIN_TEXTURE_MAX_DIMENSION,
+    uastcAttributeQuality: VILLAIN_ATTRIBUTE_UASTC_QUALITY,
+  },
   { relative: "models/characters/police.glb", policy: "uastc" },
   { relative: "models/environment/themes/campus-kit.glb", policy: "theme-mixed" },
   { relative: "models/environment/themes/hospital-kit.glb", policy: "theme-mixed" },
@@ -85,10 +106,12 @@ function parseArguments(argv) {
     sourceRoot: DEFAULT_PUBLIC_ROOT,
     outputRoot: DEFAULT_PUBLIC_ROOT,
     report: DEFAULT_REPORT,
+    reportExplicit: false,
     gltfpack: process.env.GLTFPACK_KTX2
       ? path.resolve(process.env.GLTFPACK_KTX2)
       : null,
     check: false,
+    onlyCharacter: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -100,10 +123,20 @@ function parseArguments(argv) {
     if (!value) throw new Error(`${argument} needs a value`);
     if (argument === "--source-root") result.sourceRoot = path.resolve(value);
     else if (argument === "--output-root") result.outputRoot = path.resolve(value);
-    else if (argument === "--report") result.report = path.resolve(value);
+    else if (argument === "--report") {
+      result.report = path.resolve(value);
+      result.reportExplicit = true;
+    }
     else if (argument === "--gltfpack") result.gltfpack = path.resolve(value);
+    else if (argument === "--only-character") result.onlyCharacter = value;
     else throw new Error(`Unknown argument: ${argument}`);
     index += 1;
+  }
+  if (
+    result.onlyCharacter !== null
+    && !["kid", "villain", "police"].includes(result.onlyCharacter)
+  ) {
+    throw new Error(`Unknown character role: ${result.onlyCharacter}`);
   }
   if (!result.check && !result.gltfpack) {
     throw new Error(
@@ -111,6 +144,13 @@ function parseArguments(argv) {
     );
   }
   return result;
+}
+
+function selectedTargets(options) {
+  if (!options.onlyCharacter) return TARGETS;
+  return TARGETS.filter(
+    (target) => target.relative === `models/characters/${options.onlyCharacter}.glb`,
+  );
 }
 
 function sha256(buffer) {
@@ -423,15 +463,28 @@ async function sourceImagePayload(asset, image) {
   return { payload, mimeType };
 }
 
-async function makePngEncoderInput(asset) {
+async function makePngEncoderInput(asset, textureMaxDimension = null) {
   const pngPayloads = [];
   for (const image of asset.json.images ?? []) {
     const { payload, mimeType } = await sourceImagePayload(asset, image);
-    pngPayloads.push(
-      mimeType === "image/png"
-        ? payload
-        : await sharp(payload).png({ compressionLevel: 9 }).toBuffer(),
-    );
+    const metadata = await sharp(payload).metadata();
+    const needsResize = textureMaxDimension !== null
+      && Math.max(metadata.width ?? 0, metadata.height ?? 0) > textureMaxDimension;
+    if (mimeType === "image/png" && !needsResize) {
+      pngPayloads.push(payload);
+      continue;
+    }
+    let pipeline = sharp(payload);
+    if (needsResize) {
+      pipeline = pipeline.resize({
+        width: textureMaxDimension,
+        height: textureMaxDimension,
+        fit: "inside",
+        withoutEnlargement: true,
+        kernel: sharp.kernel.lanczos3,
+      });
+    }
+    pngPayloads.push(await pipeline.png({ compressionLevel: 9 }).toBuffer());
   }
   const rewritten = rewriteEmbeddedImages(asset, pngPayloads, "image/png");
   for (const [textureIndex, texture] of rewritten.json.textures.entries()) {
@@ -469,8 +522,7 @@ function ktx2Metadata(payload, label) {
   };
 }
 
-function expectedImageModes(json, policy) {
-  if (policy === "uastc") return (json.images ?? []).map(() => "UASTC");
+function imageTextureClasses(json) {
   const classes = (json.images ?? []).map(() => new Set());
   const add = (slot, textureClass) => {
     if (!slot) return;
@@ -487,6 +539,12 @@ function expectedImageModes(json, policy) {
     add(material.pbrMetallicRoughness?.metallicRoughnessTexture, "attrib");
     add(material.occlusionTexture, "attrib");
   }
+  return classes;
+}
+
+function expectedImageModes(json, policy) {
+  if (policy === "uastc") return (json.images ?? []).map(() => "UASTC");
+  const classes = imageTextureClasses(json);
   return classes.map((imageClasses, imageIndex) => {
     assert.ok(imageClasses.size > 0, `theme image ${imageIndex} is not used by any PBR slot`);
     return imageClasses.has("normal") || imageClasses.has("attrib") ? "UASTC" : "ETC1S";
@@ -649,11 +707,20 @@ async function verifyTool(gltfpack) {
   if (result.status !== 0) throw new Error(result.stderr || result.stdout || "gltfpack -v failed");
   const version = result.stdout.trim();
   assert.equal(version, "gltfpack 1.2", `Expected native gltfpack 1.2, received ${version}`);
-  return version;
+  return {
+    version,
+    binarySha256: sha256(await readFile(gltfpack)),
+  };
 }
 
-function runGltfpack(gltfpack, input, output, policy) {
-  const args = ["-i", input, "-o", output, ...(policy === "uastc" ? UASTC_ARGUMENTS : THEME_ARGUMENTS)];
+function runGltfpack(gltfpack, input, output, policy, overrideArguments = null) {
+  const args = [
+    "-i",
+    input,
+    "-o",
+    output,
+    ...(overrideArguments ?? (policy === "uastc" ? UASTC_ARGUMENTS : THEME_ARGUMENTS)),
+  ];
   const result = spawnSync(gltfpack, args, {
     cwd: ROOT,
     encoding: "utf8",
@@ -668,6 +735,25 @@ function relativeReportPath(filename) {
   return path.relative(ROOT, filename).split(path.sep).join("/");
 }
 
+function targetReportPath(target) {
+  // Report identity is the shipped target, not the caller's staging root.
+  // This keeps role-scoped, isolated rebuilds mergeable with the canonical
+  // report while their bytes are still written under --output-root.
+  return relativeReportPath(path.join(DEFAULT_PUBLIC_ROOT, target.relative));
+}
+
+function reportPathForOutput(filename, outputRoot) {
+  const relative = path.relative(outputRoot, filename);
+  assert.equal(relative.startsWith("..") || path.isAbsolute(relative), false);
+  return path.posix.join("public", relative.split(path.sep).join("/"));
+}
+
+function outputPathForReportPath(reportPath, outputRoot) {
+  const relative = path.posix.relative("public", reportPath);
+  assert.equal(relative.startsWith("..") || path.posix.isAbsolute(relative), false);
+  return path.join(outputRoot, ...relative.split("/"));
+}
+
 function sharedThemeTexturePath(textureSha256) {
   assert.match(textureSha256, /^[a-f0-9]{64}$/u, `Unsafe shared texture hash: ${textureSha256}`);
   return path.posix.join(
@@ -678,14 +764,101 @@ function sharedThemeTexturePath(textureSha256) {
   );
 }
 
+function orderedMergedAssets(existing, updates) {
+  const byPath = new Map(
+    [...(existing?.assets ?? []), ...updates].map((entry) => [entry.path, entry]),
+  );
+  return TARGETS.map((target) => {
+    const reportPath = targetReportPath(target);
+    const entry = byPath.get(reportPath);
+    assert.ok(entry, `The KTX2 report has no preserved entry for ${reportPath}`);
+    return entry;
+  });
+}
+
+function runtimeReport(entries, sharedTextures, toolVersion, toolGeneration, generatedAt) {
+  const sourceAssetBytes = entries.reduce((total, entry) => total + entry.source.bytes, 0);
+  const outputAssetBytes = entries.reduce((total, entry) => total + entry.output.bytes, 0);
+  const sharedTextureBytes = sharedTextures.reduce((total, entry) => total + entry.bytes, 0);
+  const uncachedAllThemesBytes = entries.reduce(
+    (total, entry) => total + entry.output.uncachedFirstLoadBytes,
+    0,
+  );
+  const deploymentBytes = outputAssetBytes + sharedTextureBytes;
+  return {
+    formatVersion: FORMAT_VERSION,
+    generatedAt,
+    policy: {
+      geometryRepacked: false,
+      semanticHierarchyByteStable: true,
+      characterTextures: "UASTC quality 10 with Zstandard supercompression",
+      themeColorTextures: "ETC1S quality 10 with BasisLZ supercompression",
+      themeNormalAndAttributeTextures: "UASTC quality 10 with Zstandard supercompression",
+      themeTextureStorage: "External SHA-256-addressed KTX2 payloads shared across all four theme packages.",
+      lockerTextures: "Retain the existing shared external PNG contract; no duplicate KTX2 payload.",
+      sourceTextureFallbacks: false,
+      cumulativeRepacking: false,
+    },
+    policyFieldScopes: {
+      cumulativeRepacking:
+        "Scoped to this KTX2 optimization pass: geometry and already-KTX2 payloads are not recompressed. The M1 Villain input is a prior gltfpack WebP derivative decoded through Sharp before KTX2, so the end-to-end Villain chain contains two lossy texture stages.",
+      sourceTextureFallbacks:
+        "The shipped GLB keeps no PNG/WebP fallback beside KHR_texture_basisu; this does not describe the authoring input format.",
+    },
+    roleOverrides: {
+      villain: {
+        textureMaxDimension: VILLAIN_TEXTURE_MAX_DIMENSION,
+        baseColorTextures: "UASTC quality 10 with Zstandard supercompression",
+        normalAndAttributeTextures: `UASTC quality ${VILLAIN_ATTRIBUTE_UASTC_QUALITY} with Zstandard supercompression`,
+        endToEndTextureChain:
+          "Authored PNG -> native gltfpack WebP quality 10 at 768 px -> Sharp decode to temporary PNG -> KTX2 UASTC (base color quality 10; normal/attribute quality 8). Both WebP and KTX2 are lossy stages.",
+        method: "Within the KTX2 stage, a second gltfpack pass replaces only normal/attribute payloads from the base-color quality-10 output.",
+      },
+    },
+    tool: {
+      name: "gltfpack",
+      version: toolVersion,
+      nativeBinaryCommitted: false,
+      encoderInput: "Pinned Sharp 0.35.0 converts legacy WebP sources to temporary PNG only.",
+    },
+    actualToolchain: {
+      sharpVersion: sharp.versions.sharp,
+      ...toolGeneration,
+      legacyToolLabelCompatibility:
+        "tool.encoderInput is retained verbatim for the existing remote-trunk report contract; actual Sharp is recorded here from the loaded package.",
+    },
+    totals: {
+      sourceAssetBytes,
+      outputAssetBytes,
+      sharedTextureBytes,
+      deploymentBytes,
+      uncachedAllThemesBytes,
+      deduplicatedBytes: uncachedAllThemesBytes - deploymentBytes,
+      savedBytes: sourceAssetBytes - deploymentBytes,
+      savedPercent: Number(((1 - deploymentBytes / sourceAssetBytes) * 100).toFixed(3)),
+    },
+    sharedTextures,
+    assets: entries,
+  };
+}
+
 async function build(options) {
-  const toolVersion = await verifyTool(options.gltfpack);
+  const tool = await verifyTool(options.gltfpack);
   const temporaryRoot = await mkdtemp(path.join(tmpdir(), "chasing-runtime-ktx2-"));
   const stagedOutputs = [];
   const entries = [];
   const sharedTextures = new Map();
+  const targets = selectedTargets(options);
+  const partialBuild = targets.length !== TARGETS.length;
+  const existingReport = partialBuild
+    ? JSON.parse(await readFile(options.report, "utf8"))
+    : null;
+  if (existingReport) {
+    assert.equal(existingReport.formatVersion, FORMAT_VERSION);
+    assert.equal(existingReport.assets.length, TARGETS.length);
+  }
   try {
-    for (const [targetIndex, target] of TARGETS.entries()) {
+    for (const [targetIndex, target] of targets.entries()) {
       const sourceFilename = path.join(options.sourceRoot, target.relative);
       const outputFilename = path.join(options.outputRoot, target.relative);
       const sourceAsset = await loadGlb(sourceFilename);
@@ -697,10 +870,54 @@ async function build(options) {
       const sourceInfo = await stat(sourceFilename);
       const encoderInput = path.join(temporaryRoot, `${targetIndex}-source.glb`);
       const encoderOutput = path.join(temporaryRoot, `${targetIndex}-encoded.glb`);
-      await writeFile(encoderInput, await makePngEncoderInput(sourceAsset));
+      await writeFile(
+        encoderInput,
+        await makePngEncoderInput(sourceAsset, target.textureMaxDimension),
+      );
       runGltfpack(options.gltfpack, encoderInput, encoderOutput, target.policy);
       const encodedAsset = await loadGlb(encoderOutput);
-      const { payloads, metadata } = extractKtxPayloads(encodedAsset, sourceAsset, target.policy);
+      let { payloads, metadata } = extractKtxPayloads(encodedAsset, sourceAsset, target.policy);
+      let uastcAttributePass = null;
+      if (target.uastcAttributeQuality) {
+        const attributeOutput = path.join(temporaryRoot, `${targetIndex}-attribute-uastc.glb`);
+        runGltfpack(
+          options.gltfpack,
+          encoderInput,
+          attributeOutput,
+          target.policy,
+          VILLAIN_ATTRIBUTE_UASTC_ARGUMENTS,
+        );
+        const attributeAsset = await loadGlb(attributeOutput);
+        const attributeEncoding = extractKtxPayloads(
+          attributeAsset,
+          sourceAsset,
+          target.policy,
+        );
+        const classes = imageTextureClasses(sourceAsset.json);
+        const originalPayloads = payloads;
+        payloads = payloads.map((payload, imageIndex) => (
+          classes[imageIndex].has("normal") || classes[imageIndex].has("attrib")
+            ? attributeEncoding.payloads[imageIndex]
+            : payload
+        ));
+        metadata = metadata.map((texture, imageIndex) => ({
+          ...texture,
+          ...ktx2Metadata(
+            payloads[imageIndex],
+            `${sourceFilename} ${sourceAsset.json.images[imageIndex].name}`,
+          ),
+        }));
+        const beforeBytes = originalPayloads.reduce((total, payload) => total + payload.length, 0);
+        const afterBytes = payloads.reduce((total, payload) => total + payload.length, 0);
+        uastcAttributePass = {
+          quality: target.uastcAttributeQuality,
+          textureClasses: ["normal", "attrib"],
+          arguments: VILLAIN_ATTRIBUTE_UASTC_ARGUMENTS,
+          beforeBytes,
+          afterBytes,
+          savedBytes: beforeBytes - afterBytes,
+        };
+      }
       const externalUris = target.policy === "theme-mixed"
         ? metadata.map((texture, imageIndex) => {
           const relativeTexturePath = sharedThemeTexturePath(texture.sha256);
@@ -747,7 +964,7 @@ async function build(options) {
         0,
       );
       entries.push({
-        path: relativeReportPath(outputFilename),
+        path: targetReportPath(target),
         policy: target.policy,
         arguments: target.policy === "uastc" ? UASTC_ARGUMENTS : THEME_ARGUMENTS,
         source: {
@@ -770,6 +987,7 @@ async function build(options) {
           savedBytes: decodedGpuBytesBefore - estimatedGpuBytesAfter,
           savedPercent: 75,
         },
+        ...(uastcAttributePass ? { uastcAttributePass } : {}),
         structure: invariantSnapshot(sourceAsset.json),
         textures: metadata,
       });
@@ -797,47 +1015,29 @@ async function build(options) {
       });
     }
 
-    const sourceAssetBytes = entries.reduce((total, entry) => total + entry.source.bytes, 0);
-    const outputAssetBytes = entries.reduce((total, entry) => total + entry.output.bytes, 0);
-    const sharedTextureBytes = sharedTextureEntries.reduce((total, entry) => total + entry.bytes, 0);
-    const uncachedAllThemesBytes = entries.reduce(
-      (total, entry) => total + entry.output.uncachedFirstLoadBytes,
-      0,
-    );
-    const deploymentBytes = outputAssetBytes + sharedTextureBytes;
-    const report = {
-      formatVersion: FORMAT_VERSION,
-      generatedAt: new Date().toISOString(),
-      policy: {
-        geometryRepacked: false,
-        semanticHierarchyByteStable: true,
-        characterTextures: "UASTC quality 10 with Zstandard supercompression",
-        themeColorTextures: "ETC1S quality 10 with BasisLZ supercompression",
-        themeNormalAndAttributeTextures: "UASTC quality 10 with Zstandard supercompression",
-        themeTextureStorage: "External SHA-256-addressed KTX2 payloads shared across all four theme packages.",
-        lockerTextures: "Retain the existing shared external PNG contract; no duplicate KTX2 payload.",
-        sourceTextureFallbacks: false,
-        cumulativeRepacking: false,
-      },
-      tool: {
-        name: "gltfpack",
-        version: toolVersion,
-        nativeBinaryCommitted: false,
-        encoderInput: "Pinned Sharp 0.35.0 converts legacy WebP sources to temporary PNG only.",
-      },
-      totals: {
-        sourceAssetBytes,
-        outputAssetBytes,
-        sharedTextureBytes,
-        deploymentBytes,
-        uncachedAllThemesBytes,
-        deduplicatedBytes: uncachedAllThemesBytes - deploymentBytes,
-        savedBytes: sourceAssetBytes - deploymentBytes,
-        savedPercent: Number(((1 - deploymentBytes / sourceAssetBytes) * 100).toFixed(3)),
-      },
-      sharedTextures: sharedTextureEntries,
-      assets: entries,
+    const mergedAssets = orderedMergedAssets(existingReport, entries);
+    const mergedSharedTextures = partialBuild
+      ? existingReport.sharedTextures
+      : sharedTextureEntries;
+    const assetGltfpackBinarySha256 = {
+      ...(existingReport?.actualToolchain?.assetGltfpackBinarySha256 ?? {}),
     };
+    for (const entry of entries) assetGltfpackBinarySha256[entry.path] = tool.binarySha256;
+    const unrecordedLegacyTargets = mergedAssets
+      .map(({ path: assetPath }) => assetPath)
+      .filter((assetPath) => assetGltfpackBinarySha256[assetPath] === undefined);
+    const report = runtimeReport(
+      mergedAssets,
+      mergedSharedTextures,
+      tool.version,
+      {
+        assetGltfpackBinarySha256,
+        unrecordedLegacyTargets,
+        lastBuildBinarySha256: tool.binarySha256,
+        lastBuildTargets: entries.map(({ path: assetPath }) => assetPath),
+      },
+      new Date().toISOString(),
+    );
     await mkdir(path.dirname(options.report), { recursive: true });
     const stagedReport = `${options.report}.ktx2-${process.pid}`;
     await writeFile(stagedReport, `${JSON.stringify(report, null, 2)}\n`);
@@ -848,22 +1048,24 @@ async function build(options) {
     for (const { stagedFilename, outputFilename } of stagedOutputs) {
       await rename(stagedFilename, outputFilename);
     }
-    const sharedDirectory = path.join(
-      options.outputRoot,
-      "models",
-      "environment",
-      "SharedTexturesKTX2",
-    );
-    const retainedSharedFiles = new Set(
-      sharedTextureEntries.map((entry) => path.basename(entry.path)),
-    );
-    for (const directoryEntry of await readdir(sharedDirectory, { withFileTypes: true })) {
-      if (
-        directoryEntry.isFile()
-        && directoryEntry.name.endsWith(".ktx2")
-        && !retainedSharedFiles.has(directoryEntry.name)
-      ) {
-        await rm(path.join(sharedDirectory, directoryEntry.name));
+    if (!partialBuild) {
+      const sharedDirectory = path.join(
+        options.outputRoot,
+        "models",
+        "environment",
+        "SharedTexturesKTX2",
+      );
+      const retainedSharedFiles = new Set(
+        sharedTextureEntries.map((entry) => path.basename(entry.path)),
+      );
+      for (const directoryEntry of await readdir(sharedDirectory, { withFileTypes: true })) {
+        if (
+          directoryEntry.isFile()
+          && directoryEntry.name.endsWith(".ktx2")
+          && !retainedSharedFiles.has(directoryEntry.name)
+        ) {
+          await rm(path.join(sharedDirectory, directoryEntry.name));
+        }
       }
     }
     console.log(JSON.stringify({
@@ -886,14 +1088,57 @@ async function build(options) {
 async function check(options) {
   const report = JSON.parse(await readFile(options.report, "utf8"));
   assert.equal(report.formatVersion, FORMAT_VERSION);
+  assert.match(report.tool.version, /^gltfpack 1\.2(?:\b|$)/u);
+  assert.equal(report.actualToolchain?.sharpVersion, sharp.versions.sharp);
+  const recordedTargets = Object.keys(
+    report.actualToolchain?.assetGltfpackBinarySha256 ?? {},
+  );
+  assert.deepEqual(
+    [...new Set([
+      ...recordedTargets,
+      ...(report.actualToolchain?.unrecordedLegacyTargets ?? []),
+    ])].sort(),
+    report.assets.map(({ path: assetPath }) => assetPath).sort(),
+  );
+  for (const binarySha256 of Object.values(
+    report.actualToolchain?.assetGltfpackBinarySha256 ?? {},
+  )) {
+    assert.match(binarySha256, /^[a-f0-9]{64}$/u);
+  }
   assert.equal(report.assets.length, TARGETS.length);
   assert.deepEqual(
     report.assets.map((entry) => entry.path),
-    TARGETS.map((target) => relativeReportPath(path.join(options.outputRoot, target.relative))),
+    TARGETS.map((target) => targetReportPath(target)),
   );
+  const reconstructed = runtimeReport(
+    report.assets,
+    report.sharedTextures,
+    report.tool.version,
+    report.actualToolchain,
+    report.generatedAt,
+  );
+  assert.deepEqual(reconstructed, report, `${options.report} policy or aggregate provenance drifted`);
+  for (const target of TARGETS) {
+    const entry = report.assets.find(({ path: assetPath }) => assetPath === targetReportPath(target));
+    assert.ok(entry);
+    assert.deepEqual(
+      entry.arguments,
+      target.policy === "uastc" ? UASTC_ARGUMENTS : THEME_ARGUMENTS,
+      `${entry.path} encoder arguments drifted`,
+    );
+    if (target.uastcAttributeQuality !== undefined) {
+      assert.deepEqual(
+        entry.uastcAttributePass?.arguments,
+        VILLAIN_ATTRIBUTE_UASTC_ARGUMENTS,
+        `${entry.path} attribute-pass arguments drifted`,
+      );
+    }
+  }
   const referencedSharedTextures = new Set();
-  for (const [targetIndex, target] of TARGETS.entries()) {
-    const entry = report.assets[targetIndex];
+  for (const target of selectedTargets(options)) {
+    const reportPath = targetReportPath(target);
+    const entry = report.assets.find((candidate) => candidate.path === reportPath);
+    assert.ok(entry, `The KTX2 report has no entry for ${reportPath}`);
     const filename = path.join(options.outputRoot, target.relative);
     const buffer = await readFile(filename);
     assert.equal(buffer.length, entry.output.bytes, `${entry.path} byte count drifted`);
@@ -912,7 +1157,7 @@ async function check(options) {
         const relative = path.relative(options.outputRoot, resolved);
         assert.equal(relative.startsWith("..") || path.isAbsolute(relative), false);
         payload = await readFile(resolved);
-        referencedSharedTextures.add(relativeReportPath(resolved));
+        referencedSharedTextures.add(reportPathForOutput(resolved, options.outputRoot));
       }
       const metadata = ktx2Metadata(payload, `${entry.path} image ${imageIndex}`);
       assert.equal(metadata.mode, entry.textures[imageIndex].expectedMode);
@@ -920,31 +1165,36 @@ async function check(options) {
       assert.equal(metadata.bytes, entry.textures[imageIndex].bytes);
     }
   }
-  assert.deepEqual(
-    [...referencedSharedTextures].sort(),
-    report.sharedTextures.map((entry) => entry.path).sort(),
-    "shared KTX2 report and theme URIs drifted",
-  );
-  for (const texture of report.sharedTextures) {
-    const buffer = await readFile(path.join(ROOT, texture.path));
-    assert.equal(buffer.length, texture.bytes);
-    assert.equal(sha256(buffer), texture.sha256);
+  if (!options.onlyCharacter) {
+    assert.deepEqual(
+      [...referencedSharedTextures].sort(),
+      report.sharedTextures.map((entry) => entry.path).sort(),
+      "shared KTX2 report and theme URIs drifted",
+    );
+    for (const texture of report.sharedTextures) {
+      const buffer = await readFile(outputPathForReportPath(texture.path, options.outputRoot));
+      assert.equal(buffer.length, texture.bytes);
+      assert.equal(sha256(buffer), texture.sha256);
+    }
+    const sharedDirectory = path.join(
+      options.outputRoot,
+      "models",
+      "environment",
+      "SharedTexturesKTX2",
+    );
+    const shippedSharedTextures = (await readdir(sharedDirectory, { withFileTypes: true }))
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".ktx2"))
+      .map((entry) => reportPathForOutput(
+        path.join(sharedDirectory, entry.name),
+        options.outputRoot,
+      ))
+      .sort();
+    assert.deepEqual(
+      shippedSharedTextures,
+      report.sharedTextures.map((entry) => entry.path).sort(),
+      "shared texture directory contains stale immutable payloads",
+    );
   }
-  const sharedDirectory = path.join(
-    options.outputRoot,
-    "models",
-    "environment",
-    "SharedTexturesKTX2",
-  );
-  const shippedSharedTextures = (await readdir(sharedDirectory, { withFileTypes: true }))
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".ktx2"))
-    .map((entry) => relativeReportPath(path.join(sharedDirectory, entry.name)))
-    .sort();
-  assert.deepEqual(
-    shippedSharedTextures,
-    report.sharedTextures.map((entry) => entry.path).sort(),
-    "shared texture directory contains stale immutable payloads",
-  );
   const sourceAssetBytes = report.assets.reduce((total, entry) => total + entry.source.bytes, 0);
   const outputAssetBytes = report.assets.reduce((total, entry) => total + entry.output.bytes, 0);
   const sharedTextureBytes = report.sharedTextures.reduce((total, entry) => total + entry.bytes, 0);
@@ -963,10 +1213,22 @@ async function check(options) {
   );
   assert.equal(report.totals.savedBytes, sourceAssetBytes - report.totals.deploymentBytes);
   console.log(
-    `Validated ${report.assets.length} KTX2 runtime assets and ${report.sharedTextures.length} shared textures.`,
+    options.onlyCharacter
+      ? `Validated KTX2 runtime asset for ${options.onlyCharacter}.`
+      : `Validated ${report.assets.length} KTX2 runtime assets and ${report.sharedTextures.length} shared textures.`,
   );
 }
 
 const options = parseArguments(process.argv.slice(2));
+if (
+  !options.check
+  && path.resolve(options.outputRoot) !== path.resolve(DEFAULT_PUBLIC_ROOT)
+  && (
+    !options.reportExplicit
+    || path.resolve(options.report) === path.resolve(DEFAULT_REPORT)
+  )
+) {
+  throw new Error("A non-default --output-root requires an explicit non-default --report path");
+}
 if (options.check) await check(options);
 else await build(options);

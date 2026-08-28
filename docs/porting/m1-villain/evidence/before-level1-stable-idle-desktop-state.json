@@ -1,0 +1,28 @@
+{
+  "capturedAt": "2026-08-28",
+  "sourceRevision": "origin/main@8d6b0ca",
+  "url": "http://localhost:3003/?qa=1&qaQuality=high&qaLevel=1&qaPlayer=6,1&qaChaser=6,10&qaSpawnDelay=60&autostart=1&m1=baseline-desktop",
+  "viewport": { "width": 1280, "height": 720, "deviceScaleFactor": 1 },
+  "scenario": { "player": { "x": 6, "y": 1 }, "chaser": { "x": 6, "y": 10 }, "spawnDelaySeconds": 60 },
+  "phase": "playing",
+  "chaserMode": "spawn-delay",
+  "villainAnimation": { "state": "idle", "clip": "Idle", "clipDuration": 2.5, "playing": true },
+  "villainVisibility": {
+    "rootVisible": true,
+    "alpha": 1,
+    "worldRendered": true,
+    "pixelWidth": 28.783885968729063,
+    "pixelHeight": 55.931090903730606,
+    "centerInFrustum": true,
+    "headClear": true,
+    "torsoClear": true,
+    "visibleSampleRatio": 1
+  },
+  "camera": { "fov": 56, "aspect": 2.0495049504950495, "distance": 14.8, "zoom": 1 },
+  "threatAsset": { "bytes": 1474540, "sha256": "91ad6c102194d06f6e4d6c5a8a7130e01dda42c5c0fa3ab1111c1942f0b9811f" },
+  "consoleWarnError": [],
+  "screenshot": {
+    "path": "docs/porting/m1-villain/evidence/before-level1-stable-idle-desktop-1280x720.png",
+    "sha256": "4504e9ba8c3a421d45272f00c81e35c4998f1b08c525f43084825bd5afa02f9e"
+  }
+}

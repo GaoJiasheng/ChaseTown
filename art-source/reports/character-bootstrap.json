@@ -1,6 +1,6 @@
 {
   "formatVersion": 3,
-  "generatedAt": "2026-08-28T12:28:57.248Z",
+  "generatedAt": "2026-08-28T15:23:46.125Z",
   "policy": {
     "derivativeOnly": true,
     "highModelsUnmodified": true,
@@ -115,19 +115,42 @@
     },
     "derivativeComparison": "Exact decoded RGBA8 pixels; PNG container bytes and encoder metadata are excluded."
   },
+  "generation": {
+    "roleBinarySha256": {
+      "kid": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+      "villain": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+      "police": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
+    },
+    "unrecordedLegacyRoles": [],
+    "lastBuildRoles": [
+      "villain"
+    ],
+    "lastBuildBinarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
+  },
   "budgets": {
     "perCharacterBytes": {
       "kid": 1677721,
-      "villain": 1677721,
+      "villain": 1474540,
       "police": 2097152
     },
     "combinedBytes": 5242880
   },
+  "policyFieldScopes": {
+    "policy.baseColor.villain": "Legacy compatibility label retained for existing report consumers; roleOverrides.villain.baseColor is authoritative.",
+    "policy.normalAndOrm": "Global 512px default; roleOverrides.villain.normalAndOrm is authoritative for the Villain derivative."
+  },
+  "roleOverrides": {
+    "villain": {
+      "baseColor": "768px ETC1S quality 10",
+      "normalAndOrm": "384px UASTC quality 10",
+      "rationale": "Preserve literal unit-scale LOD transport inside the accepted first-playable byte ceiling."
+    }
+  },
   "totals": {
-    "referenceBytes": 12391416,
-    "bootstrapBytes": 4785296,
-    "savedBytes": 7606120,
-    "savedPercent": 61.382
+    "referenceBytes": 11346644,
+    "bootstrapBytes": 4202540,
+    "savedBytes": 7144104,
+    "savedPercent": 62.962
   },
   "characters": [
     {
@@ -273,17 +296,17 @@
       "reference": {
         "variant": "lod1",
         "path": "public/models/characters/villain-lod1.glb",
-        "bytes": 2570964,
-        "sha256": "0b0266b2c3b365cb286606dfdaea188fa2eeb2035dcc33d0ab7feff83a0cb4c2",
-        "triangles": 102131
+        "bytes": 1526192,
+        "sha256": "66cccb2e32d0e771a7eef73a113ca8dd773d92563c665c983feba6dfae901352",
+        "triangles": 25599
       },
       "bootstrap": {
         "path": "public/models/characters/villain-bootstrap.glb",
-        "bytes": 1474540,
-        "sha256": "91ad6c102194d06f6e4d6c5a8a7130e01dda42c5c0fa3ab1111c1942f0b9811f",
-        "savedBytes": 1096424,
-        "savedPercent": 42.646,
-        "triangles": 102131,
+        "bytes": 891784,
+        "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a",
+        "savedBytes": 634408,
+        "savedPercent": 41.568,
+        "triangles": 25599,
         "triangleRatio": 1
       },
       "quality": {
@@ -302,102 +325,108 @@
         "animationContractSha256": "ccabd435be7c03f598a8da27293c3f735aef47f3a1f2705b649dccc4f6d4c0d4",
         "silhouetteContract": {
           "primitiveCount": 12,
-          "sha256": "f00bd24ae0310ed92ef16489aa054765deabf491baa0e3bf8f5e3e0084e0ee7b"
+          "sha256": "360ded151ac9f9343e1833cbb42bfee541834f01e527a76442efcc132206cefe"
         },
         "nonImageTransport": {
-          "entries": 11,
-          "bytes": 791661,
-          "sha256": "cb59d186437b0e70c29ea4bdcb7f5283c13dd4c410fc9f3bb407331801d19abc"
+          "entries": 12,
+          "bytes": 395060,
+          "sha256": "a3990641928dd485b8788a8cb6c9ebff121371a43364b8aa8dfc3dec56b2924e"
         },
-        "semanticJsonSha256": "676ed19742f4a5eb2c9669c7a774b779ce456f730f711841c106637c2c35d1a5",
+        "semanticJsonSha256": "13d8fc62079108dada0cafacb738b0424c5aa6d29fe070587c6055ef689666fa",
         "textures": [
           {
-            "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
             "textureClass": "normal",
-            "bytes": 266410,
-            "sha256": "a556e9d5e67356b8897aa83ba876c23bf7a701bcd8caa636e6d6b317d5b0debc",
-            "width": 512,
-            "height": 512,
-            "levels": 10,
-            "mode": "UASTC",
-            "supercompressionScheme": 2
-          },
-          {
-            "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
-            "textureClass": "orm",
-            "bytes": 267747,
-            "sha256": "6f3c9e1ce3db5f80891c4c6e4b928649a59e1fb55982e80e64a2f893d8843b16",
-            "width": 512,
-            "height": 512,
-            "levels": 10,
+            "bytes": 151074,
+            "sha256": "3f7b3e58d69416c77037971a9148fb5a3e1444e268461a39a91d2cae6d0c0726",
+            "width": 384,
+            "height": 384,
+            "levels": 9,
             "mode": "UASTC",
             "supercompressionScheme": 2
           },
           {
             "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
             "textureClass": "baseColor",
-            "bytes": 90576,
-            "sha256": "274dcda6a6b0fe9955632d454a9a7bc4137d93692eb367aba29686027c48fa53",
-            "width": 1024,
-            "height": 1024,
-            "levels": 11,
+            "bytes": 132729,
+            "sha256": "318c0b955af6aa5e7658e0a908ba7a3096edc2b5ec64bd466c0da17478e2d5d1",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
             "mode": "ETC1S",
             "supercompressionScheme": 1
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+            "textureClass": "orm",
+            "bytes": 148541,
+            "sha256": "ddd11adb6281251f83c87f4a5cacca85967d2d7c4cfff083dfbe292abe9dec79",
+            "width": 384,
+            "height": 384,
+            "levels": 9,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
           }
         ],
         "derivativePixels": [
           {
-            "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
             "textureClass": "normal",
-            "width": 512,
-            "height": 512,
+            "width": 384,
+            "height": 384,
             "channels": 4,
-            "pixelBytes": 1048576,
-            "pixelSha256": "c991e6f9fae84dae66f748ecbc1aa88903c8a5c1c480632da88e286d493b11ff"
-          },
-          {
-            "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
-            "textureClass": "orm",
-            "width": 512,
-            "height": 512,
-            "channels": 4,
-            "pixelBytes": 1048576,
-            "pixelSha256": "3f89ebc489dc43994ff5439506b5b12d68b4f2bc5c080cc6d34297f0d18bf3a5"
+            "pixelBytes": 589824,
+            "pixelSha256": "e9c48217d500ed3dd564b927bedb46ec7a47263444b713debb8da1e180ea82e6"
           },
           {
             "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
             "textureClass": "baseColor",
-            "width": 1024,
-            "height": 1024,
+            "width": 768,
+            "height": 768,
             "channels": 4,
-            "pixelBytes": 4194304,
-            "pixelSha256": "38ad054e37056507611031480ebe4c877a6ff829fbe9a923554dd70d23a6fb99"
+            "pixelBytes": 2359296,
+            "pixelSha256": "74d36e4c24ddaa50a1356264d68e37ab288c0a8a78050a0ce1250b2f176d543c"
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+            "textureClass": "orm",
+            "width": 384,
+            "height": 384,
+            "channels": 4,
+            "pixelBytes": 589824,
+            "pixelSha256": "d80c924b045f8aa108dfe2478a34115e8fe445c09d99047f8207fa5556eecdee"
           }
         ],
         "sourceTextures": [
           {
-            "name": "baseColor",
-            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Villain_PrecisionRemodel_v21_BaseColor_2K.png",
-            "bytes": 712561,
-            "sha256": "1c708f5d1a75e86c87d092ed26cf23cca32a84fb8012e3d73ef0decb22b43a5a"
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
+            "path": "public/models/characters/villain-lod1.glb#image=Char_Villain_PrecisionRemodel_v21_Normal_2K",
+            "bytes": 263414,
+            "sha256": "eccfa05aed2d675bfe3cf1e8accb515ad947d4cdd092f9069fccff1a0379f3fd",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
           },
           {
-            "name": "normal",
-            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_Normal_2K.png",
-            "bytes": 2497010,
-            "sha256": "3ffa8439dccd345d7a82651f9fc6e711646fb9211a44b8e1fd6cd982363a2086"
+            "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+            "path": "public/models/characters/villain-lod1.glb#image=Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+            "bytes": 568847,
+            "sha256": "f5cbade6d044146ecada7e2181e40d6d7d1ef66c9dbc796844efd65ce361b40b",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
           },
           {
-            "name": "ao",
-            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_AO_2K.png",
-            "bytes": 963629,
-            "sha256": "46c7e02242aa7f52becb09a1079d3df8e03818ac034b39ff11521539c59c8d6c"
-          },
-          {
-            "name": "metallicSmoothness",
-            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_MetallicSmoothness_2K.png",
-            "bytes": 1321245,
-            "sha256": "9eeca9650f9c743528f946c1f8389a2ec53449bdc09d7961bae55a9b07b05aab"
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+            "path": "public/models/characters/villain-lod1.glb#image=Char_Villain_PrecisionRemodel_v21_ORM_2K",
+            "bytes": 234460,
+            "sha256": "56921db961e9d6b3bd7f00bb667d7a241bc032d3286a3695fa8cd9c0cb709592",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
           }
         ]
       }

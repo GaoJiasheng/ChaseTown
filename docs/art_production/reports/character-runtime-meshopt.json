@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-07-23T04:38:47.516Z",
+  "generatedAt": "2026-08-28T14:21:05.476Z",
   "policy": {
     "geometryQuantization": false,
     "textureTranscode": false,
@@ -26,11 +26,41 @@
       "24"
     ]
   },
+  "roleOverrides": {
+    "villain": {
+      "sourceTextures": "Lossless authored PNG maps embedded by Blender.",
+      "textureTranscode": "Native gltfpack WebP quality 10 intermediate before production KTX2.",
+      "textureMaxDimension": 768,
+      "executable": "external native gltfpack (pass --gltfpack PATH)",
+      "version": "gltfpack 1.2",
+      "binarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tw",
+        "-tl",
+        "768",
+        "-tq",
+        "10"
+      ]
+    }
+  },
   "totals": {
-    "sourceBytes": 30537232,
-    "optimizedBytes": 18290148,
-    "savedBytes": 12247084,
-    "savedPercent": 40.105
+    "sourceBytes": 28247084,
+    "optimizedBytes": 16001100,
+    "savedBytes": 12245984,
+    "savedPercent": 43.353
   },
   "characters": [
     {
@@ -114,14 +144,14 @@
     {
       "role": "villain",
       "source": {
-        "bytes": 10748024,
-        "sha256": "cee4c14fbf0a5d4d9598b611eddd8998a6f42a44261bd7fd2bb03b8790a67392"
+        "bytes": 8457876,
+        "sha256": "a2d66175f82eb7d432a9026a9bbe88566588c57765eed11773290033727df2cb"
       },
       "optimized": {
-        "bytes": 4669516,
-        "sha256": "06f8e90ed2e34e2dce9d9d1a57b1dd3e88eda8afa275d69d00c70d7a032807d4",
-        "savedBytes": 6078508,
-        "savedPercent": 56.555
+        "bytes": 2380468,
+        "sha256": "33769f721a212b1d081a31e4e94b914823181fc21d7734dd1e114bdfdbdbb8c2",
+        "savedBytes": 6077408,
+        "savedPercent": 71.855
       },
       "quality": {
         "namedNodes": 34,
@@ -130,8 +160,8 @@
         "materials": 6,
         "skins": 1,
         "joints": 21,
-        "sourceTriangles": 157148,
-        "optimizedTriangles": 157148,
+        "sourceTriangles": 74660,
+        "optimizedTriangles": 74660,
         "removedDegenerateTriangles": 0,
         "clips": [
           "Alert",
@@ -144,40 +174,73 @@
           "Search"
         ],
         "clipDurations": {
-          "Alert": 0.6,
-          "Catch": 1.2,
-          "CheckHide": 2.2666666666666666,
+          "Alert": 0.600000024,
+          "Catch": 1.20000005,
+          "CheckHide": 2.26666665,
           "Idle": 2.5,
-          "LostSight": 1.7666666666666666,
-          "PatrolWalk": 1.4666666666666666,
-          "Run": 0.8666666666666667,
-          "Search": 1.4333333333333333
+          "LostSight": 1.76666665,
+          "PatrolWalk": 1.4666667,
+          "Run": 0.866666675,
+          "Search": 1.43333328
         },
         "textures": [
           {
-            "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
             "mimeType": "image/png",
-            "bytes": 735234,
-            "sha256": "0fe361dbcf537515f681419dec7cab3a13173c461a06bc2e2386c7706446c8b4"
-          },
-          {
-            "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
-            "mimeType": "image/png",
-            "bytes": 716987,
-            "sha256": "7536d1e1407974421ac9db7a4417d8dd8e47e48f4e32e0ff9d5ae45a61043eba"
+            "bytes": 1784413,
+            "sha256": "faf5561079fa1f922e8010202281e6535b5d18e33339909b8233ef966b43056d"
           },
           {
             "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
             "mimeType": "image/png",
-            "bytes": 712561,
-            "sha256": "1c708f5d1a75e86c87d092ed26cf23cca32a84fb8012e3d73ef0decb22b43a5a"
+            "bytes": 1703364,
+            "sha256": "f7678754fdcf0634c9b7414e70ce6d730ac520a034c16d4e034cb35f8c26cd49"
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+            "mimeType": "image/png",
+            "bytes": 1384118,
+            "sha256": "a9812a92dcdeeb19d5b28c59be9687d53fd596026f5c333ad342a6b3dc1094ba"
           }
         ],
-        "boundsMaxDeltaMeters": 4.632568328943876e-9,
+        "textureTranscode": {
+          "sourceMimeType": "image/png",
+          "outputMimeType": "image/webp",
+          "minimumPsnrDb": 45,
+          "maximumChannelDelta": 20,
+          "textureMaxDimension": 768,
+          "textures": [
+            {
+              "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
+              "width": 768,
+              "height": 768,
+              "peakSignalToNoiseRatioDb": 45.896,
+              "rootMeanSquaredError": 1.293,
+              "maximumChannelDelta": 8
+            },
+            {
+              "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+              "width": 768,
+              "height": 768,
+              "peakSignalToNoiseRatioDb": 46.235,
+              "rootMeanSquaredError": 1.244,
+              "maximumChannelDelta": 6
+            },
+            {
+              "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+              "width": 768,
+              "height": 768,
+              "peakSignalToNoiseRatioDb": 47.973,
+              "rootMeanSquaredError": 1.018,
+              "maximumChannelDelta": 6
+            }
+          ]
+        },
+        "boundsMaxDeltaMeters": 0,
         "animationDeviation": {
-          "maxRotationDegrees": 0.0031805528701229894,
-          "maxTranslationMeters": 8.440078676208512e-7,
-          "maxScaleDelta": 0.0000014529165107158164
+          "maxRotationDegrees": 0.000003818191820832845,
+          "maxTranslationMeters": 0,
+          "maxScaleDelta": 0
         }
       }
     },

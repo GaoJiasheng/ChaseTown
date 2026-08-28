@@ -18,9 +18,12 @@ import argparse
 import hashlib
 import json
 import math
+import os
+import subprocess
+import struct
 import tempfile
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import bpy
@@ -155,10 +158,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--role", choices=tuple(ROLE_SPECS))
     parser.add_argument("--source-glb", type=Path)
+    parser.add_argument(
+        "--gltfpack",
+        type=Path,
+        default=Path(os.environ["GLTFPACK_NATIVE"]) if os.environ.get("GLTFPACK_NATIVE") else None,
+        help="Explicit native gltfpack 1.2 used for the Villain realistic-LOD0 staging derivative.",
+    )
+    parser.add_argument(
+        "--output-glb",
+        type=Path,
+        help="Single-role staging output. The default remains the role's production GLB.",
+    )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        help="Single-role report path. The default remains art-source/_Shared/Animations/Reports.",
+    )
     parser.add_argument("--preview", action="store_true")
     args = parser.parse_args(__import__("sys").argv[__import__("sys").argv.index("--") + 1 :] if "--" in __import__("sys").argv else [])
     if not args.all and not args.role:
         parser.error("pass --all or --role")
+    if args.all and (args.output_glb or args.report):
+        parser.error("--output-glb and --report require a single --role")
+    if (args.all or args.role == "villain") and args.gltfpack is None:
+        parser.error("Villain build requires --gltfpack or GLTFPACK_NATIVE; host-path discovery is disabled")
     return args
 
 
@@ -183,6 +206,10 @@ def ensure_motion_source(explicit: Path | None) -> Path:
         source = explicit.expanduser().resolve()
         if not source.is_file():
             raise FileNotFoundError(source)
+        if not verified_motion_source(source):
+            raise RuntimeError(
+                "Explicit Quaternius motion source failed the pinned byte-size/SHA-256 gate"
+            )
         return source
     if verified_motion_source(SOURCE_CACHE):
         return SOURCE_CACHE
@@ -228,6 +255,163 @@ def character_meshes(armature: bpy.types.Object) -> list[bpy.types.Object]:
     if not meshes:
         raise RuntimeError("No skinned character meshes found")
     return meshes
+
+
+VILLAIN_GARMENT_REGIONS = (
+    ("Hood", "hood"),
+    ("FaceShadow", "face_shadow"),
+    ("CoatTorso", "coat"),
+    ("CoatSkirtL", "coat"),
+    ("CoatSkirtR", "coat"),
+    ("SleeveL", "coat"),
+    ("SleeveR", "coat"),
+    ("PantsL", "pants"),
+    ("PantsR", "pants"),
+    ("BootL", "boots"),
+    ("BootR", "boots"),
+    ("LiningHardware", "lining_hardware"),
+)
+
+# These are deliberately material-response factors, not colour tints.  All six
+# semantic slots continue to share the same authored BaseColor/Normal/ORM atlas,
+# while cloth, leather, the hood shadow and sparse hardware respond differently
+# to the same lighting.  Keeping base colour at 1 avoids changing the approved
+# A2 palette at the formal top-down gameplay camera.
+VILLAIN_GARMENT_MATERIAL_PROFILES = {
+    "coat": {"roughnessFactor": 0.92, "metallicFactor": 0.00, "normalScale": 0.55},
+    "hood": {"roughnessFactor": 0.98, "metallicFactor": 0.00, "normalScale": 0.42},
+    "face_shadow": {"roughnessFactor": 0.76, "metallicFactor": 0.00, "normalScale": 0.28},
+    "pants": {"roughnessFactor": 0.96, "metallicFactor": 0.00, "normalScale": 0.48},
+    "boots": {"roughnessFactor": 0.74, "metallicFactor": 0.04, "normalScale": 0.62},
+    "lining_hardware": {"roughnessFactor": 0.68, "metallicFactor": 0.14, "normalScale": 0.58},
+}
+
+
+def villain_polygon_region(obj: bpy.types.Object, polygon: bpy.types.MeshPolygon) -> str:
+    """Map A2's continuous sculpt to twelve real, skinned garment pieces.
+
+    The accepted A2 authoring mesh deliberately uses a seam-free vertex-color
+    atlas.  Runtime still needs the remote trunk's authored hierarchy/material
+    contract, so this deterministic partition follows those visible colour,
+    bone and coordinate zones without inventing proxy geometry.
+    """
+    tint = obj.data.color_attributes.get("A2Tint")
+    if tint is None or tint.domain != "POINT":
+        raise RuntimeError("A2 villain garment partition requires POINT-domain A2Tint")
+    center = sum((obj.data.vertices[index].co for index in polygon.vertices), Vector()) / len(polygon.vertices)
+    average_red = sum(tint.data[index].color[0] for index in polygon.vertices) / len(polygon.vertices)
+    bone_scores: dict[str, float] = {}
+    for index in polygon.vertices:
+        for influence in obj.data.vertices[index].groups:
+            if influence.group >= len(obj.vertex_groups):
+                continue
+            name = obj.vertex_groups[influence.group].name
+            bone_scores[name] = bone_scores.get(name, 0.0) + influence.weight
+    dominant_bone = max(bone_scores, key=bone_scores.get) if bone_scores else ""
+
+    if average_red < 0.35:
+        return "FaceShadow"
+    if center.z > 1.42 and 0.60 < average_red < 0.85:
+        return "Hood"
+    if center.y < -0.145 and abs(center.x) < 0.11 and 0.94 < center.z < 1.42:
+        return "LiningHardware"
+    if center.z < 0.26:
+        return "BootL" if center.x < 0.0 else "BootR"
+    if (
+        ("Leg" in dominant_bone or "Foot" in dominant_bone)
+        and center.z < 0.90
+        and abs(center.x) < 0.20
+    ):
+        return "PantsL" if center.x < 0.0 else "PantsR"
+    if "Arm" in dominant_bone or "Hand" in dominant_bone:
+        return "SleeveL" if dominant_bone.startswith("Left") else "SleeveR"
+    if center.z < 0.95:
+        return "CoatSkirtL" if center.x < 0.0 else "CoatSkirtR"
+    return "CoatTorso"
+
+
+def split_villain_a2_garments(
+    armature: bpy.types.Object,
+    meshes: list[bpy.types.Object],
+) -> list[bpy.types.Object]:
+    """Create twelve used garment meshes backed by six used PBR materials."""
+    if len(meshes) != 1:
+        raise RuntimeError(f"A2 villain partition expects one source mesh, found {len(meshes)}")
+    body = meshes[0]
+    if len(body.data.materials) != 1:
+        raise RuntimeError("A2 villain partition expects one seam-free source material")
+    source_material = body.data.materials[0]
+    material_zones = tuple(dict.fromkeys(zone for _, zone in VILLAIN_GARMENT_REGIONS))
+    runtime_materials: dict[str, bpy.types.Material] = {}
+    for zone in material_zones:
+        material = source_material.copy()
+        material.name = f"M_Villain_A2_{zone}"
+        material["a2_semantic_zone"] = zone
+        material["a2_material_response"] = json.dumps(
+            VILLAIN_GARMENT_MATERIAL_PROFILES[zone],
+            sort_keys=True,
+        )
+        runtime_materials[zone] = material
+
+    temporary_materials: dict[str, bpy.types.Material] = {}
+    body.data.materials.clear()
+    for region, _ in VILLAIN_GARMENT_REGIONS:
+        material = bpy.data.materials.new(f"__A2_SPLIT_{region}")
+        material["a2_split_region"] = region
+        temporary_materials[region] = material
+        body.data.materials.append(material)
+    region_indexes = {
+        region: index for index, (region, _) in enumerate(VILLAIN_GARMENT_REGIONS)
+    }
+    region_counts = {region: 0 for region, _ in VILLAIN_GARMENT_REGIONS}
+    for polygon in body.data.polygons:
+        region = villain_polygon_region(body, polygon)
+        polygon.material_index = region_indexes[region]
+        region_counts[region] += 1
+    empty = [region for region, count in region_counts.items() if count == 0]
+    if empty:
+        raise RuntimeError(f"A2 garment partition produced empty regions: {empty}")
+
+    before_objects = set(bpy.context.scene.objects)
+    bpy.ops.object.select_all(action="DESELECT")
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.separate(type="MATERIAL")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    pieces = [body, *(obj for obj in bpy.context.scene.objects if obj not in before_objects and obj.type == "MESH")]
+    by_region: dict[str, bpy.types.Object] = {}
+    region_to_zone = dict(VILLAIN_GARMENT_REGIONS)
+    for piece in pieces:
+        used = {polygon.material_index for polygon in piece.data.polygons}
+        if len(used) != 1:
+            raise RuntimeError(f"{piece.name} retained multiple split regions: {sorted(used)}")
+        split_material = piece.data.materials[next(iter(used))]
+        region = split_material.get("a2_split_region") if split_material else None
+        if not isinstance(region, str) or region not in region_to_zone:
+            raise RuntimeError(f"{piece.name} lost its A2 split-region identity")
+        piece.name = f"Villain_A2_{region}"
+        piece.data.name = f"Villain_A2_{region}_Mesh"
+        piece.data.materials.clear()
+        piece.data.materials.append(runtime_materials[region_to_zone[region]])
+        for polygon in piece.data.polygons:
+            polygon.material_index = 0
+        modifiers = [modifier for modifier in piece.modifiers if modifier.type == "ARMATURE"]
+        if len(modifiers) != 1 or modifiers[0].object != armature:
+            raise RuntimeError(f"{piece.name} lost the canonical armature modifier")
+        by_region[region] = piece
+    if set(by_region) != set(region_counts) or len(pieces) != len(VILLAIN_GARMENT_REGIONS):
+        raise RuntimeError(
+            f"A2 garment partition expected {len(VILLAIN_GARMENT_REGIONS)} pieces; "
+            f"found {len(pieces)} ({sorted(by_region)})"
+        )
+    for material in temporary_materials.values():
+        if material.users == 0:
+            bpy.data.materials.remove(material)
+    if source_material.users == 0:
+        bpy.data.materials.remove(source_material)
+    return [by_region[region] for region, _ in VILLAIN_GARMENT_REGIONS]
 
 
 def import_motion_source(path: Path) -> tuple[bpy.types.Object, dict[str, bpy.types.Action]]:
@@ -1260,37 +1444,226 @@ def select_export_objects(armature: bpy.types.Object, meshes: list[bpy.types.Obj
     bpy.context.view_layer.objects.active = armature
 
 
-def export_character(spec: RoleSpec, armature: bpy.types.Object, meshes: list[bpy.types.Object]) -> None:
+def patch_packed_orm_occlusion(path: Path) -> int:
+    """Bind A2's packed ORM texture to AO without changing its PBR material.
+
+    Blender's stock glTF exporter recognizes the metallic/roughness channels of
+    the packed map, but it has no generic node-graph representation for the
+    red occlusion channel.  The A2 material carries an explicit packing marker,
+    so patch only that authored contract and fail loudly if it disappears.
+    """
+    payload = path.read_bytes()
+    if payload[:4] != b"glTF" or struct.unpack_from("<I", payload, 4)[0] != 2:
+        raise RuntimeError(f"Expected glTF 2.0 GLB at {path}")
+
+    chunks: list[tuple[int, bytes]] = []
+    offset = 12
+    while offset + 8 <= len(payload):
+        length, kind = struct.unpack_from("<II", payload, offset)
+        start = offset + 8
+        end = start + length
+        if end > len(payload):
+            raise RuntimeError(f"Truncated GLB chunk in {path}")
+        chunks.append((kind, payload[start:end]))
+        offset = end
+    json_kind = 0x4E4F534A
+    json_chunks = [chunk for kind, chunk in chunks if kind == json_kind]
+    if len(json_chunks) != 1:
+        raise RuntimeError(f"Expected one JSON chunk in {path}")
+    document = json.loads(json_chunks[0].rstrip(b" \t\r\n\0"))
+
+    primitives = [
+        primitive
+        for mesh in document.get("meshes", [])
+        for primitive in mesh.get("primitives", [])
+    ]
+    if not primitives or any("COLOR_0" not in primitive.get("attributes", {}) for primitive in primitives):
+        raise RuntimeError("A2 villain export lost its authored COLOR_0 material zoning")
+
+    patched = 0
+    for material in document.get("materials", []):
+        packing = str(material.get("extras", {}).get("a2_orm_packing", ""))
+        if not packing.upper().startswith("ORM"):
+            continue
+        zone = str(material.get("extras", {}).get("a2_semantic_zone", ""))
+        profile = VILLAIN_GARMENT_MATERIAL_PROFILES.get(zone)
+        if profile is None:
+            raise RuntimeError(f"A2 villain material has unknown semantic zone: {zone!r}")
+        packed = material.get("pbrMetallicRoughness", {}).get("metallicRoughnessTexture")
+        if not isinstance(packed, dict) or not isinstance(packed.get("index"), int):
+            raise RuntimeError("A2 villain material lost its packed metallic/roughness texture")
+        pbr = material["pbrMetallicRoughness"]
+        pbr["roughnessFactor"] = profile["roughnessFactor"]
+        pbr["metallicFactor"] = profile["metallicFactor"]
+        normal = material.get("normalTexture")
+        if not isinstance(normal, dict) or not isinstance(normal.get("index"), int):
+            raise RuntimeError("A2 villain material lost its authored normal texture")
+        normal["scale"] = profile["normalScale"]
+        occlusion = dict(packed)
+        occlusion["strength"] = 1.0
+        material["occlusionTexture"] = occlusion
+        patched += 1
+    if patched != 6:
+        raise RuntimeError(f"Expected six used A2 garment materials with packed ORM; patched {patched}")
+
+    encoded_json = json.dumps(document, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    encoded_json += b" " * ((4 - len(encoded_json) % 4) % 4)
+    rebuilt = [
+        (kind, encoded_json if kind == json_kind else chunk)
+        for kind, chunk in chunks
+    ]
+    total = 12 + sum(8 + len(chunk) for _, chunk in rebuilt)
+    output = bytearray(struct.pack("<4sII", b"glTF", 2, total))
+    for kind, chunk in rebuilt:
+        output.extend(struct.pack("<II", len(chunk), kind))
+        output.extend(chunk)
+    path.write_bytes(output)
+    return patched
+
+
+def glb_json(path: Path) -> dict[str, object]:
+    payload = path.read_bytes()
+    if payload[:4] != b"glTF" or struct.unpack_from("<I", payload, 4)[0] != 2:
+        raise RuntimeError(f"Expected glTF 2.0 GLB at {path}")
+    offset = 12
+    while offset + 8 <= len(payload):
+        length, kind = struct.unpack_from("<II", payload, offset)
+        start = offset + 8
+        if kind == 0x4E4F534A:
+            return json.loads(payload[start : start + length].rstrip(b" \t\r\n\0"))
+        offset = start + length
+    raise RuntimeError(f"No JSON chunk in {path}")
+
+
+def glb_triangle_count(document: dict[str, object]) -> int:
+    accessors = document.get("accessors", [])
+    return sum(
+        int(accessors[primitive["indices"]]["count"]) // 3
+        for mesh in document.get("meshes", [])
+        for primitive in mesh.get("primitives", [])
+    )
+
+
+def simplify_villain_realistic_lod0(path: Path, gltfpack: Path) -> dict[str, object]:
+    """Create the uncompressed <=75k runtime source before Meshopt transport."""
+    executable = gltfpack.expanduser().resolve()
+    if not executable.is_file():
+        raise FileNotFoundError(executable)
+    version = subprocess.run(
+        [str(executable), "-v"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if version != "gltfpack 1.2":
+        raise RuntimeError(f"Expected native gltfpack 1.2, received {version}")
+    before_document = glb_json(path)
+    temporary = path.with_name(f".{path.name}.realistic-lod0-{os.getpid()}.glb")
+    arguments = [
+        "-kn", "-km", "-ke", "-noq",
+        "-si", "0.54", "-se", "0.00337", "-slb",
+        "-af", "0", "-at", "24", "-ar", "16", "-as", "24",
+    ]
+    try:
+        result = subprocess.run(
+            [str(executable), "-i", str(path), "-o", str(temporary), *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr or result.stdout or "Villain LOD0 simplification failed")
+        after_document = glb_json(temporary)
+        source_triangles = glb_triangle_count(before_document)
+        triangles = glb_triangle_count(after_document)
+        if not 45_000 <= triangles <= 75_000:
+            raise RuntimeError(f"Villain realistic LOD0 has {triangles} triangles")
+        if "EXT_meshopt_compression" in after_document.get("extensionsRequired", []):
+            raise RuntimeError("Villain animation staging must remain pre-Meshopt")
+        if len(after_document.get("nodes", [])) < 34:
+            raise RuntimeError("Villain realistic LOD0 lost the authored hierarchy")
+        if len(after_document.get("materials", [])) < 6:
+            raise RuntimeError("Villain realistic LOD0 lost semantic garment materials")
+        if len(after_document.get("animations", [])) != 8:
+            raise RuntimeError("Villain realistic LOD0 lost gameplay clips")
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return {
+        "tool": version,
+        "binarySha256": sha256_file(executable),
+        "arguments": arguments,
+        "sourceTriangles": source_triangles,
+        "triangles": triangles,
+        "triangleRatio": round(triangles / source_triangles, 6),
+        "uncompressedPreMeshopt": True,
+    }
+
+
+def export_character(spec: RoleSpec, armature: bpy.types.Object, meshes: list[bpy.types.Object]) -> int:
     spec.output_glb.parent.mkdir(parents=True, exist_ok=True)
     select_export_objects(armature, meshes)
     armature.animation_data.action = None
     reset_pose(armature)
     bpy.context.scene.frame_set(0)
-    bpy.ops.export_scene.gltf(
-        filepath=str(spec.output_glb),
-        export_format="GLB",
-        use_selection=True,
-        export_yup=True,
-        export_skins=True,
-        export_animations=True,
-        export_animation_mode="ACTIONS",
-        export_merge_animation="ACTION",
-        export_force_sampling=True,
-        export_frame_step=1,
-        export_optimize_animation_size=False,
-        export_materials="EXPORT",
-        export_image_format="AUTO",
-        export_keep_originals=True,
-        export_texcoords=True,
-        export_normals=True,
-        export_tangents=True,
-        export_extras=True,
-        export_cameras=False,
-        export_lights=False,
-    )
+    export_options: dict[str, object] = {
+        "filepath": str(spec.output_glb),
+        "export_format": "GLB",
+        "use_selection": True,
+        "export_yup": True,
+        "export_skins": True,
+        "export_animations": True,
+        "export_animation_mode": "ACTIONS",
+        "export_merge_animation": "ACTION",
+        "export_force_sampling": True,
+        "export_frame_step": 1,
+        "export_optimize_animation_size": False,
+        "export_materials": "EXPORT",
+        "export_image_format": "AUTO",
+        "export_keep_originals": True,
+        "export_texcoords": True,
+        "export_normals": True,
+        "export_tangents": True,
+        "export_extras": True,
+        "export_cameras": False,
+        "export_lights": False,
+    }
+    if spec.key == "villain":
+        # Keep the lossless authored A2 maps in this provenance-bearing source
+        # GLB. The Meshopt stage performs its explicit native WebP intermediate
+        # transcode before optimize_runtime_ktx2.mjs emits production KTX2.
+        export_options.update({
+            "export_keep_originals": False,
+            "export_vertex_color": "ACTIVE",
+        })
+    bpy.ops.export_scene.gltf(**export_options)
+    return patch_packed_orm_occlusion(spec.output_glb) if spec.key == "villain" else 0
 
 
-def build_role(spec: RoleSpec, source_path: Path, make_preview: bool) -> dict[str, object]:
+def display_path(path: Path) -> str:
+    resolved = path.expanduser().resolve()
+    try:
+        return resolved.relative_to(ROOT).as_posix()
+    except ValueError:
+        # Isolated QA builds must not make checked evidence host-specific.
+        return resolved.name
+
+
+def is_ephemeral_output(path: Path) -> bool:
+    try:
+        path.expanduser().resolve().relative_to(ROOT)
+        return False
+    except ValueError:
+        return True
+
+
+def build_role(
+    spec: RoleSpec,
+    source_path: Path,
+    make_preview: bool,
+    report_path: Path | None = None,
+    gltfpack: Path | None = None,
+) -> dict[str, object]:
     print(f"\n=== Building {spec.key} animation set ===")
     if not spec.source_blend.is_file():
         raise FileNotFoundError(spec.source_blend)
@@ -1300,6 +1673,8 @@ def build_role(spec: RoleSpec, source_path: Path, make_preview: bool) -> dict[st
     scene.render.fps_base = 1.0
     target = target_armature()
     meshes = character_meshes(target)
+    if spec.key == "villain":
+        meshes = split_villain_a2_garments(target, meshes)
 
     if target.animation_data:
         target.animation_data.action = None
@@ -1327,12 +1702,30 @@ def build_role(spec: RoleSpec, source_path: Path, make_preview: bool) -> dict[st
     remove_source_objects(source)
     remove_source_actions(source_actions)
     remove_non_character_objects(target, meshes)
-    export_character(spec, target, meshes)
+    orm_occlusion_materials = export_character(spec, target, meshes)
+    realistic_lod0 = (
+        simplify_villain_realistic_lod0(spec.output_glb, gltfpack)
+        if spec.key == "villain" and gltfpack is not None
+        else None
+    )
 
     report = {
         "role": spec.key,
-        "output": str(spec.output_glb.relative_to(ROOT)),
-        "outputBytes": spec.output_glb.stat().st_size,
+        "artifactStage": (
+            "preMeshoptAnimationBakedRealisticLod0Staging"
+            if realistic_lod0 is not None
+            else "preMeshoptAnimationBakedStaging"
+        ),
+        "outputAtBuildTime": {
+            "path": display_path(spec.output_glb),
+            "ephemeral": is_ephemeral_output(spec.output_glb),
+            "bytes": spec.output_glb.stat().st_size,
+            "sha256": sha256_file(spec.output_glb),
+        },
+        # Villain M1 is the only role whose pipeline currently owns three
+        # final runtime derivatives and a bootstrap-stage report refresh.
+        # Police/Kid reports must not advertise an empty Villain-only contract.
+        **({"finalRuntime": {}} if spec.key == "villain" else {}),
         "rig": target.name,
         "bones": len(target.data.bones),
         "meshes": len(meshes),
@@ -1340,7 +1733,12 @@ def build_role(spec: RoleSpec, source_path: Path, make_preview: bool) -> dict[st
             {
                 "name": action.name,
                 "frames": [round(float(action.frame_range[0]), 3), round(float(action.frame_range[1]), 3)],
-                "durationSeconds": action["durationSeconds"],
+                "durationSeconds": round(
+                    (float(action.frame_range[1]) - float(action.frame_range[0]))
+                    / scene.render.fps,
+                    4,
+                ),
+                "sourceRetargetDurationSeconds": action["durationSeconds"],
                 "source": action["source"],
                 "loop": action["loop"],
             }
@@ -1356,12 +1754,17 @@ def build_role(spec: RoleSpec, source_path: Path, make_preview: bool) -> dict[st
                 "sha256": sha256_file(source_path),
                 "matchesPinnedQuaterniusStandard": verified_motion_source(source_path),
             },
+            **({
+                "packedOrmOcclusionMaterials": orm_occlusion_materials,
+                "semanticMaterialProfiles": VILLAIN_GARMENT_MATERIAL_PROFILES,
+            } if spec.key == "villain" else {}),
+            **({"realisticLod0": realistic_lod0} if realistic_lod0 is not None else {}),
             **({"seams": seam_report} if seam_report is not None else {}),
             **({"turnInPlace": turn_report} if turn_report is not None else {}),
         },
     }
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    report_path = REPORT_DIR / f"{spec.key}_web_animation_set.json"
+    report_path = (report_path or REPORT_DIR / f"{spec.key}_web_animation_set.json").expanduser().resolve()
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
     if make_preview:
@@ -1373,7 +1776,15 @@ def main() -> None:
     args = parse_args()
     source = ensure_motion_source(args.source_glb)
     roles = tuple(ROLE_SPECS) if args.all else (args.role,)
-    reports = [build_role(ROLE_SPECS[role], source, args.preview) for role in roles]
+    reports = []
+    for role in roles:
+        spec = ROLE_SPECS[role]
+        report_path = None
+        if args.output_glb:
+            spec = replace(spec, output_glb=args.output_glb.expanduser().resolve())
+        if args.report:
+            report_path = args.report
+        reports.append(build_role(spec, source, args.preview, report_path, args.gltfpack))
     print(f"Built {len(reports)} role animation set(s).")
 
 

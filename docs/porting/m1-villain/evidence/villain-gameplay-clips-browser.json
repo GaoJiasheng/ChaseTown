@@ -1,0 +1,191 @@
+{
+  "formatVersion": 2,
+  "capturedAt": "2026-08-28T15:36:33Z",
+  "method": "Chromium WebGL2; actual Three.js 0.185.0 Meshopt and local /basis/ KTX2 decode; LOD1 and Bootstrap evaluated at the same normalized animation frames.",
+  "url": "http://localhost:3002/__m1-villain-final-qa.html?v=2193dc833f9b",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "devicePixelRatio": 1
+  },
+  "reference": {
+    "path": "public/models/characters/villain-lod1.glb",
+    "bytes": 1526192,
+    "sha256": "66cccb2e32d0e771a7eef73a113ca8dd773d92563c665c983feba6dfae901352"
+  },
+  "bootstrap": {
+    "path": "public/models/characters/villain-bootstrap.glb",
+    "bytes": 891784,
+    "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a"
+  },
+  "normalizedFrames": {
+    "a": 0.18,
+    "b": 0.68
+  },
+  "clips": [
+    {
+      "name": "PatrolWalk",
+      "durationSeconds": 1.4666666984558105,
+      "frameA": {
+        "normalizedTime": 0.18,
+        "timeSeconds": 0.2640000057220459,
+        "pixels": {
+          "silhouetteIou": 1,
+          "rgbMeanAbsoluteError": 0.5993155609237052
+        },
+        "pose": {
+          "maximumDegrees": 0.0000029575586669421963,
+          "maximumBone": "LeftUpperLeg",
+          "meanDegrees": 3.7082055932595855e-7
+        }
+      },
+      "frameB": {
+        "normalizedTime": 0.68,
+        "timeSeconds": 0.9973333549499512,
+        "pixels": {
+          "silhouetteIou": 1,
+          "rgbMeanAbsoluteError": 0.6163160154572778
+        },
+        "pose": {
+          "maximumDegrees": 0.0000034150945850063755,
+          "maximumBone": "RightLowerLeg",
+          "meanDegrees": 5.076002001600369e-7
+        }
+      },
+      "betweenFrames": {
+        "maximumDegrees": 44.24485789072068,
+        "maximumBone": "RightLowerLeg",
+        "meanDegrees": 8.356008604174214
+      }
+    },
+    {
+      "name": "Search",
+      "durationSeconds": 1.4333332777023315,
+      "frameA": {
+        "normalizedTime": 0.18,
+        "timeSeconds": 0.25799998998641965,
+        "pixels": {
+          "silhouetteIou": 1,
+          "rgbMeanAbsoluteError": 0.622018114555428
+        },
+        "pose": {
+          "maximumDegrees": 0.0000024148365394514667,
+          "maximumBone": "LeftHand",
+          "meanDegrees": 3.449766484930667e-7
+        }
+      },
+      "frameB": {
+        "normalizedTime": 0.68,
+        "timeSeconds": 0.9746666288375855,
+        "pixels": {
+          "silhouetteIou": 1,
+          "rgbMeanAbsoluteError": 0.6205894562058946
+        },
+        "pose": {
+          "maximumDegrees": 0.0000024148365394514667,
+          "maximumBone": "LeftHand",
+          "meanDegrees": 3.449766484930667e-7
+        }
+      },
+      "betweenFrames": {
+        "maximumDegrees": 4.007892349323213,
+        "maximumBone": "LeftLowerLeg",
+        "meanDegrees": 1.8157028474409191
+      }
+    },
+    {
+      "name": "CheckHide",
+      "durationSeconds": 2.2666666507720947,
+      "frameA": {
+        "normalizedTime": 0.18,
+        "timeSeconds": 0.40799999713897706,
+        "pixels": {
+          "silhouetteIou": 1,
+          "rgbMeanAbsoluteError": 0.6285796105383734
+        },
+        "pose": {
+          "maximumDegrees": 0.0000024148365394514667,
+          "maximumBone": "LeftHand",
+          "meanDegrees": 4.599688646574222e-7
+        }
+      },
+      "frameB": {
+        "normalizedTime": 0.68,
+        "timeSeconds": 1.5413333225250245,
+        "pixels": {
+          "silhouetteIou": 1,
+          "rgbMeanAbsoluteError": 0.6347058258949995
+        },
+        "pose": {
+          "maximumDegrees": 0.0000024148365394514667,
+          "maximumBone": "LeftHand",
+          "meanDegrees": 3.449766484930667e-7
+        }
+      },
+      "betweenFrames": {
+        "maximumDegrees": 13.693275879079309,
+        "maximumBone": "RightLowerArm",
+        "meanDegrees": 2.5010192905158855
+      }
+    },
+    {
+      "name": "Catch",
+      "durationSeconds": 1.2000000476837158,
+      "frameA": {
+        "normalizedTime": 0.18,
+        "timeSeconds": 0.21600000858306884,
+        "pixels": {
+          "silhouetteIou": 1,
+          "rgbMeanAbsoluteError": 0.6302476258098872
+        },
+        "pose": {
+          "maximumDegrees": 0.0000024148365394514667,
+          "maximumBone": "LeftHand",
+          "meanDegrees": 4.262884243265518e-7
+        }
+      },
+      "frameB": {
+        "normalizedTime": 0.68,
+        "timeSeconds": 0.8160000324249268,
+        "pixels": {
+          "silhouetteIou": 1,
+          "rgbMeanAbsoluteError": 0.6412949939167334
+        },
+        "pose": {
+          "maximumDegrees": 0.0000029575586669421963,
+          "maximumBone": "RightUpperArm",
+          "meanDegrees": 4.858127754903141e-7
+        }
+      },
+      "betweenFrames": {
+        "maximumDegrees": 64.0685505934009,
+        "maximumBone": "RightLowerArm",
+        "meanDegrees": 14.95109523968445
+      }
+    }
+  ],
+  "gates": {
+    "minimumSilhouetteIou": 0.9999,
+    "maximumRgbMeanAbsoluteError": 1,
+    "maximumSameFramePoseDeltaDegrees": 0.001,
+    "minimumBetweenFramePoseDeltaDegrees": 1
+  },
+  "consoleWarnError": [],
+  "screenshots": [
+    {
+      "path": "docs/porting/m1-villain/evidence/villain-gameplay-clips-browser-top-1440x900.png",
+      "bytes": 68061,
+      "sha256": "24ca42dc72d8811eb36e69702463ed43a0b00619b463230d7056ba00e8454b74"
+    },
+    {
+      "path": "docs/porting/m1-villain/evidence/villain-gameplay-clips-browser-middle-1440x900.png",
+      "bytes": 66941,
+      "sha256": "c5672fbc4b48f3eb72c2d01630fcdedb7e4b1a7eb2eea16e494733d9c59a049e"
+    },
+    {
+      "path": "docs/porting/m1-villain/evidence/villain-gameplay-clips-browser-bottom-1440x900.png",
+      "bytes": 70394,
+      "sha256": "e47d99e4649e7c127c3e15b5f393c3f794a59f52affdc261c46d25c12c74c478"
+    }
+  ]
+}

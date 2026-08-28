@@ -31,17 +31,13 @@ export const DEFAULT_REPORT = path.join(
   "reports",
   "character-lod1.json",
 );
-export const FORMAT_VERSION = 1;
+export const FORMAT_VERSION = 2;
 
-export const GLTFPACK_ARGUMENTS = Object.freeze([
+const GLTFPACK_BASE_ARGUMENTS = Object.freeze([
   "-c",
   "-kn",
   "-km",
   "-ke",
-  "-si",
-  "0.65",
-  "-se",
-  "0.002",
   "-tu",
   "-tq",
   "9",
@@ -58,6 +54,23 @@ export const GLTFPACK_ARGUMENTS = Object.freeze([
   "-as",
   "24",
 ]);
+
+function lodArguments(simplifyRatio, simplificationError, geometryQuantization) {
+  return Object.freeze([
+    ...GLTFPACK_BASE_ARGUMENTS.slice(0, 4),
+    "-si",
+    String(simplifyRatio),
+    "-se",
+    String(simplificationError),
+    ...(geometryQuantization ? [] : ["-noq"]),
+    ...GLTFPACK_BASE_ARGUMENTS.slice(4),
+  ]);
+}
+
+export const GLTFPACK_ARGUMENTS = Object.freeze({
+  kid: lodArguments(0.65, 0.002, true),
+  villain: lodArguments(0.343, 0.008, true),
+});
 
 export const CHARACTER_LOD_CONTRACTS = Object.freeze({
   kid: Object.freeze({
@@ -76,6 +89,9 @@ export const CHARACTER_LOD_CONTRACTS = Object.freeze({
       "Walk",
     ]),
     maxBytes: 3_050_000,
+    simplifyRatio: 0.65,
+    simplificationError: 0.002,
+    geometryQuantization: true,
     minimumTriangleRatio: 0.64,
     maximumTriangleRatio: 0.69,
   }),
@@ -91,8 +107,13 @@ export const CHARACTER_LOD_CONTRACTS = Object.freeze({
       "Search",
     ]),
     maxBytes: 2_700_000,
-    minimumTriangleRatio: 0.63,
-    maximumTriangleRatio: 0.68,
+    simplifyRatio: 0.343,
+    simplificationError: 0.008,
+    geometryQuantization: true,
+    minimumTriangleRatio: 0.33,
+    maximumTriangleRatio: 0.35,
+    minimumTriangles: 20_000,
+    maximumTriangles: 32_000,
   }),
 });
 
@@ -134,7 +155,9 @@ function parseArguments(argv) {
     sourceDirectory: DEFAULT_CHARACTER_DIRECTORY,
     outputDirectory: DEFAULT_CHARACTER_DIRECTORY,
     report: DEFAULT_REPORT,
+    reportExplicit: false,
     gltfpack: process.env.GLTFPACK_NATIVE,
+    role: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -146,12 +169,23 @@ function parseArguments(argv) {
     if (!value) throw new Error(`${argument} needs a value`);
     if (argument === "--source-dir") options.sourceDirectory = path.resolve(value);
     else if (argument === "--output-dir") options.outputDirectory = path.resolve(value);
-    else if (argument === "--report") options.report = path.resolve(value);
+    else if (argument === "--report") {
+      options.report = path.resolve(value);
+      options.reportExplicit = true;
+    }
     else if (argument === "--gltfpack") options.gltfpack = path.resolve(value);
+    else if (argument === "--role") options.role = value;
     else throw new Error(`Unknown argument: ${argument}`);
     index += 1;
   }
+  if (options.role !== null && !(options.role in CHARACTER_LOD_CONTRACTS)) {
+    throw new Error(`Unknown character role: ${options.role}`);
+  }
   return options;
+}
+
+function selectedRoles(options) {
+  return options.role ? [options.role] : Object.keys(CHARACTER_LOD_CONTRACTS);
 }
 
 function sha256(buffer) {
@@ -522,6 +556,19 @@ export async function auditLodPair(role, sourceFilename, lodFilename) {
     loadGlb(sourceFilename),
     loadGlb(lodFilename),
   ]);
+  assert.equal(
+    lod.json.extensionsRequired?.includes("KHR_mesh_quantization") ?? false,
+    contract.geometryQuantization,
+    `${lodFilename} geometry quantization contract drifted`,
+  );
+  if (!contract.geometryQuantization) {
+    for (const node of lod.json.nodes.filter((candidate) => candidate.mesh !== undefined)) {
+      assert.ok(
+        (node.scale ?? [1, 1, 1]).every((value) => Math.abs(value - 1) <= 1e-6),
+        `${lodFilename}/${node.name ?? "mesh"} must keep a literal unit scale`,
+      );
+    }
+  }
   await Promise.all([decodeMeshopt(source), decodeMeshopt(lod)]);
 
   assert.ok(hasMeshopt(source), `${sourceFilename} must be the shipped Meshopt high model`);
@@ -534,11 +581,6 @@ export async function auditLodPair(role, sourceFilename, lodFilename) {
     lod.json.extensionsRequired?.includes("KHR_texture_basisu"),
     `${lodFilename} must retain KHR_texture_basisu`,
   );
-  assert.ok(
-    lod.json.extensionsRequired?.includes("KHR_mesh_quantization"),
-    `${lodFilename} must use the approved LOD geometry quantization`,
-  );
-
   const sourceNamedNodes = sortedUnique(
     source.json.nodes.map((node) => node.name).filter(Boolean),
   );
@@ -608,6 +650,18 @@ export async function auditLodPair(role, sourceFilename, lodFilename) {
       && triangleRatio <= contract.maximumTriangleRatio,
     `${lodFilename} triangle ratio ${triangleRatio} is outside the reviewed LOD envelope`,
   );
+  if (contract.minimumTriangles !== undefined) {
+    assert.ok(
+      lodTriangles >= contract.minimumTriangles,
+      `${lodFilename} has only ${lodTriangles} triangles`,
+    );
+  }
+  if (contract.maximumTriangles !== undefined) {
+    assert.ok(
+      lodTriangles <= contract.maximumTriangles,
+      `${lodFilename} has ${lodTriangles} triangles`,
+    );
+  }
 
   const sourceBounds = sceneBounds(source);
   const lodBounds = sceneBounds(lod);
@@ -671,7 +725,7 @@ export async function auditLodPair(role, sourceFilename, lodFilename) {
   };
 }
 
-function reportFor(entries, toolVersion, generatedAt) {
+function reportFor(entries, toolVersion, generation, generatedAt) {
   const sourceBytes = entries.reduce((total, entry) => total + entry.source.bytes, 0);
   const lodBytes = entries.reduce((total, entry) => total + entry.lod.bytes, 0);
   return {
@@ -692,16 +746,34 @@ function reportFor(entries, toolVersion, generatedAt) {
       version: toolVersion,
       arguments: GLTFPACK_ARGUMENTS,
     },
+    generation,
     budgets: Object.fromEntries(
       Object.entries(CHARACTER_LOD_CONTRACTS).map(([role, contract]) => [
         role,
         {
           maxBytes: contract.maxBytes,
+          simplifyRatio: contract.simplifyRatio,
+          simplificationError: contract.simplificationError,
+          geometryQuantization: contract.geometryQuantization,
           minimumTriangleRatio: contract.minimumTriangleRatio,
           maximumTriangleRatio: contract.maximumTriangleRatio,
+          ...(contract.minimumTriangles === undefined
+            ? {}
+            : { minimumTriangles: contract.minimumTriangles }),
+          ...(contract.maximumTriangles === undefined
+            ? {}
+            : { maximumTriangles: contract.maximumTriangles }),
         },
       ]),
     ),
+    roleOverrides: {
+      villain: {
+        targetTriangleRatio: CHARACTER_LOD_CONTRACTS.villain.simplifyRatio,
+        maximumSimplificationError: CHARACTER_LOD_CONTRACTS.villain.simplificationError,
+        geometryQuantization: CHARACTER_LOD_CONTRACTS.villain.geometryQuantization,
+        rationale: "Derive a 25.5–26k first-paint silhouette from the docs/02-compliant realistic LOD0 while preserving literal unit transforms and the existing combined >=35% LOD saving contract.",
+      },
+    },
     totals: {
       sourceBytes,
       lodBytes,
@@ -716,42 +788,64 @@ async function readReport(filename) {
   return JSON.parse(await readFile(filename, "utf8"));
 }
 
-async function resolveGltfpack(explicit) {
-  const candidates = [
-    explicit,
-    "/private/tmp/gltfpack-macos-v1.2/gltfpack",
-    "/opt/homebrew/bin/gltfpack",
-    path.join(ROOT, "node_modules", ".bin", "gltfpack"),
-  ].filter(Boolean);
-  for (const candidate of candidates) {
-    try {
-      await access(candidate);
-      const version = spawnSync(candidate, ["-v"], { encoding: "utf8" });
-      if (version.status === 0) {
-        return { executable: candidate, version: version.stdout.trim() };
-      }
-    } catch {
-      // Try the next known installation. --check never needs the encoder.
-    }
-  }
-  throw new Error(
-    "A gltfpack 1.2 native binary is required. Pass --gltfpack or GLTFPACK_NATIVE.",
+function mergeCharacterEntries(existing, updates) {
+  const updatedByRole = new Map(updates.map((entry) => [entry.role, entry]));
+  const existingByRole = new Map(
+    (existing?.characters ?? []).map((entry) => [entry.role, entry]),
   );
+  return Object.keys(CHARACTER_LOD_CONTRACTS).map((role) => {
+    const entry = updatedByRole.get(role) ?? existingByRole.get(role);
+    assert.ok(entry, `The LOD report has no preserved ${role} entry`);
+    return entry;
+  });
+}
+
+async function resolveGltfpack(explicit) {
+  if (!explicit) {
+    throw new Error(
+      "A native gltfpack 1.2 binary is required. Pass --gltfpack or GLTFPACK_NATIVE; automatic host-path discovery is intentionally disabled.",
+    );
+  }
+  await access(explicit);
+  const version = spawnSync(explicit, ["-v"], { encoding: "utf8" });
+  if (version.status !== 0) {
+    throw new Error(version.stderr || version.stdout || `Unable to run ${explicit}`);
+  }
+  return {
+    executable: explicit,
+    version: version.stdout.trim(),
+    binarySha256: sha256(await readFile(explicit)),
+  };
 }
 
 async function auditShipped(options) {
   const existing = await readReport(options.report);
   assert.equal(existing.formatVersion, FORMAT_VERSION);
+  assert.match(existing.tool.version, /^gltfpack 1\.2(?:\b|$)/u);
   assert.deepEqual(existing.tool.arguments, GLTFPACK_ARGUMENTS);
   const entries = [];
-  for (const role of Object.keys(CHARACTER_LOD_CONTRACTS)) {
+  for (const role of selectedRoles(options)) {
     entries.push(await auditLodPair(
       role,
       path.join(options.sourceDirectory, `${role}.glb`),
       path.join(options.outputDirectory, `${role}-lod1.glb`),
     ));
   }
-  const current = reportFor(entries, existing.tool.version, existing.generatedAt);
+  const recordedRoles = Object.keys(existing.generation?.roleBinarySha256 ?? {});
+  const unrecordedRoles = existing.generation?.unrecordedLegacyRoles ?? [];
+  assert.deepEqual(
+    [...new Set([...recordedRoles, ...unrecordedRoles])].sort(),
+    Object.keys(CHARACTER_LOD_CONTRACTS).sort(),
+  );
+  for (const binarySha256 of Object.values(existing.generation?.roleBinarySha256 ?? {})) {
+    assert.match(binarySha256, /^[a-f0-9]{64}$/u);
+  }
+  const current = reportFor(
+    mergeCharacterEntries(existing, entries),
+    existing.tool.version,
+    existing.generation,
+    existing.generatedAt,
+  );
   assert.deepEqual(current, existing, `${options.report} does not match the shipped LOD assets`);
   return current;
 }
@@ -764,12 +858,16 @@ async function build(options) {
   const stagingDirectory = await mkdtemp(path.join(tmpdir(), "chasing-character-lod1-"));
   const staged = [];
   try {
-    for (const role of Object.keys(CHARACTER_LOD_CONTRACTS)) {
+    const roles = selectedRoles(options);
+    const existing = roles.length === Object.keys(CHARACTER_LOD_CONTRACTS).length
+      ? null
+      : await readReport(options.report);
+    for (const role of roles) {
       const sourceFilename = path.join(options.sourceDirectory, `${role}.glb`);
       const stagedFilename = path.join(stagingDirectory, `${role}-lod1.glb`);
       const result = spawnSync(
         encoder.executable,
-        ["-i", sourceFilename, "-o", stagedFilename, ...GLTFPACK_ARGUMENTS],
+        ["-i", sourceFilename, "-o", stagedFilename, ...GLTFPACK_ARGUMENTS[role]],
         { cwd: ROOT, encoding: "utf8" },
       );
       if (result.status !== 0) {
@@ -785,9 +883,28 @@ async function build(options) {
         outputFilename,
       });
     }
+    const previousRoleHashes = { ...(existing?.generation?.roleBinarySha256 ?? {}) };
+    if (existing?.generation?.nativeBinarySha256) {
+      for (const role of Object.keys(CHARACTER_LOD_CONTRACTS)) {
+        previousRoleHashes[role] ??= existing.generation.nativeBinarySha256;
+      }
+    }
+    const roleBinarySha256 = { ...previousRoleHashes };
+    for (const role of roles) roleBinarySha256[role] = encoder.binarySha256;
+    for (const role of roles) {
+      assert.match(roleBinarySha256[role], /^[a-f0-9]{64}$/u);
+    }
+    const unrecordedLegacyRoles = Object.keys(CHARACTER_LOD_CONTRACTS)
+      .filter((role) => roleBinarySha256[role] === undefined);
     const report = reportFor(
-      staged.map(({ entry }) => entry),
+      mergeCharacterEntries(existing, staged.map(({ entry }) => entry)),
       encoder.version,
+      {
+        roleBinarySha256,
+        unrecordedLegacyRoles,
+        lastBuildRoles: roles,
+        lastBuildBinarySha256: encoder.binarySha256,
+      },
       new Date().toISOString(),
     );
     assert.ok(report.totals.lodBytes <= 5_750_000, "Combined first-frame actors exceed 5.75 MB");
@@ -807,6 +924,16 @@ async function build(options) {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
+  if (
+    !options.check
+    && path.resolve(options.outputDirectory) !== path.resolve(DEFAULT_CHARACTER_DIRECTORY)
+    && (
+      !options.reportExplicit
+      || path.resolve(options.report) === path.resolve(DEFAULT_REPORT)
+    )
+  ) {
+    throw new Error("A non-default --output-dir requires an explicit non-default --report path");
+  }
   const report = options.check ? await auditShipped(options) : await build(options);
   console.log(JSON.stringify(report, null, 2));
 }
