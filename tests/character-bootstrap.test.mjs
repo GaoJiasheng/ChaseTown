@@ -25,6 +25,11 @@ test("bootstrap actors retain exact reference geometry, skeleton and animation t
   const report = JSON.parse(await readFile(REPORT, "utf8"));
   assert.equal(report.formatVersion, FORMAT_VERSION);
   assert.deepEqual(report.tool.arguments, GLTFPACK_ARGUMENTS);
+  assert.match(report.auditToolchain.sharpVersion, /^0\.35\./u);
+  assert.match(report.auditToolchain.libvipsVersion, /^8\./u);
+  assert.match(report.auditToolchain.basisTranscoder.jsSha256, /^[a-f0-9]{64}$/u);
+  assert.match(report.auditToolchain.basisTranscoder.wasmSha256, /^[a-f0-9]{64}$/u);
+  assert.match(report.auditToolchain.derivativeComparison, /decoded RGBA8 pixels/u);
   assert.deepEqual(report.policy, {
     derivativeOnly: true,
     highModelsUnmodified: true,
@@ -79,6 +84,17 @@ test("bootstrap actors retain exact reference geometry, skeleton and animation t
       );
     }
     assert.ok(entry.quality.nonImageTransport.entries > 0);
+    for (const derivative of entry.quality.derivativePixels) {
+      assert.equal(derivative.width, derivative.height);
+      assert.equal(derivative.channels, 4);
+      assert.equal(
+        derivative.pixelBytes,
+        derivative.width * derivative.height * derivative.channels,
+      );
+      assert.match(derivative.pixelSha256, /^[a-f0-9]{64}$/u);
+      assert.equal(Object.hasOwn(derivative, "pngBytes"), false);
+      assert.equal(Object.hasOwn(derivative, "pngSha256"), false);
+    }
   }
 
   const referenceBytes = audited.reduce(

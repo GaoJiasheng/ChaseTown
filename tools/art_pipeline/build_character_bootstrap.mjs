@@ -33,7 +33,7 @@ import vm from "node:vm";
 import sharp from "sharp";
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-export const FORMAT_VERSION = 2;
+export const FORMAT_VERSION = 3;
 export const DEFAULT_CHARACTER_DIRECTORY = path.join(
   ROOT,
   "public",
@@ -180,6 +180,7 @@ let basisModulePromise;
 function parseArguments(argv) {
   const options = {
     check: false,
+    refreshReport: false,
     sourceDirectory: DEFAULT_CHARACTER_DIRECTORY,
     outputDirectory: DEFAULT_CHARACTER_DIRECTORY,
     report: DEFAULT_REPORT,
@@ -189,6 +190,10 @@ function parseArguments(argv) {
     const argument = argv[index];
     if (argument === "--check") {
       options.check = true;
+      continue;
+    }
+    if (argument === "--refresh-report") {
+      options.refreshReport = true;
       continue;
     }
     const value = argv[index + 1];
@@ -205,6 +210,37 @@ function parseArguments(argv) {
 
 function sha256(payload) {
   return createHash("sha256").update(payload).digest("hex");
+}
+
+async function auditToolchainSnapshot() {
+  const [transcoderSource, transcoderWasm] = await Promise.all([
+    readFile(path.join(BASIS_DIRECTORY, "basis_transcoder.js")),
+    readFile(path.join(BASIS_DIRECTORY, "basis_transcoder.wasm")),
+  ]);
+  return {
+    sharpVersion: sharp.versions.sharp,
+    libvipsVersion: sharp.versions.vips,
+    basisTranscoder: {
+      jsSha256: sha256(transcoderSource),
+      wasmSha256: sha256(transcoderWasm),
+    },
+    derivativeComparison:
+      "Exact decoded RGBA8 pixels; PNG container bytes and encoder metadata are excluded.",
+  };
+}
+
+async function decodedPixelFingerprint(payload) {
+  const { data, info } = await sharp(payload)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return {
+    width: info.width,
+    height: info.height,
+    channels: info.channels,
+    pixelBytes: data.length,
+    pixelSha256: sha256(data),
+  };
 }
 
 function round(value, digits = 6) {
@@ -678,14 +714,10 @@ async function artSourceTextureDerivatives(role, asset) {
     const payload = payloadByClass[textureClass];
     assert.ok(payload, `${asset.filename} has an unexpected image ${image.name}`);
     payloads.push(payload);
-    const metadata = await sharp(payload).metadata();
     derivatives.push({
       name: image.name,
       textureClass,
-      width: metadata.width,
-      height: metadata.height,
-      pngBytes: payload.length,
-      pngSha256: sha256(payload),
+      ...await decodedPixelFingerprint(payload),
     });
   }
   return {
@@ -719,15 +751,11 @@ async function embeddedTextureDerivatives(role, asset) {
       size,
       `${asset.filename}/${image.name}`,
     );
-    const metadata = await sharp(payload).metadata();
     payloads.push(payload);
     derivatives.push({
       name: image.name,
       textureClass,
-      width: metadata.width,
-      height: metadata.height,
-      pngBytes: payload.length,
-      pngSha256: sha256(payload),
+      ...await decodedPixelFingerprint(payload),
     });
     sources.push({
       name: image.name,
@@ -1011,13 +1039,13 @@ export async function auditBootstrapPair(role, referenceFilename, bootstrapFilen
       nonImageTransport: transportSnapshot(bootstrap),
       semanticJsonSha256: semanticSnapshot(bootstrap.json),
       textures,
-      derivativePngs: derivatives.derivatives,
+      derivativePixels: derivatives.derivatives,
       sourceTextures: derivatives.sources,
     },
   };
 }
 
-function reportFor(entries, toolVersion, generatedAt) {
+function reportFor(entries, toolVersion, auditToolchain, generatedAt) {
   const referenceBytes = entries.reduce(
     (total, entry) => total + entry.reference.bytes,
     0,
@@ -1056,6 +1084,7 @@ function reportFor(entries, toolVersion, generatedAt) {
       version: toolVersion,
       arguments: GLTFPACK_ARGUMENTS,
     },
+    auditToolchain,
     budgets: {
       perCharacterBytes: Object.fromEntries(
         Object.entries(CHARACTER_BOOTSTRAP_CONTRACTS).map(([role, contract]) => [
@@ -1139,6 +1168,7 @@ async function build(options) {
     const report = reportFor(
       staged.map(({ entry }) => entry),
       encoder.version,
+      await auditToolchainSnapshot(),
       new Date().toISOString(),
     );
     assert.ok(
@@ -1161,6 +1191,18 @@ async function check(options) {
   const existing = JSON.parse(await readFile(options.report, "utf8"));
   assert.equal(existing.formatVersion, FORMAT_VERSION);
   assert.deepEqual(existing.tool.arguments, GLTFPACK_ARGUMENTS);
+  const entries = await auditEntries(options);
+  const current = reportFor(
+    entries,
+    existing.tool.version,
+    await auditToolchainSnapshot(),
+    existing.generatedAt,
+  );
+  assert.deepEqual(current, existing, `${options.report} does not match shipped bootstraps`);
+  return current;
+}
+
+async function auditEntries(options) {
   const entries = [];
   for (const role of Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS)) {
     entries.push(await auditBootstrapPair(
@@ -1169,14 +1211,40 @@ async function check(options) {
       path.join(options.outputDirectory, `${role}-bootstrap.glb`),
     ));
   }
-  const current = reportFor(entries, existing.tool.version, existing.generatedAt);
-  assert.deepEqual(current, existing, `${options.report} does not match shipped bootstraps`);
-  return current;
+  return entries;
+}
+
+async function refreshReport(options) {
+  const existing = JSON.parse(await readFile(options.report, "utf8"));
+  assert.match(existing.tool?.version ?? "", /^gltfpack 1\.2(?:\b|$)/u);
+  const report = reportFor(
+    await auditEntries(options),
+    existing.tool.version,
+    await auditToolchainSnapshot(),
+    new Date().toISOString(),
+  );
+  const temporaryReport = `${options.report}.tmp-${process.pid}`;
+  try {
+    await writeFile(temporaryReport, `${JSON.stringify(report, null, 2)}\n`);
+    await rename(temporaryReport, options.report);
+  } finally {
+    await rm(temporaryReport, { force: true });
+  }
+  return report;
 }
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
-  const report = options.check ? await check(options) : await build(options);
+  assert.equal(
+    options.check && options.refreshReport,
+    false,
+    "--check and --refresh-report are mutually exclusive",
+  );
+  const report = options.check
+    ? await check(options)
+    : options.refreshReport
+      ? await refreshReport(options)
+      : await build(options);
   console.log(JSON.stringify(report, null, 2));
 }
 
