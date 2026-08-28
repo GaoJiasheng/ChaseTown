@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -130,6 +131,19 @@ test("bootstrap actors pass the checked-in real-browser visual comparison", asyn
     maximumRgbMeanAbsoluteError: 1,
   });
   assert.match(visualReport.screenshotSha256, /^[a-f0-9]{64}$/u);
+  assert.equal(path.isAbsolute(visualReport.screenshot), false);
+  assert.match(visualReport.screenshot, /^docs\/porting\//u);
+  assert.equal(visualReport.screenshotEncoding, "PNG");
+  const screenshot = await readFile(path.join(ROOT, visualReport.screenshot));
+  assert.equal(screenshot.length, visualReport.screenshotBytes);
+  assert.equal(
+    createHash("sha256").update(screenshot).digest("hex"),
+    visualReport.screenshotSha256,
+  );
+  assert.deepEqual(
+    [...screenshot.subarray(0, 8)],
+    [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  );
   for (const role of Object.keys(CHARACTER_BOOTSTRAP_CONTRACTS)) {
     const asset = assetReport.characters.find((candidate) => candidate.role === role);
     assert.deepEqual(visualReport.assets[role].reference, {

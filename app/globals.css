@@ -29,6 +29,15 @@ button { font: inherit; }
 }
 
 .hud { min-height: 54px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+
+/* Browser art QA may expose the untouched production camera without HUD
+   occlusion. Visibility preserves the exact playfield layout and camera-safe
+   viewport; this is inert unless both the QA hook and explicit query opt in. */
+html[data-chasing-qa-clean-frame="true"] .game-shell > :is(.hud, footer),
+html[data-chasing-qa-clean-frame="true"] .playfield > :not(.three-mount):not(.cinematic-vignette):not(.theme-event-wash):not(.stealth-blackout-wash):not(.director-cue-frame) {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 .title-lockup { min-width: 190px; }
 .eyebrow { display: block; color: var(--gold); font-size: 10px; font-weight: 850; letter-spacing: .25em; }
 h1 { margin: 2px 0 0; font-size: clamp(24px, 2.5vw, 36px); font-weight: 790; letter-spacing: .05em; line-height: 1.02; }

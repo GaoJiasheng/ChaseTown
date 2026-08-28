@@ -458,7 +458,7 @@ async function loadBasisModule() {
   return basisModulePromise;
 }
 
-async function decodedKtx2Rgba(payload, label) {
+export async function decodedKtx2Rgba(payload, label) {
   const basis = await loadBasisModule();
   const ktx2 = new basis.KTX2File(new Uint8Array(payload));
   try {

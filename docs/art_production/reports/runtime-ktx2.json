@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-08-28T14:21:37.592Z",
+  "generatedAt": "2026-08-28T18:07:51.219Z",
   "policy": {
     "geometryRepacked": false,
     "semanticHierarchyByteStable": true,
@@ -34,11 +34,11 @@
   "actualToolchain": {
     "sharpVersion": "0.35.2",
     "assetGltfpackBinarySha256": {
-      "public/models/characters/villain.glb": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
+      "public/models/characters/villain.glb": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+      "public/models/characters/police.glb": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
     },
     "unrecordedLegacyTargets": [
       "public/models/characters/kid.glb",
-      "public/models/characters/police.glb",
       "public/models/environment/themes/campus-kit.glb",
       "public/models/environment/themes/hospital-kit.glb",
       "public/models/environment/themes/fire-station-kit.glb",
@@ -46,19 +46,19 @@
     ],
     "lastBuildBinarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
     "lastBuildTargets": [
-      "public/models/characters/villain.glb"
+      "public/models/characters/police.glb"
     ],
     "legacyToolLabelCompatibility": "tool.encoderInput is retained verbatim for the existing remote-trunk report contract; actual Sharp is recorded here from the loaded package."
   },
   "totals": {
-    "sourceAssetBytes": 21974292,
-    "outputAssetBytes": 19845964,
+    "sourceAssetBytes": 22561524,
+    "outputAssetBytes": 20617940,
     "sharedTextureBytes": 2572090,
-    "deploymentBytes": 22418054,
-    "uncachedAllThemesBytes": 28441437,
+    "deploymentBytes": 23190030,
+    "uncachedAllThemesBytes": 29213413,
     "deduplicatedBytes": 6023383,
-    "savedBytes": -443762,
-    "savedPercent": -2.019
+    "savedBytes": -628506,
+    "savedPercent": -2.786
   },
   "sharedTextures": [
     {
@@ -591,18 +591,18 @@
         "4"
       ],
       "source": {
-        "bytes": 8673828,
-        "sha256": "03791e4f688477ccd1aaafc4cb8adfd6b8fa6dadc1e6cc7d1977469262bae618",
-        "embeddedImageBytes": 8023313
+        "bytes": 9261060,
+        "sha256": "77bafaeb1f07990339ba212a87cc808502d690d6479d3ce32e32109397ee5a49",
+        "embeddedImageBytes": 8494567
       },
       "output": {
-        "bytes": 6873868,
-        "sha256": "768841bb45da54f12805e5593a5c1876f2eb6600422da821b9899a583efe9fa4",
-        "embeddedImageBytes": 6223077,
+        "bytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+        "embeddedImageBytes": 6879074,
         "externalTextureBytes": 0,
-        "uncachedFirstLoadBytes": 6873868,
-        "savedBytes": 1799960,
-        "savedPercent": 20.752
+        "uncachedFirstLoadBytes": 7645844,
+        "savedBytes": 1615216,
+        "savedPercent": 17.441
       },
       "gpuUploadEstimate": {
         "decodedRgbaBytesBefore": 43690624,
@@ -612,16 +612,16 @@
       },
       "structure": {
         "nodes": {
-          "count": 60,
-          "sha256": "4014d4e0d1c79b392ad99871248504eafc6ffacf50e375f53cab7aad9f787510"
+          "count": 47,
+          "sha256": "363f9ad05389d5b9172562425d690b9f1f689f34caeac1a309a19cbfc1fcd176"
         },
         "meshes": {
-          "count": 38,
-          "sha256": "e560d7f44c0f3077f20184c3a7f59c38559cb3256631050202cfbe4f70c7e543"
+          "count": 25,
+          "sha256": "1681b99e24159bccd7efe1ffa7338d0da80eedfaa08e47736aae320ecd1441d9"
         },
         "materials": {
           "count": 14,
-          "sha256": "0709e167400ecc92166aa340d6ad8c55b28659bffdb6c78e3a931ea28eb369d8"
+          "sha256": "64eb8e735574b5b43ee088ae5d58e583a6530ec0fe0694d3c85f1e638518dbf1"
         },
         "animations": {
           "count": 5,
@@ -631,42 +631,9 @@
           "count": 1,
           "sha256": "4d3734583ec8333ee864d4e139a4680502785eff172e4a31c1cdfc46977f6d0b"
         },
-        "semanticJsonSha256": "63558b187246802a011034f16843e81b37dcede29d3dafcffa346c9e002c3d5e"
+        "semanticJsonSha256": "3e0d667fbd7b70f439a9c652a71a9c6de6cc7c0884611328d555eb5149073de8"
       },
       "textures": [
-        {
-          "name": "Police_v22_Skin_MicroNormal_768",
-          "expectedMode": "UASTC",
-          "bytes": 458512,
-          "width": 768,
-          "height": 768,
-          "levels": 10,
-          "supercompressionScheme": 2,
-          "mode": "UASTC",
-          "sha256": "cf7098b403c97f7d8b174f953d25087b6ab448f7a0c06b4a2ed57114835805ed"
-        },
-        {
-          "name": "Police_v22_Skin_ORM_768",
-          "expectedMode": "UASTC",
-          "bytes": 465037,
-          "width": 768,
-          "height": 768,
-          "levels": 10,
-          "supercompressionScheme": 2,
-          "mode": "UASTC",
-          "sha256": "1fc5c20ae9bbc33b8fc53d37c50f36761b5252b7c6ceda72fbea50c8b84fabb6"
-        },
-        {
-          "name": "young_lightskinned_male_diffuse2",
-          "expectedMode": "UASTC",
-          "bytes": 3653212,
-          "width": 2048,
-          "height": 2048,
-          "levels": 12,
-          "supercompressionScheme": 2,
-          "mode": "UASTC",
-          "sha256": "25f2c8c9cdfa655066890aec5bd12a0db4a5f74485ecc8436fb7bcdfc7411b47"
-        },
         {
           "name": "Police_v22_CasualSuit_Normal_1K",
           "expectedMode": "UASTC",
@@ -681,35 +648,68 @@
         {
           "name": "Police_v22_Uniform_ORM_768",
           "expectedMode": "UASTC",
-          "bytes": 467348,
+          "bytes": 538950,
           "width": 768,
           "height": 768,
           "levels": 10,
           "supercompressionScheme": 2,
           "mode": "UASTC",
-          "sha256": "bb29526ed8e9698e02c42f55b5d99e4a18fa5ab740765d883060bc7f4df61f99"
+          "sha256": "82ffaab050a58addcd7f923f37ccac57b193651eb3bd0fc4d2aef09bdd9f75c2"
         },
         {
           "name": "Police_v22_Uniform_BaseColor_768",
           "expectedMode": "UASTC",
-          "bytes": 187396,
+          "bytes": 453006,
           "width": 768,
           "height": 768,
           "levels": 10,
           "supercompressionScheme": 2,
           "mode": "UASTC",
-          "sha256": "3d98e1c22a023bcbc626c135f1d37400db1295cb67d412c06d9ce1018c0453e3"
+          "sha256": "4a35dd4e70104a85be2d42bed9d61e28b2be0d051939d0d13106f6bfd3f6e713"
+        },
+        {
+          "name": "Police_v22_Skin_MicroNormal_768",
+          "expectedMode": "UASTC",
+          "bytes": 458512,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "cf7098b403c97f7d8b174f953d25087b6ab448f7a0c06b4a2ed57114835805ed"
+        },
+        {
+          "name": "Police_v22_Skin_ORM_768",
+          "expectedMode": "UASTC",
+          "bytes": 537325,
+          "width": 768,
+          "height": 768,
+          "levels": 10,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "ea050d9dc4fbab1f47d8edf5658f2cde1177861d34df5c5342a93c5fa1bacfe2"
+        },
+        {
+          "name": "young_lightskinned_male_diffuse2",
+          "expectedMode": "UASTC",
+          "bytes": 3653212,
+          "width": 2048,
+          "height": 2048,
+          "levels": 12,
+          "supercompressionScheme": 2,
+          "mode": "UASTC",
+          "sha256": "25f2c8c9cdfa655066890aec5bd12a0db4a5f74485ecc8436fb7bcdfc7411b47"
         },
         {
           "name": "Police_v22_Trouser_BaseColor_768",
           "expectedMode": "UASTC",
-          "bytes": 182025,
+          "bytes": 428522,
           "width": 768,
           "height": 768,
           "levels": 10,
           "supercompressionScheme": 2,
           "mode": "UASTC",
-          "sha256": "ac0a3f3fde029645e4c0090f002aaa787f49bfc32d01f859c2cf0aa90912d1a9"
+          "sha256": "7b6dd71e6fd9bf44c8bf4231da5cf407899440062e5ff1a29eb209bb18546847"
         }
       ]
     },

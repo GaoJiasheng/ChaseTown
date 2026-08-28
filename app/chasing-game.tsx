@@ -90,8 +90,14 @@ import {
 } from "./game/input.ts";
 import {
   parseQaDelaySeconds,
+  parseQaFlag,
   parseQaLevel,
+  parseQaNormalizedTime,
+  parseQaPoliceAssetVariant,
+  parseQaPoliceAnimation,
   parseQaPoint,
+  summarizeQaGltfDocument,
+  type QaGltfDocument,
 } from "./game/qa-browser.ts";
 import {
   MASTERY_CHALLENGE_IDS,
@@ -323,6 +329,9 @@ const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
   ]),
 });
 
+const POLICE_ASSET_CACHE_VERSION = "4";
+const POLICE_BOOTSTRAP_MODEL_HREF = "/models/characters/police-bootstrap.glb";
+
 const ACTOR_SPECS = {
   kid: {
     bootstrapUrl: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.player,
@@ -358,8 +367,10 @@ const ACTOR_SPECS = {
     },
     required: ["idle", "walk", "run", "alert", "loseSight", "search", "checkLocker", "catch"] as AnimationState[],
   },
+  // Police stays deferred, but the A2 asset needs a cache key distinct from
+  // the pre-remodel bootstrap shipped by the remote trunk.
   police: {
-    url: "/models/characters/police-bootstrap.glb?v=1",
+    url: `${POLICE_BOOTSTRAP_MODEL_HREF}?v=${POLICE_ASSET_CACHE_VERSION}`,
     height: 1.82,
     aliases: {
       idle: "Idle",
@@ -368,7 +379,7 @@ const ACTOR_SPECS = {
       protect: "Resolve",
       alert: "Alert",
     },
-    required: ["idle", "run", "point", "protect"] as AnimationState[],
+    required: ["idle", "run", "point", "protect", "alert"] as AnimationState[],
   },
 } as const;
 
@@ -1813,6 +1824,79 @@ type ActorView = {
     baseDepthWrite: boolean;
   }>;
 };
+
+type QaLoadedGlbIdentity = Readonly<{
+  requestedUrl: string;
+  resolvedUrl: string;
+  transferBytes: number;
+  sha256: string;
+  nodes: number;
+  meshes: number;
+  primitives: number;
+  triangles: number;
+  materials: number;
+  textures: number;
+  skins: number;
+  joints: number;
+  jointNames: readonly string[];
+  runtimeMeshObjects: number;
+  runtimeSkinnedMeshes: number;
+  runtimeSkeletons: number;
+  runtimeBones: number;
+  clips: readonly Readonly<{
+    name: string;
+    durationSeconds: number;
+    tracks: number;
+  }>[];
+}>;
+
+function inspectQaLoadedGlbIdentity(
+  asset: GLTF,
+  requestedUrl: string,
+  resolvedUrl: string,
+  transferBytes: number,
+  sha256: string,
+): QaLoadedGlbIdentity {
+  const json = (asset.parser as unknown as { json?: QaGltfDocument }).json;
+  const source = summarizeQaGltfDocument(json);
+  let runtimeMeshObjects = 0;
+  let runtimeSkinnedMeshes = 0;
+  let runtimeBones = 0;
+  const runtimeSkeletons = new Set<string>();
+  asset.scene.traverse((object) => {
+    if (object instanceof THREE.Mesh) runtimeMeshObjects += 1;
+    if (object instanceof THREE.SkinnedMesh) {
+      runtimeSkinnedMeshes += 1;
+      runtimeSkeletons.add(object.skeleton.uuid);
+    }
+    if (object instanceof THREE.Bone) runtimeBones += 1;
+  });
+  return Object.freeze({
+    requestedUrl,
+    resolvedUrl,
+    transferBytes,
+    sha256,
+    ...source,
+    runtimeMeshObjects,
+    runtimeSkinnedMeshes,
+    runtimeSkeletons: runtimeSkeletons.size,
+    runtimeBones,
+    clips: Object.freeze(asset.animations
+      .map((clip) => Object.freeze({
+        name: clip.name,
+        durationSeconds: Number(clip.duration.toFixed(6)),
+        tracks: clip.tracks.length,
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name))),
+  });
+}
+
+async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 function installActorReadabilityRim(
   root: THREE.Object3D,
@@ -3597,7 +3681,14 @@ export function ChasingGame() {
       simulation.config.fixedStepSeconds,
     );
     const ghostInputBuffer = new GhostFixedStepInputBuffer();
-    const storedGhost = preferences.personalGhostEnabled
+    const initialQaSearchParams = new URLSearchParams(location.search);
+    const qaSessionRequested = initialQaSearchParams.has("qa");
+    const suppressGhostForQaResolution = qaSessionRequested
+      && parseQaFlag(initialQaSearchParams.get("qaResolution"));
+    // QA evidence must be deterministic and independent of a browser profile's
+    // previously recorded personal-best ghost. Normal player sessions keep the
+    // saved-ghost path unchanged.
+    const storedGhost = preferences.personalGhostEnabled && !qaSessionRequested
       ? loadPersonalGhost(localStorage, ghostRunLevelId)
       : null;
     const ghostEligible = canRacePersonalGhost({
@@ -3797,8 +3888,30 @@ export function ChasingGame() {
     const qaSpawnDelaySeconds = qaSearchParams.has("qa")
       ? parseQaDelaySeconds(qaSearchParams.get("qaSpawnDelay"))
       : 0;
+    const qaCleanFrameRequested = qaSearchParams.has("qa")
+      && parseQaFlag(qaSearchParams.get("qaCleanFrame"));
+    if (qaCleanFrameRequested) {
+      document.documentElement.dataset.chasingQaCleanFrame = "true";
+    }
+    const qaResolutionScenario = suppressGhostForQaResolution;
+    const qaPoliceAnimationScenario = qaSearchParams.has("qa")
+      ? parseQaPoliceAnimation(qaSearchParams.get("qaPoliceClip"))
+      : null;
+    const qaPoliceAnimationTime = qaPoliceAnimationScenario
+      ? parseQaNormalizedTime(qaSearchParams.get("qaPoliceTime"))
+      : null;
+    const qaPoliceAssetVariant = qaSearchParams.has("qa")
+      ? parseQaPoliceAssetVariant(qaSearchParams.get("qaPoliceAsset"))
+      : null;
+    const qaPoliceAssetUrl = qaPoliceAssetVariant === "high"
+      ? `/models/characters/police.glb?v=${POLICE_ASSET_CACHE_VERSION}`
+      : ACTOR_SPECS.police.url;
+    let qaLoadedPoliceAssetIdentity: QaLoadedGlbIdentity | null = null;
+    const qaLoadedGlbIdentities = new WeakMap<THREE.Object3D, QaLoadedGlbIdentity>();
     let qaDomSnapshotTimer: ReturnType<typeof setInterval> | null = null;
     let qaLevelSelectionTimer: ReturnType<typeof setTimeout> | null = null;
+    let qaPoliceAnimationTimer: ReturnType<typeof setTimeout> | null = null;
+    let qaPoliceFrameSnapshotTimer: ReturnType<typeof setInterval> | null = null;
     const qaQualityValue = qaSearchParams.has("qa")
       ? qaSearchParams.get("qaQuality")
       : null;
@@ -5782,7 +5895,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           type: "run-completed",
         });
         const ghost = ghostRecorder.finish(completedTick);
-        const ghostSave = ghost
+        const ghostSave = ghost && !qaResolutionScenario
           ? savePersonalBestGhost(localStorage, ghost, preferences.ruleset)
           : null;
         if (ghost && ghostSave?.saved) {
@@ -5792,7 +5905,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           // effect was originally created.
           ghostRecording = ghost;
         }
-        if (selectedRemixContract) {
+        if (selectedRemixContract && !qaResolutionScenario) {
           saveCertifiedRemixRecord(
             localStorage,
             selectedRemixContract,
@@ -5817,10 +5930,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               campaignLevel.campaign.levelNumber + 1,
             ),
           );
-          try {
-            localStorage.setItem(CAMPAIGN_PROGRESS_KEY, JSON.stringify(updated));
-          } catch {
-            // Progress still works for this session if persistence is denied.
+          if (!qaResolutionScenario) {
+            try {
+              localStorage.setItem(CAMPAIGN_PROGRESS_KEY, JSON.stringify(updated));
+            } catch {
+              // Progress still works for this session if persistence is denied.
+            }
           }
           return updated;
         });
@@ -6609,7 +6724,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       return load;
     };
 
-    const loadGlbWithRetry = async (url: string) => {
+    const loadGlbWithRetry = async (
+      url: string,
+      options: { captureQaIdentity?: boolean } = {},
+    ) => {
       if (disposed) throw new DOMException("Scene disposed", "AbortError");
       pendingGlbLoadCount += 1;
       try {
@@ -6631,6 +6749,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         );
         const loader = await parser;
         const asset = await loader.parseAsync(bytes, assetBaseUrl.href);
+        if (options.captureQaIdentity) {
+          qaLoadedGlbIdentities.set(
+            asset.scene,
+            inspectQaLoadedGlbIdentity(
+              asset,
+              url,
+              absoluteUrl.href,
+              bytes.byteLength,
+              await sha256Hex(bytes),
+            ),
+          );
+        }
         if (disposed) {
           disposeObjectResources([asset.scene]);
           throw new DOMException("Scene disposed", "AbortError");
@@ -6826,7 +6956,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         if (performance.now() < policeRetryAfterMilliseconds) return Promise.resolve();
         policeLoadPromise = (async () => {
           try {
-            const policeAsset = await loadGlbWithRetry(ACTOR_SPECS.police.url);
+            const policeAsset = await loadGlbWithRetry(qaPoliceAssetUrl, {
+              captureQaIdentity: qaSearchParams.has("qa"),
+            });
             if (disposed) {
               disposeObjectResources([policeAsset.scene]);
               return;
@@ -6838,8 +6970,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             configureAssetTextures([loadedPolice], renderer);
             textureDeduplication = deduplicateAssetTextures(loadedAssets);
             placeActors(actorAssets, actors, scene, ["police"]);
+            qaLoadedPoliceAssetIdentity = qaLoadedGlbIdentities.get(policeAsset.scene) ?? null;
             if (latestState.phase === "won" && actors.police) {
-              requestAnimation(actors.police, "protect", { fade: 0.08 });
+              requestAnimation(
+                actors.police,
+                preferencesRef.current.reducedMotion ? "idle" : "protect",
+                { fade: 0.08 },
+              );
             }
           } catch (error) {
             policeRetryAfterMilliseconds = performance.now() + 5_000;
@@ -8733,7 +8870,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             // The authored kid celebration is the reliable immediate fallback.
             // Police joins as soon as its on-demand stream completes.
             void requestPoliceAsset?.();
-            if (actors.police) requestAnimation(actors.police, "protect", { fade: 0.14 });
+            if (actors.police) {
+              requestAnimation(
+                actors.police,
+                preferencesRef.current.reducedMotion ? "idle" : "protect",
+                { fade: 0.14 },
+              );
+            }
           }
           continue;
         }
@@ -11910,6 +12053,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             qaDecorativeSceneCompiled,
             qaDecorativeSceneCompileCount,
             qaTransientArtPrewarmCount,
+            qaCleanFrame: qaCleanFrameRequested,
+            policeAssetUrl: qaPoliceAssetUrl,
+            policeLoaded: Boolean(actors.police),
+            policeLoadedIdentity: qaLoadedPoliceAssetIdentity,
             loadedAssetIds: [...loadedAssetIds].sort(),
             placedAssetIds: [...placedAssetIds].sort(),
             unusedLoadedAssetIds: [...loadedAssetIds].filter((id) => !placedAssetIds.has(id)).sort(),
@@ -12133,6 +12280,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 missionState,
                 objective.id,
               ).state;
+              recordPlayerRuleEvent({
+                tick: latestState.tick,
+                type: "objective-completed",
+                objectiveId: objective.id,
+              });
+              if (missionState.exitUnlocked) {
+                recordPlayerRuleEvent({
+                  tick: latestState.tick,
+                  type: "exit-unlocked",
+                  objectiveId: objective.id,
+                });
+              }
             }
           }
           updateThemeMissionViews(performance.now());
@@ -12184,6 +12343,35 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           installedQaHook.selectLevel(qaLevelScenario - 1);
         };
         qaLevelSelectionTimer = setTimeout(selectQaLevelAfterCurrentSceneSettles, 0);
+      } else if (qaResolutionScenario) {
+        const resolveQaMissionAfterSceneSettles = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          if (
+            !ready
+            || !decorativeAssetsReady
+            || deferredDressingFade !== null
+            || pendingGlbLoadCount !== 0
+            || !dependencyLoadingManagerIdle
+          ) {
+            qaLevelSelectionTimer = setTimeout(resolveQaMissionAfterSceneSettles, 100);
+            return;
+          }
+          installedQaHook.setScenario({
+            player: campaignLevel.exit,
+            chaser: campaignLevel.chaserStart,
+            chaserHeading: campaignLevel.chaserStartHeading,
+            spawnDelaySeconds: 60,
+          });
+          ghostSimulation = null;
+          ghostCursor = null;
+          ghostState = null;
+          ghostRecording = null;
+          ghostRuleProgressTracker = null;
+          ghostRuleProgress = null;
+          if (ghostActor) ghostActor.root.visible = false;
+          installedQaHook.completeMission();
+        };
+        qaLevelSelectionTimer = setTimeout(resolveQaMissionAfterSceneSettles, 0);
       } else if (qaPlayerScenario && qaChaserScenario) {
         queueMicrotask(() => {
           if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
@@ -12193,6 +12381,47 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             spawnDelaySeconds: qaSpawnDelaySeconds,
           });
         });
+      }
+      if (qaPoliceAnimationScenario) {
+        const applyQaPoliceAnimationWhenReady = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          if (!ready) {
+            qaPoliceAnimationTimer = setTimeout(applyQaPoliceAnimationWhenReady, 100);
+            return;
+          }
+          if (!actors.police) {
+            void requestPoliceAsset?.();
+            qaPoliceAnimationTimer = setTimeout(applyQaPoliceAnimationWhenReady, 100);
+            return;
+          }
+          const action = actors.police.animator.play(
+            qaPoliceAnimationScenario as AnimationState,
+            {
+              fade: 0,
+              restart: true,
+              loop: qaPoliceAnimationScenario === "idle"
+                || qaPoliceAnimationScenario === "run"
+                || qaPoliceAnimationScenario === "alert",
+            },
+          );
+          if (!action) return;
+          actors.police.lastRequested = qaPoliceAnimationScenario as AnimationState;
+          if (qaPoliceAnimationTime !== null) {
+            action.time = action.getClip().duration * qaPoliceAnimationTime;
+            action.paused = true;
+            actors.police.animator.mixer.update(0);
+          }
+        };
+        qaPoliceAnimationTimer = setTimeout(applyQaPoliceAnimationWhenReady, 0);
+        const mirrorQaPoliceAnimationFrame = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          document.documentElement.dataset.chasingQaPoliceAnimationSnapshot = JSON.stringify({
+            capturedAtMilliseconds: performance.now(),
+            animation: actors.police?.animator.snapshot() ?? null,
+          });
+        };
+        mirrorQaPoliceAnimationFrame();
+        qaPoliceFrameSnapshotTimer = setInterval(mirrorQaPoliceAnimationFrame, 16);
       }
       const mirrorQaSnapshot = () => {
         if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
@@ -12204,9 +12433,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             player?: unknown;
             chaser?: unknown;
           };
-          animations?: { villain?: unknown };
-          visibility?: { villain?: unknown };
+          animations?: { villain?: unknown; police?: unknown };
+          visibility?: { villain?: unknown; police?: unknown };
           assets?: unknown;
+          preferences?: unknown;
+          themeMission?: unknown;
           sceneIntegrity?: unknown;
           camera?: unknown;
           render?: unknown;
@@ -12221,9 +12452,17 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             player: snapshot.game?.player,
             chaser: snapshot.game?.chaser,
           },
-          animations: { villain: snapshot.animations?.villain },
-          visibility: { villain: snapshot.visibility?.villain },
+          animations: {
+            villain: snapshot.animations?.villain,
+            police: snapshot.animations?.police,
+          },
+          visibility: {
+            villain: snapshot.visibility?.villain,
+            police: snapshot.visibility?.police,
+          },
           assets: snapshot.assets,
+          preferences: snapshot.preferences,
+          themeMission: snapshot.themeMission,
           sceneIntegrity: snapshot.sceneIntegrity,
           camera: snapshot.camera,
           render: snapshot.render,
@@ -12266,9 +12505,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         delete document.documentElement.dataset.chasingQuality;
         delete document.documentElement.dataset.chasingEmergency;
         delete document.documentElement.dataset.chasingQaSnapshot;
+        delete document.documentElement.dataset.chasingQaPoliceAnimationSnapshot;
+        delete document.documentElement.dataset.chasingQaCleanFrame;
       }
       if (qaDomSnapshotTimer !== null) clearInterval(qaDomSnapshotTimer);
       if (qaLevelSelectionTimer !== null) clearTimeout(qaLevelSelectionTimer);
+      if (qaPoliceAnimationTimer !== null) clearTimeout(qaPoliceAnimationTimer);
+      if (qaPoliceFrameSnapshotTimer !== null) clearInterval(qaPoliceFrameSnapshotTimer);
       const runtimePlayfield = host.parentElement;
       if (runtimePlayfield?.classList.contains("playfield")) {
         runtimePlayfield.classList.remove(

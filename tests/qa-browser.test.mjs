@@ -3,8 +3,13 @@ import test from "node:test";
 
 import {
   parseQaDelaySeconds,
+  parseQaFlag,
   parseQaLevel,
+  parseQaNormalizedTime,
+  parseQaPoliceAssetVariant,
+  parseQaPoliceAnimation,
   parseQaPoint,
+  summarizeQaGltfDocument,
 } from "../app/game/qa-browser.ts";
 
 test("QA browser scenario points accept finite in-bounds coordinates", () => {
@@ -32,4 +37,94 @@ test("QA browser spawn delay is finite and bounded", () => {
   for (const value of [null, "", "-1", "61", "later"]) {
     assert.equal(parseQaDelaySeconds(value), 0);
   }
+});
+
+test("QA browser flag accepts only the explicit one token", () => {
+  assert.equal(parseQaFlag("1"), true);
+  for (const value of [null, "", "0", "true", "yes", " 1 "]) {
+    assert.equal(parseQaFlag(value), false);
+  }
+});
+
+test("QA normalized animation samples are finite and bounded", () => {
+  assert.equal(parseQaNormalizedTime("0"), 0);
+  assert.equal(parseQaNormalizedTime("0.18"), 0.18);
+  assert.equal(parseQaNormalizedTime("1"), 1);
+  for (const value of [null, "", " ", "-0.01", "1.01", "NaN", "Infinity"]) {
+    assert.equal(parseQaNormalizedTime(value), null);
+  }
+});
+
+test("QA Police clip fixture maps only the five authoritative clips", () => {
+  assert.deepEqual(
+    ["Idle", "Run", "Alert", "Interact", "Resolve"].map(parseQaPoliceAnimation),
+    ["idle", "run", "alert", "point", "protect"],
+  );
+  for (const value of [null, "", "Walk", "Caught", "Idle.extra"]) {
+    assert.equal(parseQaPoliceAnimation(value), null);
+  }
+});
+
+test("QA Police asset fixture accepts only explicit runtime variants", () => {
+  assert.equal(parseQaPoliceAssetVariant("bootstrap"), "bootstrap");
+  assert.equal(parseQaPoliceAssetVariant("high"), "high");
+  for (const value of [null, "", "HIGH", "lod1", "source"]) {
+    assert.equal(parseQaPoliceAssetVariant(value), null);
+  }
+});
+
+test("QA glTF identity summarizes source topology and triangle modes", () => {
+  const summary = summarizeQaGltfDocument({
+    accessors: [
+      { count: 12 },
+      { count: 9 },
+      { count: 6 },
+      { count: 5 },
+      { count: 4 },
+    ],
+    nodes: [
+      { name: "Root" },
+      { name: "LeftHand" },
+      { name: "RightHand" },
+    ],
+    meshes: [
+      {
+        primitives: [
+          { indices: 0 },
+          { attributes: { POSITION: 1 } },
+          { indices: 2, mode: 5 },
+          { indices: 3, mode: 6 },
+          { indices: 4, mode: 1 },
+        ],
+      },
+    ],
+    materials: [{}, {}],
+    textures: [{}],
+    skins: [{ joints: [1, 2] }, { joints: [2] }],
+  });
+  assert.deepEqual(summary, {
+    nodes: 3,
+    meshes: 1,
+    primitives: 5,
+    triangles: 14,
+    materials: 2,
+    textures: 1,
+    skins: 2,
+    joints: 2,
+    jointNames: ["LeftHand", "RightHand"],
+  });
+});
+
+test("QA glTF identity fails closed for missing source fields", () => {
+  assert.deepEqual(summarizeQaGltfDocument(undefined), {
+    nodes: 0,
+    meshes: 0,
+    primitives: 0,
+    triangles: 0,
+    materials: 0,
+    textures: 0,
+    skins: 0,
+    joints: 0,
+    jointNames: [],
+  });
 });

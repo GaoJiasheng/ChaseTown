@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = await readFile(path.join(ROOT, "app", "chasing-game.tsx"), "utf8");
+const GLOBAL_CSS = await readFile(path.join(ROOT, "app", "globals.css"), "utf8");
 const RUNTIME_ASSETS_SOURCE = await readFile(
   path.join(ROOT, "app", "game", "runtime-assets.ts"),
   "utf8",
@@ -30,18 +31,71 @@ test("first playable frame gates only on navigation-critical scene assets", () =
 });
 
 test("resolution actor streams near the exit and retains an immediate victory fallback", () => {
+  const qaConfiguration = SOURCE.match(
+    /const qaPoliceAnimationScenario = qaSearchParams\.has\("qa"\)[\s\S]*?const qaPoliceAssetUrl = qaPoliceAssetVariant === "high"[\s\S]*?: ACTOR_SPECS\.police\.url;/,
+  )?.[0] ?? "";
+  const qaAnimationBlock = SOURCE.match(
+    /if \(qaPoliceAnimationScenario\) \{[\s\S]*?qaPoliceFrameSnapshotTimer = setInterval\(mirrorQaPoliceAnimationFrame, 16\);\n      \}/,
+  )?.[0] ?? "";
   assert.match(
     SOURCE,
-    /police:\s*\{\s*url: "\/models\/characters\/police-bootstrap\.glb\?v=1"/,
+    /const POLICE_ASSET_CACHE_VERSION = "4"/,
   );
+  assert.match(SOURCE, /const POLICE_BOOTSTRAP_MODEL_HREF = "\/models\/characters\/police-bootstrap\.glb"/);
+  assert.match(SOURCE, /police:\s*\{\s*url: `\$\{POLICE_BOOTSTRAP_MODEL_HREF\}\?v=\$\{POLICE_ASSET_CACHE_VERSION\}`/);
+  assert.match(SOURCE, /`\/models\/characters\/police\.glb\?v=\$\{POLICE_ASSET_CACHE_VERSION\}`/);
   assert.equal(
-    SOURCE.match(/loadGlbWithRetry\(ACTOR_SPECS\.police\.url\)/g)?.length,
+    SOURCE.match(/loadGlbWithRetry\(qaPoliceAssetUrl,/g)?.length,
     1,
     "Police should have one memoized on-demand load path",
   );
+  assert.match(qaConfiguration, /qaPoliceAnimationScenario = qaSearchParams\.has\("qa"\)/);
+  assert.match(qaConfiguration, /qaPoliceAssetVariant = qaSearchParams\.has\("qa"\)/);
+  assert.match(qaConfiguration, /qaPoliceAssetUrl = qaPoliceAssetVariant === "high"[\s\S]*: ACTOR_SPECS\.police\.url/);
+  assert.match(SOURCE, /captureQaIdentity: qaSearchParams\.has\("qa"\)/);
+  assert.match(SOURCE, /policeLoadedIdentity: qaLoadedPoliceAssetIdentity/);
+  assert.match(SOURCE, /inspectQaLoadedGlbIdentity\([\s\S]*sha256Hex\(bytes\)/);
   assert.match(SOURCE, /distanceBetween\(latestState\.player\.position, campaignLevel\.exit\)[\s\S]*POLICE_PREFETCH_DISTANCE_CELLS/);
   assert.match(SOURCE, /event\.to === "won"[\s\S]*requestAnimation\(actors\.kid!, "celebrate"/);
   assert.match(SOURCE, /event\.to === "won"[\s\S]*void requestPoliceAsset\?\.\(\)/);
+  assert.match(
+    qaAnimationBlock,
+    /if \(!actors\.police\) \{[\s\S]*void requestPoliceAsset\?\.\(\)/,
+    "the opt-in Police animation QA scenario must be able to stream its selected asset off-route",
+  );
+  assert.equal(
+    SOURCE.match(/preferencesRef\.current\.reducedMotion \? "idle" : "protect"/g)?.length,
+    2,
+    "Police must suppress its non-essential victory gesture for reduced-motion players",
+  );
+});
+
+test("formal art QA can remove HUD occlusion without changing the production camera layout", () => {
+  assert.match(
+    SOURCE,
+    /const qaCleanFrameRequested = qaSearchParams\.has\("qa"\)[\s\S]*?parseQaFlag\(qaSearchParams\.get\("qaCleanFrame"\)\)/u,
+  );
+  assert.match(
+    SOURCE,
+    /document\.documentElement\.dataset\.chasingQaCleanFrame = "true"/u,
+  );
+  assert.match(
+    SOURCE,
+    /qaCleanFrame: qaCleanFrameRequested/u,
+  );
+  assert.match(
+    SOURCE,
+    /delete document\.documentElement\.dataset\.chasingQaCleanFrame/u,
+  );
+  assert.match(
+    GLOBAL_CSS,
+    /html\[data-chasing-qa-clean-frame="true"\][\s\S]*visibility: hidden !important/u,
+  );
+  assert.doesNotMatch(
+    GLOBAL_CSS,
+    /data-chasing-qa-clean-frame[\s\S]{0,500}(?:display:\s*none|transform:|position:)/u,
+    "clean-frame evidence must preserve the production playfield geometry",
+  );
 });
 
 test("quantized authored geometry expands before CPU world-matrix baking", () => {

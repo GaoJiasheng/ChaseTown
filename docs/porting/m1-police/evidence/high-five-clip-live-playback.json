@@ -1,0 +1,624 @@
+{
+  "capturedAt": "2026-08-28T19:17:43.978Z",
+  "method": "Fresh v4 high-detail live browser playback; three consecutive playing=true samples per authoritative clip with advancing normalized time.",
+  "assetVariant": "high",
+  "assetFile": {
+    "bytes": 7645844,
+    "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5"
+  },
+  "loadedIdentity": {
+    "requestedUrl": "/models/characters/police.glb?v=4",
+    "resolvedUrl": "http://localhost:3002/models/characters/police.glb?v=4",
+    "transferBytes": 7645844,
+    "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+    "nodes": 47,
+    "meshes": 25,
+    "primitives": 26,
+    "triangles": 50800,
+    "materials": 14,
+    "textures": 7,
+    "skins": 1,
+    "joints": 21,
+    "jointNames": [
+      "Chest",
+      "Head",
+      "Hips",
+      "LeftFoot",
+      "LeftHand",
+      "LeftLowerArm",
+      "LeftLowerLeg",
+      "LeftShoulder",
+      "LeftToes",
+      "LeftUpperArm",
+      "LeftUpperLeg",
+      "Neck",
+      "RightFoot",
+      "RightHand",
+      "RightLowerArm",
+      "RightLowerLeg",
+      "RightShoulder",
+      "RightToes",
+      "RightUpperArm",
+      "RightUpperLeg",
+      "Spine"
+    ],
+    "runtimeMeshObjects": 26,
+    "runtimeSkinnedMeshes": 26,
+    "runtimeSkeletons": 1,
+    "runtimeBones": 21,
+    "clips": [
+      {
+        "name": "Alert",
+        "durationSeconds": 1.4,
+        "tracks": 22
+      },
+      {
+        "name": "Idle",
+        "durationSeconds": 2.5,
+        "tracks": 22
+      },
+      {
+        "name": "Interact",
+        "durationSeconds": 2,
+        "tracks": 22
+      },
+      {
+        "name": "Resolve",
+        "durationSeconds": 1.233333,
+        "tracks": 22
+      },
+      {
+        "name": "Run",
+        "durationSeconds": 0.933333,
+        "tracks": 22
+      }
+    ]
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "deviceScaleFactor": 1
+  },
+  "entries": [
+    {
+      "clip": "Idle",
+      "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPoliceAsset=high&qaPoliceClip=Idle&qaPlayer=23,14&qaChaser=2,2&qaSpawnDelay=60&qaHighLive=v4b-idle",
+      "loadedIdentity": {
+        "requestedUrl": "/models/characters/police.glb?v=4",
+        "resolvedUrl": "http://localhost:3002/models/characters/police.glb?v=4",
+        "transferBytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "samples": [
+        {
+          "capturedAtMilliseconds": 2351.3000000044703,
+          "animation": {
+            "state": "idle",
+            "clip": "Idle",
+            "clipDuration": 2.5,
+            "timeScale": 1,
+            "normalizedTime": 0.20496000000000003,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 2976.7000000029802,
+          "animation": {
+            "state": "idle",
+            "clip": "Idle",
+            "clipDuration": 2.5,
+            "timeScale": 1,
+            "normalizedTime": 0.23664000000000013,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 3102.4000000059605,
+          "animation": {
+            "state": "idle",
+            "clip": "Idle",
+            "clipDuration": 2.5,
+            "timeScale": 1,
+            "normalizedTime": 0.38496,
+            "playing": true
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "clip": "Run",
+      "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPoliceAsset=high&qaPoliceClip=Run&qaPlayer=23,14&qaChaser=2,2&qaSpawnDelay=60&qaHighLive=v4b-run",
+      "loadedIdentity": {
+        "requestedUrl": "/models/characters/police.glb?v=4",
+        "resolvedUrl": "http://localhost:3002/models/characters/police.glb?v=4",
+        "transferBytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "samples": [
+        {
+          "capturedAtMilliseconds": 2228,
+          "animation": {
+            "state": "run",
+            "clip": "Run",
+            "clipDuration": 0.9333333373069763,
+            "timeScale": 1,
+            "normalizedTime": 0.49982142644345157,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 2336.60000000149,
+          "animation": {
+            "state": "run",
+            "clip": "Run",
+            "clipDuration": 0.9333333373069763,
+            "timeScale": 1,
+            "normalizedTime": 0.6158571402351465,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 3024.7000000029802,
+          "animation": {
+            "state": "run",
+            "clip": "Run",
+            "clipDuration": 0.9333333373069763,
+            "timeScale": 1,
+            "normalizedTime": 0.9553928530752961,
+            "playing": true
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "clip": "Alert",
+      "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPoliceAsset=high&qaPoliceClip=Alert&qaPlayer=23,14&qaChaser=2,2&qaSpawnDelay=60&qaHighLive=v4b-alert",
+      "loadedIdentity": {
+        "requestedUrl": "/models/characters/police.glb?v=4",
+        "resolvedUrl": "http://localhost:3002/models/characters/police.glb?v=4",
+        "transferBytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "samples": [
+        {
+          "capturedAtMilliseconds": 2297.8000000044703,
+          "animation": {
+            "state": "alert",
+            "clip": "Alert",
+            "clipDuration": 1.399999976158142,
+            "timeScale": 1,
+            "normalizedTime": 0.2857142905799711,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 2440,
+          "animation": {
+            "state": "alert",
+            "clip": "Alert",
+            "clipDuration": 1.399999976158142,
+            "timeScale": 1,
+            "normalizedTime": 0.38692857801792574,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 3013.10000000149,
+          "animation": {
+            "state": "alert",
+            "clip": "Alert",
+            "clipDuration": 1.399999976158142,
+            "timeScale": 1,
+            "normalizedTime": 0.3987857210769945,
+            "playing": true
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "clip": "Interact",
+      "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPoliceAsset=high&qaPoliceClip=Interact&qaPlayer=23,14&qaChaser=2,2&qaSpawnDelay=60&qaHighLive=v4b-interact",
+      "loadedIdentity": {
+        "requestedUrl": "/models/characters/police.glb?v=4",
+        "resolvedUrl": "http://localhost:3002/models/characters/police.glb?v=4",
+        "transferBytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "samples": [
+        {
+          "capturedAtMilliseconds": 2280.9000000059605,
+          "animation": {
+            "state": "point",
+            "clip": "Interact",
+            "clipDuration": 2,
+            "timeScale": 1,
+            "normalizedTime": 0.24190000000000011,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 2386.5,
+          "animation": {
+            "state": "point",
+            "clip": "Interact",
+            "clipDuration": 2,
+            "timeScale": 1,
+            "normalizedTime": 0.29605000000000004,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 3059.2000000029802,
+          "animation": {
+            "state": "point",
+            "clip": "Interact",
+            "clipDuration": 2,
+            "timeScale": 1,
+            "normalizedTime": 0.48355000000000004,
+            "playing": true
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "clip": "Resolve",
+      "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPoliceAsset=high&qaPoliceClip=Resolve&qaPlayer=23,14&qaChaser=2,2&qaSpawnDelay=60&qaHighLive=v4b-resolve",
+      "loadedIdentity": {
+        "requestedUrl": "/models/characters/police.glb?v=4",
+        "resolvedUrl": "http://localhost:3002/models/characters/police.glb?v=4",
+        "transferBytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "samples": [
+        {
+          "capturedAtMilliseconds": 2894.5,
+          "animation": {
+            "state": "protect",
+            "clip": "Resolve",
+            "clipDuration": 1.2333333492279053,
+            "timeScale": 1,
+            "normalizedTime": 0.2672432397991486,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 3078.1999999955297,
+          "animation": {
+            "state": "protect",
+            "clip": "Resolve",
+            "clipDuration": 1.2333333492279053,
+            "timeScale": 1,
+            "normalizedTime": 0.6149189109941571,
+            "playing": true
+          }
+        },
+        {
+          "capturedAtMilliseconds": 3225.6999999955297,
+          "animation": {
+            "state": "protect",
+            "clip": "Resolve",
+            "clipDuration": 1.2333333492279053,
+            "timeScale": 1,
+            "normalizedTime": 0.7329729635267906,
+            "playing": true
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}

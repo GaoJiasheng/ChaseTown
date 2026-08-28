@@ -1,0 +1,85 @@
+{
+  "role": "police",
+  "artifactStage": "preMeshoptAnimationBakedStaging",
+  "outputAtBuildTime": {
+    "path": "police-a2-animated-prepbr.glb",
+    "ephemeral": true,
+    "bytes": 2524764,
+    "sha256": "ab54d46c1971e6979f376473b5a1dc01a8756a86253145b11208914509b22d33"
+  },
+  "rig": "Rig_Humanoid_Shared",
+  "bones": 21,
+  "meshes": 25,
+  "clips": [
+    {
+      "name": "Idle",
+      "frames": [
+        0.0,
+        75.0
+      ],
+      "durationSeconds": 2.5,
+      "sourceRetargetDurationSeconds": 2.5,
+      "source": "Quaternius UAL Standard/Idle_Loop",
+      "loop": true
+    },
+    {
+      "name": "Run",
+      "frames": [
+        0.0,
+        28.0
+      ],
+      "durationSeconds": 0.9333,
+      "sourceRetargetDurationSeconds": 0.9333,
+      "source": "Quaternius UAL Standard/Jog_Fwd_Loop",
+      "loop": true
+    },
+    {
+      "name": "Alert",
+      "frames": [
+        0.0,
+        42.0
+      ],
+      "durationSeconds": 1.4,
+      "sourceRetargetDurationSeconds": 1.4074,
+      "source": "Quaternius UAL Standard/Idle_Torch_Loop",
+      "loop": true
+    },
+    {
+      "name": "Interact",
+      "frames": [
+        0.0,
+        60.0
+      ],
+      "durationSeconds": 2.0,
+      "sourceRetargetDurationSeconds": 2.0,
+      "source": "Quaternius UAL Standard/Interact",
+      "loop": false
+    },
+    {
+      "name": "Resolve",
+      "frames": [
+        0.0,
+        37.0
+      ],
+      "durationSeconds": 1.2333,
+      "sourceRetargetDurationSeconds": 1.2381,
+      "source": "Quaternius UAL Standard/Punch_Enter",
+      "loop": false
+    }
+  ],
+  "qualityGates": {
+    "hasRuntimeProceduralPose": false,
+    "fullBodySampleRateFps": 30,
+    "requiredBoneMapComplete": true,
+    "sourceLicense": "CC0-1.0",
+    "motionSource": {
+      "bytes": 6671104,
+      "sha256": "1b7bf67866360665426bb99e4c71bd619f19b408453c24e30f0c3071601eee5c",
+      "matchesPinnedQuaterniusStandard": true
+    }
+  },
+  "candidateOnly": true,
+  "sourceBlend": "art-source/Characters/Police/ReferenceStandard/A2_VisualRework_2026_08_29/Rigged/Police_A2_VisualRework_v23_Rigged.blend",
+  "sourceGeneration": "Police_A2_VisualRework_v23",
+  "officialRuntimeOverwritten": false
+}

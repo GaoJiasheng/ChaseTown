@@ -1,0 +1,255 @@
+{
+  "role": "police",
+  "input": "police-a2-animated-prepbr.glb",
+  "inputBytes": 2524764,
+  "output": "police-a2-animated-pbr.glb",
+  "sourceUvEvidence": {
+    "Police_v22_Body": {
+      "uvLayer": "UVMap",
+      "uvLoopCount": 47448,
+      "uvMin": [
+        0.009208,
+        0.011054
+      ],
+      "uvMax": [
+        0.993515,
+        0.973856
+      ],
+      "quantizedUvSha256": "769bbf354401cd48d99050e527e42167368fe94cab761e3ab229210ec9689b0d"
+    },
+    "Police_v22_Uniform": {
+      "uvLayer": "UVMap",
+      "uvLoopCount": 14400,
+      "uvMin": [
+        0.0085,
+        0.0168
+      ],
+      "uvMax": [
+        0.9823,
+        0.9928
+      ],
+      "quantizedUvSha256": "cefef7bb77f0de39fa91a497fa71437ab5e32694f8b1ce3133b057b042b081c8"
+    }
+  },
+  "appliedMaterials": {
+    "M_Police_v22_SkinUV": {
+      "baseColor": "Police_v22_MakeHuman_Skin_BaseColor_2K",
+      "normal": "Police_v22_Skin_MicroNormal_768",
+      "orm": "Police_v22_Skin_ORM_768",
+      "uvCompatibility": "exact canonical MakeHuman body UV used by Police_v22_Body"
+    },
+    "M_Police_v22_UniformNavy": {
+      "baseColor": "Police_v22_Uniform_BaseColor_768",
+      "normal": "Police_v22_CasualSuit_Normal_1K",
+      "orm": "Police_v22_Uniform_ORM_768",
+      "uvCompatibility": "exact MakeHuman male_casualsuit03 normal UV retained by Police_v22_Uniform"
+    },
+    "M_Police_v22_TrouserNavy": {
+      "baseColor": "Police_v22_Trouser_BaseColor_768",
+      "normal": "Police_v22_CasualSuit_Normal_1K",
+      "orm": "Police_v22_Uniform_ORM_768",
+      "uvCompatibility": "exact MakeHuman male_casualsuit03 normal UV retained by Police_v22_Uniform"
+    }
+  },
+  "unchangedAccessoryMaterialCount": 11,
+  "meshTopologyUnchanged": true,
+  "animationSetUnchanged": true,
+  "generatedTextureQuality": {
+    "Police_v22_Skin_MicroNormal_768": {
+      "path": "Police_v22_Skin_MicroNormal_768.png",
+      "kind": "normal",
+      "encodedRgbOverallStddev": 60.433736,
+      "encodedRgbChannelStddev": [
+        13.023225,
+        13.156278,
+        1.127883
+      ],
+      "measuredStddev": 60.433736,
+      "minimumStddev": 4.0,
+      "passed": true,
+      "measurement": "deterministic authored pixels quantized to RGB8 before PNG encoding"
+    },
+    "Police_v22_Skin_ORM_768": {
+      "path": "Police_v22_Skin_ORM_768.png",
+      "kind": "ormAoR",
+      "encodedRgbOverallStddev": 101.891505,
+      "encodedRgbChannelStddev": [
+        3.893024,
+        5.957591,
+        0.0
+      ],
+      "measuredStddev": 3.893024,
+      "minimumStddev": 3.0,
+      "passed": true,
+      "measurement": "deterministic authored pixels quantized to RGB8 before PNG encoding"
+    },
+    "Police_v22_Uniform_ORM_768": {
+      "path": "Police_v22_Uniform_ORM_768.png",
+      "kind": "ormAoR",
+      "encodedRgbOverallStddev": 101.285326,
+      "encodedRgbChannelStddev": [
+        3.906136,
+        5.957713,
+        0.0
+      ],
+      "measuredStddev": 3.906136,
+      "minimumStddev": 3.0,
+      "passed": true,
+      "measurement": "deterministic authored pixels quantized to RGB8 before PNG encoding"
+    },
+    "Police_v22_Uniform_BaseColor_768": {
+      "path": "Police_v22_Uniform_BaseColor_768.png",
+      "kind": "baseColor",
+      "encodedRgbOverallStddev": 14.404405,
+      "encodedRgbChannelStddev": [
+        0.58921,
+        1.087154,
+        2.367614
+      ],
+      "measuredStddev": 14.404405,
+      "minimumStddev": 8.0,
+      "passed": true,
+      "measurement": "deterministic authored pixels quantized to RGB8 before PNG encoding"
+    },
+    "Police_v22_Trouser_BaseColor_768": {
+      "path": "Police_v22_Trouser_BaseColor_768.png",
+      "kind": "baseColor",
+      "encodedRgbOverallStddev": 10.410458,
+      "encodedRgbChannelStddev": [
+        0.515515,
+        1.017249,
+        2.16646
+      ],
+      "measuredStddev": 10.410458,
+      "minimumStddev": 8.0,
+      "passed": true,
+      "measurement": "deterministic authored pixels quantized to RGB8 before PNG encoding"
+    }
+  },
+  "exportedGlb": {
+    "bytes": 10631156,
+    "meshes": 25,
+    "materials": 14,
+    "textures": 9,
+    "images": 7,
+    "animations": [
+      "Alert",
+      "Idle",
+      "Interact",
+      "Resolve",
+      "Run"
+    ],
+    "targetMaterialPbrBindings": {
+      "M_Police_v22_SkinUV": {
+        "baseColorTexture": {
+          "name": "young_lightskinned_male_diffuse2",
+          "mimeType": "image/png",
+          "width": 2048,
+          "height": 2048,
+          "bytes": 3595270,
+          "sha256": "03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874"
+        },
+        "normalTexture": {
+          "name": "Police_v22_Skin_MicroNormal_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 1076882,
+          "sha256": "fbbe80605782b6adba32305bfaca133e5d3f971dcb5ee77e28f0b8999890b1ac"
+        },
+        "occlusionTexture": {
+          "name": "Police_v22_Skin_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 720456,
+          "sha256": "1a9bbcdec27eaa13ca6ce41ca7abc62c6a157852ec2632339623e36cd57e2f16"
+        },
+        "metallicRoughnessTexture": {
+          "name": "Police_v22_Skin_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 720456,
+          "sha256": "1a9bbcdec27eaa13ca6ce41ca7abc62c6a157852ec2632339623e36cd57e2f16"
+        }
+      },
+      "M_Police_v22_UniformNavy": {
+        "baseColorTexture": {
+          "name": "Police_v22_Uniform_BaseColor_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 615264,
+          "sha256": "6d50617fbda7b5dc72243daac76421376124f9410cad5e1404191907f5bc95d3"
+        },
+        "normalTexture": {
+          "name": "Police_v22_CasualSuit_Normal_1K",
+          "mimeType": "image/png",
+          "width": 1024,
+          "height": 1024,
+          "bytes": 1170852,
+          "sha256": "bf47739ee7c7deeeb2d67cddea2950da3ae232e43321856eacb336a19435033a"
+        },
+        "occlusionTexture": {
+          "name": "Police_v22_Uniform_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 719201,
+          "sha256": "39854d625e80d0af058f878092a6677f2cb43c7d8203d9013cfbb0bfd8ff7641"
+        },
+        "metallicRoughnessTexture": {
+          "name": "Police_v22_Uniform_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 719201,
+          "sha256": "39854d625e80d0af058f878092a6677f2cb43c7d8203d9013cfbb0bfd8ff7641"
+        }
+      },
+      "M_Police_v22_TrouserNavy": {
+        "baseColorTexture": {
+          "name": "Police_v22_Trouser_BaseColor_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 596642,
+          "sha256": "ed9c2a228274ef62b1169e8147cd96a749cee8c2615d47eab79064afcd837f78"
+        },
+        "normalTexture": {
+          "name": "Police_v22_CasualSuit_Normal_1K",
+          "mimeType": "image/png",
+          "width": 1024,
+          "height": 1024,
+          "bytes": 1170852,
+          "sha256": "bf47739ee7c7deeeb2d67cddea2950da3ae232e43321856eacb336a19435033a"
+        },
+        "occlusionTexture": {
+          "name": "Police_v22_Uniform_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 719201,
+          "sha256": "39854d625e80d0af058f878092a6677f2cb43c7d8203d9013cfbb0bfd8ff7641"
+        },
+        "metallicRoughnessTexture": {
+          "name": "Police_v22_Uniform_ORM_768",
+          "mimeType": "image/png",
+          "width": 768,
+          "height": 768,
+          "bytes": 719201,
+          "sha256": "39854d625e80d0af058f878092a6677f2cb43c7d8203d9013cfbb0bfd8ff7641"
+        }
+      }
+    }
+  },
+  "qualityGates": {
+    "everyPrimaryMaterialHasBaseColorNormalOrm": true,
+    "accessoryMaterialsUntouched": true,
+    "primaryMeshesHaveUVs": true,
+    "noGeometryGenerated": true,
+    "inputNotOverwritten": true,
+    "generatedTextureStddevPassed": true
+  }
+}

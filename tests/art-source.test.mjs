@@ -9,6 +9,8 @@ const ART_ROOT = path.join(ROOT, "art-source");
 const REQUIRED_BLEND_MASTERS = [
   "Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Kid_PrecisionRemodel_v21.blend",
   "Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Kid_PrecisionRemodel_v21_Rigged.blend",
+  "Characters/Police/ReferenceStandard/A2_VisualRework_2026_08_29/Police_A2_VisualRework_v23.blend",
+  "Characters/Police/ReferenceStandard/A2_VisualRework_2026_08_29/Rigged/Police_A2_VisualRework_v23_Rigged.blend",
   "Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Police_HumanAnatomyRemodel_v22.blend",
   "Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Rigged/Police_HumanAnatomyRemodel_v22_Rigged.blend",
   "Characters/Police/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Police_PrecisionRemodel_v21.blend",

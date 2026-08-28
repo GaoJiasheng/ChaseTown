@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-08-28T14:21:05.476Z",
+  "generatedAt": "2026-08-28T18:07:32.600Z",
   "policy": {
     "geometryQuantization": false,
     "textureTranscode": false,
@@ -57,10 +57,10 @@
     }
   },
   "totals": {
-    "sourceBytes": 28247084,
-    "optimizedBytes": 16001100,
-    "savedBytes": 12245984,
-    "savedPercent": 43.353
+    "sourceBytes": 29086868,
+    "optimizedBytes": 16588332,
+    "savedBytes": 12498536,
+    "savedPercent": 42.97
   },
   "characters": [
     {
@@ -247,24 +247,24 @@
     {
       "role": "police",
       "source": {
-        "bytes": 9791372,
-        "sha256": "b088e02b7eb4dadf0a1707a92bf2cf605b0a796b4951f1ac3c25289b4ef50dc3"
+        "bytes": 10631156,
+        "sha256": "bf11fab8471d339dddaba4cb9da325d0b3a2c842fbcbada76b718b6183761d10"
       },
       "optimized": {
-        "bytes": 8673828,
-        "sha256": "03791e4f688477ccd1aaafc4cb8adfd6b8fa6dadc1e6cc7d1977469262bae618",
-        "savedBytes": 1117544,
-        "savedPercent": 11.414
+        "bytes": 9261060,
+        "sha256": "77bafaeb1f07990339ba212a87cc808502d690d6479d3ce32e32109397ee5a49",
+        "savedBytes": 1370096,
+        "savedPercent": 12.888
       },
       "quality": {
-        "namedNodes": 60,
-        "nodes": 60,
-        "meshes": 38,
+        "namedNodes": 47,
+        "nodes": 47,
+        "meshes": 25,
         "materials": 14,
         "skins": 1,
         "joints": 21,
-        "sourceTriangles": 40120,
-        "optimizedTriangles": 40120,
+        "sourceTriangles": 50800,
+        "optimizedTriangles": 50800,
         "removedDegenerateTriangles": 0,
         "clips": [
           "Alert",
@@ -282,24 +282,6 @@
         },
         "textures": [
           {
-            "name": "Police_v22_Skin_MicroNormal_768",
-            "mimeType": "image/png",
-            "bytes": 1076882,
-            "sha256": "fbbe80605782b6adba32305bfaca133e5d3f971dcb5ee77e28f0b8999890b1ac"
-          },
-          {
-            "name": "Police_v22_Skin_ORM_768",
-            "mimeType": "image/png",
-            "bytes": 697822,
-            "sha256": "474b539c0dc8844621dfa42284cdbb84f5efdc635659a808df152a115d97116b"
-          },
-          {
-            "name": "young_lightskinned_male_diffuse2",
-            "mimeType": "image/png",
-            "bytes": 3595270,
-            "sha256": "03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874"
-          },
-          {
             "name": "Police_v22_CasualSuit_Normal_1K",
             "mimeType": "image/png",
             "bytes": 1170852,
@@ -308,27 +290,45 @@
           {
             "name": "Police_v22_Uniform_ORM_768",
             "mimeType": "image/png",
-            "bytes": 695705,
-            "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b"
+            "bytes": 719201,
+            "sha256": "39854d625e80d0af058f878092a6677f2cb43c7d8203d9013cfbb0bfd8ff7641"
           },
           {
             "name": "Police_v22_Uniform_BaseColor_768",
             "mimeType": "image/png",
-            "bytes": 399299,
-            "sha256": "7eab670e32f26c80fcc297f9510920b8801a824db1c4f5e55f1e34dc6eca8337"
+            "bytes": 615264,
+            "sha256": "6d50617fbda7b5dc72243daac76421376124f9410cad5e1404191907f5bc95d3"
+          },
+          {
+            "name": "Police_v22_Skin_MicroNormal_768",
+            "mimeType": "image/png",
+            "bytes": 1076882,
+            "sha256": "fbbe80605782b6adba32305bfaca133e5d3f971dcb5ee77e28f0b8999890b1ac"
+          },
+          {
+            "name": "Police_v22_Skin_ORM_768",
+            "mimeType": "image/png",
+            "bytes": 720456,
+            "sha256": "1a9bbcdec27eaa13ca6ce41ca7abc62c6a157852ec2632339623e36cd57e2f16"
+          },
+          {
+            "name": "young_lightskinned_male_diffuse2",
+            "mimeType": "image/png",
+            "bytes": 3595270,
+            "sha256": "03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874"
           },
           {
             "name": "Police_v22_Trouser_BaseColor_768",
             "mimeType": "image/png",
-            "bytes": 387483,
-            "sha256": "301e7dc6cc718c338aedb61db056603e5459a1cae0d71e000178c623a0a8cb28"
+            "bytes": 596642,
+            "sha256": "ed9c2a228274ef62b1169e8147cd96a749cee8c2615d47eab79064afcd837f78"
           }
         ],
-        "boundsMaxDeltaMeters": 7.139798530175767e-9,
+        "boundsMaxDeltaMeters": 3.5699463385441277e-9,
         "animationDeviation": {
-          "maxRotationDegrees": 0.0032256110717361797,
-          "maxTranslationMeters": 7.886090441661207e-7,
-          "maxScaleDelta": 0.000001234025946294471
+          "maxRotationDegrees": 0.0031761880595261747,
+          "maxTranslationMeters": 8.941008572151917e-7,
+          "maxScaleDelta": 0.0000010221913589305346
         }
       }
     }

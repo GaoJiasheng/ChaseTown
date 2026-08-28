@@ -1,0 +1,641 @@
+{
+  "capturedAt": "2026-08-28T19:18:58.053Z",
+  "method": "QA resolution hook only: verifies won/mission complete/exit unlocked and Resolve wiring. It is not represented as an end-to-end manual completion.",
+  "assetFile": {
+    "bytes": 1926584,
+    "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1"
+  },
+  "loadedIdentity": {
+    "requestedUrl": "/models/characters/police-bootstrap.glb?v=4",
+    "resolvedUrl": "http://localhost:3002/models/characters/police-bootstrap.glb?v=4",
+    "transferBytes": 1926584,
+    "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+    "nodes": 47,
+    "meshes": 25,
+    "primitives": 26,
+    "triangles": 50800,
+    "materials": 14,
+    "textures": 7,
+    "skins": 1,
+    "joints": 21,
+    "jointNames": [
+      "Chest",
+      "Head",
+      "Hips",
+      "LeftFoot",
+      "LeftHand",
+      "LeftLowerArm",
+      "LeftLowerLeg",
+      "LeftShoulder",
+      "LeftToes",
+      "LeftUpperArm",
+      "LeftUpperLeg",
+      "Neck",
+      "RightFoot",
+      "RightHand",
+      "RightLowerArm",
+      "RightLowerLeg",
+      "RightShoulder",
+      "RightToes",
+      "RightUpperArm",
+      "RightUpperLeg",
+      "Spine"
+    ],
+    "runtimeMeshObjects": 26,
+    "runtimeSkinnedMeshes": 26,
+    "runtimeSkeletons": 1,
+    "runtimeBones": 21,
+    "clips": [
+      {
+        "name": "Alert",
+        "durationSeconds": 1.4,
+        "tracks": 22
+      },
+      {
+        "name": "Idle",
+        "durationSeconds": 2.5,
+        "tracks": 22
+      },
+      {
+        "name": "Interact",
+        "durationSeconds": 2,
+        "tracks": 22
+      },
+      {
+        "name": "Resolve",
+        "durationSeconds": 1.233333,
+        "tracks": 22
+      },
+      {
+        "name": "Run",
+        "durationSeconds": 0.933333,
+        "tracks": 22
+      }
+    ]
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "deviceScaleFactor": 1
+  },
+  "levels": [
+    {
+      "level": 1,
+      "phase": "won",
+      "mission": {
+        "definitionId": "theme-mission:campus:v1",
+        "stage": "complete",
+        "completedObjectiveIds": [
+          "campus:bell-power",
+          "campus:gate-authorization",
+          "campus:release-gate"
+        ],
+        "exitUnlocked": true
+      },
+      "animation": {
+        "state": "protect",
+        "clip": "Resolve",
+        "clipDuration": 1.2333333492279053,
+        "timeScale": 1,
+        "normalizedTime": 0.015587116117901081,
+        "playing": true
+      },
+      "visibility": {
+        "rootVisible": true,
+        "alpha": 1,
+        "viewport": {
+          "x": 0.5134961254745585,
+          "y": 0.5505221677533946,
+          "depth": 0.9893171657075908,
+          "worldHeight": 1.82,
+          "pixelWidth": 31.81107892594708,
+          "pixelHeight": 74.70360913309362,
+          "bounds": {
+            "left": 0.5014324229360377,
+            "right": 0.5270452079005684,
+            "top": 0.48711118516297314,
+            "bottom": 0.6103844675608174
+          },
+          "centerInFrustum": true
+        },
+        "cameraClearance": {
+          "headClear": true,
+          "torsoClear": true,
+          "visibleSampleRatio": 1,
+          "samples": [
+            {
+              "label": "head",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "torso",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "hips",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "left-shoulder",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "right-shoulder",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            }
+          ]
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 321,
+        "triangles": 491590,
+        "shadow": {
+          "shadowTriangles": 253616,
+          "shadowDrawCalls": 201
+        },
+        "memory": {
+          "geometries": 274,
+          "textures": 200
+        },
+        "programs": 87,
+        "sceneTextures": 26,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 167,
+          "canonicalTextures": 171,
+          "assignmentsShared": 0,
+          "sourcesShared": 0
+        }
+      },
+      "loadedIdentity": {
+        "requestedUrl": "/models/characters/police-bootstrap.glb?v=4",
+        "resolvedUrl": "http://localhost:3002/models/characters/police-bootstrap.glb?v=4",
+        "transferBytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "screenshot": "level1-resolution.jpg",
+      "state": "level1-resolution-state.json",
+      "console": []
+    },
+    {
+      "level": 5,
+      "phase": "won",
+      "mission": {
+        "definitionId": "theme-mission:hospital:v1",
+        "stage": "complete",
+        "completedObjectiveIds": [
+          "hospital:backup-generator",
+          "hospital:pressure-bypass",
+          "hospital:release-isolation"
+        ],
+        "exitUnlocked": true
+      },
+      "animation": {
+        "state": "protect",
+        "clip": "Resolve",
+        "clipDuration": 1.2333333492279053,
+        "timeScale": 1,
+        "normalizedTime": 0.394033687230269,
+        "playing": true
+      },
+      "visibility": {
+        "rootVisible": true,
+        "alpha": 1,
+        "viewport": {
+          "x": 0.5268738779582638,
+          "y": 0.47429203391707164,
+          "depth": 0.9890992456818679,
+          "worldHeight": 1.82,
+          "pixelWidth": 34.37491394272321,
+          "pixelHeight": 78.80277185805085,
+          "bounds": {
+            "left": 0.5138527775746254,
+            "right": 0.5415298419407472,
+            "top": 0.4073668284486167,
+            "bottom": 0.537404405772133
+          },
+          "centerInFrustum": true
+        },
+        "cameraClearance": {
+          "headClear": true,
+          "torsoClear": false,
+          "visibleSampleRatio": 0.4,
+          "samples": [
+            {
+              "label": "head",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "torso",
+              "clear": false,
+              "hit": "hospital-wall-batch-4406b24e",
+              "hitDistance": 11.525044322661978
+            },
+            {
+              "label": "hips",
+              "clear": false,
+              "hit": "hospital-wall-batch-4406b24e",
+              "hitDistance": 11.552274202717891
+            },
+            {
+              "label": "left-shoulder",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "right-shoulder",
+              "clear": false,
+              "hit": "hospital-wall-batch-4bbca3b2",
+              "hitDistance": 11.516199611853912
+            }
+          ]
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 270,
+        "triangles": 441012,
+        "shadow": {
+          "shadowTriangles": 289622,
+          "shadowDrawCalls": 206
+        },
+        "memory": {
+          "geometries": 219,
+          "textures": 199
+        },
+        "programs": 77,
+        "sceneTextures": 26,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 130,
+          "canonicalTextures": 134,
+          "assignmentsShared": 0,
+          "sourcesShared": 0
+        }
+      },
+      "loadedIdentity": {
+        "requestedUrl": "/models/characters/police-bootstrap.glb?v=4",
+        "resolvedUrl": "http://localhost:3002/models/characters/police-bootstrap.glb?v=4",
+        "transferBytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "screenshot": "level5-resolution.jpg",
+      "state": "level5-resolution-state.json",
+      "console": []
+    },
+    {
+      "level": 10,
+      "phase": "won",
+      "mission": {
+        "definitionId": "theme-mission:factory:v1",
+        "stage": "complete",
+        "completedObjectiveIds": [
+          "factory:steam-bleed",
+          "factory:safety-interlock",
+          "factory:release-line-gate"
+        ],
+        "exitUnlocked": true
+      },
+      "animation": {
+        "state": "protect",
+        "clip": "Resolve",
+        "clipDuration": 1.2333333492279053,
+        "timeScale": 1,
+        "normalizedTime": 0.14719471716468807,
+        "playing": true
+      },
+      "visibility": {
+        "rootVisible": true,
+        "alpha": 1,
+        "viewport": {
+          "x": 0.48330755142952864,
+          "y": 0.4582200437387806,
+          "depth": 0.9898168397774513,
+          "worldHeight": 1.82,
+          "pixelWidth": 30.111623379404666,
+          "pixelHeight": 74.60770092475582,
+          "bounds": {
+            "left": 0.47072518308670985,
+            "right": 0.4949696463551516,
+            "top": 0.39496582866981667,
+            "bottom": 0.5180808466974665
+          },
+          "centerInFrustum": true
+        },
+        "cameraClearance": {
+          "headClear": true,
+          "torsoClear": true,
+          "visibleSampleRatio": 0.6,
+          "samples": [
+            {
+              "label": "head",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "torso",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "hips",
+              "clear": false,
+              "hit": "mesh_2",
+              "hitDistance": 11.736541161498497
+            },
+            {
+              "label": "left-shoulder",
+              "clear": false,
+              "hit": "mesh_2",
+              "hitDistance": 12.149686235780413
+            },
+            {
+              "label": "right-shoulder",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            }
+          ]
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 272,
+        "triangles": 519482,
+        "shadow": {
+          "shadowTriangles": 313710,
+          "shadowDrawCalls": 219
+        },
+        "memory": {
+          "geometries": 239,
+          "textures": 187
+        },
+        "programs": 83,
+        "sceneTextures": 27,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 144,
+          "canonicalTextures": 148,
+          "assignmentsShared": 0,
+          "sourcesShared": 0
+        }
+      },
+      "loadedIdentity": {
+        "requestedUrl": "/models/characters/police-bootstrap.glb?v=4",
+        "resolvedUrl": "http://localhost:3002/models/characters/police-bootstrap.glb?v=4",
+        "transferBytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "screenshot": "level10-resolution.jpg",
+      "state": "level10-resolution-state.json",
+      "console": []
+    }
+  ]
+}

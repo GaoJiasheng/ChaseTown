@@ -1,6 +1,6 @@
 {
   "formatVersion": 3,
-  "generatedAt": "2026-08-28T15:23:46.125Z",
+  "generatedAt": "2026-08-28T18:08:17.752Z",
   "policy": {
     "derivativeOnly": true,
     "highModelsUnmodified": true,
@@ -123,7 +123,7 @@
     },
     "unrecordedLegacyRoles": [],
     "lastBuildRoles": [
-      "villain"
+      "police"
     ],
     "lastBuildBinarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
   },
@@ -147,10 +147,10 @@
     }
   },
   "totals": {
-    "referenceBytes": 11346644,
-    "bootstrapBytes": 4202540,
-    "savedBytes": 7144104,
-    "savedPercent": 62.962
+    "referenceBytes": 12118620,
+    "bootstrapBytes": 4392356,
+    "savedBytes": 7726264,
+    "savedPercent": 63.755
   },
   "characters": [
     {
@@ -436,21 +436,21 @@
       "reference": {
         "variant": "original",
         "path": "public/models/characters/police.glb",
-        "bytes": 6873868,
-        "sha256": "768841bb45da54f12805e5593a5c1876f2eb6600422da821b9899a583efe9fa4",
-        "triangles": 40120
+        "bytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+        "triangles": 50800
       },
       "bootstrap": {
         "path": "public/models/characters/police-bootstrap.glb",
-        "bytes": 1736768,
-        "sha256": "a429aee2b409052888ac59e6f808f9ac963a482eafac37d04f4cee6e6126837a",
-        "savedBytes": 5137100,
-        "savedPercent": 74.734,
-        "triangles": 40120,
+        "bytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+        "savedBytes": 5719260,
+        "savedPercent": 74.802,
+        "triangles": 50800,
         "triangleRatio": 1
       },
       "quality": {
-        "namedNodes": 60,
+        "namedNodes": 47,
         "joints": 21,
         "clips": [
           "Alert",
@@ -461,16 +461,49 @@
         ],
         "animationContractSha256": "365d1f0ac97662626e4f335fe3f3effcd95fedc7c240385c6e9e9cb98bea7935",
         "silhouetteContract": {
-          "primitiveCount": 39,
-          "sha256": "1d93c7edb98e6413c00fc956bff22657526e148e00992c147f1ce6f615b6e25e"
+          "primitiveCount": 26,
+          "sha256": "c0a9a703ca82e6c9d16dca4faad77652ed2a2d81b23a8cc6d52b3faf6fd26d05"
         },
         "nonImageTransport": {
           "entries": 10,
-          "bytes": 589932,
-          "sha256": "17067c2013600c897da8a0fcde3ee9168640e4fd064143d0e31f065c3327427e"
+          "bytes": 715054,
+          "sha256": "c970ff5adca382d365ca98a0a42e62fd7b0e78b0c591d525a93a90f6c8008754"
         },
-        "semanticJsonSha256": "0e648fdafae80c27f05adb4ffde7d261a0001f401022b28558971cd61a9c0ce2",
+        "semanticJsonSha256": "34346c5e058f572a66172e38f14699d566c5f546fd0f98c6946493eda35d28b8",
         "textures": [
+          {
+            "name": "Police_v22_CasualSuit_Normal_1K",
+            "textureClass": "normal",
+            "bytes": 240675,
+            "sha256": "c76f6b178234f4f5cc451287cab8d4981bdff5dc09ece7fbfd984457fa933b41",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Police_v22_Uniform_ORM_768",
+            "textureClass": "orm",
+            "bytes": 245074,
+            "sha256": "af7bce8a8d078ee3f6820a5614b9871587577749b4956e872cba6bd8c4149a01",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "UASTC",
+            "supercompressionScheme": 2
+          },
+          {
+            "name": "Police_v22_Uniform_BaseColor_768",
+            "textureClass": "baseColor",
+            "bytes": 16357,
+            "sha256": "9be8cf2bf1949efa0e9398f83875c343310d35156ffdcea942adada0b908134a",
+            "width": 512,
+            "height": 512,
+            "levels": 10,
+            "mode": "ETC1S",
+            "supercompressionScheme": 1
+          },
           {
             "name": "Police_v22_Skin_MicroNormal_768",
             "textureClass": "normal",
@@ -485,8 +518,8 @@
           {
             "name": "Police_v22_Skin_ORM_768",
             "textureClass": "orm",
-            "bytes": 217157,
-            "sha256": "776511db65a03bef1d2087eb6274b3ed148852174e15c8390626617573bd479a",
+            "bytes": 243514,
+            "sha256": "5dcdb8f57796c23dfe0cd79af020ddb5907c35a32fcec8fd1d8c057843e65c83",
             "width": 512,
             "height": 512,
             "levels": 10,
@@ -505,43 +538,10 @@
             "supercompressionScheme": 1
           },
           {
-            "name": "Police_v22_CasualSuit_Normal_1K",
-            "textureClass": "normal",
-            "bytes": 240675,
-            "sha256": "c76f6b178234f4f5cc451287cab8d4981bdff5dc09ece7fbfd984457fa933b41",
-            "width": 512,
-            "height": 512,
-            "levels": 10,
-            "mode": "UASTC",
-            "supercompressionScheme": 2
-          },
-          {
-            "name": "Police_v22_Uniform_ORM_768",
-            "textureClass": "orm",
-            "bytes": 217085,
-            "sha256": "c1acb332b096b4ea1ffec5b71d59f511855bef4f47004b3a74518c0c8ae72a4d",
-            "width": 512,
-            "height": 512,
-            "levels": 10,
-            "mode": "UASTC",
-            "supercompressionScheme": 2
-          },
-          {
-            "name": "Police_v22_Uniform_BaseColor_768",
-            "textureClass": "baseColor",
-            "bytes": 966,
-            "sha256": "5bfd4db847154632e4bf8e49874ba740384af1317276b5bfd1af48c5680d7bc0",
-            "width": 512,
-            "height": 512,
-            "levels": 10,
-            "mode": "ETC1S",
-            "supercompressionScheme": 1
-          },
-          {
             "name": "Police_v22_Trouser_BaseColor_768",
             "textureClass": "baseColor",
-            "bytes": 1141,
-            "sha256": "30ff841aa112b59e3c7823f2d09b95e466984c472957e307ba25a5cbb2188f6e",
+            "bytes": 5237,
+            "sha256": "183668693bc182fff6047690a8b3ab4a2dc567a04387824c55cbd88fec5c30fe",
             "width": 512,
             "height": 512,
             "levels": 10,
@@ -550,33 +550,6 @@
           }
         ],
         "derivativePixels": [
-          {
-            "name": "Police_v22_Skin_MicroNormal_768",
-            "textureClass": "normal",
-            "width": 512,
-            "height": 512,
-            "channels": 4,
-            "pixelBytes": 1048576,
-            "pixelSha256": "7f731d8f94a08106056d6b6ddc3eac9431da1d40c8ae6bd59f8a4ebfde72bb18"
-          },
-          {
-            "name": "Police_v22_Skin_ORM_768",
-            "textureClass": "orm",
-            "width": 512,
-            "height": 512,
-            "channels": 4,
-            "pixelBytes": 1048576,
-            "pixelSha256": "29a72bdfd37af4c7848679df3d028f80c0f3c29be21708cde686a21877fe2b0d"
-          },
-          {
-            "name": "young_lightskinned_male_diffuse2",
-            "textureClass": "baseColor",
-            "width": 1024,
-            "height": 1024,
-            "channels": 4,
-            "pixelBytes": 4194304,
-            "pixelSha256": "13fbd7eb8ba8495b6aa9acc14e75666bcaae59c9114ba189f64de47bb0da6416"
-          },
           {
             "name": "Police_v22_CasualSuit_Normal_1K",
             "textureClass": "normal",
@@ -593,7 +566,7 @@
             "height": 512,
             "channels": 4,
             "pixelBytes": 1048576,
-            "pixelSha256": "9b15ec2e1c4970fcd9d49b82cb1b0345aa046c520e5e248a00e499e9e8b02ae6"
+            "pixelSha256": "9f81bb1736aa149dabc7922ec288c8e3ea33669e49383167ac1cb17f51235945"
           },
           {
             "name": "Police_v22_Uniform_BaseColor_768",
@@ -602,7 +575,34 @@
             "height": 512,
             "channels": 4,
             "pixelBytes": 1048576,
-            "pixelSha256": "be5a863727774f3234650f2aa32b0351b70e08328342245ab49bcce5a1d87252"
+            "pixelSha256": "35fcddbcf447e3512dce9742ac6c6afb3b60de15ebac04d5d8a31e6420c43487"
+          },
+          {
+            "name": "Police_v22_Skin_MicroNormal_768",
+            "textureClass": "normal",
+            "width": 512,
+            "height": 512,
+            "channels": 4,
+            "pixelBytes": 1048576,
+            "pixelSha256": "7f731d8f94a08106056d6b6ddc3eac9431da1d40c8ae6bd59f8a4ebfde72bb18"
+          },
+          {
+            "name": "Police_v22_Skin_ORM_768",
+            "textureClass": "orm",
+            "width": 512,
+            "height": 512,
+            "channels": 4,
+            "pixelBytes": 1048576,
+            "pixelSha256": "4dc087cc6362d4bc1ecfdf8970c422ca18c36c305587cad7d4ad2673fd9c0fce"
+          },
+          {
+            "name": "young_lightskinned_male_diffuse2",
+            "textureClass": "baseColor",
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "pixelBytes": 4194304,
+            "pixelSha256": "13fbd7eb8ba8495b6aa9acc14e75666bcaae59c9114ba189f64de47bb0da6416"
           },
           {
             "name": "Police_v22_Trouser_BaseColor_768",
@@ -611,10 +611,40 @@
             "height": 512,
             "channels": 4,
             "pixelBytes": 1048576,
-            "pixelSha256": "01dc3ec2626af7c30f2936dba4e3f512253f907b62db1697c34653898797d28b"
+            "pixelSha256": "8b954dac7f19e48c2e029bc089e85d09243492157b00995b56564140aebcdf5b"
           }
         ],
         "sourceTextures": [
+          {
+            "name": "Police_v22_CasualSuit_Normal_1K",
+            "path": "public/models/characters/police.glb#image=Police_v22_CasualSuit_Normal_1K",
+            "bytes": 809547,
+            "sha256": "b2fd708c3f52d5645bb0379e48bcd606996ff3ef7a5e31da4ce31af690010947",
+            "width": 1024,
+            "height": 1024,
+            "levels": 11,
+            "mode": "UASTC"
+          },
+          {
+            "name": "Police_v22_Uniform_ORM_768",
+            "path": "public/models/characters/police.glb#image=Police_v22_Uniform_ORM_768",
+            "bytes": 538950,
+            "sha256": "82ffaab050a58addcd7f923f37ccac57b193651eb3bd0fc4d2aef09bdd9f75c2",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
+          },
+          {
+            "name": "Police_v22_Uniform_BaseColor_768",
+            "path": "public/models/characters/police.glb#image=Police_v22_Uniform_BaseColor_768",
+            "bytes": 453006,
+            "sha256": "4a35dd4e70104a85be2d42bed9d61e28b2be0d051939d0d13106f6bfd3f6e713",
+            "width": 768,
+            "height": 768,
+            "levels": 10,
+            "mode": "UASTC"
+          },
           {
             "name": "Police_v22_Skin_MicroNormal_768",
             "path": "public/models/characters/police.glb#image=Police_v22_Skin_MicroNormal_768",
@@ -628,8 +658,8 @@
           {
             "name": "Police_v22_Skin_ORM_768",
             "path": "public/models/characters/police.glb#image=Police_v22_Skin_ORM_768",
-            "bytes": 465037,
-            "sha256": "1fc5c20ae9bbc33b8fc53d37c50f36761b5252b7c6ceda72fbea50c8b84fabb6",
+            "bytes": 537325,
+            "sha256": "ea050d9dc4fbab1f47d8edf5658f2cde1177861d34df5c5342a93c5fa1bacfe2",
             "width": 768,
             "height": 768,
             "levels": 10,
@@ -646,40 +676,10 @@
             "mode": "UASTC"
           },
           {
-            "name": "Police_v22_CasualSuit_Normal_1K",
-            "path": "public/models/characters/police.glb#image=Police_v22_CasualSuit_Normal_1K",
-            "bytes": 809547,
-            "sha256": "b2fd708c3f52d5645bb0379e48bcd606996ff3ef7a5e31da4ce31af690010947",
-            "width": 1024,
-            "height": 1024,
-            "levels": 11,
-            "mode": "UASTC"
-          },
-          {
-            "name": "Police_v22_Uniform_ORM_768",
-            "path": "public/models/characters/police.glb#image=Police_v22_Uniform_ORM_768",
-            "bytes": 467348,
-            "sha256": "bb29526ed8e9698e02c42f55b5d99e4a18fa5ab740765d883060bc7f4df61f99",
-            "width": 768,
-            "height": 768,
-            "levels": 10,
-            "mode": "UASTC"
-          },
-          {
-            "name": "Police_v22_Uniform_BaseColor_768",
-            "path": "public/models/characters/police.glb#image=Police_v22_Uniform_BaseColor_768",
-            "bytes": 187396,
-            "sha256": "3d98e1c22a023bcbc626c135f1d37400db1295cb67d412c06d9ce1018c0453e3",
-            "width": 768,
-            "height": 768,
-            "levels": 10,
-            "mode": "UASTC"
-          },
-          {
             "name": "Police_v22_Trouser_BaseColor_768",
             "path": "public/models/characters/police.glb#image=Police_v22_Trouser_BaseColor_768",
-            "bytes": 182025,
-            "sha256": "ac0a3f3fde029645e4c0090f002aaa787f49bfc32d01f859c2cf0aa90912d1a9",
+            "bytes": 428522,
+            "sha256": "7b6dd71e6fd9bf44c8bf4231da5cf407899440062e5ff1a29eb209bb18546847",
             "width": 768,
             "height": 768,
             "levels": 10,

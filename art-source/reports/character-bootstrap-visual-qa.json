@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-08-28T15:36:33Z",
-  "method": "Chromium WebGL2; actual Three.js Meshopt and KTX2 decode (Three.js 0.185.0 with local Basis transcoder); matched Idle pose, camera, lights and exposure.",
-  "url": "http://localhost:3002/__m1-villain-final-qa.html?v=2193dc833f9b",
+  "generatedAt": "2026-08-28T18:09:00.736Z",
+  "method": "Chromium WebGL2; actual Three.js Meshopt and KTX2 decode; matched Idle pose, camera, lights and exposure.",
+  "url": "http://127.0.0.1:4174/",
   "viewport": {
     "width": 1440,
     "height": 900,
@@ -37,36 +37,36 @@
     "police": {
       "reference": {
         "path": "public/models/characters/police.glb",
-        "bytes": 6873868,
-        "sha256": "768841bb45da54f12805e5593a5c1876f2eb6600422da821b9899a583efe9fa4"
+        "bytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5"
       },
       "bootstrap": {
         "path": "public/models/characters/police-bootstrap.glb",
-        "bytes": 1736768,
-        "sha256": "a429aee2b409052888ac59e6f808f9ac963a482eafac37d04f4cee6e6126837a"
+        "bytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1"
       }
     }
   },
   "result": {
     "kid": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.4412587120737866
+      "rgbMeanAbsoluteError": 0.4405876654827252
     },
     "villain": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.6143900571361254
+      "rgbMeanAbsoluteError": 0.6097371463225122
     },
     "police": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.5675576375493708
+      "rgbMeanAbsoluteError": 0.5526101616091152
     }
   },
   "gates": {
     "minimumSilhouetteIou": 0.9999,
     "maximumRgbMeanAbsoluteError": 1
   },
-  "screenshotBytes": 79610,
-  "screenshotEncoding": "browser-captured JPEG byte stream retained under the historical .png evidence filename",
-  "screenshotSha256": "dd3cb0bf549d258c1252e5c7157fe07e611bb628fcaa75824b16891c0915d6a3",
-  "screenshot": "docs/porting/m1-villain/evidence/character-bootstrap-comparison-1440x900.png"
+  "screenshotBytes": 328863,
+  "screenshotEncoding": "PNG",
+  "screenshotSha256": "70275ff3d5f2d24f2d256a26e85d5b289e7fa3c804d09ec6c19bf937d22128ae",
+  "screenshot": "docs/porting/m1-police/evidence/bootstrap-visual-qa-comparison.png"
 }

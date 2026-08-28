@@ -1,0 +1,46 @@
+{
+  "generatedAt": "2026-08-29",
+  "command": "npx --yes @gltf-transform/cli@4.4.1 validate <asset> --format csv",
+  "validator": "@gltf-transform/cli 4.4.1 using the Khronos glTF Validator",
+  "assets": [
+    {
+      "path": "public/models/characters/police.glb",
+      "bytes": 7645844,
+      "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+      "errors": 0,
+      "warnings": 45,
+      "information": 9,
+      "issueCounts": {
+        "VALUE_NOT_IN_LIST": 7,
+        "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE": 6,
+        "NODE_SKINNED_MESH_NON_ROOT": 25,
+        "IMAGE_UNRECOGNIZED_FORMAT": 7,
+        "UNSUPPORTED_EXTENSION": 2,
+        "UNUSED_OBJECT": 7
+      },
+      "rawCsv": "docs/porting/m1-police/evidence/gltf-validator-high.csv"
+    },
+    {
+      "path": "public/models/characters/police-bootstrap.glb",
+      "bytes": 1926584,
+      "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+      "errors": 0,
+      "warnings": 45,
+      "information": 9,
+      "issueCounts": {
+        "VALUE_NOT_IN_LIST": 7,
+        "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE": 6,
+        "NODE_SKINNED_MESH_NON_ROOT": 25,
+        "IMAGE_UNRECOGNIZED_FORMAT": 7,
+        "UNSUPPORTED_EXTENSION": 2,
+        "UNUSED_OBJECT": 7
+      },
+      "rawCsv": "docs/porting/m1-police/evidence/gltf-validator-bootstrap.csv"
+    }
+  ],
+  "interpretation": {
+    "errors": "No severity-0 validation errors.",
+    "warnings": "KTX2 MIME recognition, runtime-generated tangents, and non-root skinned-mesh notices are identical in high and bootstrap and are covered by this project's Three.js Meshopt/KTX2 runtime checks.",
+    "information": "The validator does not inspect EXT_meshopt_compression/KHR_texture_basisu payloads and reports the seven extension-owned image objects as unused."
+  }
+}
