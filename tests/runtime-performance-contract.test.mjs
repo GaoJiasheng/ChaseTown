@@ -170,7 +170,7 @@ test("scene loading is cancellable, retryable, concurrency-limited and KTX2 awar
   );
   assert.match(
     SOURCE,
-    /return \(\) => \{\s*disposed = true;\s*sceneAssets\.abort\([\s\S]*releaseControlledDependencyResourcesWhenSettled\(\);\s*renderer\.renderLists\.dispose\(\);/u,
+    /return \(\) => \{\s*disposed = true;\s*sceneAssets\.abort\([\s\S]*releaseControlledDependencyResourcesWhenSettled\(\);\s*qaRenderBreakdownTracker\?\.dispose\(\);\s*renderer\.renderLists\.dispose\(\);/u,
     "chapter cleanup must abort first and defer URL/KTX2 disposal until pending GLB parses settle",
   );
 });
@@ -428,7 +428,7 @@ test("resource QA locks render quality before renderer creation and compiles one
   );
   assert.match(
     SOURCE,
-    /renderer\.render\(scene, camera\);\s*qaRenderedFrameCount \+= 1;\s*compileSettledQaScene\(\);/u,
+    /renderer\.render\(scene, camera\);\s*qaRenderBreakdownTracker\?\.endFrame\(\);\s*qaRenderedFrameCount \+= 1;\s*compileSettledQaScene\(\);/u,
   );
   assert.match(SOURCE, /let qaCaptureHoldDeadline = 0/u);
   assert.match(

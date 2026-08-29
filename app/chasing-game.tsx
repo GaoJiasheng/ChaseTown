@@ -254,6 +254,11 @@ import {
 } from "./game/render-breakdown.ts";
 import { createMazeShadowProxy } from "./game/maze-shadow-proxy.ts";
 import { createDirectionalShadowTexelSnapper } from "./game/shadow-camera.ts";
+import {
+  batchCompatibleActorSkins,
+  createActorShadowProxy,
+  enableActorShadowLayer,
+} from "./game/player/actor-batching.ts";
 import { resolveRuntimeObjectPolicy } from "./game/runtime-visibility.ts";
 import {
   authoredRoomFloorRegions,
@@ -1497,9 +1502,22 @@ function fitActor(source: THREE.Object3D, height: number) {
   const fitted = staticMeshBounds(visual);
   const center = fitted.getCenter(new THREE.Vector3());
   visual.position.set(-center.x, -fitted.min.y, -center.z);
+  const authoredFittedHeight = fitted.max.y - fitted.min.y;
   const actor = new THREE.Group();
   actor.name = "production-character";
   actor.add(visual);
+  // Preserve M1's authored height contract using the untouched source skins.
+  // A merged SkinnedMesh has different static bounds and must not drive fit.
+  const actorBatch = batchCompatibleActorSkins(cloned);
+  const batchedBounds = staticMeshBounds(visual);
+  const shadowProxy = createActorShadowProxy(actor, { height });
+  actor.userData.actorBatch = actorBatch.budget;
+  actor.userData.shadowBudget = shadowProxy.budget;
+  actor.userData.actorFit = {
+    requestedHeight: height,
+    authoredFittedHeight,
+    batchedHeight: batchedBounds.max.y - batchedBounds.min.y,
+  };
   return actor;
 }
 
@@ -11491,6 +11509,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         renderer.info.reset();
         qaRenderBreakdownTracker?.beginFrame();
         camera.layers.set(0);
+        enableActorShadowLayer(camera);
         renderer.clear(true, true, true);
         renderer.render(scene, camera);
         qaRenderBreakdownTracker?.endFrame();
@@ -11910,6 +11929,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           activeHideArchetype: simulation.getActiveHideSpotArchetype(),
           hideExitSelection: simulation.getHideExitSelection(),
           animations: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, view?.animator.snapshot()])),
+          actorOptimization: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, {
+            batch: view?.root.userData.actorBatch ?? null,
+            shadow: view?.root.userData.shadowBudget ?? null,
+            fit: view?.root.userData.actorFit ?? null,
+          }])),
           visibility: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, {
             rootVisible: view?.root.visible ?? false,
             alpha: view?.visibilityAlpha ?? 0,

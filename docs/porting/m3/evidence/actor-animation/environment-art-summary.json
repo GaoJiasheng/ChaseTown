@@ -1,0 +1,2800 @@
+{
+  "baseUrl": "http://127.0.0.1:3000/",
+  "viewport": {
+    "width": 1512,
+    "height": 982,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "levels": [
+    {
+      "number": 1,
+      "id": "school-maze-v1",
+      "theme": "campus",
+      "propSet": "campus-classic",
+      "screenshot": {
+        "file": "01-campus-classic-far.png",
+        "view": "far",
+        "bytes": 1573029,
+        "width": 1464,
+        "height": 866,
+        "entropy": 7.33213780799997,
+        "sharpness": 4.182409648108838,
+        "averageDeviation": 48.491038016141836,
+        "dominant": {
+          "r": 56,
+          "g": 72,
+          "b": 72
+        },
+        "sha256": "9a899163b9f8960e9ca6363dee8fb2427f298b43704c483b5476a0266024f78d"
+      },
+      "semantics": {
+        "storyNodes": [
+          "CampusClassroomCluster",
+          "CampusCourtyardCluster",
+          "CampusClassicLandmark",
+          "CampusClassicArrivalCluster",
+          "CampusGateDressing",
+          "CampusClassicHideDressing"
+        ],
+        "semanticAssets": [
+          "detail:classroomDoor",
+          "detail:blackboard",
+          "detail:backpack",
+          "detail:station"
+        ],
+        "loadedAssetCount": 22,
+        "placedAssetCount": 67
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -6.003690413527871,
+            "y": 0.004722790581164015,
+            "z": 5.9955237585065335
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -8.419921875,
+          "lightSpaceY": -0.80859375,
+          "texelIndexX": -479,
+          "texelIndexY": -46,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 197,
+        "triangles": 335003,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 34,
+            "triangles": 34384
+          },
+          "props-dressing": {
+            "calls": 72,
+            "triangles": 83398
+          },
+          "shadow-pass": {
+            "calls": 71,
+            "triangles": 98254
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3588
+            },
+            "props-dressing": {
+              "calls": 68,
+              "triangles": 93978
+            }
+          },
+          "total": {
+            "calls": 197,
+            "triangles": 335003
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "campus-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 299,
+            "triangles": 3588,
+            "sourceModules": 275
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 111258,
+          "shadowDrawCalls": 110
+        },
+        "memory": {
+          "geometries": 206,
+          "textures": 141
+        },
+        "programs": 79,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 222,
+          "canonicalTextures": 160,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      }
+    },
+    {
+      "number": 2,
+      "id": "campus-library-lockdown",
+      "theme": "campus",
+      "propSet": "campus-library",
+      "screenshot": {
+        "file": "02-campus-library-default.png",
+        "view": "default",
+        "bytes": 1586192,
+        "width": 1464,
+        "height": 866,
+        "entropy": 6.9468380976468325,
+        "sharpness": 4.140407534273769,
+        "averageDeviation": 42.73567833478476,
+        "dominant": {
+          "r": 24,
+          "g": 24,
+          "b": 24
+        },
+        "sha256": "dd624f66c0aee8a737a59409e98a65adfebdef9cffbf28428af853afcea90d76"
+      },
+      "semantics": {
+        "storyNodes": [
+          "CampusLibraryShelves",
+          "CampusReadingCluster",
+          "CampusArchiveCluster",
+          "CampusLibraryArrivalCluster",
+          "CampusLibraryExitCluster",
+          "CampusLibraryHideDressing"
+        ],
+        "semanticAssets": [
+          "detail:books",
+          "detail:backpack"
+        ],
+        "loadedAssetCount": 14,
+        "placedAssetCount": 62
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": 11.997933111850948,
+            "y": -0.0044813703407200235,
+            "z": -19.991421399798504
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 21.744140625,
+          "lightSpaceY": 6.521484375,
+          "texelIndexX": 1237,
+          "texelIndexY": 371,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 190,
+        "triangles": 358407,
+        "breakdown": {
+          "actor": {
+            "calls": 35,
+            "triangles": 170111
+          },
+          "maze-walls": {
+            "calls": 34,
+            "triangles": 63916
+          },
+          "props-dressing": {
+            "calls": 62,
+            "triangles": 74792
+          },
+          "shadow-pass": {
+            "calls": 59,
+            "triangles": 49588
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 3,
+              "triangles": 1032
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3516
+            },
+            "props-dressing": {
+              "calls": 55,
+              "triangles": 45040
+            }
+          },
+          "total": {
+            "calls": 190,
+            "triangles": 358407
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "campus-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 293,
+            "triangles": 3516,
+            "sourceModules": 267
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 117446,
+          "shadowDrawCalls": 135
+        },
+        "memory": {
+          "geometries": 200,
+          "textures": 167
+        },
+        "programs": 71,
+        "sceneTextures": 28,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 151,
+          "canonicalTextures": 155,
+          "assignmentsShared": 0,
+          "sourcesShared": 0
+        }
+      }
+    },
+    {
+      "number": 3,
+      "id": "campus-science-wing",
+      "theme": "campus",
+      "propSet": "campus-science",
+      "screenshot": {
+        "file": "03-campus-science-default.png",
+        "view": "default",
+        "bytes": 1587312,
+        "width": 1464,
+        "height": 866,
+        "entropy": 7.206758178232121,
+        "sharpness": 4.0798801584962225,
+        "averageDeviation": 46.17476543070497,
+        "dominant": {
+          "r": 40,
+          "g": 56,
+          "b": 56
+        },
+        "sha256": "ccdeee35d52f03ca55cfc30410a94547be1ecbbd673e3eb379e4057c6181c5f9"
+      },
+      "semantics": {
+        "storyNodes": [
+          "CampusLabBenchCluster",
+          "CampusFumeHoodCluster",
+          "CampusGreenhouseCluster",
+          "CampusScienceArrivalCluster",
+          "CampusScienceExitCluster",
+          "CampusScienceHideDressing"
+        ],
+        "semanticAssets": [
+          "detail:classroomDoor",
+          "detail:blackboard",
+          "detail:books"
+        ],
+        "loadedAssetCount": 14,
+        "placedAssetCount": 59
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -8.000619206968839,
+            "y": -0.002275054420005542,
+            "z": -7.9959794210375605
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -1.40625,
+          "lightSpaceY": 8.701171875,
+          "texelIndexX": -80,
+          "texelIndexY": 495,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 246,
+        "triangles": 412701,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 34,
+            "triangles": 51504
+          },
+          "props-dressing": {
+            "calls": 100,
+            "triangles": 134160
+          },
+          "shadow-pass": {
+            "calls": 92,
+            "triangles": 108070
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3780
+            },
+            "props-dressing": {
+              "calls": 89,
+              "triangles": 103602
+            }
+          },
+          "total": {
+            "calls": 246,
+            "triangles": 412701
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "campus-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 315,
+            "triangles": 3780,
+            "sourceModules": 286
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 160800,
+          "shadowDrawCalls": 135
+        },
+        "memory": {
+          "geometries": 195,
+          "textures": 143
+        },
+        "programs": 83,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 188,
+          "canonicalTextures": 148,
+          "assignmentsShared": 40,
+          "sourcesShared": 54
+        }
+      }
+    },
+    {
+      "number": 4,
+      "id": "hospital-outpatient-afterhours",
+      "theme": "hospital",
+      "propSet": "hospital-outpatient",
+      "screenshot": {
+        "file": "04-hospital-outpatient-far.png",
+        "view": "far",
+        "bytes": 1554702,
+        "width": 1464,
+        "height": 866,
+        "entropy": 7.032575596047536,
+        "sharpness": 4.830748646993067,
+        "averageDeviation": 65.14926621764103,
+        "dominant": {
+          "r": 40,
+          "g": 40,
+          "b": 40
+        },
+        "sha256": "02e3f6dfb6ec9d13e24736a07a972047f1262d77b8cac4e7abcf8e7b07f7dc54"
+      },
+      "semantics": {
+        "storyNodes": [
+          "HospitalTriageCluster",
+          "HospitalWaitingCluster",
+          "HospitalPharmacyCluster",
+          "HospitalOutpatientArrivalCluster",
+          "HospitalOutpatientExitCluster",
+          "HospitalOutpatientHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:HospitalIVStation",
+          "theme-node:HospitalCrashCart",
+          "theme-node:HospitalWheelchair",
+          "theme-node:HospitalWayfinding"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 57
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -5.9939448054582725,
+            "y": 0.0004828404808874201,
+            "z": -14.005460680947168
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 3.8671875,
+          "lightSpaceY": 11.42578125,
+          "texelIndexX": 220,
+          "texelIndexY": 650,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 156,
+        "triangles": 268323,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 30,
+            "triangles": 45168
+          },
+          "props-dressing": {
+            "calls": 69,
+            "triangles": 61180
+          },
+          "shadow-pass": {
+            "calls": 37,
+            "triangles": 43008
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 2880
+            },
+            "props-dressing": {
+              "calls": 34,
+              "triangles": 39440
+            }
+          },
+          "total": {
+            "calls": 156,
+            "triangles": 268323
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "hospital-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 240,
+            "triangles": 2880,
+            "sourceModules": 211
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 102094,
+          "shadowDrawCalls": 114
+        },
+        "memory": {
+          "geometries": 175,
+          "textures": 130
+        },
+        "programs": 81,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      }
+    },
+    {
+      "number": 5,
+      "id": "hospital-isolation-basement",
+      "theme": "hospital",
+      "propSet": "hospital-isolation",
+      "screenshot": {
+        "file": "05-hospital-isolation-default.png",
+        "view": "default",
+        "bytes": 1438034,
+        "width": 1464,
+        "height": 866,
+        "entropy": 7.167771544871357,
+        "sharpness": 4.687783404833629,
+        "averageDeviation": 60.444621042556086,
+        "dominant": {
+          "r": 136,
+          "g": 136,
+          "b": 136
+        },
+        "sha256": "340a38a5e5fe9a86ac5629dde327611a3aff5b924ca78b7051349f2cfd69faf7"
+      },
+      "semantics": {
+        "storyNodes": [
+          "HospitalDeconCluster",
+          "HospitalIsolationWardCluster",
+          "HospitalAirlockCluster",
+          "HospitalIsolationArrivalCluster",
+          "HospitalIsolationExitCluster",
+          "HospitalIsolationHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:HospitalIVStation",
+          "theme-node:HospitalPrivacyScreen",
+          "theme-node:HospitalWayfinding"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 55
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -9.995388434216855,
+            "y": 0.002999315141337233,
+            "z": -6.00825237471786
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -4.201171875,
+          "lightSpaceY": 8.4375,
+          "texelIndexX": -239,
+          "texelIndexY": 480,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 190,
+        "triangles": 364938,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 29,
+            "triangles": 52628
+          },
+          "props-dressing": {
+            "calls": 68,
+            "triangles": 98937
+          },
+          "shadow-pass": {
+            "calls": 73,
+            "triangles": 94406
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 4260
+            },
+            "props-dressing": {
+              "calls": 70,
+              "triangles": 89458
+            }
+          },
+          "total": {
+            "calls": 190,
+            "triangles": 364938
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "hospital-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 355,
+            "triangles": 4260,
+            "sourceModules": 321
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 148016,
+          "shadowDrawCalls": 120
+        },
+        "memory": {
+          "geometries": 173,
+          "textures": 138
+        },
+        "programs": 80,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      }
+    },
+    {
+      "number": 6,
+      "id": "fire-station-engine-bay",
+      "theme": "fire-station",
+      "propSet": "fire-engine-bay",
+      "screenshot": {
+        "file": "06-fire-engine-bay-far.png",
+        "view": "far",
+        "bytes": 1492304,
+        "width": 1464,
+        "height": 866,
+        "entropy": 6.7020027974722325,
+        "sharpness": 4.308447583119972,
+        "averageDeviation": 42.83284522369885,
+        "dominant": {
+          "r": 24,
+          "g": 24,
+          "b": 24
+        },
+        "sha256": "2acacc688d7fbcb3c02ac0b601f48867d3f078ce8dd8c71e732f75f1e9965964"
+      },
+      "semantics": {
+        "storyNodes": [
+          "FireStationEngineBayCluster",
+          "FireStationTurnoutCluster",
+          "FireStationHoseServiceCluster",
+          "FireStationEngineBayArrivalCluster",
+          "FireStationEngineBayExitCluster",
+          "FireStationEngineBayHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:FireGearRack",
+          "theme-node:FireHoseReel",
+          "theme-node:FireEngine",
+          "theme-node:FireStationWayfinding",
+          "theme-node:FireSafetyCones"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 57
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -4.0044935695385755,
+            "y": 0.004412631841428964,
+            "z": -4.003369095445553
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -0.703125,
+          "lightSpaceY": 4.359375,
+          "texelIndexX": -40,
+          "texelIndexY": 248,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 197,
+        "triangles": 374915,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 30,
+            "triangles": 119664
+          },
+          "props-dressing": {
+            "calls": 66,
+            "triangles": 77228
+          },
+          "shadow-pass": {
+            "calls": 81,
+            "triangles": 59056
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3780
+            },
+            "props-dressing": {
+              "calls": 78,
+              "triangles": 54588
+            }
+          },
+          "total": {
+            "calls": 197,
+            "triangles": 374915
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "fire-station-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 315,
+            "triangles": 3780,
+            "sourceModules": 281
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 112926,
+          "shadowDrawCalls": 119
+        },
+        "memory": {
+          "geometries": 177,
+          "textures": 118
+        },
+        "programs": 77,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 137,
+          "canonicalTextures": 121,
+          "assignmentsShared": 16,
+          "sourcesShared": 22
+        }
+      }
+    },
+    {
+      "number": 7,
+      "id": "fire-station-training-tower",
+      "theme": "fire-station",
+      "propSet": "fire-training",
+      "screenshot": {
+        "file": "07-fire-training-default.png",
+        "view": "default",
+        "bytes": 1627057,
+        "width": 1464,
+        "height": 866,
+        "entropy": 6.977322987146181,
+        "sharpness": 4.76652916147676,
+        "averageDeviation": 51.005205914632874,
+        "dominant": {
+          "r": 24,
+          "g": 24,
+          "b": 24
+        },
+        "sha256": "d1287dadb00842b9f1424094daee2fd80167140e190f778f34ff6e2c4c7f96a6"
+      },
+      "semantics": {
+        "storyNodes": [
+          "FireStationTrainingCluster",
+          "FireStationRopeRescueCluster",
+          "FireStationBreathingGearCluster",
+          "FireStationTrainingArrivalCluster",
+          "FireStationTrainingExitCluster",
+          "FireStationTrainingHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:FireGearRack",
+          "theme-node:FireHoseReel",
+          "theme-node:FireStationWayfinding",
+          "theme-node:FireSafetyCones",
+          "theme-node:FireHydrant"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 55
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": 10.002178805761176,
+            "y": 0.004809131451740059,
+            "z": -20.009175497850286
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 20.1796875,
+          "lightSpaceY": 7.48828125,
+          "texelIndexX": 1148,
+          "texelIndexY": 426,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 228,
+        "triangles": 497366,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 30,
+            "triangles": 122252
+          },
+          "props-dressing": {
+            "calls": 109,
+            "triangles": 166061
+          },
+          "shadow-pass": {
+            "calls": 69,
+            "triangles": 90086
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3936
+            },
+            "props-dressing": {
+              "calls": 66,
+              "triangles": 85462
+            }
+          },
+          "total": {
+            "calls": 228,
+            "triangles": 497366
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "fire-station-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 328,
+            "triangles": 3936,
+            "sourceModules": 291
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 153676,
+          "shadowDrawCalls": 125
+        },
+        "memory": {
+          "geometries": 194,
+          "textures": 133
+        },
+        "programs": 77,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 137,
+          "canonicalTextures": 121,
+          "assignmentsShared": 16,
+          "sourcesShared": 22
+        }
+      }
+    },
+    {
+      "number": 8,
+      "id": "factory-assembly-nightshift",
+      "theme": "factory",
+      "propSet": "factory-assembly",
+      "screenshot": {
+        "file": "08-factory-assembly-far.png",
+        "view": "far",
+        "bytes": 1595779,
+        "width": 1464,
+        "height": 866,
+        "entropy": 6.704508483799145,
+        "sharpness": 4.327235071609553,
+        "averageDeviation": 39.275492650499245,
+        "dominant": {
+          "r": 40,
+          "g": 56,
+          "b": 56
+        },
+        "sha256": "f89e9aacf495531e68d6b0b479d141d20d2fa0cb8c6b3ba6a13769961fe12172"
+      },
+      "semantics": {
+        "storyNodes": [
+          "FactoryAssemblyLineCluster",
+          "FactoryRobotCellCluster",
+          "FactoryInspectionCluster",
+          "FactoryAssemblyArrivalCluster",
+          "FactoryAssemblyExitCluster",
+          "FactoryAssemblyHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:FactoryConveyor",
+          "theme-node:FactoryPipeAssembly",
+          "theme-node:FactorySafetyBarrier",
+          "theme-node:FactoryCrateStack"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 57
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": 3.9991755782102576,
+            "y": 0.004791529080455355,
+            "z": 15.99318772726687
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -6.662109375,
+          "lightSpaceY": -11.689453125,
+          "texelIndexX": -379,
+          "texelIndexY": -665,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 199,
+        "triangles": 332807,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 24,
+            "triangles": 31716
+          },
+          "props-dressing": {
+            "calls": 62,
+            "triangles": 65486
+          },
+          "shadow-pass": {
+            "calls": 93,
+            "triangles": 116638
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 4032
+            },
+            "props-dressing": {
+              "calls": 90,
+              "triangles": 111918
+            }
+          },
+          "total": {
+            "calls": 199,
+            "triangles": 332807
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "factory-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 336,
+            "triangles": 4032,
+            "sourceModules": 297
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 123830,
+          "shadowDrawCalls": 117
+        },
+        "memory": {
+          "geometries": 204,
+          "textures": 124
+        },
+        "programs": 79,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      }
+    },
+    {
+      "number": 9,
+      "id": "factory-turbine-hall",
+      "theme": "factory",
+      "propSet": "factory-turbine",
+      "screenshot": {
+        "file": "09-factory-turbine-default.png",
+        "view": "default",
+        "bytes": 1714894,
+        "width": 1464,
+        "height": 866,
+        "entropy": 6.815787760842795,
+        "sharpness": 4.554284645790575,
+        "averageDeviation": 43.7154672834345,
+        "dominant": {
+          "r": 24,
+          "g": 24,
+          "b": 24
+        },
+        "sha256": "8d0d671e89e0e425c146e512d3f9a652bacba39f5587d38278d8701150a97cbb"
+      },
+      "semantics": {
+        "storyNodes": [
+          "FactoryTurbineCluster",
+          "FactoryHighPressurePipeCluster",
+          "FactoryBreakerCluster",
+          "FactoryTurbineArrivalCluster",
+          "FactoryTurbineExitCluster",
+          "FactoryTurbineHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:FactoryPipeAssembly",
+          "theme-node:FactoryStorageTank",
+          "theme-node:FactorySafetyBarrier",
+          "theme-node:FactoryCrateStack"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 56
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -5.992959726616513,
+            "y": -0.0035332917502310093,
+            "z": -11.999979536575685
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 2.63671875,
+          "lightSpaceY": 10.1953125,
+          "texelIndexX": 150,
+          "texelIndexY": 580,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 187,
+        "triangles": 435409,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 24,
+            "triangles": 73108
+          },
+          "props-dressing": {
+            "calls": 81,
+            "triangles": 133484
+          },
+          "shadow-pass": {
+            "calls": 62,
+            "triangles": 109850
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 4596
+            },
+            "props-dressing": {
+              "calls": 59,
+              "triangles": 104566
+            }
+          },
+          "total": {
+            "calls": 187,
+            "triangles": 435409
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "factory-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 383,
+            "triangles": 4596,
+            "sourceModules": 339
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 166608,
+          "shadowDrawCalls": 122
+        },
+        "memory": {
+          "geometries": 181,
+          "textures": 131
+        },
+        "programs": 76,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      }
+    },
+    {
+      "number": 10,
+      "id": "factory-foundry-final-run",
+      "theme": "factory",
+      "propSet": "factory-foundry",
+      "screenshot": {
+        "file": "10-factory-foundry-far.png",
+        "view": "far",
+        "bytes": 1852925,
+        "width": 1464,
+        "height": 866,
+        "entropy": 6.928804386847332,
+        "sharpness": 4.583283307769099,
+        "averageDeviation": 41.0659648124658,
+        "dominant": {
+          "r": 56,
+          "g": 40,
+          "b": 40
+        },
+        "sha256": "4e26a6f0a2efcface1ea3ee3e4183a59af5f39eab3922a1caa1594c191dabbc7"
+      },
+      "semantics": {
+        "storyNodes": [
+          "FactoryFurnaceCluster",
+          "FactoryCastingCluster",
+          "FactoryCoolingCluster",
+          "FactoryFoundryArrivalCluster",
+          "FactoryFoundryExitCluster",
+          "FactoryFoundryHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:FactoryStorageTank",
+          "theme-node:FactoryControlConsole",
+          "theme-node:FactorySafetyBarrier",
+          "theme-node:FactoryCrateStack"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 56
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -13.996926767230153,
+            "y": -0.0046364497105879695,
+            "z": -3.9951780370489653
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -8.595703125,
+          "lightSpaceY": 9.10546875,
+          "texelIndexX": -489,
+          "texelIndexY": 518,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 241,
+        "triangles": 524006,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 24,
+            "triangles": 69148
+          },
+          "props-dressing": {
+            "calls": 103,
+            "triangles": 172891
+          },
+          "shadow-pass": {
+            "calls": 94,
+            "triangles": 163000
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 4512
+            },
+            "props-dressing": {
+              "calls": 91,
+              "triangles": 157800
+            }
+          },
+          "total": {
+            "calls": 241,
+            "triangles": 524006
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "factory-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 376,
+            "triangles": 4512,
+            "sourceModules": 332
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 171440,
+          "shadowDrawCalls": 137
+        },
+        "memory": {
+          "geometries": 190,
+          "textures": 128
+        },
+        "programs": 80,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      }
+    }
+  ],
+  "representatives": [
+    {
+      "number": 1,
+      "id": "school-maze-v1",
+      "theme": "campus",
+      "propSet": "campus-classic",
+      "screenshots": {
+        "far": {
+          "file": "01-campus-classic-far.png",
+          "bytes": 1573029,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.33213780799997,
+          "sharpness": 4.182409648108838,
+          "averageDeviation": 48.491038016141836,
+          "dominant": {
+            "r": 56,
+            "g": 72,
+            "b": 72
+          },
+          "sha256": "9a899163b9f8960e9ca6363dee8fb2427f298b43704c483b5476a0266024f78d"
+        },
+        "near": {
+          "file": "01-campus-classic-near.png",
+          "bytes": 1566179,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.334602900296886,
+          "sharpness": 4.167919078025886,
+          "averageDeviation": 48.651673299914876,
+          "dominant": {
+            "r": 56,
+            "g": 72,
+            "b": 72
+          },
+          "sha256": "98af3d10c8ca66a94cbd76c7cd3d4b6746b2f813a6d9f606800fa282c91975ba"
+        },
+        "chase": {
+          "file": "01-campus-classic-chase.png",
+          "bytes": 1505694,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.008324154168804,
+          "sharpness": 3.789292826279219,
+          "averageDeviation": 50.63875014445795,
+          "dominant": {
+            "r": 40,
+            "g": 40,
+            "b": 40
+          },
+          "sha256": "b0039db4528349e49414cd788c85a19759527b7ea90ddccddea0f32be4828300"
+        },
+        "hide": {
+          "file": "01-campus-classic-hide.png",
+          "bytes": 1470547,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.142998084585997,
+          "sharpness": 3.8467399862808906,
+          "averageDeviation": 48.08487371783044,
+          "dominant": {
+            "r": 56,
+            "g": 72,
+            "b": 72
+          },
+          "sha256": "0f00545ee2bb25275e56c9a626e9a2dac04d9d2d9a15d5402a425759182ae21e"
+        }
+      },
+      "framePerformance": {
+        "frames": 60,
+        "medianMs": 16.699999999999818,
+        "p95Ms": 16.700000000000728,
+        "p99Ms": 16.800000000000182,
+        "over33MsRatio": 0
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -11.993302306499581,
+            "y": 0.00001760237128414306,
+            "z": -22.005236698633432
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 4.04296875,
+          "lightSpaceY": 19.177734375,
+          "texelIndexX": 230,
+          "texelIndexY": 1091,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 208,
+        "triangles": 372562,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 29,
+            "triangles": 32340
+          },
+          "props-dressing": {
+            "calls": 90,
+            "triangles": 119509
+          },
+          "shadow-pass": {
+            "calls": 69,
+            "triangles": 101746
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3588
+            },
+            "props-dressing": {
+              "calls": 66,
+              "triangles": 97470
+            }
+          },
+          "total": {
+            "calls": 208,
+            "triangles": 372562
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "campus-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 299,
+            "triangles": 3588,
+            "sourceModules": 275
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 111258,
+          "shadowDrawCalls": 110
+        },
+        "memory": {
+          "geometries": 209,
+          "textures": 142
+        },
+        "programs": 79,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 222,
+          "canonicalTextures": 160,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      }
+    },
+    {
+      "number": 4,
+      "id": "hospital-outpatient-afterhours",
+      "theme": "hospital",
+      "propSet": "hospital-outpatient",
+      "screenshots": {
+        "far": {
+          "file": "04-hospital-outpatient-far.png",
+          "bytes": 1554702,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.032575596047536,
+          "sharpness": 4.830748646993067,
+          "averageDeviation": 65.14926621764103,
+          "dominant": {
+            "r": 40,
+            "g": 40,
+            "b": 40
+          },
+          "sha256": "02e3f6dfb6ec9d13e24736a07a972047f1262d77b8cac4e7abcf8e7b07f7dc54"
+        },
+        "near": {
+          "file": "04-hospital-outpatient-near.png",
+          "bytes": 1535476,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.028026383788529,
+          "sharpness": 4.840088005510935,
+          "averageDeviation": 65.96736897108319,
+          "dominant": {
+            "r": 40,
+            "g": 40,
+            "b": 40
+          },
+          "sha256": "067b02fd792ac3dd17d04d2d25c4218b13e6bea23f4616935e00d12e14d9d39c"
+        },
+        "chase": {
+          "file": "04-hospital-outpatient-chase.png",
+          "bytes": 1605982,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.176145076406101,
+          "sharpness": 4.741664804257713,
+          "averageDeviation": 60.5177284158485,
+          "dominant": {
+            "r": 40,
+            "g": 40,
+            "b": 40
+          },
+          "sha256": "45c72b27dc74f556da7e886f09ae15b8d475df6ec294c3dadeb3245d4aae5481"
+        },
+        "hide": {
+          "file": "04-hospital-outpatient-hide.png",
+          "bytes": 1334006,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.058597210125299,
+          "sharpness": 3.9676051943246535,
+          "averageDeviation": 63.43172356955008,
+          "dominant": {
+            "r": 56,
+            "g": 56,
+            "b": 56
+          },
+          "sha256": "7cde649cff56ec34dfd1d43dd7ab1ea53aedf3ff7c8252e97b027001920bca7a"
+        }
+      },
+      "framePerformance": {
+        "frames": 61,
+        "medianMs": 16.69999999999709,
+        "p95Ms": 16.700000000000728,
+        "p99Ms": 16.700000000000728,
+        "over33MsRatio": 0
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -0.0020648619382357446,
+            "y": -0.0021199750501381567,
+            "z": -9.99509625730338
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 6.134765625,
+          "lightSpaceY": 6.1171875,
+          "texelIndexX": 349,
+          "texelIndexY": 348,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 188,
+        "triangles": 278699,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 30,
+            "triangles": 49552
+          },
+          "props-dressing": {
+            "calls": 73,
+            "triangles": 61768
+          },
+          "shadow-pass": {
+            "calls": 65,
+            "triangles": 48412
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 2880
+            },
+            "props-dressing": {
+              "calls": 62,
+              "triangles": 44844
+            }
+          },
+          "total": {
+            "calls": 188,
+            "triangles": 278699
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "hospital-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 240,
+            "triangles": 2880,
+            "sourceModules": 211
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 102094,
+          "shadowDrawCalls": 114
+        },
+        "memory": {
+          "geometries": 199,
+          "textures": 130
+        },
+        "programs": 81,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      }
+    },
+    {
+      "number": 6,
+      "id": "fire-station-engine-bay",
+      "theme": "fire-station",
+      "propSet": "fire-engine-bay",
+      "screenshots": {
+        "far": {
+          "file": "06-fire-engine-bay-far.png",
+          "bytes": 1492304,
+          "width": 1464,
+          "height": 866,
+          "entropy": 6.7020027974722325,
+          "sharpness": 4.308447583119972,
+          "averageDeviation": 42.83284522369885,
+          "dominant": {
+            "r": 24,
+            "g": 24,
+            "b": 24
+          },
+          "sha256": "2acacc688d7fbcb3c02ac0b601f48867d3f078ce8dd8c71e732f75f1e9965964"
+        },
+        "near": {
+          "file": "06-fire-engine-bay-near.png",
+          "bytes": 1484629,
+          "width": 1464,
+          "height": 866,
+          "entropy": 6.704589319655497,
+          "sharpness": 4.276090288245237,
+          "averageDeviation": 43.09057074404223,
+          "dominant": {
+            "r": 24,
+            "g": 24,
+            "b": 24
+          },
+          "sha256": "fa330be8b7a90290bc011b543a9fd95e1ca4b1af7a5f98c80ef1e6c3eecab577"
+        },
+        "chase": {
+          "file": "06-fire-engine-bay-chase.png",
+          "bytes": 1157697,
+          "width": 1464,
+          "height": 866,
+          "entropy": 6.620572851399629,
+          "sharpness": 4.118748056825137,
+          "averageDeviation": 45.1551081048471,
+          "dominant": {
+            "r": 24,
+            "g": 24,
+            "b": 24
+          },
+          "sha256": "028775941b6980d7aade2d6851c035c24597378f4cb1aa4f50f31f50d4750021"
+        },
+        "hide": {
+          "file": "06-fire-engine-bay-hide.png",
+          "bytes": 1795867,
+          "width": 1464,
+          "height": 866,
+          "entropy": 7.11203827598365,
+          "sharpness": 5.129888284008707,
+          "averageDeviation": 51.982222911557365,
+          "dominant": {
+            "r": 56,
+            "g": 56,
+            "b": 56
+          },
+          "sha256": "bd589578b913f603ff6e9da38157cae23eed0d7b32e71d5fb9e6aa256f91c9f0"
+        }
+      },
+      "framePerformance": {
+        "frames": 60,
+        "medianMs": 16.69999999999709,
+        "p95Ms": 16.799999999995634,
+        "p99Ms": 16.80000000000291,
+        "over33MsRatio": 0
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -6.003392520663061,
+            "y": 0.0054470513024943035,
+            "z": -22.005834563732613
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 8.771484375,
+          "lightSpaceY": 16.330078125,
+          "texelIndexX": 499,
+          "texelIndexY": 929,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 190,
+        "triangles": 364799,
+        "breakdown": {
+          "actor": {
+            "calls": 35,
+            "triangles": 170111
+          },
+          "maze-walls": {
+            "calls": 30,
+            "triangles": 76960
+          },
+          "props-dressing": {
+            "calls": 72,
+            "triangles": 69376
+          },
+          "shadow-pass": {
+            "calls": 53,
+            "triangles": 48352
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 3,
+              "triangles": 1032
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3780
+            },
+            "props-dressing": {
+              "calls": 49,
+              "triangles": 43540
+            }
+          },
+          "total": {
+            "calls": 190,
+            "triangles": 364799
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "fire-station-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 315,
+            "triangles": 3780,
+            "sourceModules": 281
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 113270,
+          "shadowDrawCalls": 120
+        },
+        "memory": {
+          "geometries": 192,
+          "textures": 140
+        },
+        "programs": 77,
+        "sceneTextures": 27,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 128,
+          "canonicalTextures": 132,
+          "assignmentsShared": 0,
+          "sourcesShared": 0
+        }
+      }
+    },
+    {
+      "number": 10,
+      "id": "factory-foundry-final-run",
+      "theme": "factory",
+      "propSet": "factory-foundry",
+      "screenshots": {
+        "far": {
+          "file": "10-factory-foundry-far.png",
+          "bytes": 1852925,
+          "width": 1464,
+          "height": 866,
+          "entropy": 6.928804386847332,
+          "sharpness": 4.583283307769099,
+          "averageDeviation": 41.0659648124658,
+          "dominant": {
+            "r": 56,
+            "g": 40,
+            "b": 40
+          },
+          "sha256": "4e26a6f0a2efcface1ea3ee3e4183a59af5f39eab3922a1caa1594c191dabbc7"
+        },
+        "near": {
+          "file": "10-factory-foundry-near.png",
+          "bytes": 1846540,
+          "width": 1464,
+          "height": 866,
+          "entropy": 6.931690561483265,
+          "sharpness": 4.570286745494046,
+          "averageDeviation": 41.237753123671276,
+          "dominant": {
+            "r": 56,
+            "g": 40,
+            "b": 40
+          },
+          "sha256": "f0f06bec8db16bc211412ae1ac5b06514382c7dad686c60fb7e597ba6eedb6a1"
+        },
+        "chase": {
+          "file": "10-factory-foundry-chase.png",
+          "bytes": 1502082,
+          "width": 1464,
+          "height": 866,
+          "entropy": 6.345650582854432,
+          "sharpness": 3.9202934025604885,
+          "averageDeviation": 35.66392696285481,
+          "dominant": {
+            "r": 24,
+            "g": 24,
+            "b": 24
+          },
+          "sha256": "8842e87f865e26a4e30cfeda577d9d4278dc84cec242e49cc9b39372df5822f9"
+        },
+        "hide": {
+          "file": "10-factory-foundry-hide.png",
+          "bytes": 1551284,
+          "width": 1464,
+          "height": 866,
+          "entropy": 6.624488700184884,
+          "sharpness": 4.153502099205758,
+          "averageDeviation": 39.56625224142267,
+          "dominant": {
+            "r": 40,
+            "g": 40,
+            "b": 40
+          },
+          "sha256": "938c0c66552124c1e82c27ce2433725f6ebae40e4d833bc3f48ab39ff4f5aaef"
+        }
+      },
+      "framePerformance": {
+        "frames": 60,
+        "medianMs": 16.69999999999709,
+        "p95Ms": 16.80000000000291,
+        "p99Ms": 16.80000000000291,
+        "over33MsRatio": 0
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -6.008805216246099,
+            "y": 0.004498972712004728,
+            "z": -16.00014990047171
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 5.080078125,
+          "lightSpaceY": 12.65625,
+          "texelIndexX": 289,
+          "texelIndexY": 720,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 194,
+        "triangles": 418439,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 24,
+            "triangles": 74900
+          },
+          "props-dressing": {
+            "calls": 88,
+            "triangles": 124506
+          },
+          "shadow-pass": {
+            "calls": 62,
+            "triangles": 100066
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 4512
+            },
+            "props-dressing": {
+              "calls": 59,
+              "triangles": 94866
+            }
+          },
+          "total": {
+            "calls": 194,
+            "triangles": 418439
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "factory-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 376,
+            "triangles": 4512,
+            "sourceModules": 332
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 171440,
+          "shadowDrawCalls": 137
+        },
+        "memory": {
+          "geometries": 191,
+          "textures": 129
+        },
+        "programs": 80,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      }
+    }
+  ],
+  "fallback": [
+    {
+      "number": 1,
+      "id": "school-maze-v1",
+      "theme": "campus",
+      "propSet": "campus-classic",
+      "batching": "instanced-mesh",
+      "screenshot": {
+        "file": "fallback-01-campus-classic.png",
+        "bytes": 1580979,
+        "width": 1464,
+        "height": 866,
+        "entropy": 7.246738894842565,
+        "sharpness": 3.8888659864838453,
+        "averageDeviation": 50.40564454988314,
+        "dominant": {
+          "r": 24,
+          "g": 24,
+          "b": 24
+        },
+        "sha256": "e06dbfb00c7aab180ec3f93d627574384c65fff84acc7ff2d3bae3c6c2f61f9b"
+      },
+      "semantics": {
+        "storyNodes": [
+          "CampusClassroomCluster",
+          "CampusCourtyardCluster",
+          "CampusClassicLandmark",
+          "CampusClassicArrivalCluster",
+          "CampusGateDressing",
+          "CampusClassicHideDressing"
+        ],
+        "semanticAssets": [
+          "detail:classroomDoor",
+          "detail:blackboard",
+          "detail:backpack",
+          "detail:station"
+        ],
+        "loadedAssetCount": 22,
+        "placedAssetCount": 65
+      },
+      "render": {
+        "batching": "instanced-mesh",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -21.993118357457714,
+            "y": -0.0019472933089843853,
+            "z": -20.00232326571891
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -5.080078125,
+          "lightSpaceY": 22.7109375,
+          "texelIndexX": -289,
+          "texelIndexY": 1292,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 195,
+        "triangles": 424219,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 35,
+            "triangles": 117080
+          },
+          "props-dressing": {
+            "calls": 75,
+            "triangles": 92786
+          },
+          "shadow-pass": {
+            "calls": 65,
+            "triangles": 95386
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3588
+            },
+            "props-dressing": {
+              "calls": 62,
+              "triangles": 91110
+            }
+          },
+          "total": {
+            "calls": 195,
+            "triangles": 424219
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "campus-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 299,
+            "triangles": 3588,
+            "sourceModules": 275
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 111258,
+          "shadowDrawCalls": 110
+        },
+        "memory": {
+          "geometries": 165,
+          "textures": 34
+        },
+        "programs": 77,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 222,
+          "canonicalTextures": 160,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      }
+    },
+    {
+      "number": 4,
+      "id": "hospital-outpatient-afterhours",
+      "theme": "hospital",
+      "propSet": "hospital-outpatient",
+      "batching": "instanced-mesh",
+      "screenshot": {
+        "file": "fallback-04-hospital-outpatient.png",
+        "bytes": 1550333,
+        "width": 1464,
+        "height": 866,
+        "entropy": 7.381061597134249,
+        "sharpness": 4.82722617431749,
+        "averageDeviation": 71.9898031708194,
+        "dominant": {
+          "r": 40,
+          "g": 40,
+          "b": 40
+        },
+        "sha256": "9d67f186f0f9cf3911f9f90f5b84e3bd10ba2fc0437d98061914cd841f563f95"
+      },
+      "semantics": {
+        "storyNodes": [
+          "HospitalTriageCluster",
+          "HospitalWaitingCluster",
+          "HospitalPharmacyCluster",
+          "HospitalOutpatientArrivalCluster",
+          "HospitalOutpatientExitCluster",
+          "HospitalOutpatientHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:HospitalIVStation",
+          "theme-node:HospitalCrashCart",
+          "theme-node:HospitalWheelchair",
+          "theme-node:HospitalWayfinding"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 55
+      },
+      "render": {
+        "batching": "instanced-mesh",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -22.002863965527315,
+            "y": 0.002292656791290807,
+            "z": -0.0013388262652099547
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -17.3671875,
+          "lightSpaceY": 10.4765625,
+          "texelIndexX": -988,
+          "texelIndexY": 596,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 212,
+        "triangles": 426723,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 36,
+            "triangles": 99300
+          },
+          "props-dressing": {
+            "calls": 90,
+            "triangles": 114330
+          },
+          "shadow-pass": {
+            "calls": 66,
+            "triangles": 94126
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 2880
+            },
+            "props-dressing": {
+              "calls": 63,
+              "triangles": 90558
+            }
+          },
+          "total": {
+            "calls": 212,
+            "triangles": 426723
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "hospital-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 240,
+            "triangles": 2880,
+            "sourceModules": 211
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 102094,
+          "shadowDrawCalls": 114
+        },
+        "memory": {
+          "geometries": 163,
+          "textures": 35
+        },
+        "programs": 79,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      }
+    },
+    {
+      "number": 6,
+      "id": "fire-station-engine-bay",
+      "theme": "fire-station",
+      "propSet": "fire-engine-bay",
+      "batching": "instanced-mesh",
+      "screenshot": {
+        "file": "fallback-06-fire-engine-bay.png",
+        "bytes": 1414498,
+        "width": 1464,
+        "height": 866,
+        "entropy": 6.6865280063721,
+        "sharpness": 4.258159529821283,
+        "averageDeviation": 41.86138224298195,
+        "dominant": {
+          "r": 56,
+          "g": 56,
+          "b": 56
+        },
+        "sha256": "f79069e566e2aae0dffb18bfa73d218eed5c9e75c79e97191333d5dd65d4f036"
+      },
+      "semantics": {
+        "storyNodes": [
+          "FireStationEngineBayCluster",
+          "FireStationTurnoutCluster",
+          "FireStationHoseServiceCluster",
+          "FireStationEngineBayArrivalCluster",
+          "FireStationEngineBayExitCluster",
+          "FireStationEngineBayHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:FireGearRack",
+          "theme-node:FireHoseReel",
+          "theme-node:FireEngine",
+          "theme-node:FireStationWayfinding",
+          "theme-node:FireSafetyCones"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 55
+      },
+      "render": {
+        "batching": "instanced-mesh",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": 0.005114802718229076,
+            "y": 0.00022381786915900612,
+            "z": 21.99567365897824
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -13.5,
+          "lightSpaceY": -13.46484375,
+          "texelIndexX": -768,
+          "texelIndexY": -766,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 196,
+        "triangles": 548749,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 40,
+            "triangles": 276044
+          },
+          "props-dressing": {
+            "calls": 80,
+            "triangles": 100254
+          },
+          "shadow-pass": {
+            "calls": 56,
+            "triangles": 53484
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3780
+            },
+            "props-dressing": {
+              "calls": 53,
+              "triangles": 49016
+            }
+          },
+          "total": {
+            "calls": 196,
+            "triangles": 548749
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "fire-station-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 315,
+            "triangles": 3780,
+            "sourceModules": 281
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 112926,
+          "shadowDrawCalls": 119
+        },
+        "memory": {
+          "geometries": 155,
+          "textures": 36
+        },
+        "programs": 76,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 137,
+          "canonicalTextures": 121,
+          "assignmentsShared": 16,
+          "sourcesShared": 22
+        }
+      }
+    },
+    {
+      "number": 10,
+      "id": "factory-foundry-final-run",
+      "theme": "factory",
+      "propSet": "factory-foundry",
+      "batching": "instanced-mesh",
+      "screenshot": {
+        "file": "fallback-10-factory-foundry.png",
+        "bytes": 1460308,
+        "width": 1464,
+        "height": 866,
+        "entropy": 6.390285173682059,
+        "sharpness": 3.624052587665212,
+        "averageDeviation": 33.56019931348717,
+        "dominant": {
+          "r": 56,
+          "g": 40,
+          "b": 40
+        },
+        "sha256": "7fafd1c097d886309e5def88fe71e42162c487200acf68389f29c4fc602a22ad"
+      },
+      "semantics": {
+        "storyNodes": [
+          "FactoryFurnaceCluster",
+          "FactoryCastingCluster",
+          "FactoryCoolingCluster",
+          "FactoryFoundryArrivalCluster",
+          "FactoryFoundryExitCluster",
+          "FactoryFoundryHideDressing"
+        ],
+        "semanticAssets": [
+          "theme-node:FactoryStorageTank",
+          "theme-node:FactoryControlConsole",
+          "theme-node:FactorySafetyBarrier",
+          "theme-node:FactoryCrateStack"
+        ],
+        "loadedAssetCount": 10,
+        "placedAssetCount": 54
+      },
+      "render": {
+        "batching": "instanced-mesh",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -21.997749162809086,
+            "y": 0.0025164746604498128,
+            "z": 21.994334832713033
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -30.8671875,
+          "lightSpaceY": -2.98828125,
+          "texelIndexX": -1756,
+          "texelIndexY": -170,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 233,
+        "triangles": 610575,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 36,
+            "triangles": 207908
+          },
+          "props-dressing": {
+            "calls": 102,
+            "triangles": 176054
+          },
+          "shadow-pass": {
+            "calls": 75,
+            "triangles": 107646
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 4512
+            },
+            "props-dressing": {
+              "calls": 72,
+              "triangles": 102446
+            }
+          },
+          "total": {
+            "calls": 233,
+            "triangles": 610575
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "factory-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 376,
+            "triangles": 4512,
+            "sourceModules": 332
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 172856,
+          "shadowDrawCalls": 137
+        },
+        "memory": {
+          "geometries": 174,
+          "textures": 36
+        },
+        "programs": 77,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      }
+    }
+  ],
+  "acceptedWarnings": [
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.",
+    "The resource http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2?v=m2-20260829 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally."
+  ],
+  "diagnostics": []
+}

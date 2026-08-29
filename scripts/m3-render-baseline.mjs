@@ -227,6 +227,7 @@ try {
           prewarmCount: state.assets.qaTransientArtPrewarmCount,
         },
         policeLoadedIdentity: state.assets.policeLoadedIdentity,
+        actorOptimization: state.actorOptimization ?? null,
         ...sampleSummary(samples),
       });
     }

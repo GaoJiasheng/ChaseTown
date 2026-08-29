@@ -75,6 +75,11 @@ test("QA render breakdown accounts Mesh, SkinnedMesh, InstancedMesh and BatchedM
   assert.deepEqual(breakdown["maze-walls"], { calls: 1, triangles: 160 });
   assert.deepEqual(breakdown["props-dressing"], { calls: 2, triangles: 70 });
   assert.deepEqual(breakdown["shadow-pass"], { calls: 2, triangles: 260 });
+  assert.deepEqual(breakdown.shadowSources, {
+    actor: { calls: 1, triangles: 100 },
+    "maze-walls": { calls: 1, triangles: 160 },
+    "props-dressing": { calls: 0, triangles: 0 },
+  });
   assert.deepEqual(breakdown.total, { calls: 6, triangles: 590 });
   assert.equal(breakdown.reconciliation.exact, true);
   assert.equal(breakdown.reconciliation.fallbackCalls, 0);

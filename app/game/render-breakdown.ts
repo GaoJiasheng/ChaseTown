@@ -13,6 +13,7 @@ export type QaRenderBreakdown = Readonly<{
   "maze-walls": QaRenderWorkload;
   "props-dressing": QaRenderWorkload;
   "shadow-pass": QaRenderWorkload;
+  shadowSources: Readonly<Record<QaMainRenderCategory, QaRenderWorkload>>;
   total: QaRenderWorkload;
   reconciliation: Readonly<{
     exact: boolean;
@@ -61,6 +62,7 @@ export function createQaRenderBreakdownTracker(
   let active = false;
   let shadowDepth = 0;
   let currentCategory: QaRenderCategory | null = null;
+  let currentShadowSource: QaMainRenderCategory | null = null;
   let fallbackCalls = 0;
   let fallbackTriangles = 0;
   let workloads: Record<QaRenderCategory, MutableWorkload> = {
@@ -69,11 +71,21 @@ export function createQaRenderBreakdownTracker(
     "props-dressing": ZERO(),
     "shadow-pass": ZERO(),
   };
+  let shadowSources: Record<QaMainRenderCategory, MutableWorkload> = {
+    actor: ZERO(),
+    "maze-walls": ZERO(),
+    "props-dressing": ZERO(),
+  };
   let latest: QaRenderBreakdown = {
     actor: ZERO(),
     "maze-walls": ZERO(),
     "props-dressing": ZERO(),
     "shadow-pass": ZERO(),
+    shadowSources: {
+      actor: ZERO(),
+      "maze-walls": ZERO(),
+      "props-dressing": ZERO(),
+    },
     total: ZERO(),
     reconciliation: {
       exact: true,
@@ -95,6 +107,10 @@ export function createQaRenderBreakdownTracker(
     const category = currentCategory ?? "props-dressing";
     workloads[category].calls += calls;
     workloads[category].triangles += triangles;
+    if (category === "shadow-pass" && currentShadowSource) {
+      shadowSources[currentShadowSource].calls += calls;
+      shadowSources[currentShadowSource].triangles += triangles;
+    }
     if (currentCategory === null) {
       fallbackCalls += calls;
       fallbackTriangles += triangles;
@@ -119,11 +135,17 @@ export function createQaRenderBreakdownTracker(
     object.onBeforeShadow = function (...args) {
       shadowDepth += 1;
       originalBeforeShadow.apply(this, args);
-      if (active) currentCategory = "shadow-pass";
+      if (active) {
+        currentCategory = "shadow-pass";
+        currentShadowSource = categoryFor(this);
+      }
     };
     object.onAfterShadow = function (...args) {
       originalAfterShadow.apply(this, args);
-      if (active) currentCategory = null;
+      if (active) {
+        currentCategory = null;
+        currentShadowSource = null;
+      }
       shadowDepth = Math.max(0, shadowDepth - 1);
     };
   };
@@ -139,15 +161,22 @@ export function createQaRenderBreakdownTracker(
         "props-dressing": ZERO(),
         "shadow-pass": ZERO(),
       };
+      shadowSources = {
+        actor: ZERO(),
+        "maze-walls": ZERO(),
+        "props-dressing": ZERO(),
+      };
       fallbackCalls = 0;
       fallbackTriangles = 0;
       shadowDepth = 0;
       currentCategory = null;
+      currentShadowSource = null;
       active = true;
     },
     endFrame(): QaRenderBreakdown {
       active = false;
       currentCategory = null;
+      currentShadowSource = null;
       shadowDepth = 0;
       const total = {
         calls: info.render.calls,
@@ -167,6 +196,11 @@ export function createQaRenderBreakdownTracker(
         "maze-walls": { ...workloads["maze-walls"] },
         "props-dressing": { ...workloads["props-dressing"] },
         "shadow-pass": { ...workloads["shadow-pass"] },
+        shadowSources: {
+          actor: { ...shadowSources.actor },
+          "maze-walls": { ...shadowSources["maze-walls"] },
+          "props-dressing": { ...shadowSources["props-dressing"] },
+        },
         total,
         reconciliation: {
           exact: callsError === 0 && trianglesError === 0,

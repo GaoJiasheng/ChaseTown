@@ -1,0 +1,707 @@
+{
+  "source": "3b99fda+m3-4-final",
+  "reference": "docs/porting/m3/evidence/shadow-after",
+  "method": "1280x720 DPR1 high, formal game camera/playfield, fixed scenario, ready+settled+compiled+prewarmed, 450ms settle",
+  "thresholds": {
+    "rgbMaeMaximum": 6,
+    "darkSilhouetteIoUMinimum": 0.9
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "results": [
+    {
+      "level": 1,
+      "screenshot": "level-01.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -6.003690413527871,
+            "y": 0.004722790581164015,
+            "z": 5.9955237585065335
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -8.419921875,
+          "lightSpaceY": -0.80859375,
+          "texelIndexX": -479,
+          "texelIndexY": -46,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 208,
+        "triangles": 363223,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 34,
+            "triangles": 36044
+          },
+          "props-dressing": {
+            "calls": 83,
+            "triangles": 109958
+          },
+          "shadow-pass": {
+            "calls": 71,
+            "triangles": 98254
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3588
+            },
+            "props-dressing": {
+              "calls": 68,
+              "triangles": 93978
+            }
+          },
+          "total": {
+            "calls": 208,
+            "triangles": 363223
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "campus-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 299,
+            "triangles": 3588,
+            "sourceModules": 275
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 111258,
+          "shadowDrawCalls": 110
+        },
+        "memory": {
+          "geometries": 186,
+          "textures": 141
+        },
+        "programs": 78,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 222,
+          "canonicalTextures": 160,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      },
+      "comparison": {
+        "rgbMae": 1.8746,
+        "changedPixelRatio": 0.04503,
+        "darkSilhouetteIoU": 0.96554
+      }
+    },
+    {
+      "level": 2,
+      "screenshot": "level-02.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": 11.997933111850948,
+            "y": -0.0044813703407200235,
+            "z": -19.991421399798504
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 21.744140625,
+          "lightSpaceY": 6.521484375,
+          "texelIndexX": 1237,
+          "texelIndexY": 371,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 198,
+        "triangles": 360005,
+        "breakdown": {
+          "actor": {
+            "calls": 35,
+            "triangles": 170111
+          },
+          "maze-walls": {
+            "calls": 34,
+            "triangles": 64340
+          },
+          "props-dressing": {
+            "calls": 70,
+            "triangles": 75966
+          },
+          "shadow-pass": {
+            "calls": 59,
+            "triangles": 49588
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 3,
+              "triangles": 1032
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3516
+            },
+            "props-dressing": {
+              "calls": 55,
+              "triangles": 45040
+            }
+          },
+          "total": {
+            "calls": 198,
+            "triangles": 360005
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "campus-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 293,
+            "triangles": 3516,
+            "sourceModules": 267
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 117446,
+          "shadowDrawCalls": 135
+        },
+        "memory": {
+          "geometries": 174,
+          "textures": 164
+        },
+        "programs": 74,
+        "sceneTextures": 28,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 181,
+          "canonicalTextures": 155,
+          "assignmentsShared": 30,
+          "sourcesShared": 34
+        }
+      },
+      "comparison": {
+        "rgbMae": 1.45,
+        "changedPixelRatio": 0.03025,
+        "darkSilhouetteIoU": 0.98049
+      }
+    },
+    {
+      "level": 4,
+      "screenshot": "level-04.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -5.9939448054582725,
+            "y": 0.0004828404808874201,
+            "z": -14.005460680947168
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 3.8671875,
+          "lightSpaceY": 11.42578125,
+          "texelIndexX": 220,
+          "texelIndexY": 650,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 157,
+        "triangles": 271751,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 30,
+            "triangles": 48032
+          },
+          "props-dressing": {
+            "calls": 70,
+            "triangles": 61744
+          },
+          "shadow-pass": {
+            "calls": 37,
+            "triangles": 43008
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 2880
+            },
+            "props-dressing": {
+              "calls": 34,
+              "triangles": 39440
+            }
+          },
+          "total": {
+            "calls": 157,
+            "triangles": 271751
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "hospital-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 240,
+            "triangles": 2880,
+            "sourceModules": 211
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 102094,
+          "shadowDrawCalls": 114
+        },
+        "memory": {
+          "geometries": 147,
+          "textures": 120
+        },
+        "programs": 78,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      },
+      "comparison": {
+        "rgbMae": 1.0816,
+        "changedPixelRatio": 0.02675,
+        "darkSilhouetteIoU": 0.98752
+      }
+    },
+    {
+      "level": 6,
+      "screenshot": "level-06.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -4.0044935695385755,
+            "y": 0.004412631841428964,
+            "z": -4.003369095445553
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -0.703125,
+          "lightSpaceY": 4.359375,
+          "texelIndexX": -40,
+          "texelIndexY": 248,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 203,
+        "triangles": 386059,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 30,
+            "triangles": 125856
+          },
+          "props-dressing": {
+            "calls": 72,
+            "triangles": 82180
+          },
+          "shadow-pass": {
+            "calls": 81,
+            "triangles": 59056
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 3780
+            },
+            "props-dressing": {
+              "calls": 78,
+              "triangles": 54588
+            }
+          },
+          "total": {
+            "calls": 203,
+            "triangles": 386059
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "fire-station-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 315,
+            "triangles": 3780,
+            "sourceModules": 281
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 112926,
+          "shadowDrawCalls": 119
+        },
+        "memory": {
+          "geometries": 167,
+          "textures": 117
+        },
+        "programs": 77,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 137,
+          "canonicalTextures": 121,
+          "assignmentsShared": 16,
+          "sourcesShared": 22
+        }
+      },
+      "comparison": {
+        "rgbMae": 1.3123,
+        "changedPixelRatio": 0.04101,
+        "darkSilhouetteIoU": 0.99038
+      }
+    },
+    {
+      "level": 8,
+      "screenshot": "level-08.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -3.9971107162720214,
+            "y": -0.002671554030317198,
+            "z": -5.99809146996349
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": 0.52734375,
+          "lightSpaceY": 5.572265625,
+          "texelIndexX": 30,
+          "texelIndexY": 317,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 219,
+        "triangles": 460237,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 24,
+            "triangles": 93712
+          },
+          "props-dressing": {
+            "calls": 87,
+            "triangles": 138436
+          },
+          "shadow-pass": {
+            "calls": 88,
+            "triangles": 109122
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 4032
+            },
+            "props-dressing": {
+              "calls": 85,
+              "triangles": 104402
+            }
+          },
+          "total": {
+            "calls": 219,
+            "triangles": 460237
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "factory-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 336,
+            "triangles": 4032,
+            "sourceModules": 297
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 123830,
+          "shadowDrawCalls": 117
+        },
+        "memory": {
+          "geometries": 191,
+          "textures": 122
+        },
+        "programs": 79,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      },
+      "comparison": {
+        "rgbMae": 1.0921,
+        "changedPixelRatio": 0.03352,
+        "darkSilhouetteIoU": 0.99328
+      }
+    },
+    {
+      "level": 10,
+      "screenshot": "level-10.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "shadowCamera": {
+          "halfExtent": 18,
+          "target": {
+            "x": -13.996926767230153,
+            "y": -0.0046364497105879695,
+            "z": -3.9951780370489653
+          },
+          "texelWorldSize": 0.017578125,
+          "lightSpaceX": -8.595703125,
+          "lightSpaceY": 9.10546875,
+          "texelIndexX": -489,
+          "texelIndexY": 518,
+          "residualTexelsX": 0,
+          "residualTexelsY": 0
+        },
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 241,
+        "triangles": 536894,
+        "breakdown": {
+          "actor": {
+            "calls": 20,
+            "triangles": 118967
+          },
+          "maze-walls": {
+            "calls": 24,
+            "triangles": 78964
+          },
+          "props-dressing": {
+            "calls": 103,
+            "triangles": 175963
+          },
+          "shadow-pass": {
+            "calls": 94,
+            "triangles": 163000
+          },
+          "shadowSources": {
+            "actor": {
+              "calls": 2,
+              "triangles": 688
+            },
+            "maze-walls": {
+              "calls": 1,
+              "triangles": 4512
+            },
+            "props-dressing": {
+              "calls": 91,
+              "triangles": 157800
+            }
+          },
+          "total": {
+            "calls": 241,
+            "triangles": 536894
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "mazeShadowProxy": [
+          {
+            "name": "factory-maze-shadow-proxy",
+            "visible": true,
+            "castShadow": true,
+            "boxes": 376,
+            "triangles": 4512,
+            "sourceModules": 332
+          }
+        ],
+        "shadow": {
+          "shadowTriangles": 171440,
+          "shadowDrawCalls": 137
+        },
+        "memory": {
+          "geometries": 178,
+          "textures": 127
+        },
+        "programs": 81,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      },
+      "comparison": {
+        "rgbMae": 2.2361,
+        "changedPixelRatio": 0.06392,
+        "darkSilhouetteIoU": 0.97985
+      }
+    }
+  ]
+}
