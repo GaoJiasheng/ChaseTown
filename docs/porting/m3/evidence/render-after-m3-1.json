@@ -1,0 +1,872 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-08-29T10:02:46.431Z",
+  "sourceCommit": "7597f2c+m3-1-candidate",
+  "method": "1280x720, DPR1, high locked before renderer creation; ready + decorative settled + compiled once + prewarmed once; fixed scenario; one continuous second of main-world requestAnimationFrame samples.",
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "diagnostics": [],
+  "results": [
+    {
+      "level": 1,
+      "scenario": {
+        "player": {
+          "x": 9,
+          "y": 15
+        },
+        "chaser": {
+          "x": 21,
+          "y": 10
+        },
+        "spawnDelaySeconds": 60
+      },
+      "policeLoaded": false,
+      "readiness": {
+        "ready": true,
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compiled": true,
+        "compileCount": 1,
+        "prewarmCount": 1
+      },
+      "policeLoadedIdentity": null,
+      "sampleCount": 58,
+      "durationMilliseconds": 1000,
+      "uniqueTotals": [
+        "311/561362",
+        "311/561350",
+        "310/559966"
+      ],
+      "modalTotal": "311/561350",
+      "modalSampleCount": 32,
+      "observedRanges": {
+        "calls": {
+          "minimum": 310,
+          "maximum": 311
+        },
+        "triangles": {
+          "minimum": 559966,
+          "maximum": 561362
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 311,
+        "triangles": 561350,
+        "breakdown": {
+          "actor": {
+            "calls": 47,
+            "triangles": 118279
+          },
+          "maze-walls": {
+            "calls": 33,
+            "triangles": 32456
+          },
+          "props-dressing": {
+            "calls": 83,
+            "triangles": 109958
+          },
+          "shadow-pass": {
+            "calls": 148,
+            "triangles": 300657
+          },
+          "total": {
+            "calls": 311,
+            "triangles": 561350
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 228409,
+          "shadowDrawCalls": 187
+        },
+        "memory": {
+          "geometries": 212,
+          "textures": 170
+        },
+        "programs": 73,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 222,
+          "canonicalTextures": 160,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      }
+    },
+    {
+      "level": 5,
+      "scenario": {
+        "player": {
+          "x": 7,
+          "y": 9
+        },
+        "chaser": {
+          "x": 11,
+          "y": 13
+        },
+        "spawnDelaySeconds": 60
+      },
+      "policeLoaded": false,
+      "readiness": {
+        "ready": true,
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compiled": true,
+        "compileCount": 1,
+        "prewarmCount": 1
+      },
+      "policeLoadedIdentity": null,
+      "sampleCount": 57,
+      "durationMilliseconds": 1016.6,
+      "uniqueTotals": [
+        "299/607180",
+        "299/607156"
+      ],
+      "modalTotal": "299/607156",
+      "modalSampleCount": 49,
+      "observedRanges": {
+        "calls": {
+          "minimum": 299,
+          "maximum": 299
+        },
+        "triangles": {
+          "minimum": 607156,
+          "maximum": 607180
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 299,
+        "triangles": 607156,
+        "breakdown": {
+          "actor": {
+            "calls": 47,
+            "triangles": 118279
+          },
+          "maze-walls": {
+            "calls": 27,
+            "triangles": 56460
+          },
+          "props-dressing": {
+            "calls": 80,
+            "triangles": 116204
+          },
+          "shadow-pass": {
+            "calls": 145,
+            "triangles": 316213
+          },
+          "total": {
+            "calls": 299,
+            "triangles": 607156
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 264415,
+          "shadowDrawCalls": 192
+        },
+        "memory": {
+          "geometries": 194,
+          "textures": 167
+        },
+        "programs": 78,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      }
+    },
+    {
+      "level": 10,
+      "scenario": {
+        "player": {
+          "x": 5,
+          "y": 10
+        },
+        "chaser": {
+          "x": 9,
+          "y": 13
+        },
+        "spawnDelaySeconds": 60
+      },
+      "policeLoaded": false,
+      "readiness": {
+        "ready": true,
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compiled": true,
+        "compileCount": 1,
+        "prewarmCount": 1
+      },
+      "policeLoadedIdentity": null,
+      "sampleCount": 52,
+      "durationMilliseconds": 1000,
+      "uniqueTotals": [
+        "334/770397",
+        "334/770305"
+      ],
+      "modalTotal": "334/770305",
+      "modalSampleCount": 35,
+      "observedRanges": {
+        "calls": {
+          "minimum": 334,
+          "maximum": 334
+        },
+        "triangles": {
+          "minimum": 770305,
+          "maximum": 770397
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 334,
+        "triangles": 770305,
+        "breakdown": {
+          "actor": {
+            "calls": 47,
+            "triangles": 118279
+          },
+          "maze-walls": {
+            "calls": 23,
+            "triangles": 74452
+          },
+          "props-dressing": {
+            "calls": 103,
+            "triangles": 175963
+          },
+          "shadow-pass": {
+            "calls": 161,
+            "triangles": 401611
+          },
+          "total": {
+            "calls": 334,
+            "triangles": 770305
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 288503,
+          "shadowDrawCalls": 205
+        },
+        "memory": {
+          "geometries": 204,
+          "textures": 156
+        },
+        "programs": 76,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      }
+    },
+    {
+      "level": 1,
+      "scenario": {
+        "player": {
+          "x": 9,
+          "y": 15
+        },
+        "chaser": {
+          "x": 21,
+          "y": 10
+        },
+        "spawnDelaySeconds": 60
+      },
+      "policeLoaded": true,
+      "readiness": {
+        "ready": true,
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compiled": true,
+        "compileCount": 1,
+        "prewarmCount": 1
+      },
+      "policeLoadedIdentity": {
+        "requestedUrl": "/models/characters/police-bootstrap.glb?v=m2-20260829",
+        "resolvedUrl": "http://127.0.0.1:3000/models/characters/police-bootstrap.glb?v=m2-20260829",
+        "transferBytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "sampleCount": 51,
+      "durationMilliseconds": 1016.6,
+      "uniqueTotals": [
+        "363/662962",
+        "363/662950",
+        "362/661566"
+      ],
+      "modalTotal": "363/662950",
+      "modalSampleCount": 25,
+      "observedRanges": {
+        "calls": {
+          "minimum": 362,
+          "maximum": 363
+        },
+        "triangles": {
+          "minimum": 661566,
+          "maximum": 662962
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 363,
+        "triangles": 662950,
+        "breakdown": {
+          "actor": {
+            "calls": 73,
+            "triangles": 169079
+          },
+          "maze-walls": {
+            "calls": 33,
+            "triangles": 32456
+          },
+          "props-dressing": {
+            "calls": 83,
+            "triangles": 109958
+          },
+          "shadow-pass": {
+            "calls": 174,
+            "triangles": 351457
+          },
+          "total": {
+            "calls": 363,
+            "triangles": 662950
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 279209,
+          "shadowDrawCalls": 213
+        },
+        "memory": {
+          "geometries": 238,
+          "textures": 203
+        },
+        "programs": 73,
+        "sceneTextures": 26,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 229,
+          "canonicalTextures": 171,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      }
+    },
+    {
+      "level": 5,
+      "scenario": {
+        "player": {
+          "x": 7,
+          "y": 9
+        },
+        "chaser": {
+          "x": 11,
+          "y": 13
+        },
+        "spawnDelaySeconds": 60
+      },
+      "policeLoaded": true,
+      "readiness": {
+        "ready": true,
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compiled": true,
+        "compileCount": 1,
+        "prewarmCount": 1
+      },
+      "policeLoadedIdentity": {
+        "requestedUrl": "/models/characters/police-bootstrap.glb?v=m2-20260829",
+        "resolvedUrl": "http://127.0.0.1:3000/models/characters/police-bootstrap.glb?v=m2-20260829",
+        "transferBytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "sampleCount": 57,
+      "durationMilliseconds": 1016.7,
+      "uniqueTotals": [
+        "351/708780",
+        "351/708756"
+      ],
+      "modalTotal": "351/708756",
+      "modalSampleCount": 56,
+      "observedRanges": {
+        "calls": {
+          "minimum": 351,
+          "maximum": 351
+        },
+        "triangles": {
+          "minimum": 708756,
+          "maximum": 708780
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 351,
+        "triangles": 708756,
+        "breakdown": {
+          "actor": {
+            "calls": 73,
+            "triangles": 169079
+          },
+          "maze-walls": {
+            "calls": 27,
+            "triangles": 56460
+          },
+          "props-dressing": {
+            "calls": 80,
+            "triangles": 116204
+          },
+          "shadow-pass": {
+            "calls": 171,
+            "triangles": 367013
+          },
+          "total": {
+            "calls": 351,
+            "triangles": 708756
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 315215,
+          "shadowDrawCalls": 218
+        },
+        "memory": {
+          "geometries": 220,
+          "textures": 200
+        },
+        "programs": 78,
+        "sceneTextures": 26,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 146,
+          "canonicalTextures": 134,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      }
+    },
+    {
+      "level": 10,
+      "scenario": {
+        "player": {
+          "x": 5,
+          "y": 10
+        },
+        "chaser": {
+          "x": 9,
+          "y": 13
+        },
+        "spawnDelaySeconds": 60
+      },
+      "policeLoaded": true,
+      "readiness": {
+        "ready": true,
+        "decorativeReady": true,
+        "deferredDressingSettled": true,
+        "compiled": true,
+        "compileCount": 1,
+        "prewarmCount": 1
+      },
+      "policeLoadedIdentity": {
+        "requestedUrl": "/models/characters/police-bootstrap.glb?v=m2-20260829",
+        "resolvedUrl": "http://127.0.0.1:3000/models/characters/police-bootstrap.glb?v=m2-20260829",
+        "transferBytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+        "nodes": 47,
+        "meshes": 25,
+        "primitives": 26,
+        "triangles": 50800,
+        "materials": 14,
+        "textures": 7,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 26,
+        "runtimeSkinnedMeshes": 26,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Alert",
+            "durationSeconds": 1.4,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Resolve",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.933333,
+            "tracks": 22
+          }
+        ]
+      },
+      "sampleCount": 47,
+      "durationMilliseconds": 1000,
+      "uniqueTotals": [
+        "386/871997",
+        "386/871905"
+      ],
+      "modalTotal": "386/871905",
+      "modalSampleCount": 40,
+      "observedRanges": {
+        "calls": {
+          "minimum": 386,
+          "maximum": 386
+        },
+        "triangles": {
+          "minimum": 871905,
+          "maximum": 871997
+        }
+      },
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 386,
+        "triangles": 871905,
+        "breakdown": {
+          "actor": {
+            "calls": 73,
+            "triangles": 169079
+          },
+          "maze-walls": {
+            "calls": 23,
+            "triangles": 74452
+          },
+          "props-dressing": {
+            "calls": 103,
+            "triangles": 175963
+          },
+          "shadow-pass": {
+            "calls": 187,
+            "triangles": 452411
+          },
+          "total": {
+            "calls": 386,
+            "triangles": 871905
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 339303,
+          "shadowDrawCalls": 231
+        },
+        "memory": {
+          "geometries": 230,
+          "textures": 189
+        },
+        "programs": 76,
+        "sceneTextures": 27,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 164,
+          "canonicalTextures": 148,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      }
+    }
+  ]
+}

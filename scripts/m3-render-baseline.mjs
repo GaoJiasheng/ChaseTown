@@ -12,6 +12,7 @@ const OUTPUT = path.resolve(
   process.env.CHASING_QA_OUT
     ?? path.join(ROOT, "docs", "porting", "m3", "evidence", "render-baseline-m2.json"),
 );
+const SOURCE_COMMIT = process.env.CHASING_QA_SOURCE ?? "9619494";
 const VIEWPORT = Object.freeze({
   width: 1280,
   height: 720,
@@ -195,6 +196,13 @@ try {
       assert.equal(state.render.qualityLock.enabled, true);
       assert.equal(state.render.pixelRatio, 1);
       assert.equal(state.assets.policeLoaded, policeLoaded);
+      if (state.render.breakdown) {
+        assert.equal(state.render.breakdown.reconciliation.exact, true);
+        assert.equal(state.render.breakdown.reconciliation.callsError, 0);
+        assert.equal(state.render.breakdown.reconciliation.trianglesError, 0);
+        assert.equal(state.render.breakdown.total.calls, state.render.calls);
+        assert.equal(state.render.breakdown.total.triangles, state.render.triangles);
+      }
       results.push({
         level: entry.level,
         scenario: { player: entry.player, chaser: entry.chaser, spawnDelaySeconds: 60 },
@@ -247,7 +255,7 @@ try {
   const report = {
     formatVersion: 1,
     generatedAt: new Date().toISOString(),
-    sourceCommit: "9619494",
+    sourceCommit: SOURCE_COMMIT,
     method: "1280x720, DPR1, high locked before renderer creation; ready + decorative settled + compiled once + prewarmed once; fixed scenario; one continuous second of main-world requestAnimationFrame samples.",
     viewport: VIEWPORT,
     diagnostics,

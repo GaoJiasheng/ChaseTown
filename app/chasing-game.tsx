@@ -248,6 +248,10 @@ import {
   type RenderQualityProfile,
   type RenderQualityTier,
 } from "./game/quality.ts";
+import {
+  createQaRenderBreakdownTracker,
+  tagQaRenderCategory,
+} from "./game/render-breakdown.ts";
 import { resolveRuntimeObjectPolicy } from "./game/runtime-visibility.ts";
 import {
   authoredRoomFloorRegions,
@@ -4031,6 +4035,9 @@ export function ChasingGame() {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = atmosphere.exposure;
     renderer.info.autoReset = false;
+    const qaRenderBreakdownTracker = qaSearchParams.has("qa")
+      ? createQaRenderBreakdownTracker(renderer, scene)
+      : null;
     const supportsMultiDraw = renderer.extensions.has("WEBGL_multi_draw")
       && !new URLSearchParams(location.search).has("no-multi-draw");
     host.appendChild(renderer.domElement);
@@ -7380,6 +7387,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           { source: wallJunction, placements: wallBatches.junction, preserveAuthoredScale: preserveAuthoredWallScale },
         ], new THREE.Vector3(CELL, 2.7, CELL), parent, true, `${theme}-junction`, supportsMultiDraw),
       ];
+      for (const wallMesh of wallMeshes) {
+        tagQaRenderCategory(wallMesh, "maze-walls");
+      }
       // Walls still cast grounded shadows onto floors and props. They do not
       // need to receive the same directional map themselves: the dense,
       // double-sided bevel shells sit within a few millimetres of one another
@@ -8608,6 +8618,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const spec = ACTOR_SPECS[name];
         const root = fitActor(asset.scene, spec.height);
         root.name = `actor-${name}`;
+        tagQaRenderCategory(root, "actor");
         const animator = new ActorAnimator(
           root,
           asset.animations,
@@ -11433,9 +11444,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (ready) {
         renderer.autoClear = false;
         renderer.info.reset();
+        qaRenderBreakdownTracker?.beginFrame();
         camera.layers.set(0);
         renderer.clear(true, true, true);
         renderer.render(scene, camera);
+        qaRenderBreakdownTracker?.endFrame();
         qaRenderedFrameCount += 1;
         compileSettledQaScene();
       }
@@ -12168,6 +12181,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             emergencyDegradation,
             calls: renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
+            breakdown: qaRenderBreakdownTracker?.snapshot() ?? null,
             shadow: estimateShadowWorkload(),
             memory: renderer.info.memory,
             programs: renderer.info.programs?.length ?? 0,
@@ -12647,6 +12661,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       // parse settles; the disposed branch above immediately destroys any
       // late scene, so this retains neither render objects nor long-lived URLs.
       releaseControlledDependencyResourcesWhenSettled();
+      qaRenderBreakdownTracker?.dispose();
       renderer.renderLists.dispose();
       renderer.dispose();
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);
