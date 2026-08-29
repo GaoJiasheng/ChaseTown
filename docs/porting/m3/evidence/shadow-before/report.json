@@ -1,0 +1,446 @@
+{
+  "source": "cc2f723",
+  "reference": null,
+  "method": "1280x720 DPR1 high, formal game camera/playfield, fixed scenario, ready+settled+compiled+prewarmed, 450ms settle",
+  "thresholds": null,
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "results": [
+    {
+      "level": 1,
+      "screenshot": "level-01.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 310,
+        "triangles": 559966,
+        "breakdown": {
+          "actor": {
+            "calls": 47,
+            "triangles": 118279
+          },
+          "maze-walls": {
+            "calls": 33,
+            "triangles": 32456
+          },
+          "props-dressing": {
+            "calls": 82,
+            "triangles": 108574
+          },
+          "shadow-pass": {
+            "calls": 148,
+            "triangles": 300657
+          },
+          "total": {
+            "calls": 310,
+            "triangles": 559966
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 228409,
+          "shadowDrawCalls": 187
+        },
+        "memory": {
+          "geometries": 212,
+          "textures": 170
+        },
+        "programs": 73,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 222,
+          "canonicalTextures": 160,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      },
+      "comparison": null
+    },
+    {
+      "level": 2,
+      "screenshot": "level-02.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 337,
+        "triangles": 578188,
+        "breakdown": {
+          "actor": {
+            "calls": 73,
+            "triangles": 169079
+          },
+          "maze-walls": {
+            "calls": 33,
+            "triangles": 60824
+          },
+          "props-dressing": {
+            "calls": 70,
+            "triangles": 75966
+          },
+          "shadow-pass": {
+            "calls": 161,
+            "triangles": 272319
+          },
+          "total": {
+            "calls": 337,
+            "triangles": 578188
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 285125,
+          "shadowDrawCalls": 237
+        },
+        "memory": {
+          "geometries": 211,
+          "textures": 205
+        },
+        "programs": 73,
+        "sceneTextures": 28,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 181,
+          "canonicalTextures": 155,
+          "assignmentsShared": 30,
+          "sourcesShared": 34
+        }
+      },
+      "comparison": null
+    },
+    {
+      "level": 4,
+      "screenshot": "level-04.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 254,
+        "triangles": 442054,
+        "breakdown": {
+          "actor": {
+            "calls": 47,
+            "triangles": 118279
+          },
+          "maze-walls": {
+            "calls": 29,
+            "triangles": 45100
+          },
+          "props-dressing": {
+            "calls": 70,
+            "triangles": 61744
+          },
+          "shadow-pass": {
+            "calls": 108,
+            "triangles": 216931
+          },
+          "total": {
+            "calls": 254,
+            "triangles": 442054
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 219873,
+          "shadowDrawCalls": 186
+        },
+        "memory": {
+          "geometries": 173,
+          "textures": 149
+        },
+        "programs": 77,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      },
+      "comparison": null
+    },
+    {
+      "level": 6,
+      "screenshot": "level-06.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 300,
+        "triangles": 721270,
+        "breakdown": {
+          "actor": {
+            "calls": 47,
+            "triangles": 118279
+          },
+          "maze-walls": {
+            "calls": 29,
+            "triangles": 122076
+          },
+          "props-dressing": {
+            "calls": 72,
+            "triangles": 82180
+          },
+          "shadow-pass": {
+            "calls": 152,
+            "triangles": 398735
+          },
+          "total": {
+            "calls": 300,
+            "triangles": 721270
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 234241,
+          "shadowDrawCalls": 190
+        },
+        "memory": {
+          "geometries": 193,
+          "textures": 146
+        },
+        "programs": 76,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 137,
+          "canonicalTextures": 121,
+          "assignmentsShared": 16,
+          "sourcesShared": 22
+        }
+      },
+      "comparison": null
+    },
+    {
+      "level": 8,
+      "screenshot": "level-08.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 313,
+        "triangles": 719996,
+        "breakdown": {
+          "actor": {
+            "calls": 47,
+            "triangles": 118279
+          },
+          "maze-walls": {
+            "calls": 23,
+            "triangles": 89680
+          },
+          "props-dressing": {
+            "calls": 87,
+            "triangles": 138436
+          },
+          "shadow-pass": {
+            "calls": 156,
+            "triangles": 373601
+          },
+          "total": {
+            "calls": 313,
+            "triangles": 719996
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 241373,
+          "shadowDrawCalls": 185
+        },
+        "memory": {
+          "geometries": 217,
+          "textures": 151
+        },
+        "programs": 81,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      },
+      "comparison": null
+    },
+    {
+      "level": 10,
+      "screenshot": "level-10.png",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 334,
+        "triangles": 770305,
+        "breakdown": {
+          "actor": {
+            "calls": 47,
+            "triangles": 118279
+          },
+          "maze-walls": {
+            "calls": 23,
+            "triangles": 74452
+          },
+          "props-dressing": {
+            "calls": 103,
+            "triangles": 175963
+          },
+          "shadow-pass": {
+            "calls": 161,
+            "triangles": 401611
+          },
+          "total": {
+            "calls": 334,
+            "triangles": 770305
+          },
+          "reconciliation": {
+            "exact": true,
+            "callsError": 0,
+            "trianglesError": 0,
+            "fallbackCalls": 0,
+            "fallbackTriangles": 0,
+            "note": "Every renderer.info.update call was attributed by an object render callback."
+          }
+        },
+        "shadow": {
+          "shadowTriangles": 288503,
+          "shadowDrawCalls": 205
+        },
+        "memory": {
+          "geometries": 204,
+          "textures": 156
+        },
+        "programs": 76,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      },
+      "comparison": null
+    }
+  ]
+}

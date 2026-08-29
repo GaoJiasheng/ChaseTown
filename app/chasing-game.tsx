@@ -252,6 +252,7 @@ import {
   createQaRenderBreakdownTracker,
   tagQaRenderCategory,
 } from "./game/render-breakdown.ts";
+import { createMazeShadowProxy } from "./game/maze-shadow-proxy.ts";
 import { resolveRuntimeObjectPolicy } from "./game/runtime-visibility.ts";
 import {
   authoredRoomFloorRegions,
@@ -3872,6 +3873,7 @@ export function ChasingGame() {
     const performanceLights: Array<{ light: THREE.Light; priority: number }> = [];
     let exitMissionLight: THREE.SpotLight | null = null;
     const nonCriticalShadowCasters: Array<{ object: THREE.Object3D; castShadow: boolean }> = [];
+    const mazeShadowProxies: THREE.InstancedMesh[] = [];
     let requestPoliceAsset: (() => Promise<void>) | null = null;
     let deferredDressingFade: {
       elapsedSeconds: number;
@@ -5424,6 +5426,22 @@ export function ChasingGame() {
         }).castShadow;
       }
     };
+    const applyMazeShadowProxyPolicy = () => {
+      for (const proxy of mazeShadowProxies) {
+        const enabled = resolveRuntimeObjectPolicy({
+          role: "architecture",
+          baseVisible: true,
+          baseCastShadow: renderQualityProfile.staticEnvironmentShadows,
+          nearShadowCaster: false,
+          emergencyLevel: emergencyDegradation.level,
+        }).castShadow;
+        // A hidden proxy is excluded from both main and shadow traversal. This
+        // makes balanced/mobile's staticEnvironmentShadows=false contract
+        // cover the maze walls instead of leaving their original batches live.
+        proxy.visible = enabled;
+        proxy.castShadow = enabled;
+      }
+    };
     const registerNonCriticalShadowCasters = (root: THREE.Object3D) => {
       root.traverse((object) => {
         if (!(object instanceof THREE.Mesh) || !object.castShadow) return;
@@ -5552,6 +5570,7 @@ export function ChasingGame() {
         renderQualityProfile.occlusionProbeSeconds,
       );
       applyNonCriticalShadowPolicy();
+      applyMazeShadowProxyPolicy();
       if (deferredDressingRoot) {
         deferredDressingRoot.visible = resolveRuntimeObjectPolicy({
           role: "decoration",
@@ -7389,12 +7408,24 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       ];
       for (const wallMesh of wallMeshes) {
         tagQaRenderCategory(wallMesh, "maze-walls");
+        wallMesh.castShadow = false;
       }
-      // Walls still cast grounded shadows onto floors and props. They do not
-      // need to receive the same directional map themselves: the dense,
-      // double-sided bevel shells sit within a few millimetres of one another
-      // and otherwise exhibit visible self-shadow acne at the game camera.
+      // A low-poly proxy below casts the authored silhouette onto floors and
+      // props. The visible bevel shells neither cast nor receive the map:
+      // neighbouring millimetre-close faces otherwise add hundreds of
+      // thousands of shadow triangles and exhibit self-shadow acne.
       for (const wallMesh of wallMeshes) wallMesh.receiveShadow = false;
+      const { proxy: mazeShadowProxy } = createMazeShadowProxy(
+        wallBatches,
+        CELL,
+        wallHeight,
+        `${theme}-maze-shadow-proxy`,
+      );
+      tagQaRenderCategory(mazeShadowProxy, "maze-walls");
+      mazeShadowProxies.push(mazeShadowProxy);
+      parent.add(mazeShadowProxy);
+      applyMazeShadowProxyPolicy();
+      placedAssetIds.add("runtime:maze-shadow-proxy");
       registerCameraOccluder(`${theme}-walls`, wallMeshes);
 
       const wallContactGeometry = new THREE.PlaneGeometry(CELL + 0.12, 0.48);
@@ -12182,6 +12213,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             calls: renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
             breakdown: qaRenderBreakdownTracker?.snapshot() ?? null,
+            mazeShadowProxy: mazeShadowProxies.map((proxy) => ({
+              name: proxy.name,
+              visible: proxy.visible,
+              castShadow: proxy.castShadow,
+              ...(proxy.userData.mazeShadowProxyStats as Record<string, number>),
+            })),
             shadow: estimateShadowWorkload(),
             memory: renderer.info.memory,
             programs: renderer.info.programs?.length ?? 0,

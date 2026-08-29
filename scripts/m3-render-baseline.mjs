@@ -13,6 +13,17 @@ const OUTPUT = path.resolve(
     ?? path.join(ROOT, "docs", "porting", "m3", "evidence", "render-baseline-m2.json"),
 );
 const SOURCE_COMMIT = process.env.CHASING_QA_SOURCE ?? "9619494";
+const QUALITY = process.env.CHASING_QA_QUALITY ?? "high";
+const REQUESTED_LEVELS = new Set(
+  (process.env.CHASING_QA_LEVELS ?? "1,5,10")
+    .split(",")
+    .map(Number),
+);
+const POLICE_STATES = process.env.CHASING_QA_POLICE === "unloaded"
+  ? [false]
+  : process.env.CHASING_QA_POLICE === "loaded"
+    ? [true]
+    : [false, true];
 const VIEWPORT = Object.freeze({
   width: 1280,
   height: 720,
@@ -148,11 +159,11 @@ try {
   await cdp.send("Emulation.setDeviceMetricsOverride", VIEWPORT);
   await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
 
-  for (const policeLoaded of [false, true]) {
-    for (const entry of CASES) {
+  for (const policeLoaded of POLICE_STATES) {
+    for (const entry of CASES.filter(({ level }) => REQUESTED_LEVELS.has(level))) {
       const url = new URL(BASE_URL);
       url.searchParams.set("qa", "m3-baseline");
-      url.searchParams.set("qaQuality", "high");
+      url.searchParams.set("qaQuality", QUALITY);
       url.searchParams.set("qaCleanFrame", "1");
       url.searchParams.set("qaLevel", String(entry.level));
       url.searchParams.set("qaPlayer", `${entry.player.x},${entry.player.y}`);
@@ -192,7 +203,7 @@ try {
         requestAnimationFrame(frame);
       })`);
       const state = await cdp.evaluate("window.__CHASING_QA__.getState()");
-      assert.equal(state.render.qualityTier, "high");
+      assert.equal(state.render.qualityTier, QUALITY);
       assert.equal(state.render.qualityLock.enabled, true);
       assert.equal(state.render.pixelRatio, 1);
       assert.equal(state.assets.policeLoaded, policeLoaded);
@@ -256,7 +267,7 @@ try {
     formatVersion: 1,
     generatedAt: new Date().toISOString(),
     sourceCommit: SOURCE_COMMIT,
-    method: "1280x720, DPR1, high locked before renderer creation; ready + decorative settled + compiled once + prewarmed once; fixed scenario; one continuous second of main-world requestAnimationFrame samples.",
+    method: `1280x720, DPR1, ${QUALITY} locked before renderer creation; ready + decorative settled + compiled once + prewarmed once; fixed scenario; one continuous second of main-world requestAnimationFrame samples.`,
     viewport: VIEWPORT,
     diagnostics,
     results,
