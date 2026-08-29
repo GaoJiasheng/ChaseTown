@@ -168,7 +168,7 @@ for (const entry of CASES) {
     ...pair,
     silhouetteIou,
     silhouetteMethod: entry.geometry === "byte-identical-theme"
-      ? "M1 and M2 theme bootstrap GLB SHA-256 are identical; only external KTX2 payloads changed."
+      ? "M1 and M2 theme bootstrap BIN geometry SHA-256 are identical; JSON texture URIs and external KTX2 payloads changed."
       : "Formal-camera luminance silhouette mask; this frame contains the repacked locker and corner mirror.",
   });
 }

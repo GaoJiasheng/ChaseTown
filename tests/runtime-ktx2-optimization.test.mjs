@@ -84,8 +84,9 @@ test("runtime KTX2 report pins every approved asset, texture mode, and structure
     characterTextures: "UASTC quality 10 with Zstandard supercompression",
     themeColorTextures: "ETC1S quality 10 with BasisLZ supercompression",
     themeNormalAndAttributeTextures: "UASTC quality 10 with Zstandard supercompression",
+    themeGrassOrmOverride: "UASTC quality 4 at 256 px; preserves the normal/ORM mode contract while reducing a low-frequency AO payload.",
     themeTextureStorage: "External SHA-256-addressed KTX2 payloads shared across all four theme packages.",
-    lockerTextures: "Retain the existing shared external PNG contract; no duplicate KTX2 payload.",
+    lockerTextures: "Use the shared external bootstrap KTX2 atlases; no duplicate embedded payload.",
     sourceTextureFallbacks: false,
     cumulativeRepacking: false,
   });

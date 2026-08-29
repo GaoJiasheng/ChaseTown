@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   DEPLOYMENT_SOURCE_ASSET_EXCLUDES,
+  ASSET_VERSION,
   FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS,
   FIRST_CAMPAIGN_PRELOAD_ASSETS,
   MAX_DEPLOYED_CLIENT_BYTES,
@@ -22,7 +23,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC = path.join(ROOT, "public");
 const CLIENT_OUTPUT = path.join(ROOT, "dist", "client");
 const STEALTH_CORNER_MIRROR_PRELOAD =
-  "/models/environment/stealth-corner-mirrors.glb?v=2";
+  `/models/environment/stealth-corner-mirrors.glb?v=${ASSET_VERSION}`;
 
 async function treeBytes(directory) {
   let total = 0;

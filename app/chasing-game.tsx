@@ -32,7 +32,10 @@ import {
   type QaAssetFaultInjector,
 } from "./game/asset-loading.ts";
 import { runtimeAtmosphereForLevel } from "./game/atmosphere.ts";
-import { FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS } from "./game/runtime-assets.ts";
+import {
+  FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS,
+  versionRuntimeAsset,
+} from "./game/runtime-assets.ts";
 import {
   CAMPAIGN_LEVELS,
   createPlayerKnowledge,
@@ -88,6 +91,11 @@ import {
   screenMoveToWorld,
   shouldIgnoreFocusedControlKey,
 } from "./game/input.ts";
+import {
+  validateQaScenario,
+  type QaScenarioInput,
+  type QaScenarioValidation,
+} from "./game/qa-scenario.ts";
 import {
   parseQaDelaySeconds,
   parseQaFlag,
@@ -331,9 +339,9 @@ const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
   ]),
 });
 
-const KID_ASSET_CACHE_VERSION = "3";
-const POLICE_ASSET_CACHE_VERSION = "4";
-const POLICE_BOOTSTRAP_MODEL_HREF = "/models/characters/police-bootstrap.glb";
+const POLICE_BOOTSTRAP_MODEL_HREF = versionRuntimeAsset(
+  "/models/characters/police-bootstrap.glb",
+);
 
 const ACTOR_SPECS = {
   kid: {
@@ -377,7 +385,7 @@ const ACTOR_SPECS = {
   // Police stays deferred, but the A2 asset needs a cache key distinct from
   // the pre-remodel bootstrap shipped by the remote trunk.
   police: {
-    url: `${POLICE_BOOTSTRAP_MODEL_HREF}?v=${POLICE_ASSET_CACHE_VERSION}`,
+    url: POLICE_BOOTSTRAP_MODEL_HREF,
     height: 1.82,
     aliases: {
       idle: "Idle",
@@ -400,26 +408,26 @@ const DETAIL_ASSETS = {
   bench: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.bench,
   car: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.policeCar,
   tree: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.tree,
-  classroomDoor: "/models/environment/classroom-door.glb?v=5",
-  ceilingLight: "/models/environment/ceiling-light.glb?v=5",
+  classroomDoor: versionRuntimeAsset("/models/environment/classroom-door.glb"),
+  ceilingLight: versionRuntimeAsset("/models/environment/ceiling-light.glb"),
   basketball: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.basketball,
   deskChair: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.deskChair,
-  blackboard: "/models/environment/blackboard.glb?v=5",
-  bulletin: "/models/environment/bulletin.glb?v=5",
+  blackboard: versionRuntimeAsset("/models/environment/blackboard.glb"),
+  bulletin: versionRuntimeAsset("/models/environment/bulletin.glb"),
   podium: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.podium,
-  extinguisher: "/models/environment/extinguisher.glb?v=5",
-  trash: "/models/environment/trash.glb?v=5",
-  books: "/models/environment/books.glb?v=5",
-  backpack: "/models/environment/backpack.glb?v=5",
+  extinguisher: versionRuntimeAsset("/models/environment/extinguisher.glb"),
+  trash: versionRuntimeAsset("/models/environment/trash.glb"),
+  books: versionRuntimeAsset("/models/environment/books.glb"),
+  backpack: versionRuntimeAsset("/models/environment/backpack.glb"),
   shrub: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.shrub,
-  station: "/models/environment/station.glb?v=5",
+  station: versionRuntimeAsset("/models/environment/station.glb"),
 } as const;
 
 const THEME_KIT_ASSETS: Readonly<Record<CampaignTheme, string>> = {
   campus: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.theme,
-  hospital: "/models/environment/themes/hospital-kit-bootstrap.glb?v=1",
-  "fire-station": "/models/environment/themes/fire-station-kit-bootstrap.glb?v=1",
-  factory: "/models/environment/themes/factory-kit-bootstrap.glb?v=1",
+  hospital: versionRuntimeAsset("/models/environment/themes/hospital-kit-bootstrap.glb"),
+  "fire-station": versionRuntimeAsset("/models/environment/themes/fire-station-kit-bootstrap.glb"),
+  factory: versionRuntimeAsset("/models/environment/themes/factory-kit-bootstrap.glb"),
 };
 
 const STEALTH_CORNER_MIRROR_ASSET =
@@ -3911,9 +3919,9 @@ export function ChasingGame() {
       ? parseQaKidAssetVariant(qaSearchParams.get("qaKidAsset"))
       : null;
     const qaKidAssetUrl = qaKidAssetVariant === "high"
-      ? `/models/characters/kid.glb?v=${KID_ASSET_CACHE_VERSION}`
+      ? versionRuntimeAsset("/models/characters/kid.glb")
       : qaKidAssetVariant === "lod1"
-        ? `/models/characters/kid-lod1.glb?v=${KID_ASSET_CACHE_VERSION}`
+        ? versionRuntimeAsset("/models/characters/kid-lod1.glb")
         : ACTOR_SPECS.kid.bootstrapUrl;
     const qaPoliceAnimationScenario = qaSearchParams.has("qa")
       ? parseQaPoliceAnimation(qaSearchParams.get("qaPoliceClip"))
@@ -3925,7 +3933,7 @@ export function ChasingGame() {
       ? parseQaPoliceAssetVariant(qaSearchParams.get("qaPoliceAsset"))
       : null;
     const qaPoliceAssetUrl = qaPoliceAssetVariant === "high"
-      ? `/models/characters/police.glb?v=${POLICE_ASSET_CACHE_VERSION}`
+      ? versionRuntimeAsset("/models/characters/police.glb")
       : ACTOR_SPECS.police.url;
     let qaLoadedKidAssetIdentity: QaLoadedGlbIdentity | null = null;
     let qaLoadedPoliceAssetIdentity: QaLoadedGlbIdentity | null = null;
@@ -11734,12 +11742,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           leaseMilliseconds?: number,
         ) => void;
         inspectScene: () => unknown;
-        setScenario: (positions: {
-          player: Point;
-          chaser: Point;
-          chaserHeading?: Point;
-          spawnDelaySeconds?: number;
-        }) => void;
+        setScenario: (positions: QaScenarioInput) => QaScenarioValidation;
         completeMission: () => void;
         selectLevel: (level: number | string) => void;
         selectLayout: (layoutNumber: number | null) => void;
@@ -12335,12 +12338,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           }
           updateThemeMissionViews(performance.now());
         },
-        setScenario: ({
-          player,
-          chaser,
-          chaserHeading,
-          spawnDelaySeconds = 0,
-        }) => {
+        setScenario: (input) => {
+          const validation = validateQaScenario(input);
+          if (!validation.ok) return validation;
+          const { player, chaser, chaserHeading, spawnDelaySeconds } = validation.value;
           simulation = new GameSimulation({
             level: campaignLevel,
             autoStart: true,
@@ -12359,6 +12360,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           // Idempotent: a settled QA scene compiles exactly once, whether the
           // harness waits at the briefing or immediately installs a scenario.
           compileSettledQaScene();
+          return validation;
         },
       };
       qaWindow.__CHASING_QA__ = installedQaHook;

@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-08-29T02:09:08.345Z",
+  "generatedAt": "2026-08-29T02:59:25.264Z",
   "policy": {
     "derivativeOnly": true,
     "sourceThemeKitsUnmodified": true,
@@ -91,9 +91,9 @@
     {
       "textureClass": "baseColor",
       "reusedExisting": true,
-      "path": "public/models/environment/SharedTexturesBootstrapKTX2/d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484.ktx2",
-      "bytes": 150102,
-      "sha256": "d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484",
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+      "bytes": 151937,
+      "sha256": "26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b",
       "width": 1056,
       "height": 792,
       "levels": 11,
@@ -115,9 +115,9 @@
     {
       "textureClass": "orm",
       "reusedExisting": false,
-      "path": "public/models/environment/SharedTexturesBootstrapKTX2/cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10.ktx2",
-      "bytes": 17994,
-      "sha256": "cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10",
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2",
+      "bytes": 20324,
+      "sha256": "523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b",
       "width": 528,
       "height": 396,
       "levels": 10,
@@ -148,8 +148,8 @@
       "family": "BluePaintedMetal",
       "textureClass": "orm",
       "path": "work/art_pipeline/environment-orm/Env_BluePaintedMetal_ORM_512.png",
-      "bytes": 122663,
-      "sha256": "7822c0e225aa21bd91505fe60c98bd309b1cd1ca5aa2d4a0497165ae06d6fdb4",
+      "bytes": 125273,
+      "sha256": "f6eef0800c610b38a5273649f80a11aad7131ed416efffeb05166471f0f50fb6",
       "width": 512,
       "height": 512
     },
@@ -175,8 +175,8 @@
       "family": "Grass",
       "textureClass": "orm",
       "path": "work/art_pipeline/environment-orm/Env_Grass_ORM_512.png",
-      "bytes": 300121,
-      "sha256": "9822cf7323f1066053c7fffbd691c27ae978156e0b7d3885d8b8e5a3192bef5e",
+      "bytes": 320451,
+      "sha256": "e51b4b33454af996b990c59bb6c99fd33c72d89be671b44e92d8be2fe463bf86",
       "width": 512,
       "height": 512
     },
@@ -202,8 +202,8 @@
       "family": "PaintedWall",
       "textureClass": "orm",
       "path": "work/art_pipeline/environment-orm/Env_PaintedWall_ORM_512.png",
-      "bytes": 161348,
-      "sha256": "4ceb2f49cf097935c49b64409ee5887cb9959055a3442a6b3e53b9949bc47513",
+      "bytes": 186001,
+      "sha256": "4757acdfe91fb40f8fd39b17655d27008109d50f10c05a793b9666aa11bd53e9",
       "width": 512,
       "height": 512
     },
@@ -220,8 +220,8 @@
       "family": "Paper",
       "textureClass": "orm",
       "path": "work/art_pipeline/environment-orm/Env_Paper_ORM_512.png",
-      "bytes": 129489,
-      "sha256": "dff6df01db7daeb40529b613f3a29ebbd66e0f0accb538fb1688a93e4bfde898",
+      "bytes": 143310,
+      "sha256": "e86c9fc25d6dfc44eade80b9e528c39f47384868eb9b8e9b19ab8e4f2b7efa51",
       "width": 512,
       "height": 512
     },
@@ -238,8 +238,8 @@
       "family": "RedPaintedMetal",
       "textureClass": "orm",
       "path": "work/art_pipeline/environment-orm/Env_RedPaintedMetal_ORM_512.png",
-      "bytes": 118826,
-      "sha256": "77c2eb7ee5640f7d6f70dd280a2dbdfc452d16bd882e7d18674deeb0e2686307",
+      "bytes": 125076,
+      "sha256": "643e789f0e9ed7823c6d38fbd8c9d71ba73699d76617946681135224c3b0bcbd",
       "width": 512,
       "height": 512
     },
@@ -256,8 +256,8 @@
       "family": "RubberBlack",
       "textureClass": "orm",
       "path": "work/art_pipeline/environment-orm/Env_RubberBlack_ORM_512.png",
-      "bytes": 243177,
-      "sha256": "d71c62438891d36918328041df3df7a77599354c79843013916498d8545119e7",
+      "bytes": 263138,
+      "sha256": "05ab77fe3eef2368f0f61a0aac8089b40add95d48d3fc9b66c8ddb53242a1dec",
       "width": 512,
       "height": 512
     },
@@ -274,8 +274,8 @@
       "family": "WoodTrim",
       "textureClass": "orm",
       "path": "work/art_pipeline/environment-orm/Env_WoodTrim_ORM_512.png",
-      "bytes": 149506,
-      "sha256": "f7cc5799c5940bb64653ffabfec72f1f5d64d207a9f55d7d364b91e5544c8325",
+      "bytes": 156909,
+      "sha256": "276ba118c336c74955691d189118ea7841f7ac9af98ee1a7523a98db04a22a1a",
       "width": 512,
       "height": 512
     },
@@ -292,8 +292,8 @@
       "family": "WornMetal",
       "textureClass": "orm",
       "path": "work/art_pipeline/environment-orm/Env_WornMetal_ORM_512.png",
-      "bytes": 221638,
-      "sha256": "9b5b09a1e6bf5d049a64d54f2e6f963b3790992da2c4cce680bab1ad9af48f9f",
+      "bytes": 230831,
+      "sha256": "3fed3e92d3d07371aa91a7334b532f4a2feb7a4af94a11c104b80a2ab52360de",
       "width": 512,
       "height": 512
     }
@@ -304,7 +304,7 @@
       "source": {
         "path": "public/models/environment/themes/campus-kit.glb",
         "bytes": 1585960,
-        "sha256": "c5672bda88ab26056c2e02303108c186cdba0b51256ad903ab54a5f3042f9745",
+        "sha256": "8e81b96d20d501e6ccd0d43245c2190bcec8da7ac01017238ddce7c56d64f9a9",
         "nodes": 348,
         "namedNodes": 342,
         "meshes": 155,
@@ -316,7 +316,7 @@
       "bootstrap": {
         "path": "public/models/environment/themes/campus-kit-bootstrap.glb",
         "bytes": 759072,
-        "sha256": "7733a7fab68c7c3885a6316fc67ef88cf4a9f370494fc8adc1216efd18db52d9",
+        "sha256": "26064ef1f7fd54246b22499ba0d3ff72861c84467299e48db0ca8dc416157bb9",
         "savedGlbBytes": 826888,
         "savedGlbPercent": 52.138,
         "nodes": 656,
@@ -338,16 +338,16 @@
       "requestGraph": {
         "requests": 4,
         "glbBytes": 759072,
-        "dependencyBytes": 326510,
-        "coldStartBytes": 1085582,
-        "coldStartMiB": 1.035,
+        "dependencyBytes": 330675,
+        "coldStartBytes": 1089747,
+        "coldStartMiB": 1.039,
         "maxBytes": 2306867,
         "dependencies": [
           {
             "textureClass": "baseColor",
-            "path": "public/models/environment/SharedTexturesBootstrapKTX2/d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484.ktx2",
-            "bytes": 150102,
-            "sha256": "d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+            "bytes": 151937,
+            "sha256": "26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b",
             "width": 1056,
             "height": 792,
             "levels": 11,
@@ -367,9 +367,9 @@
           },
           {
             "textureClass": "orm",
-            "path": "public/models/environment/SharedTexturesBootstrapKTX2/cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10.ktx2",
-            "bytes": 17994,
-            "sha256": "cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2",
+            "bytes": 20324,
+            "sha256": "523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b",
             "width": 528,
             "height": 396,
             "levels": 10,
@@ -384,7 +384,7 @@
       "source": {
         "path": "public/models/environment/themes/hospital-kit.glb",
         "bytes": 1063652,
-        "sha256": "77b9deba829f6e259d867bdba444bc83c8e154ae5baf3b742bcfdd5103428992",
+        "sha256": "369939a382eccffcab588207872a80d30b915b9c2bdb980b0385817ca20e5d9f",
         "nodes": 390,
         "namedNodes": 383,
         "meshes": 163,
@@ -396,7 +396,7 @@
       "bootstrap": {
         "path": "public/models/environment/themes/hospital-kit-bootstrap.glb",
         "bytes": 567388,
-        "sha256": "ec089e4c08377a1190103ecd66896488e31a72b0676a5a535cd2754f6b956403",
+        "sha256": "b87abf9c0e0b12f2318bb17b8121987cd8b422d59d061b49ceaebb2be70b1bd7",
         "savedGlbBytes": 496264,
         "savedGlbPercent": 46.657,
         "nodes": 745,
@@ -418,16 +418,16 @@
       "requestGraph": {
         "requests": 4,
         "glbBytes": 567388,
-        "dependencyBytes": 326510,
-        "coldStartBytes": 893898,
-        "coldStartMiB": 0.852,
+        "dependencyBytes": 330675,
+        "coldStartBytes": 898063,
+        "coldStartMiB": 0.856,
         "maxBytes": 2306867,
         "dependencies": [
           {
             "textureClass": "baseColor",
-            "path": "public/models/environment/SharedTexturesBootstrapKTX2/d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484.ktx2",
-            "bytes": 150102,
-            "sha256": "d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+            "bytes": 151937,
+            "sha256": "26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b",
             "width": 1056,
             "height": 792,
             "levels": 11,
@@ -447,9 +447,9 @@
           },
           {
             "textureClass": "orm",
-            "path": "public/models/environment/SharedTexturesBootstrapKTX2/cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10.ktx2",
-            "bytes": 17994,
-            "sha256": "cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2",
+            "bytes": 20324,
+            "sha256": "523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b",
             "width": 528,
             "height": 396,
             "levels": 10,
@@ -464,7 +464,7 @@
       "source": {
         "path": "public/models/environment/themes/fire-station-kit.glb",
         "bytes": 1092952,
-        "sha256": "5c033374387bf951ec274847c9f6f43687dcb5afcbdfc166a04bd0dd914770a4",
+        "sha256": "6c82826775f3ca3996173994f1c3ba8227bf639f637e77a7f69f8817956b54f6",
         "nodes": 699,
         "namedNodes": 697,
         "meshes": 157,
@@ -476,7 +476,7 @@
       "bootstrap": {
         "path": "public/models/environment/themes/fire-station-kit-bootstrap.glb",
         "bytes": 639596,
-        "sha256": "c8cb2f1367727ec16760ddc242dee9b931342799c3f0d8fd720a3a594d777422",
+        "sha256": "93cd766a549253a22c3d53d9fbf6a3cecc71b381d950293f7ebdc5590363d632",
         "savedGlbBytes": 453356,
         "savedGlbPercent": 41.48,
         "nodes": 1363,
@@ -498,16 +498,16 @@
       "requestGraph": {
         "requests": 4,
         "glbBytes": 639596,
-        "dependencyBytes": 326510,
-        "coldStartBytes": 966106,
-        "coldStartMiB": 0.921,
+        "dependencyBytes": 330675,
+        "coldStartBytes": 970271,
+        "coldStartMiB": 0.925,
         "maxBytes": 2306867,
         "dependencies": [
           {
             "textureClass": "baseColor",
-            "path": "public/models/environment/SharedTexturesBootstrapKTX2/d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484.ktx2",
-            "bytes": 150102,
-            "sha256": "d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+            "bytes": 151937,
+            "sha256": "26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b",
             "width": 1056,
             "height": 792,
             "levels": 11,
@@ -527,9 +527,9 @@
           },
           {
             "textureClass": "orm",
-            "path": "public/models/environment/SharedTexturesBootstrapKTX2/cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10.ktx2",
-            "bytes": 17994,
-            "sha256": "cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2",
+            "bytes": 20324,
+            "sha256": "523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b",
             "width": 528,
             "height": 396,
             "levels": 10,
@@ -544,7 +544,7 @@
       "source": {
         "path": "public/models/environment/themes/factory-kit.glb",
         "bytes": 1613744,
-        "sha256": "8be3fa3986183b7627137f6db1931825d62f3ef975975b77499b4a3532520f23",
+        "sha256": "904256d24248b8e1dd503652c9979761d348531bd05655f34cc1cb6e08433ff4",
         "nodes": 584,
         "namedNodes": 581,
         "meshes": 159,
@@ -556,7 +556,7 @@
       "bootstrap": {
         "path": "public/models/environment/themes/factory-kit-bootstrap.glb",
         "bytes": 819840,
-        "sha256": "4cb14af1fe9b68edd302d1db1f45df172dbc24e33ad723936e61ead2b0c65d69",
+        "sha256": "5e2fa3f7d64299c0ba813dc732da5dc6af92591ba926ebc752e4e4c9222f6935",
         "savedGlbBytes": 793904,
         "savedGlbPercent": 49.196,
         "nodes": 1127,
@@ -578,16 +578,16 @@
       "requestGraph": {
         "requests": 4,
         "glbBytes": 819840,
-        "dependencyBytes": 326510,
-        "coldStartBytes": 1146350,
-        "coldStartMiB": 1.093,
+        "dependencyBytes": 330675,
+        "coldStartBytes": 1150515,
+        "coldStartMiB": 1.097,
         "maxBytes": 2306867,
         "dependencies": [
           {
             "textureClass": "baseColor",
-            "path": "public/models/environment/SharedTexturesBootstrapKTX2/d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484.ktx2",
-            "bytes": 150102,
-            "sha256": "d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+            "bytes": 151937,
+            "sha256": "26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b",
             "width": 1056,
             "height": 792,
             "levels": 11,
@@ -607,9 +607,9 @@
           },
           {
             "textureClass": "orm",
-            "path": "public/models/environment/SharedTexturesBootstrapKTX2/cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10.ktx2",
-            "bytes": 17994,
-            "sha256": "cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10",
+            "path": "public/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2",
+            "bytes": 20324,
+            "sha256": "523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b",
             "width": 528,
             "height": 396,
             "levels": 10,
@@ -623,7 +623,7 @@
   "totals": {
     "sourceGlbBytes": 5356308,
     "bootstrapGlbBytes": 2785896,
-    "maximumColdStartBytes": 1146350,
-    "maximumColdStartMiB": 1.093
+    "maximumColdStartBytes": 1150515,
+    "maximumColdStartMiB": 1.097
   }
 }

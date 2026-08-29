@@ -37,13 +37,10 @@ test("resolution actor streams near the exit and retains an immediate victory fa
   const qaAnimationBlock = SOURCE.match(
     /if \(qaPoliceAnimationScenario\) \{[\s\S]*?qaPoliceFrameSnapshotTimer = setInterval\(mirrorQaPoliceAnimationFrame, 16\);\n      \}/,
   )?.[0] ?? "";
-  assert.match(
-    SOURCE,
-    /const POLICE_ASSET_CACHE_VERSION = "4"/,
-  );
-  assert.match(SOURCE, /const POLICE_BOOTSTRAP_MODEL_HREF = "\/models\/characters\/police-bootstrap\.glb"/);
-  assert.match(SOURCE, /police:\s*\{\s*url: `\$\{POLICE_BOOTSTRAP_MODEL_HREF\}\?v=\$\{POLICE_ASSET_CACHE_VERSION\}`/);
-  assert.match(SOURCE, /`\/models\/characters\/police\.glb\?v=\$\{POLICE_ASSET_CACHE_VERSION\}`/);
+  assert.match(RUNTIME_ASSETS_SOURCE, /export const ASSET_VERSION = "m2-20260829"/);
+  assert.match(SOURCE, /const POLICE_BOOTSTRAP_MODEL_HREF = versionRuntimeAsset\(/);
+  assert.match(SOURCE, /police:\s*\{\s*url: POLICE_BOOTSTRAP_MODEL_HREF/);
+  assert.match(SOURCE, /versionRuntimeAsset\("\/models\/characters\/police\.glb"\)/);
   assert.equal(
     SOURCE.match(/loadGlbWithRetry\(qaPoliceAssetUrl,/g)?.length,
     1,
@@ -364,7 +361,7 @@ test("stealth tools use distinct formal themed subassemblies with auditable prov
   );
   assert.match(
     RUNTIME_ASSETS_SOURCE,
-    /cornerMirror:\s*"\/models\/environment\/stealth-corner-mirrors\.glb\?v=2"/u,
+    /cornerMirror:\s*versionRuntimeAsset\("\/models\/environment\/stealth-corner-mirrors\.glb"\)/u,
   );
   assert.match(SOURCE, /const template = stealthToolModelTemplates\[receipt\.tool\]/u);
   assert.match(SOURCE, /authored-blackout-status-lens/u);

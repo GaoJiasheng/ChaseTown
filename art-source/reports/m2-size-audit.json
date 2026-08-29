@@ -1,0 +1,95 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-08-29T03:03:25.287Z",
+  "measurement": "raw filesystem bytes except manifest criticalEncodedTransfer, which is encoded-transfer bytes",
+  "baseline": {
+    "publicModels": {
+      "bytes": 47451053,
+      "files": 83
+    },
+    "distClientModels": {
+      "bytes": 11098861,
+      "files": 30
+    },
+    "distClient": {
+      "bytes": 15990869,
+      "files": null
+    },
+    "criticalEncodedTransfer": {
+      "bytes": 7716893
+    }
+  },
+  "targets": {
+    "publicModelsBytes": 24631610,
+    "distClientBytes": 12582912,
+    "criticalEncodedTransferBytes": 6291456
+  },
+  "current": {
+    "publicModels": {
+      "bytes": 37964248,
+      "files": 61
+    },
+    "distClientModels": {
+      "bytes": 9590839,
+      "files": 30
+    },
+    "distClient": {
+      "bytes": 14483785,
+      "files": 72
+    },
+    "criticalEncodedTransfer": {
+      "bytes": 6209054,
+      "remainingToTarget": 82402
+    }
+  },
+  "deltas": {
+    "publicModels": {
+      "bytes": -9486805,
+      "percent": -19.993
+    },
+    "distClientModels": {
+      "bytes": -1508022,
+      "percent": -13.587
+    },
+    "distClient": {
+      "bytes": -1507084,
+      "percent": -9.425
+    },
+    "criticalEncodedTransfer": {
+      "bytes": -1507839,
+      "percent": -19.539
+    }
+  },
+  "targetResults": {
+    "publicModels": {
+      "passed": false,
+      "overBy": 13332638
+    },
+    "distClient": {
+      "passed": false,
+      "overBy": 1900873
+    },
+    "criticalEncodedTransfer": {
+      "passed": true,
+      "overBy": 0
+    }
+  },
+  "publicModelCategories": {
+    "characters": {
+      "bytes": 24082664,
+      "files": 8
+    },
+    "sourceThemeKits": {
+      "bytes": 8142204,
+      "files": 8
+    },
+    "fullSharedKtx2": {
+      "bytes": 3314409,
+      "files": 22
+    },
+    "bootstrapSharedKtx2": {
+      "bytes": 330675,
+      "files": 3
+    }
+  }
+}

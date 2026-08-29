@@ -630,7 +630,7 @@ function syntheticAtlasGltf(normalBasename, ormBasename) {
   };
 }
 
-async function encodeDetailAtlases(gltfpack, temporaryRoot, publicRoot) {
+async function encodeDetailAtlases(gltfpack, temporaryRoot) {
   const sources = await sourceTextureEntries();
   const normalPng = path.join(temporaryRoot, "theme-normal-atlas.png");
   const ormPng = path.join(temporaryRoot, "theme-orm-atlas.png");
@@ -1031,7 +1031,6 @@ async function build(options) {
     const { atlases: generatedAtlases, sources } = await encodeDetailAtlases(
       encoder.executable,
       temporaryRoot,
-      options.publicRoot,
     );
     const atlasObjects = [baseColor];
     for (const atlas of [generatedAtlases.normal, generatedAtlases.orm]) {

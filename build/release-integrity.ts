@@ -12,8 +12,8 @@ import { gzipSync } from "node:zlib";
 
 import type { RuntimePreloadAsset } from "../app/game/runtime-assets";
 
-export const MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES = 8 * 1024 * 1024;
-export const MAX_EAGER_FIRST_CAMPAIGN_TRANSFER_BYTES = 9 * 1024 * 1024;
+export const MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES = 6 * 1024 * 1024;
+export const MAX_EAGER_FIRST_CAMPAIGN_TRANSFER_BYTES = 6 * 1024 * 1024;
 export const SERVER_RENDERED_HTML_TRANSFER_RESERVE_BYTES = 32 * 1024;
 
 const BASIS_TRANSCODER_OUTPUT =

@@ -18,6 +18,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { decodedKtx2Rgba } from "./build_character_bootstrap.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const DEFAULT_PUBLIC_ROOT = path.join(ROOT, "public");
@@ -84,6 +85,21 @@ const THEME_ARGUMENTS = Object.freeze([
   "-tj",
   "4",
 ]);
+const THEME_GRASS_ORM_UASTC_ARGUMENTS = Object.freeze([
+  ...BASE_ARGUMENTS,
+  "-tc",
+  "color",
+  "-tu",
+  "normal,attrib",
+  "-tq",
+  "color,normal",
+  "10",
+  "-tq",
+  "attrib",
+  "4",
+  "-tj",
+  "4",
+]);
 const TARGETS = Object.freeze([
   { relative: "models/characters/kid.glb", policy: "uastc" },
   {
@@ -112,11 +128,21 @@ function parseArguments(argv) {
       : null,
     check: false,
     onlyCharacter: null,
+    onlyEnvironment: false,
+    reencodeExisting: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--check") {
       result.check = true;
+      continue;
+    }
+    if (argument === "--only-environment") {
+      result.onlyEnvironment = true;
+      continue;
+    }
+    if (argument === "--reencode-existing") {
+      result.reencodeExisting = true;
       continue;
     }
     const value = argv[index + 1];
@@ -138,6 +164,12 @@ function parseArguments(argv) {
   ) {
     throw new Error(`Unknown character role: ${result.onlyCharacter}`);
   }
+  if (result.onlyCharacter !== null && result.onlyEnvironment) {
+    throw new Error("--only-character and --only-environment are mutually exclusive");
+  }
+  if (result.reencodeExisting && !result.onlyEnvironment) {
+    throw new Error("--reencode-existing is limited to the reviewed environment texture remediation");
+  }
   if (!result.check && !result.gltfpack) {
     throw new Error(
       "KTX2 encoding needs the native gltfpack 1.2 binary: pass --gltfpack PATH or set GLTFPACK_KTX2.",
@@ -147,10 +179,15 @@ function parseArguments(argv) {
 }
 
 function selectedTargets(options) {
-  if (!options.onlyCharacter) return TARGETS;
-  return TARGETS.filter(
-    (target) => target.relative === `models/characters/${options.onlyCharacter}.glb`,
-  );
+  if (options.onlyCharacter) {
+    return TARGETS.filter(
+      (target) => target.relative === `models/characters/${options.onlyCharacter}.glb`,
+    );
+  }
+  if (options.onlyEnvironment) {
+    return TARGETS.filter((target) => target.relative.includes("/environment/themes/"));
+  }
+  return TARGETS;
 }
 
 function sha256(buffer) {
@@ -429,7 +466,7 @@ function removeTextureExtension(texture, extension) {
   if (!Object.keys(texture.extensions).length) delete texture.extensions;
 }
 
-async function sourceImagePayload(asset, image) {
+async function rawSourceImagePayload(asset, image) {
   let payload;
   let mimeType = image.mimeType;
   if (image.bufferView !== undefined) {
@@ -457,10 +494,45 @@ async function sourceImagePayload(asset, image) {
       && payload.subarray(8, 12).toString("ascii") === "WEBP"
     ) {
       mimeType = "image/webp";
+    } else if (payload.subarray(0, 12).equals(KTX2_SIGNATURE)) {
+      mimeType = "image/ktx2";
     }
   }
-  assert.ok(["image/png", "image/webp", "image/jpeg"].includes(mimeType), `${asset.filename} uses unsupported ${mimeType}`);
+  assert.ok(["image/png", "image/webp", "image/jpeg", "image/ktx2"].includes(mimeType), `${asset.filename} uses unsupported ${mimeType}`);
   return { payload, mimeType };
+}
+
+function environmentGateReplacement(imageName) {
+  if (imageName === "Env_PaintedWall_BaseColor_2K") {
+    return path.join(
+      ROOT,
+      "art-source",
+      "Environment",
+      "SharedTextures",
+      "Env_PaintedWall_BaseColor_2K.png",
+    );
+  }
+  if (/^Env_.+_ORM_512$/u.test(imageName ?? "")) {
+    return path.join(ROOT, "work", "art_pipeline", "environment-orm", `${imageName}.png`);
+  }
+  return null;
+}
+
+async function sourceImagePayload(asset, image) {
+  const replacement = environmentGateReplacement(image.name);
+  if (replacement) return { payload: await readFile(replacement), mimeType: "image/png" };
+  const source = await rawSourceImagePayload(asset, image);
+  if (source.mimeType !== "image/ktx2") return source;
+  const decoded = await decodedKtx2Rgba(
+    source.payload,
+    `${asset.filename}/${image.name ?? "unnamed KTX2"}`,
+  );
+  return {
+    payload: await sharp(decoded.data, {
+      raw: { width: decoded.width, height: decoded.height, channels: decoded.channels },
+    }).png({ compressionLevel: 9 }).toBuffer(),
+    mimeType: "image/png",
+  };
 }
 
 async function makePngEncoderInput(asset, textureMaxDimension = null) {
@@ -468,8 +540,11 @@ async function makePngEncoderInput(asset, textureMaxDimension = null) {
   for (const image of asset.json.images ?? []) {
     const { payload, mimeType } = await sourceImagePayload(asset, image);
     const metadata = await sharp(payload).metadata();
-    const needsResize = textureMaxDimension !== null
-      && Math.max(metadata.width ?? 0, metadata.height ?? 0) > textureMaxDimension;
+    const effectiveMaxDimension = image.name === "Env_Grass_ORM_512"
+      ? 256
+      : textureMaxDimension;
+    const needsResize = effectiveMaxDimension !== null
+      && Math.max(metadata.width ?? 0, metadata.height ?? 0) > effectiveMaxDimension;
     if (mimeType === "image/png" && !needsResize) {
       pngPayloads.push(payload);
       continue;
@@ -477,8 +552,8 @@ async function makePngEncoderInput(asset, textureMaxDimension = null) {
     let pipeline = sharp(payload);
     if (needsResize) {
       pipeline = pipeline.resize({
-        width: textureMaxDimension,
-        height: textureMaxDimension,
+        width: effectiveMaxDimension,
+        height: effectiveMaxDimension,
         fit: "inside",
         withoutEnlargement: true,
         kernel: sharp.kernel.lanczos3,
@@ -547,6 +622,12 @@ function expectedImageModes(json, policy) {
   const classes = imageTextureClasses(json);
   return classes.map((imageClasses, imageIndex) => {
     assert.ok(imageClasses.size > 0, `theme image ${imageIndex} is not used by any PBR slot`);
+    if (policy === "theme-uastc") {
+      return imageClasses.has("normal") || imageClasses.has("attrib") ? "UASTC" : "ETC1S";
+    }
+    if (policy === "theme-attribute-etc") {
+      return imageClasses.has("normal") ? "UASTC" : "ETC1S";
+    }
     return imageClasses.has("normal") || imageClasses.has("attrib") ? "UASTC" : "ETC1S";
   });
 }
@@ -794,8 +875,9 @@ function runtimeReport(entries, sharedTextures, toolVersion, toolGeneration, gen
       characterTextures: "UASTC quality 10 with Zstandard supercompression",
       themeColorTextures: "ETC1S quality 10 with BasisLZ supercompression",
       themeNormalAndAttributeTextures: "UASTC quality 10 with Zstandard supercompression",
+      themeGrassOrmOverride: "UASTC quality 4 at 256 px; preserves the normal/ORM mode contract while reducing a low-frequency AO payload.",
       themeTextureStorage: "External SHA-256-addressed KTX2 payloads shared across all four theme packages.",
-      lockerTextures: "Retain the existing shared external PNG contract; no duplicate KTX2 payload.",
+      lockerTextures: "Use the shared external bootstrap KTX2 atlases; no duplicate embedded payload.",
       sourceTextureFallbacks: false,
       cumulativeRepacking: false,
     },
@@ -862,10 +944,10 @@ async function build(options) {
       const sourceFilename = path.join(options.sourceRoot, target.relative);
       const outputFilename = path.join(options.outputRoot, target.relative);
       const sourceAsset = await loadGlb(sourceFilename);
-      assert.equal(
-        sourceAsset.json.extensionsRequired?.includes("KHR_texture_basisu"),
-        false,
-        `${sourceFilename} is already KTX2; use --check or supply a pristine source root`,
+      const sourceUsesKtx2 = sourceAsset.json.extensionsRequired?.includes("KHR_texture_basisu") === true;
+      assert.ok(
+        !sourceUsesKtx2 || options.reencodeExisting,
+        `${sourceFilename} is already KTX2; use --check or the reviewed environment remediation mode`,
       );
       const sourceInfo = await stat(sourceFilename);
       const encoderInput = path.join(temporaryRoot, `${targetIndex}-source.glb`);
@@ -876,7 +958,54 @@ async function build(options) {
       );
       runGltfpack(options.gltfpack, encoderInput, encoderOutput, target.policy);
       const encodedAsset = await loadGlb(encoderOutput);
-      let { payloads, metadata } = extractKtxPayloads(encodedAsset, sourceAsset, target.policy);
+      const initialTexturePolicy = sourceUsesKtx2 && target.policy === "theme-mixed"
+        ? "theme-uastc"
+        : target.policy;
+      let { payloads, metadata } = extractKtxPayloads(
+        encodedAsset,
+        sourceAsset,
+        initialTexturePolicy,
+      );
+      if (sourceUsesKtx2) {
+        if (target.policy === "theme-mixed") {
+          const attributeEtcOutput = path.join(
+            temporaryRoot,
+            `${targetIndex}-grass-orm-uastc.glb`,
+          );
+          runGltfpack(
+            options.gltfpack,
+            encoderInput,
+            attributeEtcOutput,
+            target.policy,
+            THEME_GRASS_ORM_UASTC_ARGUMENTS,
+          );
+          const attributeEtcAsset = await loadGlb(attributeEtcOutput);
+          const attributeEtc = extractKtxPayloads(
+            attributeEtcAsset,
+            sourceAsset,
+            "theme-uastc",
+          );
+          payloads = payloads.map((payload, imageIndex) => (
+            sourceAsset.json.images[imageIndex].name === "Env_Grass_ORM_512"
+              ? attributeEtc.payloads[imageIndex]
+              : payload
+          ));
+        }
+        const originalPayloads = await Promise.all(
+          sourceAsset.json.images.map(async (image) => (await rawSourceImagePayload(sourceAsset, image)).payload),
+        );
+        payloads = payloads.map((payload, imageIndex) => (
+          environmentGateReplacement(sourceAsset.json.images[imageIndex].name)
+            ? payload
+            : originalPayloads[imageIndex]
+        ));
+        const finalExpectedModes = expectedImageModes(sourceAsset.json, target.policy);
+        metadata = metadata.map((entry, imageIndex) => ({
+          name: entry.name,
+          expectedMode: finalExpectedModes[imageIndex],
+          ...ktx2Metadata(payloads[imageIndex], `${sourceFilename} ${entry.name}`),
+        }));
+      }
       let uastcAttributePass = null;
       if (target.uastcAttributeQuality) {
         const attributeOutput = path.join(temporaryRoot, `${targetIndex}-attribute-uastc.glb`);
@@ -1016,9 +1145,11 @@ async function build(options) {
     }
 
     const mergedAssets = orderedMergedAssets(existingReport, entries);
-    const mergedSharedTextures = partialBuild
-      ? existingReport.sharedTextures
-      : sharedTextureEntries;
+    const mergedSharedTextures = options.onlyEnvironment
+      ? sharedTextureEntries
+      : partialBuild
+        ? existingReport.sharedTextures
+        : sharedTextureEntries;
     const assetGltfpackBinarySha256 = {
       ...(existingReport?.actualToolchain?.assetGltfpackBinarySha256 ?? {}),
     };
@@ -1048,7 +1179,7 @@ async function build(options) {
     for (const { stagedFilename, outputFilename } of stagedOutputs) {
       await rename(stagedFilename, outputFilename);
     }
-    if (!partialBuild) {
+    if (!partialBuild || options.onlyEnvironment) {
       const sharedDirectory = path.join(
         options.outputRoot,
         "models",

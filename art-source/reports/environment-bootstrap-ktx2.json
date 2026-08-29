@@ -70,16 +70,16 @@
     }
   },
   "totals": {
-    "originalGlbBytes": 1840096,
-    "sourceTextureBytes": 8721102,
-    "originalRuntimeBytes": 10561198,
+    "originalGlbBytes": 1733988,
+    "sourceTextureBytes": 8769280,
+    "originalRuntimeBytes": 10503268,
     "originalRuntimeRequests": 41,
-    "outputGlbBytes": 1892744,
-    "atlasBytes": 308516,
-    "outputRuntimeBytes": 2201260,
+    "outputGlbBytes": 1786636,
+    "atlasBytes": 310351,
+    "outputRuntimeBytes": 2096987,
     "outputRuntimeRequests": 21,
-    "savedBytes": 8359938,
-    "savedPercent": 79.157,
+    "savedBytes": 8406281,
+    "savedPercent": 80.035,
     "requestsSaved": 20,
     "supersededNormalAtlasBytes": 158414,
     "compactNormalAtlasBytes": 158414,
@@ -98,15 +98,15 @@
       "desk-chair.glb",
       "podium.glb"
     ],
-    "originalGlbBytes": 1400368,
+    "originalGlbBytes": 1294260,
     "sourceTextureBytes": 6161273,
-    "originalRuntimeBytes": 7561641,
+    "originalRuntimeBytes": 7455533,
     "originalRuntimeRequests": 26,
-    "outputGlbBytes": 1426712,
-    "atlasBytes": 308516,
-    "outputRuntimeBytes": 1735228,
+    "outputGlbBytes": 1320604,
+    "atlasBytes": 310351,
+    "outputRuntimeBytes": 1630955,
     "outputRuntimeRequests": 12,
-    "savedBytes": 5826413,
+    "savedBytes": 5824578,
     "requestsSaved": 14
   },
   "sourceTextures": [
@@ -215,8 +215,8 @@
       "textureClass": "BaseColor",
       "basename": "Env_PaintedWall_BaseColor_2K.png",
       "path": "art-source/Environment/SharedTextures/Env_PaintedWall_BaseColor_2K.png",
-      "bytes": 337041,
-      "sha256": "d170145aeceef25f0d495e5c9b7a014409ec1b59611e152f4e064fb076d4f055",
+      "bytes": 385219,
+      "sha256": "ad0af798f874ba39a46148d23cf107980311c35f5921d6ff7e24b32d5bbcd18b",
       "width": 512,
       "height": 512
     },
@@ -335,9 +335,9 @@
     {
       "textureClass": "baseColor",
       "expectedMode": "ETC1S",
-      "path": "public/models/environment/SharedTexturesBootstrapKTX2/d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484.ktx2",
-      "bytes": 150102,
-      "sha256": "d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484",
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+      "bytes": 151937,
+      "sha256": "26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b",
       "width": 1056,
       "height": 792,
       "levels": 11,
@@ -375,7 +375,7 @@
       },
       "output": {
         "bytes": 36332,
-        "sha256": "0c01fc939a9cab25e894739153cfd093b5b754d960c88defbc90cf8b123f0195",
+        "sha256": "4d6630b46dff9314629509d769a862d3ee20416277031fe8c60675767e04c828",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "0989f582934f71902e1f6fae3f4087091a1a4363a3342110f2d0b27250747457",
@@ -451,7 +451,7 @@
       },
       "output": {
         "bytes": 74016,
-        "sha256": "05dd09c4fc7e52f8f732134b2daa9e4d19db018c6ba0ff07b4b7a30784255d1c",
+        "sha256": "6ad26116695165444548dfc5a391a29a835f1581c0f3ea47f804948ed5d979aa",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "244da326601dc3e4be175030e721c3dd0434205cb3855023f1a4b1181378f18a",
@@ -537,7 +537,7 @@
       },
       "output": {
         "bytes": 47916,
-        "sha256": "0a89c82c4d47fc71bce294a24de38a3aef7d0b4ae78db19ab1224c25691f9b78",
+        "sha256": "595157465b39f811ffe8b3526d3565aa5890f5a7b172a98ac6f5c7d77d997bc0",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "8435fc6ab7ea1ba33d3e84cc793e45325ba19dfe1de5232262a0087b128e0dba",
@@ -603,7 +603,7 @@
       },
       "output": {
         "bytes": 35484,
-        "sha256": "61d42bef34ae91f707aec80088139c44316b68f45979e2b39d5a2f39d1e4e4f5",
+        "sha256": "d23562a1e60cf911c8c2e12e0a3e7c0f79363c77d35574be9c9da1df0cd8ec4c",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "d5e7d3954d29da931818c9de599cb3d6185c4ac8ff13c26281f9c6b8fba0488f",
@@ -689,7 +689,7 @@
       },
       "output": {
         "bytes": 134308,
-        "sha256": "d3fde42dc07710e7ecea0ea39ac6bfcf74259ccde78d709d6b3ad05eca7d9b45",
+        "sha256": "51aac3fcccfe04e0dc8a33f7d90eff140a203d3486a1732b0b0da3eca6233188",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "d71fcf98b68ce445d74b80a8bbf3a493da0d07f407cbce05dd3d8db919997696",
@@ -785,7 +785,7 @@
       },
       "output": {
         "bytes": 41896,
-        "sha256": "55aedc3bca7045a2dbde0acfe0469fc16b3f6bb213ecf9f7e42d055bd7043d69",
+        "sha256": "e165212d0f750483c81c9c14fc218e529ea1ea9f7a2bd4d67a2494d480fe67ef",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "67ceeb99d8beb58b7513e071e870b22b991eb061974627ae21c70d59f0ddccad",
@@ -881,7 +881,7 @@
       },
       "output": {
         "bytes": 23260,
-        "sha256": "60b4bba84c5aa211143b21b23f621a9a9c5d33fead12cba2bd945843b5a7e0e5",
+        "sha256": "b64d064e2541ee94523009865a34f0506c4576aa6cd6b27c3c902666cb717d4a",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "76a54c3aa6be7e379c8a6df33dd905c88f499d660207b8582c65773dc1e40e73",
@@ -957,7 +957,7 @@
       },
       "output": {
         "bytes": 37300,
-        "sha256": "760b746c7c3fddf5f76e734d5c8780d2eb15b4cac8b03703b129f5ddafec053b",
+        "sha256": "ac2f514cc83b665cb3bf9145c1093abaaac529584a7e07e90e86170bbdad7a91",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "78a688d6ca565602002b162157cd7ed7945cb50f73fa77ca780a805305e91f7d",
@@ -1043,7 +1043,7 @@
       },
       "output": {
         "bytes": 97416,
-        "sha256": "ce4e728ea694f449843ba7cfb4176ccfc45ac1d6e35b2c15e6e6380cc218f2e5",
+        "sha256": "9f525357043914e6fa44a9f9d119ad6a54a76f4de4cd04dd708775dc7830c177",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "5f37e7eb0195768d9585d780819a4f31f89ac39e3c19b8ceac878f92b6ebb1f1",
@@ -1149,7 +1149,7 @@
       },
       "output": {
         "bytes": 37336,
-        "sha256": "9461a35848be3c8d6e7f1e93d30d28b974249b66640fdf419cb200318fc483d3",
+        "sha256": "379ae50505ff5c7c815c8bae92496864953d7bc6eb0ae00538146b2f3cdd0824",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "78a688d6ca565602002b162157cd7ed7945cb50f73fa77ca780a805305e91f7d",
@@ -1235,7 +1235,7 @@
       },
       "output": {
         "bytes": 30320,
-        "sha256": "e1a1649ec7a8ea0f3e7234793f9db4d86f6dee63ff0e7bcd4ad77a090c2b14c0",
+        "sha256": "4bb88f39c66f5d18763b16aad5252f8462c8ba5c33efffb202132d76d81fd585",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "491ed0aca67cef7da28d6c4f9b937a9d69b3e81544fc7e300cdf261158735049",
@@ -1321,7 +1321,7 @@
       },
       "output": {
         "bytes": 40876,
-        "sha256": "a3198041cc4e3faa60119721e5ad4d9cbf54654759de5e91211c677e24ce58ec",
+        "sha256": "50a04c4b3bbe69ad62ff2fc285e8a9f16a09648ef9000c880779d4b1e018e1d6",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "a94b25b7bab906f45a6babd77740651fb7d25a6bbf0bf8ce69de31497d47ce58",
@@ -1401,16 +1401,16 @@
     {
       "path": "public/models/environment/locker.glb",
       "original": {
-        "bytes": 786064,
-        "sha256": "03566dea7a52c82a944889d05b7957ae45438344ef45bf7a47f82188e0b5857b",
+        "bytes": 679956,
+        "sha256": "eb25da24c764790e8f4ade3d0a0f851b96e730e02d9e3b3b17eb70710341a902",
         "externalPngRequests": 6
       },
       "output": {
-        "bytes": 788104,
-        "sha256": "4a8f11a61be3a17e79f0ceaeaf34e7d048b1e03621a796fdaffd5d4170e74018",
+        "bytes": 681996,
+        "sha256": "11d7ac4da697825915a5506f7cba816ed06aad9aa6e50837e1401fb083c01134",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "5a77091101269f01e1bd7a7b6e39437362b819294f05e75c8ac5577a0b9baef8",
+      "geometryBinarySha256": "8921b9a707de5c073a1af4fd8ce541dc79a26ab63bb6fc56a50cb2e50f18e331",
       "structure": {
         "nodes": {
           "count": 43,
@@ -1430,7 +1430,7 @@
         },
         "accessors": {
           "count": 78,
-          "sha256": "07747b3ab4ebdce74af32efa8786245e871ce9948f536de55d4ed355dfad42ec"
+          "sha256": "58cc130e4a102656b9576c9f326c2d9eb075af1157262469947970f1b70e6d8b"
         },
         "skins": {
           "count": 0,
@@ -1490,7 +1490,7 @@
       },
       "output": {
         "bytes": 39184,
-        "sha256": "013b7c797e6d15ed51976aae555f5b7643a11936bc2d64a6191ec5fd6b668e7e",
+        "sha256": "b50bf9f8195aa51820fd0d8e8b7ec52c0020e386bdd3eb16a91c3ac1b92c1220",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "ba6529668bb4ee1739af6716f34f970389ce111a710eb884cb95c09182441f7d",
@@ -1576,7 +1576,7 @@
       },
       "output": {
         "bytes": 86200,
-        "sha256": "411349f14996d5af954cf7cf10a17b45506ce2ca5b44f88cf1501946885384ab",
+        "sha256": "0d056edbf5893e16b8702b72753306305ae281d2c6a75f56aaec55f371a6a63a",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "7512b2109043006082ff778bf3c8ab9a4205ad79f75510bd110fd6a9fe11107d",
@@ -1682,7 +1682,7 @@
       },
       "output": {
         "bytes": 96252,
-        "sha256": "bf8b4398e81ff66b3ab3ddd1e3a6e0cc742195e774b93b5e822fd5c8393a636b",
+        "sha256": "9c300aac3f3cfdd959bed3973923046be604785f5cbd036351382f9559afa738",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "cd760545d6bfb463a2f132d0cc5d0418c2bfb2477080df2a97310df1337f570e",
@@ -1758,7 +1758,7 @@
       },
       "output": {
         "bytes": 94460,
-        "sha256": "56cafd274bd05111f850b66d14255c0bb6073690a3c9b93dc878bfaf3f2bb44b",
+        "sha256": "fd380875e46fe46c08f67c312bc5fb6150dc66f45d50c6f25cea46e87fce465d",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "a4dcf79127abba7056b7c1e4e98fccbd05c27ab04e1f7437886b6ec70184e99b",
@@ -1884,7 +1884,7 @@
       },
       "output": {
         "bytes": 32672,
-        "sha256": "8ffc15966a7f5c0315a86ce9b70f936603fa92a0dd3fb7f532165cc087a7922b",
+        "sha256": "9685e4ebdc9942beaf6cf8a19a6cd8ff9b822c9529a5bcb6fa82ead60d638df8",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "5aff6a04161762209f07ff5e4533390b155ae0ab9543d794c6cd93d11a269a8b",
@@ -1970,7 +1970,7 @@
       },
       "output": {
         "bytes": 119412,
-        "sha256": "8fa96ed096b94fdb3e8839c539c1321bc8a83858c03663687b593fb9aa5d4a4f",
+        "sha256": "4387986b0bcec67fa7d03a9c5ca613f7be57c4fa4f2553af0cc0ac1e0c466565",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "6c9f14449f44c0a6ce666a5c37c48417f837ccb61f0415b992079f06c6e651ef",

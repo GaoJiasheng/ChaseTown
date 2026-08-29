@@ -27,4 +27,16 @@ npm run art:character-runtime:check
 
 脚本检测到已经优化的运行包时只做哈希和大小复核，不会重复压缩。要重建资产，应从 Blender 母版重新导出未压缩 GLB，再运行上述命令。
 
-当前没有对角色贴图做 WebP/KTX2 转码：锁定的 Node 版 `gltfpack` 不含 WebP 编码器，KTX2 还需要额外的转码器加载链路与 Safari 真机验证。没有完成这组验证前，保持原始 PNG 字节能避免近景材质退化和浏览器兼容风险。
+当前运行时角色与环境贴图已经统一为 KTX2/BasisU，并由 Three.js 的
+`KTX2Loader` 加载。生产转换使用 SHA-256 锁定的 native `gltfpack 1.2`；Node
+版 `gltfpack` 仍只用于与纹理编码无关的检查。任何资产转换后都必须运行：
+
+```bash
+npm run art:runtime-gate
+npm run art:runtime-gate:check
+```
+
+第一条命令对 `public/models` 中全部 GLB 和 KTX2 重新执行 glTF Validator、
+Basis 解码、BaseColor/Normal/AO stddev 门禁，并冻结字节数与 SHA-256；第二条
+验证工作区与冻结报告完全一致。该检查已接入 `npm test`，不得用保留 PNG fallback
+或跳过 KTX2 解码来规避门禁。
