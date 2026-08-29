@@ -30,6 +30,7 @@
     "qa:locker-maze": "node scripts/locker-maze-qa.mjs",
     "qa:m2-size": "node scripts/m2-size-audit.mjs",
     "qa:m2-size:check": "node scripts/m2-size-audit.mjs --check",
+    "qa:m3-baseline": "node scripts/m3-render-baseline.mjs",
     "qa:stealth-systems": "node scripts/stealth-systems-visual-qa.mjs",
     "qa:theme-bootstrap": "node scripts/theme-bootstrap-visual-qa.mjs",
     "test": "npm run build:clean && npm run test:unit",
