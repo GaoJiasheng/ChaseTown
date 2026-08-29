@@ -1,0 +1,345 @@
+{
+  "source": "c99404b+m3-3-candidate",
+  "expectedSnapped": true,
+  "method": "1280x720 DPR1 high formal camera; authentic W-key movement; ten sequential 90ms captures",
+  "movementCells": 4.73235,
+  "frames": [
+    {
+      "index": 0,
+      "screenshot": "move-00.png",
+      "player": {
+        "x": 8.866490052075918,
+        "y": 15.227752264105781
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -6.268996262660243,
+          "y": 0.0006040404208428256,
+          "z": 6.456102083966313
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -8.912109375,
+        "lightSpaceY": -0.966796875,
+        "texelIndexX": -507,
+        "texelIndexY": -55,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.10961996,
+        "y": 0.0544165
+      }
+    },
+    {
+      "index": 1,
+      "screenshot": "move-01.png",
+      "player": {
+        "x": 7.998675390569383,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -8.000437331644752,
+          "y": 0.0031341518748078134,
+          "z": 8.954183729290417
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -11.8125,
+        "lightSpaceY": -1.669921875,
+        "texelIndexX": -672,
+        "texelIndexY": -95,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.32968981,
+        "y": 0.28234793
+      }
+    },
+    {
+      "index": 2,
+      "screenshot": "move-02.png",
+      "player": {
+        "x": 7.086357413088189,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -9.82249832205468,
+          "y": -0.0014604561349252476,
+          "z": 8.959328147098088
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -13.25390625,
+        "lightSpaceY": -0.80859375,
+        "texelIndexX": -754,
+        "texelIndexY": -46,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.26564356,
+        "y": 0.13156885
+      }
+    },
+    {
+      "index": 3,
+      "screenshot": "move-03.png",
+      "player": {
+        "x": 6.329801041518419,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -11.336537167312294,
+          "y": -0.0012095268858511212,
+          "z": 8.959658114358028
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -14.44921875,
+        "lightSpaceY": -0.087890625,
+        "texelIndexX": -822,
+        "texelIndexY": -5,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.21253203,
+        "y": 0.10896326
+      }
+    },
+    {
+      "index": 4,
+      "screenshot": "move-04.png",
+      "player": {
+        "x": 5.528741353973956,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -12.93619150201105,
+          "y": -0.005514556311539879,
+          "z": 8.964437573161192
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -15.71484375,
+        "lightSpaceY": 0.66796875,
+        "texelIndexX": -894,
+        "texelIndexY": 38,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.1562963,
+        "y": 0.49679264
+      }
+    },
+    {
+      "index": 5,
+      "screenshot": "move-05.png",
+      "player": {
+        "x": 4.6164233764927625,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -14.766620424529291,
+          "y": 0.0009911537815908095,
+          "z": 8.95882322111532
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -17.15625,
+        "lightSpaceY": 1.546875,
+        "texelIndexX": -976,
+        "texelIndexY": 88,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.09225004,
+        "y": 0.08929057
+      }
+    },
+    {
+      "index": 6,
+      "screenshot": "move-06.png",
+      "player": {
+        "x": 4.5051650865560315,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -14.98902708024046,
+          "y": 0.000701575197546787,
+          "z": 8.959188180119826
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -17.33203125,
+        "lightSpaceY": 1.65234375,
+        "texelIndexX": -986,
+        "texelIndexY": 94,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.08443952,
+        "y": 0.06320316
+      }
+    },
+    {
+      "index": 7,
+      "screenshot": "move-07.png",
+      "player": {
+        "x": 4.5051650865560315,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -14.98902708024046,
+          "y": 0.000701575197546787,
+          "z": 8.959188180119826
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -17.33203125,
+        "lightSpaceY": 1.65234375,
+        "texelIndexX": -986,
+        "texelIndexY": 94,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.08443952,
+        "y": 0.06320316
+      }
+    },
+    {
+      "index": 8,
+      "screenshot": "move-08.png",
+      "player": {
+        "x": 4.5051650865560315,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -14.98902708024046,
+          "y": 0.000701575197546787,
+          "z": 8.959188180119826
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -17.33203125,
+        "lightSpaceY": 1.65234375,
+        "texelIndexX": -986,
+        "texelIndexY": 94,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.08443952,
+        "y": 0.06320316
+      }
+    },
+    {
+      "index": 9,
+      "screenshot": "move-09.png",
+      "player": {
+        "x": 4.5051650865560315,
+        "y": 16.48038971668758
+      },
+      "snapped": {
+        "halfExtent": 18,
+        "target": {
+          "x": -14.98902708024046,
+          "y": 0.000701575197546787,
+          "z": 8.959188180119826
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -17.33203125,
+        "lightSpaceY": 1.65234375,
+        "texelIndexX": -986,
+        "texelIndexY": 94,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      },
+      "unsnappedResidualTexels": {
+        "x": 0.08443952,
+        "y": 0.06320316
+      }
+    }
+  ],
+  "coverage": [
+    {
+      "kind": "level-edge",
+      "screenshot": "level-01-edge.png",
+      "campaign": 1,
+      "phase": "playing",
+      "player": {
+        "x": 1,
+        "y": 2
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -21.993118357457714,
+          "y": -0.0019472933089843853,
+          "z": -20.00232326571891
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": -5.080078125,
+        "lightSpaceY": 22.7109375,
+        "texelIndexX": -289,
+        "texelIndexY": 1292,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      }
+    },
+    {
+      "kind": "victory",
+      "screenshot": "level-10-victory.png",
+      "campaign": 10,
+      "phase": "won",
+      "player": {
+        "x": 23,
+        "y": 1
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": 21.997749162809086,
+          "y": -0.0025164746604498128,
+          "z": -21.994334832713033
+        },
+        "texelWorldSize": 0.017578125,
+        "lightSpaceX": 30.8671875,
+        "lightSpaceY": 2.98828125,
+        "texelIndexX": 1756,
+        "texelIndexY": 170,
+        "residualTexelsX": 0,
+        "residualTexelsY": 0
+      }
+    }
+  ],
+  "adjacentRgbMae": [
+    39.7827,
+    38.7803,
+    36.624,
+    34.8782,
+    33.0372,
+    20.3755,
+    1.3606,
+    0.4834,
+    0.5322
+  ],
+  "maximumUnsnappedResidualTexels": {
+    "x": 0.32968981,
+    "y": 0.49679264
+  }
+}

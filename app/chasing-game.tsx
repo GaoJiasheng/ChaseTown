@@ -253,6 +253,7 @@ import {
   tagQaRenderCategory,
 } from "./game/render-breakdown.ts";
 import { createMazeShadowProxy } from "./game/maze-shadow-proxy.ts";
+import { createDirectionalShadowTexelSnapper } from "./game/shadow-camera.ts";
 import { resolveRuntimeObjectPolicy } from "./game/runtime-visibility.ts";
 import {
   authoredRoomFloorRegions,
@@ -4121,9 +4122,17 @@ export function ChasingGame() {
       campaignLevel.campaign.theme === "factory" ? 0x91dced : 0xb9d7ff,
       atmosphere.keyIntensity,
     );
-    moon.position.set(14, 28, 18);
+    const moonOffset = new THREE.Vector3(14, 28, 18);
+    const shadowTexelSnapper = createDirectionalShadowTexelSnapper(moonOffset);
+    const shadowAnchor = new THREE.Vector3();
+    let shadowSnapSnapshot = shadowTexelSnapper.snap(
+      shadowAnchor.copy(cameraFocus).setY(0),
+      moon.target.position,
+      18,
+      renderQualityProfile.shadowMapSize,
+    );
+    moon.position.copy(moon.target.position).add(moonOffset);
     moon.castShadow = true;
-    moon.target.position.copy(cameraFocus);
     moon.layers.enable(1);
     scene.add(moon.target);
     moon.shadow.mapSize.set(renderQualityProfile.shadowMapSize, renderQualityProfile.shadowMapSize);
@@ -11100,8 +11109,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           playerPresentationPose(latestState, campaignLevel, simulation).point,
           campaignLevel,
         ).add(new THREE.Vector3(0, 0.92, 0));
-        moon.target.position.copy(playerAnchor).setY(0);
-        moon.position.copy(moon.target.position).add(new THREE.Vector3(14, 28, 18));
+        shadowSnapSnapshot = shadowTexelSnapper.snap(
+          shadowAnchor.copy(playerAnchor).setY(0),
+          moon.target.position,
+          (moon.shadow.camera.right - moon.shadow.camera.left) / 2,
+          moon.shadow.mapSize.x,
+        );
+        moon.position.copy(moon.target.position).add(moonOffset);
         moon.target.updateMatrixWorld();
         updatePerformanceLightBudget(playerAnchor);
         const chaserAnchor = world(latestState.chaser.position, campaignLevel).add(new THREE.Vector3(0, 1.05, 0));
@@ -12209,6 +12223,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             emergencyTransitionCount: emergencyQualityTransitionCount,
             pixelRatio: renderer.getPixelRatio(),
             shadowMapSize: moon.shadow.mapSize.x,
+            shadowCamera: {
+              halfExtent: (moon.shadow.camera.right - moon.shadow.camera.left) / 2,
+              target: {
+                x: moon.target.position.x,
+                y: moon.target.position.y,
+                z: moon.target.position.z,
+              },
+              ...shadowSnapSnapshot,
+            },
             emergencyDegradation,
             calls: renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
