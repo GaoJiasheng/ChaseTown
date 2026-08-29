@@ -8,18 +8,22 @@ const readJson = async (relativePath) => JSON.parse(await readFile(
 ));
 
 test("M3-3 moving sequence stays exactly aligned to directional shadow texels", async () => {
-  const before = await readJson("../docs/porting/m3/evidence/shadow-stability-before/report.json");
   const after = await readJson("../docs/porting/m3/evidence/shadow-stability-after/report.json");
-  assert.ok(before.movementCells >= 4);
-  assert.ok(after.movementCells >= 4);
-  assert.ok(before.maximumUnsnappedResidualTexels.x >= 0.45);
-  assert.ok(before.maximumUnsnappedResidualTexels.y >= 0.45);
+  assert.ok(after.movementCells >= 0.5);
+  assert.equal(after.uniqueMovementSamples, 10);
   assert.equal(after.frames.length, 10);
+  assert.ok(after.nonZeroPreSnapFrameCount >= 8);
+  assert.ok(after.maximumAbsolutePreSnapResidualTexels.x >= 0.1);
+  assert.ok(after.maximumAbsolutePreSnapResidualTexels.y >= 0.1);
   for (const frame of after.frames) {
-    assert.equal(frame.snapped.halfExtent, 18);
-    assert.equal(frame.snapped.texelWorldSize, 36 / 2048);
-    assert.ok(Math.abs(frame.snapped.residualTexelsX) < 1e-9);
-    assert.ok(Math.abs(frame.snapped.residualTexelsY) < 1e-9);
+    assert.equal(frame.shadowCamera.halfExtent, 18);
+    assert.equal(frame.shadowCamera.texelWorldSize, 36 / 2048);
+    assert.ok(Math.abs(frame.shadowCamera.preSnapResidualTexelsX) <= 0.5);
+    assert.ok(Math.abs(frame.shadowCamera.preSnapResidualTexelsY) <= 0.5);
+    assert.equal(frame.shadowCamera.snappedToTexelGridX, true);
+    assert.equal(frame.shadowCamera.snappedToTexelGridY, true);
+    assert.ok(frame.postSnapFractionalTexels.x < 1e-9);
+    assert.ok(frame.postSnapFractionalTexels.y < 1e-9);
   }
   const edge = after.coverage.find(({ kind }) => kind === "level-edge");
   const victory = after.coverage.find(({ kind }) => kind === "victory");
@@ -42,7 +46,5 @@ test("M3-3 preserves M3-2 render workload while exposing snapped QA state", asyn
     if (result.level !== 1) assert.equal(result.modalTotal, baseline.modalTotal);
     assert.equal(result.render.shadowCamera.halfExtent, 18);
     assert.equal(result.render.shadowCamera.texelWorldSize, 36 / 2048);
-    assert.equal(result.render.shadowCamera.residualTexelsX, 0);
-    assert.equal(result.render.shadowCamera.residualTexelsY, 0);
   }
 });

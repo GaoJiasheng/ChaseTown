@@ -2,12 +2,16 @@ import * as THREE from "three";
 
 export type DirectionalShadowSnapSnapshot = Readonly<{
   texelWorldSize: number;
+  sourceLightSpaceX: number;
+  sourceLightSpaceY: number;
   lightSpaceX: number;
   lightSpaceY: number;
   texelIndexX: number;
   texelIndexY: number;
-  residualTexelsX: number;
-  residualTexelsY: number;
+  preSnapResidualTexelsX: number;
+  preSnapResidualTexelsY: number;
+  snappedToTexelGridX: boolean;
+  snappedToTexelGridY: boolean;
 }>;
 
 export function createDirectionalShadowTexelSnapper(
@@ -24,12 +28,16 @@ export function createDirectionalShadowTexelSnapper(
   const up = new THREE.Vector3().crossVectors(right, forward).normalize();
   const snapshot = {
     texelWorldSize: 0,
+    sourceLightSpaceX: 0,
+    sourceLightSpaceY: 0,
     lightSpaceX: 0,
     lightSpaceY: 0,
     texelIndexX: 0,
     texelIndexY: 0,
-    residualTexelsX: 0,
-    residualTexelsY: 0,
+    preSnapResidualTexelsX: 0,
+    preSnapResidualTexelsY: 0,
+    snappedToTexelGridX: false,
+    snappedToTexelGridY: false,
   };
 
   return {
@@ -54,12 +62,20 @@ export function createDirectionalShadowTexelSnapper(
         anchor.z + right.z * deltaX + up.z * deltaY,
       );
       snapshot.texelWorldSize = texelWorldSize;
+      snapshot.sourceLightSpaceX = sourceX;
+      snapshot.sourceLightSpaceY = sourceY;
       snapshot.lightSpaceX = lightSpaceX;
       snapshot.lightSpaceY = lightSpaceY;
       snapshot.texelIndexX = texelIndexX;
       snapshot.texelIndexY = texelIndexY;
-      snapshot.residualTexelsX = lightSpaceX / texelWorldSize - texelIndexX;
-      snapshot.residualTexelsY = lightSpaceY / texelWorldSize - texelIndexY;
+      snapshot.preSnapResidualTexelsX = sourceX / texelWorldSize - texelIndexX;
+      snapshot.preSnapResidualTexelsY = sourceY / texelWorldSize - texelIndexY;
+      snapshot.snappedToTexelGridX = Math.abs(
+        lightSpaceX / texelWorldSize - texelIndexX,
+      ) < 1e-10;
+      snapshot.snappedToTexelGridY = Math.abs(
+        lightSpaceY / texelWorldSize - texelIndexY,
+      ) < 1e-10;
       return snapshot;
     },
     basis: Object.freeze({

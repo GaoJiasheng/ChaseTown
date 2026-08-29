@@ -83,32 +83,6 @@ async function adjacentRgbMae(leftPath, rightPath) {
   return Number((error / left.data.length).toFixed(4));
 }
 
-function unsnappedResidual(state) {
-  const offset = { x: 14, y: 28, z: 18 };
-  const forwardLength = Math.hypot(offset.x, offset.y, offset.z);
-  const forward = { x: -offset.x / forwardLength, y: -offset.y / forwardLength, z: -offset.z / forwardLength };
-  const rightLength = Math.hypot(-forward.z, forward.x);
-  const right = { x: -forward.z / rightLength, y: 0, z: forward.x / rightLength };
-  const up = {
-    x: right.y * forward.z - right.z * forward.y,
-    y: right.z * forward.x - right.x * forward.z,
-    z: right.x * forward.y - right.y * forward.x,
-  };
-  const point = state.game.player.position;
-  const anchor = {
-    x: (point.x - (state.campaign.walkable[0].length - 1) / 2) * 2,
-    y: 0,
-    z: (point.y - (state.campaign.walkable.length - 1) / 2) * 2,
-  };
-  const texel = 36 / state.render.shadowMapSize;
-  const x = anchor.x * right.x + anchor.y * right.y + anchor.z * right.z;
-  const y = anchor.x * up.x + anchor.y * up.y + anchor.z * up.z;
-  return {
-    x: Number(Math.abs(x / texel - Math.round(x / texel)).toFixed(8)),
-    y: Number(Math.abs(y / texel - Math.round(y / texel)).toFixed(8)),
-  };
-}
-
 await mkdir(OUTPUT, { recursive: true });
 const cdp = await connect();
 try {
@@ -139,10 +113,15 @@ try {
   })()`);
   assert.ok(clip?.width > 900 && clip?.height > 500);
   const startState = await cdp.evaluate("window.__CHASING_QA__.getState()");
-  await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: "w", code: "KeyW" });
   const frames = [];
   for (let index = 0; index < 10; index += 1) {
-    await sleep(90);
+    // A visible/CDP Chrome can spend far longer capturing a PNG than advancing
+    // the game. Pulse the real input around the simulation sample so capture
+    // latency cannot leave W held until the actor hits a wall.
+    await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: "w", code: "KeyW" });
+    await sleep(45);
+    await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "w", code: "KeyW" });
+    await sleep(45);
     const state = await cdp.evaluate("window.__CHASING_QA__.getState()");
     const capture = await cdp.send("Page.captureScreenshot", {
       format: "png",
@@ -152,27 +131,42 @@ try {
     });
     const filename = `move-${String(index).padStart(2, "0")}.png`;
     await writeFile(path.join(OUTPUT, filename), Buffer.from(capture.data, "base64"));
+    const shadowCamera = state.render.shadowCamera;
+    const normalizedSnappedX = shadowCamera.lightSpaceX / shadowCamera.texelWorldSize;
+    const normalizedSnappedY = shadowCamera.lightSpaceY / shadowCamera.texelWorldSize;
     frames.push({
       index,
       screenshot: filename,
       player: state.game.player.position,
-      snapped: state.render.shadowCamera ?? null,
-      unsnappedResidualTexels: unsnappedResidual(state),
+      shadowCamera,
+      postSnapFractionalTexels: {
+        x: Number(Math.abs(normalizedSnappedX - Math.round(normalizedSnappedX)).toFixed(12)),
+        y: Number(Math.abs(normalizedSnappedY - Math.round(normalizedSnappedY)).toFixed(12)),
+      },
     });
   }
-  await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "w", code: "KeyW" });
   const endState = await cdp.evaluate("window.__CHASING_QA__.getState()");
   const movement = Math.hypot(
     endState.game.player.position.x - startState.game.player.position.x,
     endState.game.player.position.y - startState.game.player.position.y,
   );
   assert.ok(movement >= 0.5, `movement sequence was blocked: ${movement}`);
+  const uniqueMovementSamples = new Set(frames.map(({ player }) => (
+    `${player.x.toFixed(4)},${player.y.toFixed(4)}`
+  ))).size;
+  assert.ok(uniqueMovementSamples >= 5, `movement evidence has only ${uniqueMovementSamples} unique positions`);
   if (EXPECT_SNAPPED) {
-    assert.ok(frames.every(({ snapped }) => snapped), "runtime did not expose snapped shadow state");
-    assert.ok(frames.every(({ snapped }) => (
-      Math.abs(snapped.residualTexelsX) < 1e-9
-      && Math.abs(snapped.residualTexelsY) < 1e-9
-    )), "moving shadow target left the texel grid");
+    assert.ok(frames.every(({ shadowCamera }) => shadowCamera), "runtime did not expose snapped shadow state");
+    assert.ok(frames.some(({ shadowCamera }) => (
+      Math.abs(shadowCamera.preSnapResidualTexelsX) > 0.05
+      || Math.abs(shadowCamera.preSnapResidualTexelsY) > 0.05
+    )), "pre-snap residual did not reveal sub-texel movement");
+    assert.ok(frames.every(({ shadowCamera, postSnapFractionalTexels }) => (
+      shadowCamera.snappedToTexelGridX === true
+      && shadowCamera.snappedToTexelGridY === true
+      && postSnapFractionalTexels.x < 1e-9
+      && postSnapFractionalTexels.y < 1e-9
+    )), "moving shadow target left the integer texel grid");
   }
   const frameDiffs = [];
   for (let index = 1; index < frames.length; index += 1) {
@@ -195,8 +189,8 @@ try {
     await writeFile(path.join(OUTPUT, filename), Buffer.from(capture.data, "base64"));
     const state = await cdp.evaluate("window.__CHASING_QA__.getState()");
     if (EXPECT_SNAPPED) {
-      assert.ok(Math.abs(state.render.shadowCamera.residualTexelsX) < 1e-9);
-      assert.ok(Math.abs(state.render.shadowCamera.residualTexelsY) < 1e-9);
+      assert.equal(state.render.shadowCamera.snappedToTexelGridX, true);
+      assert.equal(state.render.shadowCamera.snappedToTexelGridY, true);
     }
     return {
       screenshot: filename,
@@ -246,15 +240,20 @@ try {
   const report = {
     source: SOURCE,
     expectedSnapped: EXPECT_SNAPPED,
-    method: "1280x720 DPR1 high formal camera; authentic W-key movement; ten sequential 90ms captures",
+    method: "1280x720 DPR1 high formal camera; ten sequential 45ms W-key pulses; same-frame state plus PNG capture",
     movementCells: Number(movement.toFixed(5)),
+    uniqueMovementSamples,
     frames,
     coverage,
     adjacentRgbMae: frameDiffs,
-    maximumUnsnappedResidualTexels: {
-      x: Math.max(...frames.map((frame) => frame.unsnappedResidualTexels.x)),
-      y: Math.max(...frames.map((frame) => frame.unsnappedResidualTexels.y)),
+    maximumAbsolutePreSnapResidualTexels: {
+      x: Math.max(...frames.map((frame) => Math.abs(frame.shadowCamera.preSnapResidualTexelsX))),
+      y: Math.max(...frames.map((frame) => Math.abs(frame.shadowCamera.preSnapResidualTexelsY))),
     },
+    nonZeroPreSnapFrameCount: frames.filter(({ shadowCamera }) => (
+      Math.abs(shadowCamera.preSnapResidualTexelsX) > 0.05
+      || Math.abs(shadowCamera.preSnapResidualTexelsY) > 0.05
+    )).length,
   };
   await writeFile(path.join(OUTPUT, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);

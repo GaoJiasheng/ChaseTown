@@ -33,6 +33,7 @@
     "qa:m3-baseline": "node scripts/m3-render-baseline.mjs",
     "qa:m3-shadow": "node scripts/m3-shadow-visual-qa.mjs",
     "qa:m3-shadow-stability": "node scripts/m3-shadow-stability-qa.mjs",
+    "qa:m3-mutations": "node scripts/m3-live-mutation-qa.mjs",
     "qa:stealth-systems": "node scripts/stealth-systems-visual-qa.mjs",
     "qa:theme-bootstrap": "node scripts/theme-bootstrap-visual-qa.mjs",
     "test": "npm run build:clean && npm run test:unit",
