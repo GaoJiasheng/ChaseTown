@@ -31,7 +31,7 @@ from mathutils import Vector
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "public" / "models" / "environment"
-TEXTURES = ROOT / "public" / "models" / "SharedTextures"
+TEXTURES = ROOT / "art-source" / "Environment" / "SharedTextures"
 SOURCE_DIR = ROOT / "art-source" / "Environment" / "Premium"
 MASTER_BLEND = SOURCE_DIR / "Chasing_Premium_Common_Environment.blend"
 REPORT = ROOT / "docs" / "art_production" / "PREMIUM_COMMON_ENVIRONMENT_REPORT.json"

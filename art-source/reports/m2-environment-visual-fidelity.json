@@ -1,0 +1,331 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-08-29T02:19:12.619Z",
+  "method": "Paired 1280x720 production-camera captures from M1 HEAD and the M2 candidate, qaCleanFrame/high quality, plus byte-identity proof for unchanged theme geometry.",
+  "gates": {
+    "minimumSilhouetteIou": 0.9999,
+    "maximumRgbMeanAbsoluteError": 1
+  },
+  "sourceTexturePolicy": {
+    "authoringPixels": 512,
+    "firstPlayableBaseColorPixelsPerTile": 256,
+    "firstPlayableNormalPixelsPerTile": 128,
+    "firstPlayableOrmPixelsPerTile": 128
+  },
+  "atlases": [
+    {
+      "textureClass": "baseColor",
+      "reusedExisting": true,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484.ktx2",
+      "bytes": 150102,
+      "sha256": "d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484",
+      "width": 1056,
+      "height": 792,
+      "levels": 11,
+      "mode": "ETC1S",
+      "supercompressionScheme": 1
+    },
+    {
+      "textureClass": "normal",
+      "reusedExisting": false,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2",
+      "bytes": 158414,
+      "sha256": "632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b",
+      "width": 528,
+      "height": 396,
+      "levels": 10,
+      "mode": "UASTC",
+      "supercompressionScheme": 2
+    },
+    {
+      "textureClass": "orm",
+      "reusedExisting": false,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10.ktx2",
+      "bytes": 17994,
+      "sha256": "cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10",
+      "width": 528,
+      "height": 396,
+      "levels": 10,
+      "mode": "ETC1S",
+      "supercompressionScheme": 1
+    }
+  ],
+  "environmentAssets": {
+    "locker.glb": {
+      "path": "public/models/environment/locker.glb",
+      "bytes": 788104,
+      "sha256": "4a8f11a61be3a17e79f0ceaeaf34e7d048b1e03621a796fdaffd5d4170e74018"
+    },
+    "tree.glb": {
+      "path": "public/models/environment/tree.glb",
+      "bytes": 119412,
+      "sha256": "8fa96ed096b94fdb3e8839c539c1321bc8a83858c03663687b593fb9aa5d4a4f"
+    },
+    "desk-chair.glb": {
+      "path": "public/models/environment/desk-chair.glb",
+      "bytes": 97416,
+      "sha256": "ce4e728ea694f449843ba7cfb4176ccfc45ac1d6e35b2c15e6e6380cc218f2e5"
+    },
+    "police-car.glb": {
+      "path": "public/models/environment/police-car.glb",
+      "bytes": 86200,
+      "sha256": "411349f14996d5af954cf7cf10a17b45506ce2ca5b44f88cf1501946885384ab"
+    }
+  },
+  "themeAssets": {
+    "campus": {
+      "source": {
+        "path": "public/models/environment/themes/campus-kit.glb",
+        "bytes": 1585960,
+        "sha256": "c5672bda88ab26056c2e02303108c186cdba0b51256ad903ab54a5f3042f9745",
+        "nodes": 348,
+        "namedNodes": 342,
+        "meshes": 155,
+        "primitives": 240,
+        "triangles": 53360,
+        "materials": 26,
+        "externalTextureRequests": 22
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/campus-kit-bootstrap.glb",
+        "bytes": 759072,
+        "sha256": "7733a7fab68c7c3885a6316fc67ef88cf4a9f370494fc8adc1216efd18db52d9",
+        "savedGlbBytes": 826888,
+        "savedGlbPercent": 52.138,
+        "nodes": 656,
+        "namedNodes": 342,
+        "meshes": 155,
+        "primitives": 240,
+        "triangles": 53360,
+        "materials": 26,
+        "atlasRequests": 3
+      }
+    },
+    "hospital": {
+      "source": {
+        "path": "public/models/environment/themes/hospital-kit.glb",
+        "bytes": 1063652,
+        "sha256": "77b9deba829f6e259d867bdba444bc83c8e154ae5baf3b742bcfdd5103428992",
+        "nodes": 390,
+        "namedNodes": 383,
+        "meshes": 163,
+        "primitives": 211,
+        "triangles": 32896,
+        "materials": 24,
+        "externalTextureRequests": 16
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/hospital-kit-bootstrap.glb",
+        "bytes": 567388,
+        "sha256": "ec089e4c08377a1190103ecd66896488e31a72b0676a5a535cd2754f6b956403",
+        "savedGlbBytes": 496264,
+        "savedGlbPercent": 46.657,
+        "nodes": 745,
+        "namedNodes": 383,
+        "meshes": 163,
+        "primitives": 211,
+        "triangles": 32896,
+        "materials": 24,
+        "atlasRequests": 3
+      }
+    },
+    "fire-station": {
+      "source": {
+        "path": "public/models/environment/themes/fire-station-kit.glb",
+        "bytes": 1092952,
+        "sha256": "5c033374387bf951ec274847c9f6f43687dcb5afcbdfc166a04bd0dd914770a4",
+        "nodes": 699,
+        "namedNodes": 697,
+        "meshes": 157,
+        "primitives": 210,
+        "triangles": 40816,
+        "materials": 25,
+        "externalTextureRequests": 17
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/fire-station-kit-bootstrap.glb",
+        "bytes": 639596,
+        "sha256": "c8cb2f1367727ec16760ddc242dee9b931342799c3f0d8fd720a3a594d777422",
+        "savedGlbBytes": 453356,
+        "savedGlbPercent": 41.48,
+        "nodes": 1363,
+        "namedNodes": 697,
+        "meshes": 157,
+        "primitives": 210,
+        "triangles": 40816,
+        "materials": 25,
+        "atlasRequests": 3
+      }
+    },
+    "factory": {
+      "source": {
+        "path": "public/models/environment/themes/factory-kit.glb",
+        "bytes": 1613744,
+        "sha256": "8be3fa3986183b7627137f6db1931825d62f3ef975975b77499b4a3532520f23",
+        "nodes": 584,
+        "namedNodes": 581,
+        "meshes": 159,
+        "primitives": 234,
+        "triangles": 56456,
+        "materials": 23,
+        "externalTextureRequests": 19
+      },
+      "bootstrap": {
+        "path": "public/models/environment/themes/factory-kit-bootstrap.glb",
+        "bytes": 819840,
+        "sha256": "4cb14af1fe9b68edd302d1db1f45df172dbc24e33ad723936e61ead2b0c65d69",
+        "savedGlbBytes": 793904,
+        "savedGlbPercent": 49.196,
+        "nodes": 1127,
+        "namedNodes": 581,
+        "meshes": 159,
+        "primitives": 234,
+        "triangles": 56456,
+        "materials": 23,
+        "atlasRequests": 3
+      }
+    }
+  },
+  "geometryProof": {
+    "campus": {
+      "baselineGlbSha256": "38ebd088fc2949c2b271d84c907339627d761899cf3e12da7a0314b7f6b91d03",
+      "currentGlbSha256": "7733a7fab68c7c3885a6316fc67ef88cf4a9f370494fc8adc1216efd18db52d9",
+      "baselineGeometrySha256": "ed24771c57d5e530a990b49cf6a63b5675f50bde740fae6effbc996c4df97786",
+      "currentGeometrySha256": "ed24771c57d5e530a990b49cf6a63b5675f50bde740fae6effbc996c4df97786"
+    },
+    "hospital": {
+      "baselineGlbSha256": "ac86d756ce283b2eeee947187661abd6b0b1bc3c0ea311df7085ab8d9a819f62",
+      "currentGlbSha256": "ec089e4c08377a1190103ecd66896488e31a72b0676a5a535cd2754f6b956403",
+      "baselineGeometrySha256": "5d15eecb10d11cb77220a02ecc2296a8c59aad0a40f7fcfa7def8526e99f958f",
+      "currentGeometrySha256": "5d15eecb10d11cb77220a02ecc2296a8c59aad0a40f7fcfa7def8526e99f958f"
+    },
+    "fire-station": {
+      "baselineGlbSha256": "24b04e6e199c657acf89775924c4fb6c740557633a06d5e0679845ad87100b47",
+      "currentGlbSha256": "c8cb2f1367727ec16760ddc242dee9b931342799c3f0d8fd720a3a594d777422",
+      "baselineGeometrySha256": "7df7bbd27222a8c7ce1983b46433afc3882fd6e7ad04466a03e2d4ad89df271f",
+      "currentGeometrySha256": "7df7bbd27222a8c7ce1983b46433afc3882fd6e7ad04466a03e2d4ad89df271f"
+    },
+    "factory": {
+      "baselineGlbSha256": "28b38065e5106effa8aab2e194ce2a55cd95a402495a9feeab1b387256857fa3",
+      "currentGlbSha256": "4cb14af1fe9b68edd302d1db1f45df172dbc24e33ad723936e61ead2b0c65d69",
+      "baselineGeometrySha256": "d03a32eab248820b23ab8616000b59128a6d577473c1129199ffb7d9dc47f736",
+      "currentGeometrySha256": "d03a32eab248820b23ab8616000b59128a6d577473c1129199ffb7d9dc47f736"
+    }
+  },
+  "results": [
+    {
+      "level": 1,
+      "theme": "campus",
+      "geometry": "quantized-first-playable",
+      "before": {
+        "path": "docs/porting/m2/evidence/visual/before/level-1.png",
+        "bytes": 123221,
+        "sha256": "bc91d7e56159a94f07a8f19154e911331210bce5e2193b843d1ba644882abc3a"
+      },
+      "after": {
+        "path": "docs/porting/m2/evidence/visual/after/level-1.png",
+        "bytes": 123213,
+        "sha256": "5dbd50048b2029529af0f03d04fb0e8988564d42ff1fd74d4fca1fefd86209f4"
+      },
+      "screenshotMaskIou": 0.999973,
+      "rgbMeanAbsoluteError": 0.012287,
+      "silhouetteIou": 0.999973,
+      "silhouetteMethod": "Formal-camera luminance silhouette mask; this frame contains the repacked locker and corner mirror."
+    },
+    {
+      "level": 4,
+      "theme": "hospital",
+      "geometry": "byte-identical-theme",
+      "before": {
+        "path": "docs/porting/m2/evidence/visual/before/level-4.png",
+        "bytes": 140431,
+        "sha256": "172989d83b2538a5472f504f043b01653382a55d99bdafe9532c6c1355aa539f"
+      },
+      "after": {
+        "path": "docs/porting/m2/evidence/visual/after/level-4.png",
+        "bytes": 140503,
+        "sha256": "47db877cf23d5c4e0944356ff4b9aeee63960fc95485ee34f081045ff8c14a42"
+      },
+      "screenshotMaskIou": 0.99918,
+      "rgbMeanAbsoluteError": 0.186437,
+      "silhouetteIou": 1,
+      "silhouetteMethod": "M1 and M2 theme bootstrap GLB SHA-256 are identical; only external KTX2 payloads changed."
+    },
+    {
+      "level": 5,
+      "theme": "hospital",
+      "geometry": "byte-identical-theme",
+      "before": {
+        "path": "docs/porting/m2/evidence/visual/before/level-5.png",
+        "bytes": 141236,
+        "sha256": "8340d68df95443619962087c464f53087542cf6cb719e31c3d808e6b080bff57"
+      },
+      "after": {
+        "path": "docs/porting/m2/evidence/visual/after/level-5.png",
+        "bytes": 141343,
+        "sha256": "daad17c91380c2d57714f3fcf62f816119e60f99ad255c68bd5c4f54af24f49e"
+      },
+      "screenshotMaskIou": 0.993921,
+      "rgbMeanAbsoluteError": 0.517584,
+      "silhouetteIou": 1,
+      "silhouetteMethod": "M1 and M2 theme bootstrap GLB SHA-256 are identical; only external KTX2 payloads changed."
+    },
+    {
+      "level": 6,
+      "theme": "fire-station",
+      "geometry": "byte-identical-theme",
+      "before": {
+        "path": "docs/porting/m2/evidence/visual/before/level-6.png",
+        "bytes": 143764,
+        "sha256": "3ce42193871b34cb6e960693016d05e55913931461e95ef6d246355a701dbd69"
+      },
+      "after": {
+        "path": "docs/porting/m2/evidence/visual/after/level-6.png",
+        "bytes": 143664,
+        "sha256": "8ccc1ce2e7d797e9a7e5841ffc68985d62febf004659be6763ce5b9be9cfcedd"
+      },
+      "screenshotMaskIou": 0.993565,
+      "rgbMeanAbsoluteError": 0.849627,
+      "silhouetteIou": 1,
+      "silhouetteMethod": "M1 and M2 theme bootstrap GLB SHA-256 are identical; only external KTX2 payloads changed."
+    },
+    {
+      "level": 8,
+      "theme": "factory",
+      "geometry": "byte-identical-theme",
+      "before": {
+        "path": "docs/porting/m2/evidence/visual/before/level-8.png",
+        "bytes": 141152,
+        "sha256": "a9cf53fdb15379c8114c0bdb07f5887501a69b9aa62f717773f1e00d3b347456"
+      },
+      "after": {
+        "path": "docs/porting/m2/evidence/visual/after/level-8.png",
+        "bytes": 141074,
+        "sha256": "ce8317674b7e9437b1c63b0d75010f168429964580e79c578a02567bf700289c"
+      },
+      "screenshotMaskIou": 0.994705,
+      "rgbMeanAbsoluteError": 0.485896,
+      "silhouetteIou": 1,
+      "silhouetteMethod": "M1 and M2 theme bootstrap GLB SHA-256 are identical; only external KTX2 payloads changed."
+    },
+    {
+      "level": 10,
+      "theme": "factory",
+      "geometry": "byte-identical-theme",
+      "before": {
+        "path": "docs/porting/m2/evidence/visual/before/level-10.png",
+        "bytes": 117918,
+        "sha256": "923573d7ed6d7b74df510347dec0e02339872c54f034b1eba6601b1939a0a777"
+      },
+      "after": {
+        "path": "docs/porting/m2/evidence/visual/after/level-10.png",
+        "bytes": 117933,
+        "sha256": "2c25023e840b69d5940fbc9cf6c439968fd3709a891d1194668c58553e8c9768"
+      },
+      "screenshotMaskIou": 0.998274,
+      "rgbMeanAbsoluteError": 0.155506,
+      "silhouetteIou": 1,
+      "silhouetteMethod": "M1 and M2 theme bootstrap GLB SHA-256 are identical; only external KTX2 payloads changed."
+    }
+  ]
+}

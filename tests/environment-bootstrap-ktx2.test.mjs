@@ -19,7 +19,7 @@ const VISUAL_REPORT = path.join(
   ROOT,
   "art-source",
   "reports",
-  "environment-normal-atlas-visual-qa.json",
+  "m2-environment-visual-fidelity.json",
 );
 const SCRIPT = path.join(
   ROOT,
@@ -171,10 +171,10 @@ test("standalone environment GLBs use exactly two immutable atlas requests and p
   assert.deepEqual(report.assets.map((entry) => path.basename(entry.path)), TARGETS);
   assert.deepEqual(report.policy, {
     geometryAndAnimationBinaryByteStable: true,
-    sourceResolution: "BaseColor retains 512px tiles; Normal uses a reviewed 256px first-paint derivative.",
-    atlasLayout: "BaseColor 512px+8px and Normal 256px+4px share an exactly equivalent normalized 4x3 layout.",
+    sourceResolution: "Authoring textures remain 512px; first-paint BaseColor uses reviewed 256px tiles and Normal uses 128px tiles.",
+    atlasLayout: "BaseColor 256px+4px and Normal 128px+2px share an exactly equivalent normalized 4x3 layout.",
     baseColor: "ETC1S quality 10 with BasisLZ supercompression",
-    normal: "Reuse theme-bootstrap 256px/tile UASTC quality 10 atlas with Zstandard supercompression",
+    normal: "128px/tile UASTC quality 10 with Zstandard supercompression",
     normalAtlasNormalizedUvEquivalent: true,
     normalAtlasSourceHashesExact: true,
     fallbackImages: false,
@@ -303,18 +303,18 @@ test("atlas payloads retain pinned source hashes and an exactly equivalent norma
   const report = JSON.parse(await readFile(REPORT, "utf8"));
   assert.equal(report.sourceTextures.length, 22);
   assert.deepEqual(report.atlas.baseColor, {
-    sourceTileWidth: 512,
-    sourceTileHeight: 512,
-    gutterPixels: 8,
-    width: 2112,
-    height: 1584,
-  });
-  assert.deepEqual(report.atlas.normal, {
     sourceTileWidth: 256,
     sourceTileHeight: 256,
     gutterPixels: 4,
     width: 1056,
     height: 792,
+  });
+  assert.deepEqual(report.atlas.normal, {
+    sourceTileWidth: 128,
+    sourceTileHeight: 128,
+    gutterPixels: 2,
+    width: 528,
+    height: 396,
   });
   assert.equal(report.atlas.normalizedUvLayoutEquivalent, true);
   assert.equal(report.atlas.normalizedTransformMaxDelta, 0);
@@ -338,7 +338,7 @@ test("atlas payloads retain pinned source hashes and an exactly equivalent norma
     assert.equal(payload.readUInt32LE(20), atlas.width);
     assert.equal(payload.readUInt32LE(24), atlas.height);
     assert.equal(payload.readUInt32LE(40), atlas.levels);
-    assert.ok(atlas.levels >= 11);
+    assert.ok(atlas.levels >= (atlas.textureClass === "baseColor" ? 10 : 9));
     assert.equal(
       payload.readUInt32LE(44),
       atlas.expectedMode === "ETC1S" ? 1 : 2,
@@ -349,15 +349,15 @@ test("atlas payloads retain pinned source hashes and an exactly equivalent norma
     );
     assert.equal(
       atlas.sourceTileWidth / atlas.width,
-      atlas.textureClass === "baseColor" ? 512 / 2112 : 256 / 1056,
+      atlas.textureClass === "baseColor" ? 256 / 1056 : 128 / 528,
     );
     assert.equal(
       atlas.gutterPixels / atlas.width,
-      atlas.textureClass === "baseColor" ? 8 / 2112 : 4 / 1056,
+      atlas.textureClass === "baseColor" ? 4 / 1056 : 2 / 528,
     );
   }
   const normal = report.atlases.find(({ textureClass }) => textureClass === "normal");
-  assert.equal(normal.reusedFromThemeBootstrap, true);
+  assert.equal(normal.reusedFromThemeBootstrap, false);
   assert.equal(normal.normalizedTransformMaxDelta, 0);
 });
 
@@ -368,7 +368,7 @@ test("worst-case first playable environment is below 8 MiB and removes fourteen 
   assert.equal(report.totals.requestsSaved, 20);
   assert.ok(report.totals.outputRuntimeBytes <= 8 * 1024 * 1024);
   assert.ok(report.totals.savedPercent >= 60);
-  assert.ok(report.totals.normalAtlasBytesSaved >= 1_600_000);
+  assert.ok(report.totals.atlasBytes <= 320_000);
   assert.equal(report.levelOneFirstPlayable.originalRuntimeRequests, 26);
   assert.equal(report.levelOneFirstPlayable.outputRuntimeRequests, 12);
   assert.equal(report.levelOneFirstPlayable.requestsSaved, 14);
@@ -441,42 +441,35 @@ test("quantized book semantics retain renderable portable-decoy descendants", as
   }
 });
 
-test("compact Normal atlas passes checked-in WebGL2 representative-object regression", async () => {
+test("M2 environment textures pass the paired production-camera regression", async () => {
   const [assetReport, visualReport] = await Promise.all([
     readFile(REPORT, "utf8").then(JSON.parse),
     readFile(VISUAL_REPORT, "utf8").then(JSON.parse),
   ]);
   assert.equal(visualReport.formatVersion, 1);
-  assert.match(visualReport.method, /only the external Normal atlas URI changed/u);
+  assert.match(visualReport.method, /Paired 1280x720 production-camera captures/u);
   assert.deepEqual(visualReport.gates, {
     minimumSilhouetteIou: 0.9999,
     maximumRgbMeanAbsoluteError: 1,
   });
-  assert.equal(
-    visualReport.referenceAtlas.sha256,
-    "af1ba34484dd71b92ab7df43bfdc5c6b665659c18a6a111b1007106553327d66",
-  );
-  assert.deepEqual(
-    visualReport.compactAtlas,
-    assetReport.atlases.find(({ textureClass }) => textureClass === "normal"),
-  );
+  const currentNormal = assetReport.atlases.find(({ textureClass }) => textureClass === "normal");
+  const visualNormal = visualReport.atlases.find(({ textureClass }) => textureClass === "normal");
+  for (const key of ["path", "bytes", "sha256", "width", "height", "levels"]) {
+    assert.equal(visualNormal[key], currentNormal[key]);
+  }
   for (const asset of ["locker", "tree", "desk-chair", "police-car"]) {
     const entry = assetReport.assets.find(
       ({ path: assetPath }) => path.basename(assetPath) === `${asset}.glb`,
     );
-    assert.deepEqual(visualReport.assets[asset], {
+    assert.deepEqual(visualReport.environmentAssets[`${asset}.glb`], {
       path: entry.path,
       bytes: entry.output.bytes,
       sha256: entry.output.sha256,
     });
-    assert.ok(
-      visualReport.result[asset].silhouetteIou
-        >= visualReport.gates.minimumSilhouetteIou,
-    );
-    assert.ok(
-      visualReport.result[asset].rgbMeanAbsoluteError
-        <= visualReport.gates.maximumRgbMeanAbsoluteError,
-    );
+  }
+  for (const result of visualReport.results) {
+    assert.ok(result.silhouetteIou >= visualReport.gates.minimumSilhouetteIou);
+    assert.ok(result.rgbMeanAbsoluteError <= visualReport.gates.maximumRgbMeanAbsoluteError);
   }
 });
 

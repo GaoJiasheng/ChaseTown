@@ -23,7 +23,7 @@ from mathutils import Matrix, Vector
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "public" / "models" / "environment" / "themes"
 MASTER = ROOT / "art-source" / "Environment" / "ThemeKits" / "Chasing_Theme_Environment_Kits.blend"
-SHARED_TEXTURES = ROOT / "public" / "models" / "SharedTextures"
+SHARED_TEXTURES = ROOT / "art-source" / "Environment" / "SharedTextures"
 ORM_TEXTURES = ROOT / "work" / "art_pipeline" / "environment-orm"
 ORM_GENERATOR = ROOT / "tools" / "art_pipeline" / "generate_environment_runtime_orm.mjs"
 GLTFPACK = ROOT / "node_modules" / ".bin" / "gltfpack"

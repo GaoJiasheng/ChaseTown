@@ -455,10 +455,9 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
   const shippedImages = files.filter(
     (filename) => filename.endsWith(".png") || filename.endsWith(".ktx2"),
   );
-  // The two-atlas bootstrap pass keeps the 22 lossless authoring PNGs beside
-  // the runtime library so its checked-in GLBs can be rebuilt deterministically.
-  // They are deliberately absent from every runtime image URI and therefore
-  // never enter the first-playable request graph.
+  // Runtime deployables contain only images reached by shipped GLBs. The 22
+  // lossless authoring PNGs live under art-source so they remain reproducible
+  // without inflating public/models or the deployment graph.
   const bootstrapReport = JSON.parse(await readFile(
     path.join(ROOT, "art-source", "reports", "environment-bootstrap-ktx2.json"),
     "utf8",
@@ -466,10 +465,17 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
   const reproducibleSourceImages = bootstrapReport.sourceTextures.map(
     (entry) => path.join(ROOT, entry.path),
   );
+  assert.ok(
+    reproducibleSourceImages.every((filename) => filename.includes(`${path.sep}art-source${path.sep}`)),
+    "atlas source PNGs must remain outside public/models",
+  );
+  await Promise.all(reproducibleSourceImages.map(async (filename) => {
+    assert.ok((await stat(filename)).isFile(), `${path.relative(ROOT, filename)} is missing`);
+  }));
   assert.deepEqual(
     shippedImages.sort(),
-    [...referencedImages, ...reproducibleSourceImages].sort(),
-    "public/models may only contain requested textures plus pinned atlas source PNGs",
+    [...referencedImages].sort(),
+    "public/models may contain only textures referenced by shipped runtime assets",
   );
 });
 
@@ -1007,11 +1013,12 @@ for (const contract of THEME_KIT_CONTRACTS) {
   });
 }
 
-test("runtime PNG textures are real deployable images, not LFS pointers", async () => {
-  const files = (await walk(MODELS_ROOT)).filter((filename) => filename.endsWith(".png"));
+test("authoring PNG textures are real reproducible sources, not LFS pointers", async () => {
+  const sourceRoot = path.join(ROOT, "art-source", "Environment", "SharedTextures");
+  const files = (await walk(sourceRoot)).filter((filename) => filename.endsWith(".png"));
   const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
-  assert.equal(files.length, 22, "all 22 referenced runtime textures must be retained");
+  assert.equal(files.length, 22, "all 22 lossless authoring textures must be retained");
   for (const filename of files) {
     const buffer = await readFile(filename);
     assert.ok(buffer.subarray(0, 8).equals(pngSignature), `${path.relative(ROOT, filename)} is not a real PNG`);

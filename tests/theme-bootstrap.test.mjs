@@ -20,7 +20,7 @@ const VISUAL_REPORT = path.join(
   ROOT,
   "art-source",
   "reports",
-  "theme-bootstrap-visual-qa.json",
+  "m2-environment-visual-fidelity.json",
 );
 
 test("theme bootstrap kits preserve authored runtime contracts within 2.2 MiB", async () => {
@@ -72,32 +72,31 @@ test("theme bootstrap kits preserve authored runtime contracts within 2.2 MiB", 
   assert.ok(report.totals.maximumColdStartBytes <= COLD_START_MAX_BYTES);
 });
 
-test("theme bootstraps pass the checked-in browser PBR and silhouette comparison", async () => {
+test("theme bootstraps pass the checked-in M2 production-camera comparison", async () => {
   const [assetReport, visualReport] = await Promise.all([
     readFile(REPORT, "utf8").then(JSON.parse),
     readFile(VISUAL_REPORT, "utf8").then(JSON.parse),
   ]);
   assert.equal(visualReport.formatVersion, 1);
-  assert.match(visualReport.method, /actual Three\.js Meshopt and KTX2 decode/u);
+  assert.match(visualReport.method, /Paired 1280x720 production-camera captures/u);
   assert.deepEqual(visualReport.gates, {
-    minimumSilhouetteIou: 0.9995,
-    maximumRgbMeanAbsoluteError: 3,
+    minimumSilhouetteIou: 0.9999,
+    maximumRgbMeanAbsoluteError: 1,
   });
-  assert.match(visualReport.screenshotSha256, /^[a-f0-9]{64}$/u);
   assert.deepEqual(visualReport.atlases, assetReport.atlases);
   for (const theme of Object.keys(THEME_BOOTSTRAP_CONTRACTS)) {
     const asset = assetReport.themes.find((entry) => entry.theme === theme);
-    assert.deepEqual(visualReport.assets[theme], {
+    assert.deepEqual(visualReport.themeAssets[theme], {
       source: asset.source,
       bootstrap: asset.bootstrap,
     });
-    assert.ok(
-      visualReport.result[theme].silhouetteIou
-        >= visualReport.gates.minimumSilhouetteIou,
+    assert.equal(
+      visualReport.geometryProof[theme].baselineGeometrySha256,
+      visualReport.geometryProof[theme].currentGeometrySha256,
     );
-    assert.ok(
-      visualReport.result[theme].rgbMeanAbsoluteError
-        <= visualReport.gates.maximumRgbMeanAbsoluteError,
-    );
+    for (const result of visualReport.results.filter((entry) => entry.theme === theme)) {
+      assert.ok(result.silhouetteIou >= visualReport.gates.minimumSilhouetteIou);
+      assert.ok(result.rgbMeanAbsoluteError <= visualReport.gates.maximumRgbMeanAbsoluteError);
+    }
   }
 });

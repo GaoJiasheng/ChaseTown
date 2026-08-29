@@ -6,9 +6,9 @@
  * The approved theme GLBs remain untouched. Named runtime nodes, triangle
  * topology, material identities and PBR slot semantics are retained. Texture
  * requests collapse to three content-addressed atlases:
- *   - the existing 512px/tile ETC1S BaseColor bootstrap atlas (reused exactly)
- *   - a 256px/tile UASTC Normal derivative using the same normalized layout
- *   - a 256px/tile ETC1S ORM derivative using the same normalized layout
+ *   - the existing 256px/tile ETC1S BaseColor bootstrap atlas (reused exactly)
+ *   - a 128px/tile UASTC Normal derivative using the same normalized layout
+ *   - a 128px/tile ETC1S ORM derivative using the same normalized layout
  */
 
 import assert from "node:assert/strict";
@@ -91,14 +91,20 @@ const EXISTING_BOOTSTRAP_REPORT = path.join(
   "environment-bootstrap-ktx2.json",
 );
 const SHARED_DIRECTORY = "SharedTexturesBootstrapKTX2";
-const SOURCE_TEXTURE_DIRECTORY = path.join("models", "SharedTextures");
+const SOURCE_TEXTURE_ROOT = path.join(
+  ROOT,
+  "art-source",
+  "Environment",
+  "SharedTextures",
+);
 const ORM_DIRECTORY = path.join(ROOT, "work", "art_pipeline", "environment-orm");
 const CONTRACT_KEY = "chasing_theme_bootstrap";
 const ATLAS_COLUMNS = 4;
 const ATLAS_ROWS = 3;
 const SOURCE_SIZE = 512;
-const DETAIL_SIZE = 256;
-const DETAIL_GUTTER = 4;
+const BASE_COLOR_SIZE = 256;
+const DETAIL_SIZE = 128;
+const DETAIL_GUTTER = 2;
 const DETAIL_STRIDE = DETAIL_SIZE + DETAIL_GUTTER * 2;
 const DETAIL_ATLAS_WIDTH = DETAIL_STRIDE * ATLAS_COLUMNS;
 const DETAIL_ATLAS_HEIGHT = DETAIL_STRIDE * ATLAS_ROWS;
@@ -473,8 +479,8 @@ async function existingBaseColorAtlas(publicRoot) {
   assert.equal(sha256(payload), entry.sha256, "Existing BaseColor atlas drifted");
   const metadata = ktx2Metadata(payload, filename);
   assert.equal(metadata.mode, "ETC1S");
-  assert.equal(metadata.width, 2112);
-  assert.equal(metadata.height, 1584);
+  assert.equal(metadata.width, 1056);
+  assert.equal(metadata.height, 792);
   assert.ok(filename.startsWith(publicRoot), "Existing atlas is outside the selected public root");
   return {
     textureClass: "baseColor",
@@ -484,12 +490,11 @@ async function existingBaseColorAtlas(publicRoot) {
   };
 }
 
-async function sourceTextureEntries(publicRoot) {
+async function sourceTextureEntries() {
   const entries = [];
   for (const family of TEXTURE_FAMILIES) {
     const normalFilename = path.join(
-      publicRoot,
-      SOURCE_TEXTURE_DIRECTORY,
+      SOURCE_TEXTURE_ROOT,
       `Env_${family}_Normal_2K.png`,
     );
     const normalPayload = await readFile(normalFilename);
@@ -626,7 +631,7 @@ function syntheticAtlasGltf(normalBasename, ormBasename) {
 }
 
 async function encodeDetailAtlases(gltfpack, temporaryRoot, publicRoot) {
-  const sources = await sourceTextureEntries(publicRoot);
+  const sources = await sourceTextureEntries();
   const normalPng = path.join(temporaryRoot, "theme-normal-atlas.png");
   const ormPng = path.join(temporaryRoot, "theme-orm-atlas.png");
   await Promise.all([
@@ -864,7 +869,7 @@ export async function auditThemeBootstrap(
   const normal = dependencies.find(({ textureClass }) => textureClass === "normal");
   const orm = dependencies.find(({ textureClass }) => textureClass === "orm");
   assert.equal(base.mode, "ETC1S");
-  assert.deepEqual([base.width, base.height], [2112, 1584]);
+  assert.deepEqual([base.width, base.height], [1056, 792]);
   assert.equal(normal.mode, "UASTC");
   assert.deepEqual([normal.width, normal.height], [
     DETAIL_ATLAS_WIDTH,
@@ -942,9 +947,9 @@ function reportFor(entries, atlases, sources, toolVersion, generatedAt) {
       namedRuntimeNodesExact: true,
       topologySimplification: false,
       geometryTransport: "Meshopt with default 14-bit position quantization and 0.1% error ceiling.",
-      baseColor: "Reuse existing 512px/tile ETC1S environment bootstrap atlas byte-for-byte.",
-      normal: "256px/tile UASTC quality 10; same normalized 4x3 atlas layout.",
-      orm: "256px/tile ETC1S quality 10; same normalized 4x3 atlas layout.",
+      baseColor: "Reuse existing reviewed 256px/tile ETC1S environment bootstrap atlas byte-for-byte.",
+      normal: "128px/tile UASTC quality 10; same normalized 4x3 atlas layout.",
+      orm: "128px/tile ETC1S quality 10; same normalized 4x3 atlas layout.",
       coldStartDefinition: "One theme GLB plus its three unique external atlas dependencies, empty cache.",
     },
     tool: {
@@ -960,7 +965,7 @@ function reportFor(entries, atlases, sources, toolVersion, generatedAt) {
     atlasLayout: {
       columns: ATLAS_COLUMNS,
       rows: ATLAS_ROWS,
-      baseColorTilePixels: SOURCE_SIZE,
+      baseColorTilePixels: BASE_COLOR_SIZE,
       detailTilePixels: DETAIL_SIZE,
       detailGutterPixels: DETAIL_GUTTER,
       detailWidth: DETAIL_ATLAS_WIDTH,
@@ -1104,7 +1109,7 @@ async function check(options) {
       path.join(themeRoot, contract.basename.replace(/\.glb$/u, "-bootstrap.glb")),
     ));
   }
-  const sourceEntries = await sourceTextureEntries(options.publicRoot);
+  const sourceEntries = await sourceTextureEntries();
   const current = reportFor(
     entries,
     existing.atlases,

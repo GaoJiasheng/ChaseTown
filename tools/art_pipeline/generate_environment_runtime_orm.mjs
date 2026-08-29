@@ -19,7 +19,7 @@ const require = createRequire(import.meta.url);
 const sharp = require("sharp");
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const TEXTURES = path.join(ROOT, "public/models/SharedTextures");
+const TEXTURES = path.join(ROOT, "art-source/Environment/SharedTextures");
 const OUTPUT = path.join(ROOT, "work/art_pipeline/environment-orm");
 const REPORT = path.join(ROOT, "docs/art_production/environment-runtime-orm-report.json");
 

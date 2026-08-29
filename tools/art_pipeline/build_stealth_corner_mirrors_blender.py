@@ -57,7 +57,7 @@ GLTFPACK_VERSION = "gltfpack 1.2"
 GLTFPACK_BINARY_SHA256 = "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
 GLTFPACK_ARGUMENTS = (
     "-cc", "-kn", "-km", "-ke",
-    "-vp", "16", "-vn", "12", "-vt", "12", "-kv",
+    "-vp", "14", "-vn", "8", "-vt", "10",
     "-tc", "-tq", "10", "-tj", "4",
 )
 

@@ -61,19 +61,19 @@ export const FIRST_CAMPAIGN_PRELOAD_ASSETS: readonly RuntimePreloadAsset[] = Obj
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: "/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+    href: "/models/environment/SharedTexturesBootstrapKTX2/d7859c13096b282ddca494d8e688878fadeca8cd85044be6b963c490c9f5a484.ktx2",
     type: "image/ktx2",
     fetchPriority: "high",
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: "/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+    href: "/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2",
     type: "image/ktx2",
     fetchPriority: "high",
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: "/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+    href: "/models/environment/SharedTexturesBootstrapKTX2/cc7522f162fee3c0a56fbbd3b806e11eb4f8a9d20123748eefcc69cfe1292b10.ktx2",
     type: "image/ktx2",
     fetchPriority: "auto",
     blocksFirstPlayable: true,
@@ -102,7 +102,6 @@ export const FIRST_CAMPAIGN_PRELOAD_ASSETS: readonly RuntimePreloadAsset[] = Obj
  * variants. Directories are removed recursively from `dist/client`.
  */
 export const DEPLOYMENT_SOURCE_ASSET_EXCLUDES: readonly string[] = Object.freeze([
-  "models/SharedTextures",
   "models/environment/SharedTexturesKTX2",
   "models/characters/kid.glb",
   "models/characters/kid-lod1.glb",

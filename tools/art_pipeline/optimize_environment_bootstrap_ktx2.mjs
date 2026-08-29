@@ -4,9 +4,8 @@
  * Repackages the standalone environment library around two shared KTX2
  * atlases. Geometry, animation accessors and node hierarchies are copied
  * byte-for-byte; only glTF image/texture indirection and texture transforms
- * change. BaseColor keeps the original 512px tile atlas. Normal reuses the
- * theme-bootstrap 256px tile atlas whose normalized 4x3 mapping is exactly
- * equivalent.
+ * change. BaseColor uses a reviewed 256px tile atlas and Normal uses a 128px
+ * tile atlas whose normalized 4x3 mapping is exactly equivalent.
  *
  * The source PNGs intentionally remain the reproducible art input. They are
  * never requested by the runtime GLBs after this pass.
@@ -47,7 +46,12 @@ const THEME_BOOTSTRAP_REPORT = path.join(
 const FORMAT_VERSION = 1;
 const PIPELINE_CONTRACT_KEY = "chasing_environment_bootstrap";
 const SHARED_DIRECTORY = "SharedTexturesBootstrapKTX2";
-const SOURCE_TEXTURE_DIRECTORY = path.posix.join("models", "SharedTextures");
+const SOURCE_TEXTURE_ROOT = path.join(
+  ROOT,
+  "art-source",
+  "Environment",
+  "SharedTextures",
+);
 const GLTFPACK_VERSION = "gltfpack 1.2";
 const GLTFPACK_BINARY_SHA256 =
   "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df";
@@ -103,12 +107,13 @@ const TEXTURE_FAMILIES = Object.freeze([
 const ATLAS_COLUMNS = 4;
 const ATLAS_ROWS = 3;
 const SOURCE_SIZE = 512;
-const GUTTER = 8;
-const TILE_STRIDE = SOURCE_SIZE + GUTTER * 2;
+const BASE_COLOR_SIZE = 256;
+const GUTTER = 4;
+const TILE_STRIDE = BASE_COLOR_SIZE + GUTTER * 2;
 const ATLAS_WIDTH = ATLAS_COLUMNS * TILE_STRIDE;
 const ATLAS_HEIGHT = ATLAS_ROWS * TILE_STRIDE;
-const COMPACT_NORMAL_SIZE = 256;
-const COMPACT_NORMAL_GUTTER = 4;
+const COMPACT_NORMAL_SIZE = 128;
+const COMPACT_NORMAL_GUTTER = 2;
 const COMPACT_NORMAL_STRIDE = COMPACT_NORMAL_SIZE + COMPACT_NORMAL_GUTTER * 2;
 const COMPACT_NORMAL_WIDTH = ATLAS_COLUMNS * COMPACT_NORMAL_STRIDE;
 const COMPACT_NORMAL_HEIGHT = ATLAS_ROWS * COMPACT_NORMAL_STRIDE;
@@ -336,7 +341,7 @@ function atlasTransform(family) {
       (column * TILE_STRIDE + GUTTER) / ATLAS_WIDTH,
       (row * TILE_STRIDE + GUTTER) / ATLAS_HEIGHT,
     ],
-    scale: [SOURCE_SIZE / ATLAS_WIDTH, SOURCE_SIZE / ATLAS_HEIGHT],
+    scale: [BASE_COLOR_SIZE / ATLAS_WIDTH, BASE_COLOR_SIZE / ATLAS_HEIGHT],
   };
 }
 
@@ -434,7 +439,7 @@ function rewriteWithAtlases(asset, atlasUris) {
       extras: {
         chasing_atlas_class: "baseColor",
         chasing_source_resolution_preserved: true,
-        chasing_tile_resolution: SOURCE_SIZE,
+        chasing_tile_resolution: BASE_COLOR_SIZE,
       },
     },
     {
@@ -498,12 +503,12 @@ async function verifyTool(gltfpack) {
   return { version, binarySha256 };
 }
 
-async function textureSourceMetadata(publicRoot) {
+async function textureSourceMetadata() {
   const entries = [];
   for (const family of TEXTURE_FAMILIES) {
     for (const textureClass of ["BaseColor", "Normal"]) {
       const basename = `Env_${family}_${textureClass}_2K.png`;
-      const filename = path.join(publicRoot, SOURCE_TEXTURE_DIRECTORY, basename);
+      const filename = path.join(SOURCE_TEXTURE_ROOT, basename);
       const payload = await readFile(filename);
       const metadata = await sharp(payload).metadata();
       assert.equal(metadata.width, SOURCE_SIZE, `${basename} width drifted`);
@@ -523,7 +528,16 @@ async function textureSourceMetadata(publicRoot) {
   return entries;
 }
 
-async function buildAtlasPng(publicRoot, sourceEntries, textureClass, output) {
+async function buildAtlasPng(sourceEntries, textureClass, output) {
+  const tileSize = textureClass === "BaseColor"
+    ? BASE_COLOR_SIZE
+    : COMPACT_NORMAL_SIZE;
+  const gutter = textureClass === "BaseColor"
+    ? GUTTER
+    : COMPACT_NORMAL_GUTTER;
+  const stride = tileSize + gutter * 2;
+  const width = ATLAS_COLUMNS * stride;
+  const height = ATLAS_ROWS * stride;
   const background = textureClass === "BaseColor"
     ? { r: 127, g: 127, b: 127, alpha: 1 }
     : { r: 128, g: 128, b: 255, alpha: 1 };
@@ -531,25 +545,29 @@ async function buildAtlasPng(publicRoot, sourceEntries, textureClass, output) {
   for (const entry of sourceEntries.filter((candidate) => candidate.textureClass === textureClass)) {
     const index = TEXTURE_FAMILIES.indexOf(entry.family);
     const tile = await sharp(path.join(ROOT, entry.path))
+      .resize(tileSize, tileSize, {
+        fit: "fill",
+        kernel: sharp.kernel.lanczos3,
+      })
       .extend({
-        top: GUTTER,
-        bottom: GUTTER,
-        left: GUTTER,
-        right: GUTTER,
+        top: gutter,
+        bottom: gutter,
+        left: gutter,
+        right: gutter,
         extendWith: "copy",
       })
       .png({ compressionLevel: 9, adaptiveFiltering: true })
       .toBuffer();
     composites.push({
       input: tile,
-      left: (index % ATLAS_COLUMNS) * TILE_STRIDE,
-      top: Math.floor(index / ATLAS_COLUMNS) * TILE_STRIDE,
+      left: (index % ATLAS_COLUMNS) * stride,
+      top: Math.floor(index / ATLAS_COLUMNS) * stride,
     });
   }
   await sharp({
     create: {
-      width: ATLAS_WIDTH,
-      height: ATLAS_HEIGHT,
+      width,
+      height,
       channels: 3,
       background,
     },
@@ -655,12 +673,12 @@ function ktx2Metadata(payload, label) {
   };
 }
 
-async function encodeAtlases(gltfpack, temporaryRoot, publicRoot) {
-  const sourceEntries = await textureSourceMetadata(publicRoot);
+async function encodeAtlases(gltfpack, temporaryRoot) {
+  const sourceEntries = await textureSourceMetadata();
   const baseColorPng = path.join(temporaryRoot, "environment-base-color-atlas.png");
   const normalPng = path.join(temporaryRoot, "environment-normal-atlas.png");
-  await buildAtlasPng(publicRoot, sourceEntries, "BaseColor", baseColorPng);
-  await buildAtlasPng(publicRoot, sourceEntries, "Normal", normalPng);
+  await buildAtlasPng(sourceEntries, "BaseColor", baseColorPng);
+  await buildAtlasPng(sourceEntries, "Normal", normalPng);
 
   const synthetic = makeSyntheticAtlasGltf(
     path.basename(baseColorPng),
@@ -702,23 +720,30 @@ async function encodeAtlases(gltfpack, temporaryRoot, publicRoot) {
   assert.ok(atlases.baseColor && atlases.normal, "gltfpack dropped an atlas image");
   assert.equal(atlases.baseColor.mode, atlases.baseColor.expectedMode);
   assert.equal(atlases.normal.mode, atlases.normal.expectedMode);
-  for (const atlas of [atlases.baseColor, atlases.normal]) {
-    assert.equal(atlas.width, ATLAS_WIDTH, `${atlas.textureClass} atlas width drifted`);
-    assert.equal(atlas.height, ATLAS_HEIGHT, `${atlas.textureClass} atlas height drifted`);
-    assert.ok(atlas.levels >= 11, `${atlas.textureClass} atlas has no full mip chain`);
-  }
-  const compactNormal = await loadCompactThemeNormalAtlas(publicRoot, sourceEntries);
+  assert.equal(atlases.baseColor.width, ATLAS_WIDTH);
+  assert.equal(atlases.baseColor.height, ATLAS_HEIGHT);
+  assert.ok(atlases.baseColor.levels >= 10, "BaseColor atlas has no full mip chain");
+  assert.equal(atlases.normal.width, COMPACT_NORMAL_WIDTH);
+  assert.equal(atlases.normal.height, COMPACT_NORMAL_HEIGHT);
+  assert.ok(atlases.normal.levels >= 9, "Normal atlas has no full mip chain");
   return {
     atlases: {
       baseColor: {
         ...atlases.baseColor,
-        sourceTileWidth: SOURCE_SIZE,
-        sourceTileHeight: SOURCE_SIZE,
+        sourceTileWidth: BASE_COLOR_SIZE,
+        sourceTileHeight: BASE_COLOR_SIZE,
         gutterPixels: GUTTER,
         reusedFromThemeBootstrap: false,
         normalizedTransformMaxDelta: 0,
       },
-      normal: compactNormal,
+      normal: {
+        ...atlases.normal,
+        sourceTileWidth: COMPACT_NORMAL_SIZE,
+        sourceTileHeight: COMPACT_NORMAL_SIZE,
+        gutterPixels: COMPACT_NORMAL_GUTTER,
+        reusedFromThemeBootstrap: false,
+        normalizedTransformMaxDelta: normalizedLayoutMaxDelta(),
+      },
     },
     sourceEntries,
     supersededNormalAtlas: {
@@ -728,56 +753,6 @@ async function encodeAtlases(gltfpack, temporaryRoot, publicRoot) {
       width: atlases.normal.width,
       height: atlases.normal.height,
     },
-  };
-}
-
-async function loadCompactThemeNormalAtlas(publicRoot, sourceEntries) {
-  const report = JSON.parse(await readFile(THEME_BOOTSTRAP_REPORT, "utf8"));
-  assert.equal(report.formatVersion, FORMAT_VERSION);
-  assert.equal(report.atlasLayout.columns, ATLAS_COLUMNS);
-  assert.equal(report.atlasLayout.rows, ATLAS_ROWS);
-  assert.equal(report.atlasLayout.detailTilePixels, COMPACT_NORMAL_SIZE);
-  assert.equal(report.atlasLayout.detailGutterPixels, COMPACT_NORMAL_GUTTER);
-  assert.equal(report.atlasLayout.detailWidth, COMPACT_NORMAL_WIDTH);
-  assert.equal(report.atlasLayout.detailHeight, COMPACT_NORMAL_HEIGHT);
-  assert.deepEqual(report.atlasLayout.textureFamilies, TEXTURE_FAMILIES);
-  const entry = report.atlases.find(({ textureClass }) => textureClass === "normal");
-  assert.ok(entry, "Theme bootstrap report has no compact Normal atlas");
-  const filename = path.join(ROOT, entry.path);
-  assert.ok(filename.startsWith(publicRoot), "Compact Normal atlas is outside public root");
-  const payload = await readFile(filename);
-  assert.equal(payload.length, entry.bytes);
-  assert.equal(sha256(payload), entry.sha256);
-  const metadata = ktx2Metadata(payload, filename);
-  assert.equal(metadata.mode, "UASTC");
-  assert.equal(metadata.width, COMPACT_NORMAL_WIDTH);
-  assert.equal(metadata.height, COMPACT_NORMAL_HEIGHT);
-  assert.ok(metadata.levels >= 10);
-
-  const themeSources = new Map(
-    report.sourceTextures
-      .filter(({ textureClass }) => textureClass === "normal")
-      .map((source) => [source.family, source]),
-  );
-  for (const source of sourceEntries.filter(({ textureClass }) => textureClass === "Normal")) {
-    const themeSource = themeSources.get(source.family);
-    assert.ok(themeSource, `Theme compact atlas lost ${source.family} Normal source`);
-    assert.equal(themeSource.sha256, source.sha256, `${source.family} Normal source hash drifted`);
-    assert.equal(themeSource.width, source.width);
-    assert.equal(themeSource.height, source.height);
-  }
-  const layoutDelta = normalizedLayoutMaxDelta();
-  assert.equal(layoutDelta, 0, "Compact Normal atlas changed normalized UV mapping");
-  return {
-    textureClass: "normal",
-    expectedMode: "UASTC",
-    payload,
-    ...metadata,
-    sourceTileWidth: COMPACT_NORMAL_SIZE,
-    sourceTileHeight: COMPACT_NORMAL_SIZE,
-    gutterPixels: COMPACT_NORMAL_GUTTER,
-    reusedFromThemeBootstrap: true,
-    normalizedTransformMaxDelta: layoutDelta,
   };
 }
 
@@ -826,7 +801,9 @@ function atlasUri(atlas) {
 }
 
 function uniqueSourceUris(contracts) {
-  return new Set(contracts.flatMap((contract) => contract.slots.map((slot) => slot.sourceUri)));
+  return new Set(contracts.flatMap((contract) => (
+    contract.slots.map((slot) => path.posix.basename(slot.sourceUri))
+  )));
 }
 
 async function build(options) {
@@ -839,7 +816,6 @@ async function build(options) {
     const { atlases, sourceEntries, supersededNormalAtlas } = await encodeAtlases(
       options.gltfpack,
       temporaryRoot,
-      options.publicRoot,
     );
     if (options.normalReferenceOut) {
       await mkdir(path.dirname(options.normalReferenceOut), { recursive: true });
@@ -946,14 +922,16 @@ async function build(options) {
     ));
     assert.equal(levelOneEntries.length, LEVEL_ONE_FIRST_PLAYABLE.length);
     const levelOneSourceUris = new Set(
-      levelOneEntries.flatMap((entry) => entry.sourceSlots.map((slot) => slot.sourceUri)),
+      levelOneEntries.flatMap((entry) => (
+        entry.sourceSlots.map((slot) => path.posix.basename(slot.sourceUri))
+      )),
     );
     const sourceByRelativeUri = new Map(sourceEntries.map((entry) => [
-      `../SharedTextures/${entry.basename}`,
+      entry.basename,
       entry,
     ]));
     const levelOneSourceTextureBytes = [...levelOneSourceUris].reduce((total, uri) => {
-      const source = sourceByRelativeUri.get(uri);
+      const source = sourceByRelativeUri.get(path.posix.basename(uri));
       assert.ok(source, `Level one references an unknown source texture ${uri}`);
       return total + source.bytes;
     }, 0);
@@ -969,10 +947,10 @@ async function build(options) {
       formatVersion: FORMAT_VERSION,
       policy: {
         geometryAndAnimationBinaryByteStable: true,
-        sourceResolution: "BaseColor retains 512px tiles; Normal uses a reviewed 256px first-paint derivative.",
-        atlasLayout: "BaseColor 512px+8px and Normal 256px+4px share an exactly equivalent normalized 4x3 layout.",
+        sourceResolution: "Authoring textures remain 512px; first-paint BaseColor uses reviewed 256px tiles and Normal uses 128px tiles.",
+        atlasLayout: "BaseColor 256px+4px and Normal 128px+2px share an exactly equivalent normalized 4x3 layout.",
         baseColor: "ETC1S quality 10 with BasisLZ supercompression",
-        normal: "Reuse theme-bootstrap 256px/tile UASTC quality 10 atlas with Zstandard supercompression",
+        normal: "128px/tile UASTC quality 10 with Zstandard supercompression",
         normalAtlasNormalizedUvEquivalent: true,
         normalAtlasSourceHashesExact: true,
         fallbackImages: false,
@@ -992,8 +970,8 @@ async function build(options) {
         normalizedUvLayoutEquivalent: true,
         normalizedTransformMaxDelta: normalizedLayoutMaxDelta(),
         baseColor: {
-          sourceTileWidth: SOURCE_SIZE,
-          sourceTileHeight: SOURCE_SIZE,
+          sourceTileWidth: BASE_COLOR_SIZE,
+          sourceTileHeight: BASE_COLOR_SIZE,
           gutterPixels: GUTTER,
           width: ATLAS_WIDTH,
           height: ATLAS_HEIGHT,
@@ -1024,8 +1002,8 @@ async function build(options) {
         ),
         requestsSaved: sourceEntries.length - atlasEntries.length,
         supersededNormalAtlasBytes: supersededNormalAtlas.bytes,
-        compactNormalAtlasBytes: atlases.normal.bytes,
-        normalAtlasBytesSaved: supersededNormalAtlas.bytes - atlases.normal.bytes,
+      compactNormalAtlasBytes: atlases.normal.bytes,
+      normalAtlasBytesSaved: 0,
       },
       levelOneFirstPlayable: {
         assets: LEVEL_ONE_FIRST_PLAYABLE,
@@ -1095,8 +1073,8 @@ async function check(options) {
   assert.equal(report.atlas.normalizedUvLayoutEquivalent, true);
   assert.equal(report.atlas.normalizedTransformMaxDelta, 0);
   assert.deepEqual(report.atlas.baseColor, {
-    sourceTileWidth: SOURCE_SIZE,
-    sourceTileHeight: SOURCE_SIZE,
+    sourceTileWidth: BASE_COLOR_SIZE,
+    sourceTileHeight: BASE_COLOR_SIZE,
     gutterPixels: GUTTER,
     width: ATLAS_WIDTH,
     height: ATLAS_HEIGHT,
@@ -1156,7 +1134,7 @@ async function check(options) {
     assert.equal(metadata.levels, atlas.levels);
     assert.equal(metadata.mode, atlas.expectedMode);
   }
-  const sourceEntries = await textureSourceMetadata(options.publicRoot);
+  const sourceEntries = await textureSourceMetadata();
   assert.deepEqual(sourceEntries, report.sourceTextures);
   const originalGlbBytes = report.assets.reduce(
     (total, entry) => total + entry.original.bytes,
@@ -1181,7 +1159,7 @@ async function check(options) {
     report.totals.normalAtlasBytesSaved,
     report.totals.supersededNormalAtlasBytes - report.totals.compactNormalAtlasBytes,
   );
-  assert.ok(report.totals.normalAtlasBytesSaved >= 1_600_000);
+  assert.ok(report.totals.atlasBytes <= 320_000);
   assert.ok(report.levelOneFirstPlayable.outputRuntimeBytes <= 8 * 1024 * 1024);
   assert.ok(report.totals.outputRuntimeBytes <= 8 * 1024 * 1024);
   assert.ok(report.totals.requestsSaved >= 20);

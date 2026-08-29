@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE_DIR = ROOT / "art-source" / "Environment" / "Interactive"
 BLEND_PATH = SOURCE_DIR / "Locker_Hero.blend"
 GLB_PATH = ROOT / "public" / "models" / "environment" / "locker.glb"
-TEXTURE_DIR = ROOT / "public" / "models" / "SharedTextures"
+TEXTURE_DIR = ROOT / "art-source" / "Environment" / "SharedTextures"
 REVIEW_DIR = Path(os.environ.get("CHASING_LOCKER_REVIEW_DIR", "/tmp/chasing-hero-locker-review"))
 GLTFPACK_CANDIDATES = (
     os.environ.get("GLTFPACK_KTX2"),
@@ -41,8 +41,8 @@ GLTFPACK_VERSION = "gltfpack 1.2"
 GLTFPACK_BINARY_SHA256 = "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
 GLTFPACK_ARGUMENTS = (
     "-cc", "-tr", "-kn", "-km", "-ke",
-    "-vp", "14", "-vn", "10", "-vt", "12",
-    "-ar", "16", "-af", "0", "-kv",
+    "-vp", "14", "-vn", "8", "-vt", "10",
+    "-ar", "16", "-af", "0",
 )
 
 WIDTH = 0.92
@@ -56,6 +56,14 @@ DOOR_HEIGHT = HEIGHT - 0.145
 DOOR_BOTTOM = 0.070
 HINGE_X = -DOOR_WIDTH / 2
 OPEN_ANGLE_DEG = -102.0
+LOCKER_CLIP_NAMES = (
+    "Locker_Door_Check_Close",
+    "Locker_Door_Check_Open",
+    "Locker_Door_Close_Enter",
+    "Locker_Door_Close_Exit",
+    "Locker_Door_Open_Enter",
+    "Locker_Door_Open_Exit",
+)
 
 
 def reset_scene() -> None:
@@ -909,6 +917,26 @@ def create_actions(pivot: bpy.types.Object) -> None:
     bpy.context.scene.frame_set(1)
 
 
+def bind_existing_actions_for_export(pivot: bpy.types.Object) -> None:
+    """Restore the approved action library to NLA without rewriting the master."""
+    pivot.animation_data_create()
+    for track in list(pivot.animation_data.nla_tracks):
+        pivot.animation_data.nla_tracks.remove(track)
+    for name in LOCKER_CLIP_NAMES:
+        action = bpy.data.actions.get(name)
+        if action is None:
+            raise RuntimeError(f"Approved locker master lost action {name}")
+        track = pivot.animation_data.nla_tracks.new()
+        track.name = name
+        strip = track.strips.new(name, int(action.frame_range[0]), action)
+        strip.name = name
+        if strip.action_slot is None and action.slots:
+            strip.action_slot = action.slots[0]
+    pivot.animation_data.action = None
+    pivot.rotation_euler = (0.0, 0.0, 0.0)
+    bpy.context.scene.frame_set(1)
+
+
 def make_root_and_anchors() -> tuple[bpy.types.Object, bpy.types.Object]:
     bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0.0, 0.0, 0.0))
     root = bpy.context.object
@@ -944,7 +972,7 @@ def make_root_and_anchors() -> tuple[bpy.types.Object, bpy.types.Object]:
 
 
 def set_relative_image_paths() -> None:
-    prefix = "//../../../public/models/SharedTextures/"
+    prefix = "//../SharedTextures/"
     for image in bpy.data.images:
         if not image.source == "FILE":
             continue
@@ -1164,11 +1192,12 @@ def glb_json(path: Path) -> dict:
     raise RuntimeError(f"GLB has no JSON chunk: {path}")
 
 
-def save_and_export(root: bpy.types.Object) -> None:
+def save_and_export(root: bpy.types.Object, *, save_master: bool = True) -> None:
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
     GLB_PATH.parent.mkdir(parents=True, exist_ok=True)
     set_relative_image_paths()
-    bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), check_existing=False)
+    if save_master:
+        bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), check_existing=False)
 
     with tempfile.NamedTemporaryFile(
         prefix=".locker-uncompressed-",
@@ -1218,13 +1247,14 @@ def save_and_export(root: bpy.types.Object) -> None:
     finally:
         uncompressed_path.unlink(missing_ok=True)
         compressed_path.unlink(missing_ok=True)
-    pivot = bpy.data.objects.get("DoorPivot")
-    if pivot is not None and pivot.animation_data is not None:
-        for track in list(pivot.animation_data.nla_tracks):
-            pivot.animation_data.nla_tracks.remove(track)
-        pivot.animation_data.action = None
-        pivot.rotation_euler = (0.0, 0.0, 0.0)
-    bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), check_existing=False)
+    if save_master:
+        pivot = bpy.data.objects.get("DoorPivot")
+        if pivot is not None and pivot.animation_data is not None:
+            for track in list(pivot.animation_data.nla_tracks):
+                pivot.animation_data.nla_tracks.remove(track)
+            pivot.animation_data.action = None
+            pivot.rotation_euler = (0.0, 0.0, 0.0)
+        bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), check_existing=False)
 
 
 def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
@@ -1311,6 +1341,20 @@ def main() -> None:
     # Generated masters are deterministic; Blender's rolling .blend1 backups
     # only inflate the compact web repository and are forbidden by QA.
     bpy.context.preferences.filepaths.save_version = 0
+    export_existing = os.environ.get("CHASING_LOCKER_EXPORT_EXISTING") == "1"
+    if export_existing:
+        if not BLEND_PATH.is_file():
+            raise FileNotFoundError(f"Approved locker master is missing: {BLEND_PATH}")
+        bpy.ops.wm.open_mainfile(filepath=str(BLEND_PATH))
+        root = bpy.data.objects.get("Locker_Hero")
+        pivot = bpy.data.objects.get("DoorPivot")
+        if root is None or pivot is None:
+            raise RuntimeError("Approved locker master lost Locker_Hero or DoorPivot")
+        bind_existing_actions_for_export(pivot)
+        save_and_export(root, save_master=False)
+        print(f"HERO_LOCKER_GLB={GLB_PATH}")
+        print(f"HERO_LOCKER_ACTIONS={','.join(sorted(action.name for action in bpy.data.actions))}")
+        return
     reset_scene()
     materials = make_materials()
     root, _ = make_root_and_anchors()
