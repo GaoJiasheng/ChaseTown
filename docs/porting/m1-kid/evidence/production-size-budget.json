@@ -1,0 +1,64 @@
+{
+  "capturedAt": "2026-08-29",
+  "measurement": "clean npm test build; dist/client/runtime-asset-manifest.json encoded-transfer-byte accounting",
+  "policeBaseline": {
+    "repositoryPublicModelsBytes": 47495153,
+    "repositoryPublicModelsFiles": 83,
+    "deployedClientModelsBytes": 11111245,
+    "deployedClientModelsFiles": 30,
+    "manifestCriticalEncodedTransferBytes": 7728906,
+    "manifestRawAssetBytes": 8965357,
+    "manifestAssets": 26,
+    "frozenFirstScreenCeilingBytes": 8309819,
+    "frozenFirstScreenHeadroomBytes": 580913
+  },
+  "kidFinal": {
+    "repositoryPublicModelsBytes": 47451053,
+    "repositoryPublicModelsFiles": 83,
+    "deployedClientModelsBytes": 11098861,
+    "deployedClientModelsFiles": 30,
+    "manifestCriticalEncodedTransferBytes": 7716893,
+    "manifestRawAssetBytes": 8954694,
+    "manifestAssets": 26,
+    "manifestPreloads": 19,
+    "frozenFirstScreenCeilingBytes": 8309819,
+    "frozenFirstScreenHeadroomBytes": 592926,
+    "releaseManifestMaximumCriticalBytes": 8388608,
+    "releaseManifestRemainingCriticalBytes": 671715,
+    "releaseManifestMaximumEagerBytes": 9437184,
+    "releaseManifestRemainingEagerBytes": 1720291
+  },
+  "delta": {
+    "repositoryPublicModelsBytes": -44100,
+    "deployedClientModelsBytes": -12384,
+    "manifestCriticalEncodedTransferBytes": -12013,
+    "manifestRawAssetBytes": -10663,
+    "frozenFirstScreenHeadroomBytes": 12013
+  },
+  "kidBootstrap": {
+    "beforeBytes": 1573988,
+    "afterBytes": 1561604,
+    "deltaBytes": -12384,
+    "afterSha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86"
+  },
+  "clientBundle": {
+    "path": "/assets/chasing-game-B1CjQqNB.js",
+    "rawBytes": 1302403,
+    "estimatedTransferBytes": 361941,
+    "sha256": "b1b9b1dae2996a4e9e573d28114e2aed3edf9f8f4fade21302dbe1953bc14d63"
+  },
+  "manifest": {
+    "path": "dist/client/runtime-asset-manifest.json",
+    "bytes": 13148,
+    "sha256": "7eb1021e888823a8f32eff0b6f73e7acc60a613a040c2342ee6ca6f9828278ce",
+    "assetKinds": {
+      "html": 1,
+      "javascript": 6,
+      "css": 1,
+      "wasm": 1,
+      "model": 14,
+      "texture": 3
+    }
+  },
+  "result": "pass: the Kid round lowers both bootstrap bytes and the frozen first-screen encoded-transfer baseline"
+}

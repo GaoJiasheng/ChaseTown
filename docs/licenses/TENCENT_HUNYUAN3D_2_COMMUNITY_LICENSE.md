@@ -1,6 +1,6 @@
 # Tencent Hunyuan3D-2 角色几何来源与发行审查记录
 
-> 适用对象：使用 Villain A2 几何的正式、LOD 与 bootstrap 运行资产
+> 适用对象：使用 Kid/Villain Hunyuan 衍生几何的正式、LOD 与 bootstrap 运行资产
 >
 > 记录日期：2026-08-28
 >
@@ -9,14 +9,15 @@
 ## 1. 资产来源链
 
 Villain A2 的连续人体与服装几何来自既有
-`Villain_PrecisionRemodel_v21.blend` 母版。历史制作脚本
+`Villain_PrecisionRemodel_v21.blend` 母版；Kid 的人体、头发与服装几何
+来自 `Kid_PrecisionRemodel_v21.blend` 母版。历史制作脚本
 `tools/art_pipeline/run_hunyuan_multiview_textured_v18.py` 通过 Gradio
 Client 调用 Hugging Face Space `tencent/Hunyuan3D-2` 的
 `/generation_all` 端点，给定的默认参数为 `steps=30`、
 `seed=20260713`、`octree_resolution=256`。
 
 A2 轮次没有重新调用 Hunyuan 服务；它在既有母版上完成了
-剪影重塑、帽兜与面部整理、网格化简、重新蒙皮、贴图重制和动画重定向。
+剪影重塑、材质分区、网格化简、蒙皮保持或清理、贴图重制和动画重定向。
 最终 M1 运行时产物的 SHA-256 与体积由同批
 `character-bootstrap` 报告及 M1 验收报告记录；本文档不用旧 A2
 候选哈希冒充重建后的最终哈希。

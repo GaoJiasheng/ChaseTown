@@ -1,6 +1,6 @@
 {
   "formatVersion": 2,
-  "generatedAt": "2026-08-28T15:23:39.419Z",
+  "generatedAt": "2026-08-29T00:47:59.371Z",
   "policy": {
     "derivativeOnly": true,
     "sourceAssetsUnmodified": true,
@@ -74,7 +74,7 @@
     },
     "unrecordedLegacyRoles": [],
     "lastBuildRoles": [
-      "villain"
+      "kid"
     ],
     "lastBuildBinarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
   },
@@ -107,28 +107,28 @@
     }
   },
   "totals": {
-    "sourceBytes": 7615788,
-    "lodBytes": 4472776,
-    "savedBytes": 3143012,
-    "savedPercent": 41.27
+    "sourceBytes": 7595144,
+    "lodBytes": 4461704,
+    "savedBytes": 3133440,
+    "savedPercent": 41.256
   },
   "characters": [
     {
       "role": "kid",
       "source": {
         "path": "public/models/characters/kid.glb",
-        "bytes": 4492164,
-        "sha256": "c278b6475c516d516691d2357e5446ce46fd10f67110ec73d3a71de542aad5c6",
+        "bytes": 4471520,
+        "sha256": "5d097ac2cccb0b1875f8a3668dd59676009cff11fe7cfa5924a459b3115be989",
         "triangles": 140276
       },
       "lod": {
         "path": "public/models/characters/kid-lod1.glb",
-        "bytes": 2946584,
-        "sha256": "f803147b49b5a854e6bf232fb6795da4dab62a670397818612972a06e8f74395",
-        "savedBytes": 1545580,
-        "savedPercent": 34.406,
-        "triangles": 92686,
-        "triangleRatio": 0.66074
+        "bytes": 2935512,
+        "sha256": "8676e31fb32c77c734a1fa12a891eafde1acba720e0d2395caf9d26d6fd80d70",
+        "savedBytes": 1536008,
+        "savedPercent": 34.351,
+        "triangles": 92680,
+        "triangleRatio": 0.660697
       },
       "quality": {
         "namedNodes": 57,
@@ -165,9 +165,9 @@
             "levels": 10
           },
           {
-            "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
-            "bytes": 939328,
-            "sha256": "4d3bbeb4d351f9034f3577e8a81d2cb6368b4f8b61f76cc443f7cd65a06ea41a",
+            "name": "Char_Kid_A2_Semantic_BaseColor_2K",
+            "bytes": 940777,
+            "sha256": "b707bd1aae551ccc30d9e502ef64b081f422d805aec8c2f8c72ca31fdc5f4ddc",
             "width": 2048,
             "height": 2048,
             "levels": 12

@@ -1,0 +1,1530 @@
+{
+  "runId": "kid-hide-cycle-v3",
+  "step": "hidden-idle",
+  "capturedAt": "2026-08-29T00:54:48.577Z",
+  "url": "http://localhost:3002/?qa=1&qaQuality=mobile&qaLevel=1&qaPlayer=9,5&qaChaser=1,12.4&qaSpawnDelay=60&autostart=1&m1=kid-hide-cycle-v3",
+  "qa": {
+    "ready": true,
+    "campaign": {
+      "id": "school-maze-v1",
+      "index": 0,
+      "number": 1,
+      "name": "暮色放学路",
+      "theme": "campus",
+      "propSet": "campus-classic",
+      "config": {
+        "fixedStepSeconds": 0.016666666666666666,
+        "maxFrameDeltaSeconds": 0.25,
+        "aiTickSeconds": 0.05,
+        "playerSpeed": 2.64,
+        "chaserSpeed": 2.22,
+        "spawnDelaySeconds": 60,
+        "suspiciousSeconds": 0.3,
+        "lostSightGraceSeconds": 0.35,
+        "lastKnownScanSeconds": 1.5,
+        "searchSeconds": 4.5,
+        "searchWaypointSeconds": 0.8,
+        "searchHideCheckBudget": 0,
+        "searchHideRadiusCells": 2,
+        "checkHideSeconds": 2.5,
+        "hearingRange": 6,
+        "soundUncertaintyCells": 1.5,
+        "visionRange": 7,
+        "visionConeDegrees": 110,
+        "proximitySenseRange": 0.85,
+        "catchRange": 0.58,
+        "exitRange": 0.62,
+        "hideInteractRange": 1.05,
+        "hideAlignSpeed": 1.32,
+        "hideAlignTurnSpeed": 3.141592653589793,
+        "hideEnterSeconds": 1.8916666666666668,
+        "hideEnterExposureSeconds": 1.4833333333333334,
+        "hideExitSeconds": 1.6166666666666667,
+        "hideExitExposureSeconds": 0.3166666666666667,
+        "peekEnterSeconds": 0.15,
+        "peekExitSeconds": 0.15
+      },
+      "progress": {
+        "unlockedThrough": 10,
+        "bestSeconds": {
+          "school-maze-v1": 0.02,
+          "factory-turbine-hall": 0.02
+        },
+        "mastery": {
+          "school-maze-v1": {
+            "rank": "silver",
+            "challengeIds": [
+              "beat-target",
+              "ghost-escape"
+            ],
+            "profileId": "level:school-maze-v1:v2"
+          },
+          "factory-turbine-hall": {
+            "rank": "silver",
+            "challengeIds": [
+              "beat-target",
+              "ghost-escape"
+            ],
+            "profileId": "level:factory-turbine-hall:v2"
+          }
+        },
+        "assistedBestSeconds": {},
+        "assistedMastery": {},
+        "assistedUnlockedThrough": 9,
+        "progressVersion": 3
+      },
+      "themeAsset": "/models/environment/themes/campus-kit-bootstrap.glb?v=1",
+      "playerStart": {
+        "x": 1,
+        "y": 2
+      },
+      "exit": {
+        "x": 23,
+        "y": 23
+      },
+      "chaserStart": {
+        "x": 21,
+        "y": 10
+      },
+      "walkable": [
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      ],
+      "hideSpots": [
+        {
+          "id": "locker-north",
+          "approach": {
+            "x": 9,
+            "y": 5
+          },
+          "concealed": {
+            "x": 9,
+            "y": 4.65
+          },
+          "facing": {
+            "x": 0,
+            "y": 1
+          },
+          "archetype": "hard-locker"
+        },
+        {
+          "id": "locker-south",
+          "approach": {
+            "x": 13,
+            "y": 19
+          },
+          "concealed": {
+            "x": 12.65,
+            "y": 19
+          },
+          "facing": {
+            "x": 1,
+            "y": 0
+          },
+          "archetype": "soft-cover"
+        }
+      ]
+    },
+    "game": {
+      "phase": "playing",
+      "player": {
+        "position": {
+          "x": 9,
+          "y": 5
+        },
+        "heading": {
+          "x": 0,
+          "y": 1
+        },
+        "mode": "hidden",
+        "hideSpotId": "locker-north",
+        "transitionRemainingSeconds": 0,
+        "hideTurnDirection": 0,
+        "hideTurnCycle": -1,
+        "hideTurnSegmentDurationSeconds": 0
+      },
+      "chaser": {
+        "position": {
+          "x": 1,
+          "y": 12.4
+        },
+        "heading": {
+          "x": -1,
+          "y": 0
+        },
+        "mode": "spawn-delay",
+        "modeElapsedSeconds": 32.950000000000266,
+        "visualConfirmationSeconds": null,
+        "patrolIndex": 0,
+        "scanOriginHeading": {
+          "x": -1,
+          "y": 0
+        },
+        "searchSeed": 1,
+        "searchIndex": 0,
+        "searchWaypointElapsedSeconds": 0,
+        "searchHideSpotId": null,
+        "hideCheckSource": null,
+        "searchHideChecksCompleted": 0,
+        "inspectedHideSpotIds": [],
+        "memory": {
+          "lastKnownPosition": null,
+          "lastSeenAtSeconds": null,
+          "lastHeardAtSeconds": null,
+          "lastClueAtSeconds": null,
+          "lastKnownEvidence": null,
+          "deferredSoundEvidence": null,
+          "witnessedHideSpotId": null,
+          "evidenceTrail": []
+        }
+      }
+    },
+    "animations": {
+      "kid": {
+        "state": "hideIdle",
+        "clip": "HideIdle",
+        "clipDuration": 1.6666666269302368,
+        "timeScale": 1,
+        "normalizedTime": 0.6768398181233196,
+        "playing": true
+      },
+      "villain": {
+        "state": "idle",
+        "clip": "Idle",
+        "clipDuration": 2.5,
+        "timeScale": 1,
+        "normalizedTime": 0.19307999999997086,
+        "playing": true
+      }
+    },
+    "visibility": {
+      "kid": {
+        "rootVisible": false,
+        "alpha": 0,
+        "viewport": {
+          "x": 260.99822431384075,
+          "y": 252.35018417113835,
+          "depth": -55.767053066040006,
+          "worldHeight": 1.12,
+          "pixelWidth": 3452.286663313214,
+          "pixelHeight": 7482.844893950309,
+          "bounds": {
+            "left": -4.3985548798719805,
+            "right": 5.271715885711252,
+            "top": -4.843699874114142,
+            "bottom": 5.621817460082093
+          },
+          "centerInFrustum": false
+        },
+        "cameraClearance": {
+          "headClear": true,
+          "torsoClear": true,
+          "visibleSampleRatio": 0.6,
+          "samples": [
+            {
+              "label": "head",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "torso",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "hips",
+              "clear": false,
+              "hit": "mesh_11",
+              "hitDistance": 1.0770725149172
+            },
+            {
+              "label": "left-shoulder",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "right-shoulder",
+              "clear": false,
+              "hit": "mesh_11",
+              "hitDistance": 0.6106801936493177
+            }
+          ]
+        }
+      },
+      "villain": {
+        "rootVisible": false,
+        "alpha": 0,
+        "worldRendered": false,
+        "viewport": {
+          "x": -0.90852615358524,
+          "y": 0.5241750792970968,
+          "depth": 0.9910629051106464,
+          "worldHeight": 1.88,
+          "pixelWidth": 48.08121090467019,
+          "pixelHeight": 64.53748837442242,
+          "bounds": {
+            "left": -0.9769999950269801,
+            "right": -0.8423187319886882,
+            "top": 0.4794836385979495,
+            "bottom": 0.5697458601006382
+          },
+          "centerInFrustum": false
+        },
+        "cameraClearance": {
+          "headClear": false,
+          "torsoClear": false,
+          "visibleSampleRatio": 0,
+          "samples": [
+            {
+              "label": "head",
+              "clear": false,
+              "hit": "mesh_2",
+              "hitDistance": 0.12597168070290835
+            },
+            {
+              "label": "torso",
+              "clear": false,
+              "hit": "mesh_2",
+              "hitDistance": 0.12598156006770625
+            },
+            {
+              "label": "hips",
+              "clear": false,
+              "hit": "mesh_2",
+              "hitDistance": 0.12606444960971092
+            },
+            {
+              "label": "left-shoulder",
+              "clear": false,
+              "hit": "mesh_2",
+              "hitDistance": 0.12499225589405305
+            },
+            {
+              "label": "right-shoulder",
+              "clear": false,
+              "hit": "mesh_2",
+              "hitDistance": 0.12698660595218314
+            }
+          ]
+        }
+      }
+    },
+    "assets": {
+      "decorativeReady": true,
+      "deferredDressingSettled": true,
+      "qaDecorativeSceneCompiled": true,
+      "qaDecorativeSceneCompileCount": 1,
+      "qaTransientArtPrewarmCount": 1,
+      "qaCleanFrame": false,
+      "kidAssetUrl": "/models/characters/kid-bootstrap.glb?v=3",
+      "kidLoadedIdentity": {
+        "requestedUrl": "/models/characters/kid-bootstrap.glb?v=3",
+        "resolvedUrl": "http://localhost:3002/models/characters/kid-bootstrap.glb?v=3",
+        "transferBytes": 1561604,
+        "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+        "nodes": 92,
+        "meshes": 35,
+        "primitives": 35,
+        "triangles": 92680,
+        "materials": 12,
+        "textures": 3,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 35,
+        "runtimeSkinnedMeshes": 35,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Caught",
+            "durationSeconds": 1,
+            "tracks": 22
+          },
+          {
+            "name": "EscapeCelebrate",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "HideEnter",
+            "durationSeconds": 1.3,
+            "tracks": 22
+          },
+          {
+            "name": "HideExit",
+            "durationSeconds": 1.033333,
+            "tracks": 22
+          },
+          {
+            "name": "HideIdle",
+            "durationSeconds": 1.666667,
+            "tracks": 22
+          },
+          {
+            "name": "HidePeek",
+            "durationSeconds": 1.6,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.666667,
+            "tracks": 22
+          },
+          {
+            "name": "TurnLeft",
+            "durationSeconds": 0.6,
+            "tracks": 22
+          },
+          {
+            "name": "TurnRight",
+            "durationSeconds": 0.6,
+            "tracks": 22
+          },
+          {
+            "name": "Walk",
+            "durationSeconds": 1.333333,
+            "tracks": 22
+          }
+        ]
+      },
+      "policeAssetUrl": "/models/characters/police-bootstrap.glb?v=4",
+      "policeLoaded": false,
+      "policeLoadedIdentity": null,
+      "loadedAssetIds": [
+        "actor:kid",
+        "actor:villain",
+        "detail:backpack",
+        "detail:basketball",
+        "detail:bench",
+        "detail:blackboard",
+        "detail:books",
+        "detail:bulletin",
+        "detail:car",
+        "detail:ceilingLight",
+        "detail:classroomDoor",
+        "detail:deskChair",
+        "detail:locker",
+        "detail:podium",
+        "detail:shrub",
+        "detail:station",
+        "detail:trash",
+        "detail:tree",
+        "stealth:corner-mirrors",
+        "structure:exit",
+        "structure:frontGate",
+        "theme:campus"
+      ],
+      "placedAssetIds": [
+        "actor:kid",
+        "actor:villain",
+        "detail:backpack",
+        "detail:basketball",
+        "detail:bench",
+        "detail:blackboard",
+        "detail:books",
+        "detail:bulletin",
+        "detail:car",
+        "detail:ceilingLight",
+        "detail:classroomDoor",
+        "detail:deskChair",
+        "detail:locker",
+        "detail:podium",
+        "detail:shrub",
+        "detail:station",
+        "detail:trash",
+        "detail:tree",
+        "gameplay:hide-archetype:soft-cover",
+        "gameplay:mission-objective:campus:bell-power",
+        "gameplay:mission-objective:campus:gate-authorization",
+        "gameplay:mission-objective:campus:release-gate",
+        "gameplay:stealth-evidence:door-state:campaign-stealth-evidence-v1:evidence:1",
+        "gameplay:theme-mechanic:school-maze-v1:primary-mechanic",
+        "runtime:ambient-room-clusters",
+        "runtime:authored-room-floors",
+        "runtime:campus-wayfinding-band",
+        "runtime:composition-edge-closure",
+        "runtime:composition-light:campus-exit-warmth",
+        "runtime:composition-light:campus-window-warmth",
+        "runtime:personal-best-ghost",
+        "runtime:prop-contact-shadows",
+        "runtime:vision-obscurer-vfx",
+        "runtime:wall-contact-shadows",
+        "stealth:corner-mirrors",
+        "structure:exit",
+        "structure:frontGate",
+        "theme-node:CampusArchitectureCorner",
+        "theme-node:CampusArchitectureDoorway",
+        "theme-node:CampusArchitectureJunction",
+        "theme-node:CampusArchitectureWallA",
+        "theme-node:CampusArchitectureWallB",
+        "theme-node:CampusArchitectureWallC",
+        "theme-node:CampusArchitectureWallEnd",
+        "theme-node:CampusArchitectureWallWide",
+        "theme-node:CampusBikeRack",
+        "theme-node:CampusClassicArrivalCluster",
+        "theme-node:CampusClassicHideDressing",
+        "theme-node:CampusClassicLandmark",
+        "theme-node:CampusClassroomCluster",
+        "theme-node:CampusCourtyardCluster",
+        "theme-node:CampusDressingClusterA",
+        "theme-node:CampusDressingClusterB",
+        "theme-node:CampusDressingClusterC",
+        "theme-node:CampusExteriorGround:entrance-plaza",
+        "theme-node:CampusExteriorGround:exit-plaza",
+        "theme-node:CampusFloorPrimary",
+        "theme-node:CampusFloorSecondary",
+        "theme-node:CampusFloorService",
+        "theme-node:CampusGateDressing",
+        "theme-node:CampusLibraryShelves",
+        "theme-node:CampusTrophyCase",
+        "theme-node:CampusVendingMachine",
+        "theme-node:CampusWaterFountain",
+        "theme-node:CampusWayfinding",
+        "theme-node:FloorSeamX_-05",
+        "theme:campus"
+      ],
+      "unusedLoadedAssetIds": []
+    },
+    "preferences": {
+      "version": 1,
+      "ruleset": "standard",
+      "personalGhostEnabled": true,
+      "hudDensity": "cinematic",
+      "hapticsEnabled": true,
+      "highContrast": false,
+      "reducedMotion": false
+    },
+    "themeMission": {
+      "definition": {
+        "id": "theme-mission:campus:v1",
+        "theme": "campus",
+        "title": "解除校门封锁",
+        "briefing": "恢复走廊铃电并完成门禁授权；两处准备可按任意顺序完成。",
+        "exitObjectiveId": "campus:release-gate",
+        "objectives": [
+          {
+            "id": "campus:bell-power",
+            "theme": "campus",
+            "stage": "preparation",
+            "verb": "restore-bell-power",
+            "label": "恢复铃电",
+            "interactionPrompt": "合上走廊铃电闸",
+            "completionHint": "铃声线路已恢复，可用于掩护行动",
+            "commitmentSeconds": 0.9,
+            "prerequisites": [],
+            "unlocksExit": false,
+            "safety": {
+              "retryable": true,
+              "consumesRequiredResource": false,
+              "closesRequiredRoute": false
+            }
+          },
+          {
+            "id": "campus:gate-authorization",
+            "theme": "campus",
+            "stage": "preparation",
+            "verb": "authorize-campus-gate",
+            "label": "授权校门",
+            "interactionPrompt": "在门卫终端写入离校授权",
+            "completionHint": "门禁已接受离校授权",
+            "commitmentSeconds": 1.1,
+            "prerequisites": [],
+            "unlocksExit": false,
+            "safety": {
+              "retryable": true,
+              "consumesRequiredResource": false,
+              "closesRequiredRoute": false
+            }
+          },
+          {
+            "id": "campus:release-gate",
+            "theme": "campus",
+            "stage": "escape-unlock",
+            "verb": "release-campus-gate",
+            "label": "释放校门",
+            "interactionPrompt": "解除校门电磁锁",
+            "completionHint": "校门已开放，立即撤离",
+            "commitmentSeconds": 1,
+            "prerequisites": [
+              "campus:bell-power",
+              "campus:gate-authorization"
+            ],
+            "unlocksExit": true,
+            "safety": {
+              "retryable": true,
+              "consumesRequiredResource": false,
+              "closesRequiredRoute": false
+            }
+          }
+        ]
+      },
+      "runtimeObjectives": [
+        {
+          "id": "campus:bell-power",
+          "theme": "campus",
+          "stage": "preparation",
+          "verb": "restore-bell-power",
+          "label": "恢复铃电",
+          "interactionPrompt": "合上走廊铃电闸",
+          "completionHint": "铃声线路已恢复，可用于掩护行动",
+          "commitmentSeconds": 0.9,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "campus:gate-authorization",
+          "theme": "campus",
+          "stage": "preparation",
+          "verb": "authorize-campus-gate",
+          "label": "授权校门",
+          "interactionPrompt": "在门卫终端写入离校授权",
+          "completionHint": "门禁已接受离校授权",
+          "commitmentSeconds": 1.1,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "campus:release-gate",
+          "theme": "campus",
+          "stage": "escape-unlock",
+          "verb": "release-campus-gate",
+          "label": "释放校门",
+          "interactionPrompt": "解除校门电磁锁",
+          "completionHint": "校门已开放，立即撤离",
+          "commitmentSeconds": 1,
+          "prerequisites": [
+            "campus:bell-power",
+            "campus:gate-authorization"
+          ],
+          "unlocksExit": true,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        }
+      ],
+      "state": {
+        "definitionId": "theme-mission:campus:v1",
+        "stage": "preparation",
+        "completedObjectiveIds": [],
+        "exitUnlocked": false
+      },
+      "playerRuleProgress": {
+        "version": 1,
+        "tick": 1978,
+        "stage": "preparation",
+        "normalizedProgress": 0,
+        "routeProgress": 0,
+        "completedObjectiveIds": [],
+        "committedMechanicIds": [],
+        "exitUnlocked": false,
+        "runCompleted": false,
+        "events": []
+      },
+      "views": [
+        {
+          "id": "campus:bell-power",
+          "position": {
+            "x": 12,
+            "y": 16
+          },
+          "lightColor": 16766850,
+          "lightIntensity": 0.08
+        },
+        {
+          "id": "campus:gate-authorization",
+          "position": {
+            "x": 9,
+            "y": 19
+          },
+          "lightColor": 16766850,
+          "lightIntensity": 0.08
+        },
+        {
+          "id": "campus:release-gate",
+          "position": {
+            "x": 21,
+            "y": 19
+          },
+          "lightColor": 5333098,
+          "lightIntensity": 0.08
+        }
+      ],
+      "commitment": null,
+      "library": null,
+      "placements": [
+        {
+          "objectiveId": "campus:bell-power",
+          "position": {
+            "x": 12,
+            "y": 16
+          }
+        },
+        {
+          "objectiveId": "campus:gate-authorization",
+          "position": {
+            "x": 9,
+            "y": 19
+          }
+        },
+        {
+          "objectiveId": "campus:release-gate",
+          "position": {
+            "x": 21,
+            "y": 19
+          }
+        }
+      ],
+      "availableObjectiveIds": [
+        "campus:bell-power",
+        "campus:gate-authorization"
+      ],
+      "audit": {
+        "passed": true,
+        "failures": [],
+        "orders": [
+          {
+            "objectiveIds": [
+              "campus:bell-power",
+              "campus:gate-authorization",
+              "campus:release-gate"
+            ],
+            "reachable": true,
+            "failedLeg": null,
+            "routeDistanceCells": 57
+          },
+          {
+            "objectiveIds": [
+              "campus:gate-authorization",
+              "campus:bell-power",
+              "campus:release-gate"
+            ],
+            "reachable": true,
+            "failedLeg": null,
+            "routeDistanceCells": 57
+          }
+        ],
+        "directRouteDistanceCells": 45,
+        "shortestOrderDistanceCells": 57,
+        "longestOrderDistanceCells": 57,
+        "shortestDetourRatio": 1.2666666666666666,
+        "orderImbalanceRatio": 0
+      }
+    },
+    "sceneIntegrity": {
+      "expectedMovementBlockers": 7,
+      "renderedMovementBlockers": 7,
+      "expectedVisionObscurers": 1,
+      "renderedVisionObscurers": 1
+    },
+    "camera": {
+      "fov": 66.99071855814536,
+      "aspect": 0.4993006993006993,
+      "distance": 11.600000000000001,
+      "zoom": 1,
+      "position": {
+        "x": -6,
+        "y": 1.5,
+        "z": -14.094543223164944
+      },
+      "focus": {
+        "x": -5.726800064557831,
+        "y": 0.4795665642500268,
+        "z": -14.568346660242234
+      },
+      "direction": {
+        "x": 0.3451465392455413,
+        "y": 0.7308985536964403,
+        "z": -0.588779390477688
+      },
+      "azimuthDegrees": 149.62087398863164,
+      "occlusion": {
+        "groups": 20,
+        "obscured": [],
+        "maxStrength": 9.487612049489906e-21
+      }
+    },
+    "render": {
+      "batching": "multi-draw",
+      "qualityTier": "mobile",
+      "qualityLock": {
+        "enabled": true,
+        "requestedTier": "mobile",
+        "appliedBeforeRendererCreation": true
+      },
+      "qualityTransitionCount": 0,
+      "emergencyTransitionCount": 0,
+      "pixelRatio": 1,
+      "shadowMapSize": 1024,
+      "emergencyDegradation": {
+        "level": 0,
+        "overloadSeconds": 0,
+        "recoverySeconds": 0
+      },
+      "calls": 175,
+      "triangles": 222072,
+      "shadow": {
+        "shadowTriangles": 73906,
+        "shadowDrawCalls": 120
+      },
+      "memory": {
+        "geometries": 194,
+        "textures": 167
+      },
+      "programs": 74,
+      "sceneTextures": 19,
+      "invalidSceneTextures": [],
+      "textureDeduplication": {
+        "sourceTextures": 222,
+        "canonicalTextures": 160,
+        "assignmentsShared": 62,
+        "sourcesShared": 72
+      }
+    },
+    "firstPlayableBudget": {
+      "fits": true,
+      "fitsTransferBudget": true,
+      "fitsTimeBudget": true,
+      "criticalTransferBytes": 6679421,
+      "deferredTransferBytes": 0,
+      "requiredSavingsBytes": 0,
+      "estimatedSeconds": 6.623536799999999,
+      "criticalRequestCount": 17,
+      "categoryTransferBytes": {
+        "shell": 40876,
+        "navigation": 1662640,
+        "player": 1561604,
+        "threat": 891784,
+        "hide-spot": 1213672,
+        "theme": 1308845
+      },
+      "exceededCategories": [],
+      "duplicateUrls": [
+        "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+        "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2"
+      ],
+      "invalidEntryIds": []
+    }
+  },
+  "console": []
+}

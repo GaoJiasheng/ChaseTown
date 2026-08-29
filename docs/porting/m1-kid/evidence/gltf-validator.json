@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-08-29T01:06:30.000Z",
+  "tool": "@gltf-transform/cli 4.4.1 validate --format csv",
+  "assets": [
+    {
+      "path": "public/models/characters/kid.glb",
+      "bytes": 4471520,
+      "sha256": "5d097ac2cccb0b1875f8a3668dd59676009cff11fe7cfa5924a459b3115be989",
+      "errors": 0,
+      "warnings": 42,
+      "information": 5,
+      "csv": "validator/kid.csv"
+    },
+    {
+      "path": "public/models/characters/kid-lod1.glb",
+      "bytes": 2935512,
+      "sha256": "8676e31fb32c77c734a1fa12a891eafde1acba720e0d2395caf9d26d6fd80d70",
+      "errors": 0,
+      "warnings": 77,
+      "information": 5,
+      "csv": "validator/kid-lod1.csv"
+    },
+    {
+      "path": "public/models/characters/kid-bootstrap.glb",
+      "bytes": 1561604,
+      "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "errors": 0,
+      "warnings": 77,
+      "information": 5,
+      "csv": "validator/kid-bootstrap.csv"
+    }
+  ],
+  "warningScope": "KTX2 MIME enumeration, runtime tangent generation, skinned-mesh node placement and extension support notices; no severity-0 issue remains."
+}

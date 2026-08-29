@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-08-28T18:07:32.600Z",
+  "generatedAt": "2026-08-29T00:47:42.540Z",
   "policy": {
     "geometryQuantization": false,
     "textureTranscode": false,
@@ -57,23 +57,23 @@
     }
   },
   "totals": {
-    "sourceBytes": 29086868,
-    "optimizedBytes": 16588332,
-    "savedBytes": 12498536,
-    "savedPercent": 42.97
+    "sourceBytes": 27901188,
+    "optimizedBytes": 16649948,
+    "savedBytes": 11251240,
+    "savedPercent": 40.325
   },
   "characters": [
     {
       "role": "kid",
       "source": {
-        "bytes": 9997836,
-        "sha256": "08952a54915ede2de2c24d9c8abdc7ad2287fa0dff01f1cbd6b3cb71aec2e32a"
+        "bytes": 8812156,
+        "sha256": "78e9753ba6bbf9ddb949dea18ad25b021ea4c71b9d7aa48a7b0a04a10bd58844"
       },
       "optimized": {
-        "bytes": 4946804,
-        "sha256": "4a63a216f0d55c61ac047f98eff28bafdd3757dcb6de1529a7a3c250c9939186",
-        "savedBytes": 5051032,
-        "savedPercent": 50.521
+        "bytes": 5008420,
+        "sha256": "fe5db35d2db7fa7b8b4f0fb4829def96acb78609e98b7228b27a151f87c0c071",
+        "savedBytes": 3803736,
+        "savedPercent": 43.165
       },
       "quality": {
         "namedNodes": 57,
@@ -127,10 +127,10 @@
             "sha256": "33aedcb0b9ea8ae59768477dabbedf6f821a17b2b29dc1f4ea2d8a68711a850e"
           },
           {
-            "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+            "name": "Char_Kid_A2_Semantic_BaseColor_2K",
             "mimeType": "image/png",
-            "bytes": 1103463,
-            "sha256": "0ac2b4c10404c7ea68c9647e36acd4d91bd6d9ff293285dfbe018801d0b9d732"
+            "bytes": 1187176,
+            "sha256": "9fde5298a0487a1e56eea3aebf9bf6f17e40888cb35eafacb81986adf5bc8bbc"
           }
         ],
         "boundsMaxDeltaMeters": 7.348632813375389e-10,

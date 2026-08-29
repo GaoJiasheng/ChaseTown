@@ -1,0 +1,83 @@
+code,message,severity,pointer
+UNSUPPORTED_EXTENSION,Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.,2,/extensionsUsed/1
+UNSUPPORTED_EXTENSION,Cannot validate an extension as it is not supported by the validator: 'KHR_texture_basisu'.,2,/extensionsUsed/6
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/0/mimeType
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/1/mimeType
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/2/mimeType
+MESH_PRIMITIVE_GENERATED_TANGENT_SPACE,Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.,1,/meshes/32/primitives/0/material
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/0
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/0
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/1
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/1
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/2
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/2
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/3
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/3
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/4
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/4
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/5
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/5
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/6
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/6
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/7
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/7
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/8
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/8
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/9
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/9
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/10
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/10
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/11
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/11
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/12
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/12
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/13
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/13
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/14
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/14
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/15
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/15
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/16
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/16
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/17
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/17
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/18
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/18
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/19
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/19
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/20
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/20
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/21
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/21
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/22
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/22
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/23
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/23
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/24
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/24
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/25
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/25
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/26
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/26
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/27
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/27
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/28
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/28
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/29
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/29
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/30
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/30
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/31
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/31
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/32
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/32
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/33
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/33
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/34
+NODE_SKINNED_MESH_LOCAL_TRANSFORMS,Local transforms will not affect a skinned mesh.,1,/nodes/34
+UNUSED_OBJECT,This object may be unused.,2,/images/0
+UNUSED_OBJECT,This object may be unused.,2,/images/1
+UNUSED_OBJECT,This object may be unused.,2,/images/2
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/0
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/1
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/2

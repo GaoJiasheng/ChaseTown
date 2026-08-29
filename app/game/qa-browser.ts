@@ -47,6 +47,20 @@ export function parseQaNormalizedTime(value: string | null): number | null {
 
 export type QaPoliceAnimationState = "idle" | "run" | "alert" | "point" | "protect";
 export type QaPoliceAssetVariant = "bootstrap" | "high";
+export type QaKidAnimationState =
+  | "idle"
+  | "walk"
+  | "run"
+  | "turnLeft"
+  | "turnRight"
+  | "enterHide"
+  | "hideIdle"
+  | "peekLeft"
+  | "exitHide"
+  | "caught"
+  | "celebrate"
+  | "point";
+export type QaKidAssetVariant = "bootstrap" | "lod1" | "high";
 
 export type QaGltfDocument = {
   accessors?: Array<{ count?: number }>;
@@ -141,4 +155,34 @@ export function parseQaPoliceAssetVariant(
   value: string | null,
 ): QaPoliceAssetVariant | null {
   return value === "bootstrap" || value === "high" ? value : null;
+}
+
+/** Maps the twelve authoritative Kid GLB clips onto runtime animation states. */
+export function parseQaKidAnimation(
+  value: string | null,
+): QaKidAnimationState | null {
+  switch (value?.trim().toLowerCase()) {
+    case "idle": return "idle";
+    case "walk": return "walk";
+    case "run": return "run";
+    case "turnleft": return "turnLeft";
+    case "turnright": return "turnRight";
+    case "hideenter": return "enterHide";
+    case "hideidle": return "hideIdle";
+    case "hidepeek": return "peekLeft";
+    case "hideexit": return "exitHide";
+    case "caught": return "caught";
+    case "escapecelebrate": return "celebrate";
+    case "interact": return "point";
+    default: return null;
+  }
+}
+
+/** Keeps non-bootstrap Kid variants an explicit QA-only opt-in. */
+export function parseQaKidAssetVariant(
+  value: string | null,
+): QaKidAssetVariant | null {
+  return value === "bootstrap" || value === "lod1" || value === "high"
+    ? value
+    : null;
 }

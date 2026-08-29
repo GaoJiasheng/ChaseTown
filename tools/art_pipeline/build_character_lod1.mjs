@@ -222,7 +222,7 @@ function readGlb(buffer, filename) {
   return { filename, buffer, json, binary, decodedViews: new Map() };
 }
 
-async function loadGlb(filename) {
+export async function loadGlb(filename) {
   return readGlb(await readFile(filename), filename);
 }
 
@@ -263,7 +263,7 @@ async function decodeMeshopt(asset) {
   return asset;
 }
 
-function accessorRows(asset, accessorIndex) {
+export function accessorRows(asset, accessorIndex) {
   const accessor = asset.json.accessors[accessorIndex];
   assert.equal(accessor.sparse, undefined, `${asset.filename} cannot use sparse LOD accessors`);
   const viewIndex = accessor.bufferView;

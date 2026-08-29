@@ -7,12 +7,12 @@ files in node_modules. Asset provenance and release restrictions are recorded
 separately and link to their fixed upstream sources.
 
 
-Tencent Hunyuan 3D 2.0 — generated Villain geometry
----------------------------------------------------
+Tencent Hunyuan 3D 2.0 — generated Kid and Villain geometry
+-----------------------------------------------------------
 
-The Villain character uses geometry descended from an Output generated with
-Tencent Hunyuan 3D 2.0. The game does not ship Tencent model weights, model
-code, or a hosted Hunyuan inference service.
+The Kid and Villain characters use geometry descended from Outputs generated
+with Tencent Hunyuan 3D 2.0. The game does not ship Tencent model weights,
+model code, or a hosted Hunyuan inference service.
 
 Official agreement snapshot:
   https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/f8db63096c8282cb27354314d896feba5ba6ff8a/LICENSE
@@ -26,15 +26,14 @@ Tencent Hunyuan 3D 2.0 is licensed under the Tencent Hunyuan 3D 2.0 Community Li
 
 Modification notice:
 
-The generated geometry was substantially modified for Chasing. The project
-reshaped the body and garments in Blender, replaced the prior detached face
-overlay with a cropped MakeHuman/MPFB CC0 nose-and-mouth relief, authored new
-project-specific material maps, cleaned and normalized skinning on the retained
-21-joint shared armature,
-simplified and compressed the mesh, converted textures to KTX2, and retargeted
-the game's separately licensed gameplay animations. Runtime derivatives and
-their bootstrap variants are modified files; they are not unmodified Tencent
-model outputs.
+The generated geometry was substantially modified for Chasing. Both characters
+were reshaped in Blender, cleaned and normalized on retained 21-joint armatures,
+simplified and compressed, converted to KTX2 runtime materials, and retargeted
+to the game's separately licensed gameplay animations. The Villain additionally
+uses a cropped MakeHuman/MPFB CC0 nose-and-mouth relief and project-specific
+material maps. The Kid A2 pass preserves project-authored semantic vertex
+colours as its clean runtime BaseColor zoning. Runtime high, LOD and bootstrap
+derivatives are modified files; they are not unmodified Tencent model outputs.
 
 PUBLIC RELEASE BLOCKED PENDING PRODUCT LEGAL REVIEW:
 

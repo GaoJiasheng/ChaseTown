@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ART_ROOT = path.join(ROOT, "art-source");
 const REQUIRED_BLEND_MASTERS = [
+  "Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Kid_A2_VisualRework_v22.blend",
+  "Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Rigged/Kid_A2_VisualRework_v22_Rigged.blend",
   "Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Kid_PrecisionRemodel_v21.blend",
   "Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Kid_PrecisionRemodel_v21_Rigged.blend",
   "Characters/Police/ReferenceStandard/A2_VisualRework_2026_08_29/Police_A2_VisualRework_v23.blend",

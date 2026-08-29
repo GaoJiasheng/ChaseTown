@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   parseQaDelaySeconds,
   parseQaFlag,
+  parseQaKidAnimation,
+  parseQaKidAssetVariant,
   parseQaLevel,
   parseQaNormalizedTime,
   parseQaPoliceAssetVariant,
@@ -70,6 +72,31 @@ test("QA Police asset fixture accepts only explicit runtime variants", () => {
   assert.equal(parseQaPoliceAssetVariant("high"), "high");
   for (const value of [null, "", "HIGH", "lod1", "source"]) {
     assert.equal(parseQaPoliceAssetVariant(value), null);
+  }
+});
+
+test("QA Kid clip fixture maps exactly the twelve authoritative clips", () => {
+  assert.deepEqual(
+    [
+      "Idle", "Walk", "Run", "TurnLeft", "TurnRight", "HideEnter",
+      "HideIdle", "HidePeek", "HideExit", "Caught", "EscapeCelebrate", "Interact",
+    ].map(parseQaKidAnimation),
+    [
+      "idle", "walk", "run", "turnLeft", "turnRight", "enterHide",
+      "hideIdle", "peekLeft", "exitHide", "caught", "celebrate", "point",
+    ],
+  );
+  for (const value of [null, "", "Crouch", "Search", "Resolve"]) {
+    assert.equal(parseQaKidAnimation(value), null);
+  }
+});
+
+test("QA Kid asset fixture accepts exactly the three production tiers", () => {
+  assert.equal(parseQaKidAssetVariant("bootstrap"), "bootstrap");
+  assert.equal(parseQaKidAssetVariant("lod1"), "lod1");
+  assert.equal(parseQaKidAssetVariant("high"), "high");
+  for (const value of [null, "", "HIGH", "webp", "source"]) {
+    assert.equal(parseQaKidAssetVariant(value), null);
   }
 });
 

@@ -1,0 +1,146 @@
+{
+  "capturedAt": "2026-08-29T00:58:14.204Z",
+  "levels": [
+    {
+      "level": 1,
+      "id": "school-maze-v1",
+      "theme": "campus",
+      "ready": true,
+      "decorativeReady": true,
+      "phase": "playing",
+      "kidSha": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 311,
+        "triangles": 526603,
+        "shadow": {
+          "shadowTriangles": 228409,
+          "shadowDrawCalls": 187
+        },
+        "memory": {
+          "geometries": 201,
+          "textures": 168
+        },
+        "programs": 76,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 222,
+          "canonicalTextures": 160,
+          "assignmentsShared": 62,
+          "sourcesShared": 72
+        }
+      },
+      "logs": []
+    },
+    {
+      "level": 5,
+      "id": "hospital-isolation-basement",
+      "theme": "hospital",
+      "ready": true,
+      "decorativeReady": true,
+      "phase": "playing",
+      "kidSha": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 283,
+        "triangles": 461346,
+        "shadow": {
+          "shadowTriangles": 264415,
+          "shadowDrawCalls": 192
+        },
+        "memory": {
+          "geometries": 170,
+          "textures": 166
+        },
+        "programs": 75,
+        "sceneTextures": 19,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 139,
+          "canonicalTextures": 123,
+          "assignmentsShared": 16,
+          "sourcesShared": 24
+        }
+      },
+      "logs": []
+    },
+    {
+      "level": 10,
+      "id": "factory-foundry-final-run",
+      "theme": "factory",
+      "ready": true,
+      "decorativeReady": true,
+      "phase": "playing",
+      "kidSha": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "render": {
+        "batching": "multi-draw",
+        "qualityTier": "high",
+        "qualityLock": {
+          "enabled": true,
+          "requestedTier": "high",
+          "appliedBeforeRendererCreation": true
+        },
+        "qualityTransitionCount": 0,
+        "emergencyTransitionCount": 0,
+        "pixelRatio": 1,
+        "shadowMapSize": 2048,
+        "emergencyDegradation": {
+          "level": 0,
+          "overloadSeconds": 0,
+          "recoverySeconds": 0
+        },
+        "calls": 316,
+        "triangles": 521294,
+        "shadow": {
+          "shadowTriangles": 288503,
+          "shadowDrawCalls": 205
+        },
+        "memory": {
+          "geometries": 188,
+          "textures": 155
+        },
+        "programs": 75,
+        "sceneTextures": 20,
+        "invalidSceneTextures": [],
+        "textureDeduplication": {
+          "sourceTextures": 157,
+          "canonicalTextures": 137,
+          "assignmentsShared": 20,
+          "sourcesShared": 22
+        }
+      },
+      "logs": []
+    }
+  ]
+}

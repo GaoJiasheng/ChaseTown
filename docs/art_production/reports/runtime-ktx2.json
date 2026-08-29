@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-08-28T18:07:51.219Z",
+  "generatedAt": "2026-08-29T00:47:51.172Z",
   "policy": {
     "geometryRepacked": false,
     "semanticHierarchyByteStable": true,
@@ -35,10 +35,10 @@
     "sharpVersion": "0.35.2",
     "assetGltfpackBinarySha256": {
       "public/models/characters/villain.glb": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
-      "public/models/characters/police.glb": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
+      "public/models/characters/police.glb": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+      "public/models/characters/kid.glb": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
     },
     "unrecordedLegacyTargets": [
-      "public/models/characters/kid.glb",
       "public/models/environment/themes/campus-kit.glb",
       "public/models/environment/themes/hospital-kit.glb",
       "public/models/environment/themes/fire-station-kit.glb",
@@ -46,19 +46,19 @@
     ],
     "lastBuildBinarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
     "lastBuildTargets": [
-      "public/models/characters/police.glb"
+      "public/models/characters/kid.glb"
     ],
     "legacyToolLabelCompatibility": "tool.encoderInput is retained verbatim for the existing remote-trunk report contract; actual Sharp is recorded here from the loaded package."
   },
   "totals": {
-    "sourceAssetBytes": 22561524,
-    "outputAssetBytes": 20617940,
+    "sourceAssetBytes": 22623140,
+    "outputAssetBytes": 20597296,
     "sharedTextureBytes": 2572090,
-    "deploymentBytes": 23190030,
-    "uncachedAllThemesBytes": 29213413,
+    "deploymentBytes": 23169386,
+    "uncachedAllThemesBytes": 29192769,
     "deduplicatedBytes": 6023383,
-    "savedBytes": -628506,
-    "savedPercent": -2.786
+    "savedBytes": -546246,
+    "savedPercent": -2.415
   },
   "sharedTextures": [
     {
@@ -353,18 +353,18 @@
         "4"
       ],
       "source": {
-        "bytes": 4946804,
-        "sha256": "4a63a216f0d55c61ac047f98eff28bafdd3757dcb6de1529a7a3c250c9939186",
-        "embeddedImageBytes": 2554577
+        "bytes": 5008420,
+        "sha256": "fe5db35d2db7fa7b8b4f0fb4829def96acb78609e98b7228b27a151f87c0c071",
+        "embeddedImageBytes": 2638290
       },
       "output": {
-        "bytes": 4492164,
-        "sha256": "c278b6475c516d516691d2357e5446ce46fd10f67110ec73d3a71de542aad5c6",
-        "embeddedImageBytes": 2099813,
+        "bytes": 4471520,
+        "sha256": "5d097ac2cccb0b1875f8a3668dd59676009cff11fe7cfa5924a459b3115be989",
+        "embeddedImageBytes": 2101262,
         "externalTextureBytes": 0,
-        "uncachedFirstLoadBytes": 4492164,
-        "savedBytes": 454640,
-        "savedPercent": 9.191
+        "uncachedFirstLoadBytes": 4471520,
+        "savedBytes": 536900,
+        "savedPercent": 10.72
       },
       "gpuUploadEstimate": {
         "decodedRgbaBytesBefore": 28661060,
@@ -393,7 +393,7 @@
           "count": 1,
           "sha256": "d053563dbe1aca8af70c4680cebc7a27ba95f1b44a4912f17638d345457638b0"
         },
-        "semanticJsonSha256": "cdc36a5329d3a1f6febe08611e8854a1e6142f1b4841908dec95a3af0d1da70b"
+        "semanticJsonSha256": "7121348fe808d399bee77a47b7699f39742010b2e6e34fb17f93e0c8a01eccd2"
       },
       "textures": [
         {
@@ -419,15 +419,15 @@
           "sha256": "d2187ed1eaa39c92bdb8542cfb4b2a193969d061631267c54110e6346c31f386"
         },
         {
-          "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+          "name": "Char_Kid_A2_Semantic_BaseColor_2K",
           "expectedMode": "UASTC",
-          "bytes": 939328,
+          "bytes": 940777,
           "width": 2048,
           "height": 2048,
           "levels": 12,
           "supercompressionScheme": 2,
           "mode": "UASTC",
-          "sha256": "4d3bbeb4d351f9034f3577e8a81d2cb6368b4f8b61f76cc443f7cd65a06ea41a"
+          "sha256": "b707bd1aae551ccc30d9e502ef64b081f422d805aec8c2f8c72ca31fdc5f4ddc"
         }
       ]
     },

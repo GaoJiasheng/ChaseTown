@@ -1,0 +1,79 @@
+{
+  "capturedAt": "2026-08-29",
+  "url": "http://localhost:3003/?qa=1&qaQuality=high&qaLevel=1&qaSpawnDelay=60&qaCleanFrame=1&autostart=1&m1=kid-production-final",
+  "server": "clean production build served by vinext start on port 3003",
+  "viewport": {
+    "cssWidth": 1280,
+    "cssHeight": 720,
+    "devicePixelRatio": 1
+  },
+  "pageState": {
+    "ready": true,
+    "phase": "playing",
+    "decorativeReady": true,
+    "deferredDressingSettled": true,
+    "qaCleanFrame": true,
+    "policeLoaded": false,
+    "consoleEntries": 0
+  },
+  "kidResponseIdentity": {
+    "requestedUrl": "/models/characters/kid-bootstrap.glb?v=3",
+    "resolvedUrl": "http://localhost:3003/models/characters/kid-bootstrap.glb?v=3",
+    "transferBytes": 1561604,
+    "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+    "nodes": 92,
+    "meshes": 35,
+    "primitives": 35,
+    "triangles": 92680,
+    "materials": 12,
+    "textures": 3,
+    "skins": 1,
+    "joints": 21,
+    "runtimeSkinnedMeshes": 35,
+    "runtimeSkeletons": 1,
+    "runtimeBones": 21,
+    "clips": 12
+  },
+  "kidFrame": {
+    "animationState": "idle",
+    "clip": "Idle",
+    "playing": true,
+    "worldHeight": 1.12,
+    "pixelWidth": 45.013164059382255,
+    "pixelHeight": 54.53961757903727,
+    "centerInFrustum": true,
+    "alpha": 1
+  },
+  "render": {
+    "qualityTier": "high",
+    "pixelRatio": 1,
+    "calls": 309,
+    "triangles": 526103,
+    "shadowDrawCalls": 187,
+    "shadowTriangles": 228409,
+    "geometries": 196,
+    "textures": 168,
+    "programs": 76
+  },
+  "uniqueDomAssetDeclarations": {
+    "total": 26,
+    "javascript": 6,
+    "stylesheet": 1,
+    "image": 1,
+    "other": 18,
+    "firstCampaignPreloads": 19,
+    "kidBootstrapDeclared": true,
+    "kidLod1Declared": false,
+    "kidHighDeclared": false,
+    "policeCharacterDeclared": false,
+    "note": "The streamed head contained duplicated preload nodes after hydration; totals are de-duplicated by absolute href. The police-car environment asset is not a Police character request."
+  },
+  "screenshot": {
+    "path": "docs/porting/m1-kid/evidence/production-first-screen.jpg",
+    "bytes": 117116,
+    "width": 1280,
+    "height": 720,
+    "sha256": "ba3a72e45d0d3cea5b49dfb89223fb254608631a3ac63d24cef6a5b1942d643d"
+  },
+  "result": "pass: production first screen loads the final Kid bootstrap identity, keeps Police lazy, reports no console entry, and stays below the frozen first-screen ceiling"
+}

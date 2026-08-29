@@ -1,6 +1,6 @@
 {
   "formatVersion": 3,
-  "generatedAt": "2026-08-28T18:08:17.752Z",
+  "generatedAt": "2026-08-29T00:48:01.232Z",
   "policy": {
     "derivativeOnly": true,
     "highModelsUnmodified": true,
@@ -123,7 +123,7 @@
     },
     "unrecordedLegacyRoles": [],
     "lastBuildRoles": [
-      "police"
+      "kid"
     ],
     "lastBuildBinarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
   },
@@ -147,10 +147,10 @@
     }
   },
   "totals": {
-    "referenceBytes": 12118620,
-    "bootstrapBytes": 4392356,
-    "savedBytes": 7726264,
-    "savedPercent": 63.755
+    "referenceBytes": 12107548,
+    "bootstrapBytes": 4379972,
+    "savedBytes": 7727576,
+    "savedPercent": 63.824
   },
   "characters": [
     {
@@ -158,17 +158,17 @@
       "reference": {
         "variant": "lod1",
         "path": "public/models/characters/kid-lod1.glb",
-        "bytes": 2946584,
-        "sha256": "f803147b49b5a854e6bf232fb6795da4dab62a670397818612972a06e8f74395",
-        "triangles": 92686
+        "bytes": 2935512,
+        "sha256": "8676e31fb32c77c734a1fa12a891eafde1acba720e0d2395caf9d26d6fd80d70",
+        "triangles": 92680
       },
       "bootstrap": {
         "path": "public/models/characters/kid-bootstrap.glb",
-        "bytes": 1573988,
-        "sha256": "ebedbd74c3ac28ad6c2be05453fd684bc9e5ef98951156a7ecdd8646f00a0077",
-        "savedBytes": 1372596,
-        "savedPercent": 46.583,
-        "triangles": 92686,
+        "bytes": 1561604,
+        "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+        "savedBytes": 1373908,
+        "savedPercent": 46.803,
+        "triangles": 92680,
         "triangleRatio": 1
       },
       "quality": {
@@ -191,14 +191,14 @@
         "animationContractSha256": "67cb97212bcc96f16912da3b191d35c25dc4e0f0fc52a0b312343bd72d613d33",
         "silhouetteContract": {
           "primitiveCount": 35,
-          "sha256": "682644a887e75ed2c536c44db93c3675c99f77e3caa69c80d603eb3f81789385"
+          "sha256": "36baec9112ee67c2f14c8e9c2a1a92dddc9d08beb89af5737d36f55e9fa65107"
         },
         "nonImageTransport": {
-          "entries": 11,
-          "bytes": 752450,
-          "sha256": "087323c80a1c40904d37ada80da2507ccdd9ecb9c1f2c606c1139ccb2d2f1f6f"
+          "entries": 10,
+          "bytes": 740285,
+          "sha256": "d842685ceb4256884b17e2202a6ba2d08f64d783f68965f166d5e78a8cee0db2"
         },
-        "semanticJsonSha256": "51326183da9421b404eb9284d0b945f3fcf1a8ee63706f7b576d637b3bdfd2ab",
+        "semanticJsonSha256": "5d20d14e2e090740dded9819953238125da2d5c314f8f0046ba46d146fbc986a",
         "textures": [
           {
             "name": "Char_Kid_PrecisionRemodel_v21_Normal_768",
@@ -223,10 +223,10 @@
             "supercompressionScheme": 2
           },
           {
-            "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+            "name": "Char_Kid_A2_Semantic_BaseColor_2K",
             "textureClass": "baseColor",
-            "bytes": 192321,
-            "sha256": "3a2b22217238e30e9cdc3b717eb29d506ccb9bf996734abdcf19311f1e0acbdb",
+            "bytes": 192458,
+            "sha256": "1af7c4850374026e3ad8f88630c195c96c90e1c6a3e4c254ac81dc3ba1686ade",
             "width": 512,
             "height": 512,
             "levels": 10,
@@ -254,21 +254,21 @@
             "pixelSha256": "af7ab2f84d45249d5ac69ec15a43e4a63487c150eaa57eed2e77a49999be8846"
           },
           {
-            "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+            "name": "Char_Kid_A2_Semantic_BaseColor_2K",
             "textureClass": "baseColor",
             "width": 512,
             "height": 512,
             "channels": 4,
             "pixelBytes": 1048576,
-            "pixelSha256": "b2bd7da21d01775d39333fbb8636c558802832504b7d7e93c4a13e01f51fe847"
+            "pixelSha256": "7fdf29e55436737868ec0a9a2a9b14088f00b701df031545bbb8afb9d26af61b"
           }
         ],
         "sourceTextures": [
           {
             "name": "baseColor",
-            "path": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Textures/Char_Kid_PrecisionRemodel_v21_BaseColor_2K.png",
-            "bytes": 1103463,
-            "sha256": "0ac2b4c10404c7ea68c9647e36acd4d91bd6d9ff293285dfbe018801d0b9d732"
+            "path": "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Textures/Char_Kid_A2_Semantic_BaseColor_2K.png",
+            "bytes": 1187176,
+            "sha256": "9fde5298a0487a1e56eea3aebf9bf6f17e40888cb35eafacb81986adf5bc8bbc"
           },
           {
             "name": "normal",

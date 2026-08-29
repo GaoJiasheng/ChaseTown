@@ -91,6 +91,8 @@ import {
 import {
   parseQaDelaySeconds,
   parseQaFlag,
+  parseQaKidAnimation,
+  parseQaKidAssetVariant,
   parseQaLevel,
   parseQaNormalizedTime,
   parseQaPoliceAssetVariant,
@@ -329,13 +331,18 @@ const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
   ]),
 });
 
+const KID_ASSET_CACHE_VERSION = "3";
 const POLICE_ASSET_CACHE_VERSION = "4";
 const POLICE_BOOTSTRAP_MODEL_HREF = "/models/characters/police-bootstrap.glb";
 
 const ACTOR_SPECS = {
   kid: {
     bootstrapUrl: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.player,
-    height: 1.52,
+    // The authored child is intentionally shorter than both adults. At the
+    // production camera this keeps the player inside the audited 34--58 px
+    // desktop / 42--68 px touch silhouette bands without changing collision,
+    // navigation, camera tuning or any gameplay coordinate.
+    height: 1.12,
     aliases: {
       idle: "Idle",
       walk: "Walk",
@@ -3894,6 +3901,20 @@ export function ChasingGame() {
       document.documentElement.dataset.chasingQaCleanFrame = "true";
     }
     const qaResolutionScenario = suppressGhostForQaResolution;
+    const qaKidAnimationScenario = qaSearchParams.has("qa")
+      ? parseQaKidAnimation(qaSearchParams.get("qaKidClip"))
+      : null;
+    const qaKidAnimationTime = qaKidAnimationScenario
+      ? parseQaNormalizedTime(qaSearchParams.get("qaKidTime"))
+      : null;
+    const qaKidAssetVariant = qaSearchParams.has("qa")
+      ? parseQaKidAssetVariant(qaSearchParams.get("qaKidAsset"))
+      : null;
+    const qaKidAssetUrl = qaKidAssetVariant === "high"
+      ? `/models/characters/kid.glb?v=${KID_ASSET_CACHE_VERSION}`
+      : qaKidAssetVariant === "lod1"
+        ? `/models/characters/kid-lod1.glb?v=${KID_ASSET_CACHE_VERSION}`
+        : ACTOR_SPECS.kid.bootstrapUrl;
     const qaPoliceAnimationScenario = qaSearchParams.has("qa")
       ? parseQaPoliceAnimation(qaSearchParams.get("qaPoliceClip"))
       : null;
@@ -3906,10 +3927,13 @@ export function ChasingGame() {
     const qaPoliceAssetUrl = qaPoliceAssetVariant === "high"
       ? `/models/characters/police.glb?v=${POLICE_ASSET_CACHE_VERSION}`
       : ACTOR_SPECS.police.url;
+    let qaLoadedKidAssetIdentity: QaLoadedGlbIdentity | null = null;
     let qaLoadedPoliceAssetIdentity: QaLoadedGlbIdentity | null = null;
     const qaLoadedGlbIdentities = new WeakMap<THREE.Object3D, QaLoadedGlbIdentity>();
     let qaDomSnapshotTimer: ReturnType<typeof setInterval> | null = null;
     let qaLevelSelectionTimer: ReturnType<typeof setTimeout> | null = null;
+    let qaKidAnimationTimer: ReturnType<typeof setTimeout> | null = null;
+    let qaKidFrameSnapshotTimer: ReturnType<typeof setInterval> | null = null;
     let qaPoliceAnimationTimer: ReturnType<typeof setTimeout> | null = null;
     let qaPoliceFrameSnapshotTimer: ReturnType<typeof setInterval> | null = null;
     const qaQualityValue = qaSearchParams.has("qa")
@@ -6859,9 +6883,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       // never postpone the first playable frame.
       const initialLoads = [
         ...essentialActorEntries.map(async ([name, spec]) => {
-          const bootstrapUrl = "bootstrapUrl" in spec ? spec.bootstrapUrl : spec.url;
-          const asset = await loadGlbWithRetry(bootstrapUrl);
+          const defaultUrl = "bootstrapUrl" in spec ? spec.bootstrapUrl : spec.url;
+          const bootstrapUrl = name === "kid" ? qaKidAssetUrl : defaultUrl;
+          const asset = await loadGlbWithRetry(bootstrapUrl, {
+            captureQaIdentity: qaSearchParams.has("qa") && name === "kid",
+          });
           actorAssets[name] = asset;
+          if (name === "kid") {
+            qaLoadedKidAssetIdentity = qaLoadedGlbIdentities.get(asset.scene) ?? null;
+          }
           const id = `actor:${name}`;
           loadedAssets.push({ id, asset });
           loadedAssetIds.add(id);
@@ -8866,7 +8896,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               preferencesRef.current.hapticsEnabled,
               navigator.vibrate?.bind(navigator),
             );
-            requestAnimation(actors.kid!, "celebrate", { fade: 0.18 });
+            if (preferencesRef.current.reducedMotion) {
+              requestAnimation(actors.kid!, "idle", { fade: 0.18 });
+            } else {
+              requestAnimation(actors.kid!, "celebrate", { fade: 0.18 });
+            }
             // The authored kid celebration is the reliable immediate fallback.
             // Police joins as soon as its on-demand stream completes.
             void requestPoliceAsset?.();
@@ -9018,7 +9052,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       syncActorTransform(villain, state.chaser.position, state.chaser.heading, delta, captureStaging ? 34 : 18, captureStaging ? 15 : 9.5);
 
       if (state.phase === "playing") {
-        if (state.player.mode === "free" || state.player.mode === "aligning-hide") {
+        if (
+          !qaKidAnimationScenario
+          && (state.player.mode === "free" || state.player.mode === "aligning-hide")
+        ) {
           const kidTurn: AnimationState | null = state.player.hideTurnDirection > 0
             ? "turnLeft"
             : state.player.hideTurnDirection < 0
@@ -12054,6 +12091,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             qaDecorativeSceneCompileCount,
             qaTransientArtPrewarmCount,
             qaCleanFrame: qaCleanFrameRequested,
+            kidAssetUrl: qaKidAssetUrl,
+            kidLoadedIdentity: qaLoadedKidAssetIdentity,
             policeAssetUrl: qaPoliceAssetUrl,
             policeLoaded: Boolean(actors.police),
             policeLoadedIdentity: qaLoadedPoliceAssetIdentity,
@@ -12423,6 +12462,43 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         mirrorQaPoliceAnimationFrame();
         qaPoliceFrameSnapshotTimer = setInterval(mirrorQaPoliceAnimationFrame, 16);
       }
+      if (qaKidAnimationScenario) {
+        const applyQaKidAnimationWhenReady = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          if (!ready || !actors.kid) {
+            qaKidAnimationTimer = setTimeout(applyQaKidAnimationWhenReady, 100);
+            return;
+          }
+          const action = actors.kid.animator.play(
+            qaKidAnimationScenario as AnimationState,
+            {
+              fade: 0,
+              restart: true,
+              loop: qaKidAnimationScenario === "idle"
+                || qaKidAnimationScenario === "walk"
+                || qaKidAnimationScenario === "run"
+                || qaKidAnimationScenario === "hideIdle",
+            },
+          );
+          if (!action) return;
+          actors.kid.lastRequested = qaKidAnimationScenario as AnimationState;
+          if (qaKidAnimationTime !== null) {
+            action.time = action.getClip().duration * qaKidAnimationTime;
+            action.paused = true;
+            actors.kid.animator.mixer.update(0);
+          }
+        };
+        qaKidAnimationTimer = setTimeout(applyQaKidAnimationWhenReady, 0);
+        const mirrorQaKidAnimationFrame = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          document.documentElement.dataset.chasingQaKidAnimationSnapshot = JSON.stringify({
+            capturedAtMilliseconds: performance.now(),
+            animation: actors.kid?.animator.snapshot() ?? null,
+          });
+        };
+        mirrorQaKidAnimationFrame();
+        qaKidFrameSnapshotTimer = setInterval(mirrorQaKidAnimationFrame, 16);
+      }
       const mirrorQaSnapshot = () => {
         if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
         const snapshot = installedQaHook.getState() as {
@@ -12433,8 +12509,8 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             player?: unknown;
             chaser?: unknown;
           };
-          animations?: { villain?: unknown; police?: unknown };
-          visibility?: { villain?: unknown; police?: unknown };
+          animations?: { kid?: unknown; villain?: unknown; police?: unknown };
+          visibility?: { kid?: unknown; villain?: unknown; police?: unknown };
           assets?: unknown;
           preferences?: unknown;
           themeMission?: unknown;
@@ -12453,10 +12529,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             chaser: snapshot.game?.chaser,
           },
           animations: {
+            kid: snapshot.animations?.kid,
             villain: snapshot.animations?.villain,
             police: snapshot.animations?.police,
           },
           visibility: {
+            kid: snapshot.visibility?.kid,
             villain: snapshot.visibility?.villain,
             police: snapshot.visibility?.police,
           },
@@ -12505,11 +12583,14 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         delete document.documentElement.dataset.chasingQuality;
         delete document.documentElement.dataset.chasingEmergency;
         delete document.documentElement.dataset.chasingQaSnapshot;
+        delete document.documentElement.dataset.chasingQaKidAnimationSnapshot;
         delete document.documentElement.dataset.chasingQaPoliceAnimationSnapshot;
         delete document.documentElement.dataset.chasingQaCleanFrame;
       }
       if (qaDomSnapshotTimer !== null) clearInterval(qaDomSnapshotTimer);
       if (qaLevelSelectionTimer !== null) clearTimeout(qaLevelSelectionTimer);
+      if (qaKidAnimationTimer !== null) clearTimeout(qaKidAnimationTimer);
+      if (qaKidFrameSnapshotTimer !== null) clearInterval(qaKidFrameSnapshotTimer);
       if (qaPoliceAnimationTimer !== null) clearTimeout(qaPoliceAnimationTimer);
       if (qaPoliceFrameSnapshotTimer !== null) clearInterval(qaPoliceFrameSnapshotTimer);
       const runtimePlayfield = host.parentElement;

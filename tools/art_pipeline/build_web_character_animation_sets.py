@@ -68,7 +68,7 @@ ROLE_SPECS: dict[str, RoleSpec] = {
     "kid": RoleSpec(
         "kid",
         ROOT
-        / "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Kid_PrecisionRemodel_v21_Rigged.blend",
+        / "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Rigged/Kid_A2_VisualRework_v22_Rigged.blend",
         ROOT / "public/models/characters/kid.glb",
         COMMON_LOCOMOTION
         + (

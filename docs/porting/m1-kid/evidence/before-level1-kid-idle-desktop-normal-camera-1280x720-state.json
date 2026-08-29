@@ -1,0 +1,10 @@
+{
+  "capturedAt": "2026-08-28T23:36:17.599Z",
+  "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPlayer=6,5.9&qaChaser=1,12.4&qaSpawnDelay=60&qaCleanFrame=1&autostart=1&m1=kid-before-desktop",
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "deviceScaleFactor": 1
+  },
+  "consoleErrors": []
+}

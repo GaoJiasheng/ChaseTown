@@ -673,7 +673,13 @@ function roleTexturePaths(role) {
   const directory = path.join(root, "Textures");
   const prefix = `Char_${label}_PrecisionRemodel_v21`;
   return {
-    baseColor: path.join(root, "Rigged", "Textures", `${prefix}_BaseColor_2K.png`),
+    baseColor: role === "kid"
+      ? path.join(
+        ROOT,
+        "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29",
+        "Textures/Char_Kid_A2_Semantic_BaseColor_2K.png",
+      )
+      : path.join(root, "Rigged", "Textures", `${prefix}_BaseColor_2K.png`),
     normal: path.join(directory, `${prefix}_Normal_2K.png`),
     ao: path.join(directory, `${prefix}_AO_2K.png`),
     metallicSmoothness: path.join(directory, `${prefix}_MetallicSmoothness_2K.png`),

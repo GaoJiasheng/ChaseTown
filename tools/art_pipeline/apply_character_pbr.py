@@ -111,6 +111,12 @@ V21_ROOTS = {
     for role in ("kid", "villain", "police")
 }
 
+KID_A2_BASE_COLOR = (
+    ROOT
+    / "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29"
+    / "Textures/Char_Kid_A2_Semantic_BaseColor_2K.png"
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -595,10 +601,15 @@ def configure_export_safe_pbr(
 def role_v21_images(role: str, generated_dir: Path) -> tuple[bpy.types.Image, bpy.types.Image, bpy.types.Image]:
     label = role.title()
     root = V21_ROOTS[role]
+    base_path = KID_A2_BASE_COLOR if role == "kid" else (
+        root / "Rigged/Textures" / f"Char_{label}_PrecisionRemodel_v21_BaseColor_2K.png"
+    )
     base = load_image(
-        root / "Rigged/Textures" / f"Char_{label}_PrecisionRemodel_v21_BaseColor_2K.png",
+        base_path,
         "sRGB",
-        f"Char_{label}_PrecisionRemodel_v21_BaseColor_2K",
+        "Char_Kid_A2_Semantic_BaseColor_2K"
+        if role == "kid"
+        else f"Char_{label}_PrecisionRemodel_v21_BaseColor_2K",
     )
     normal = resized_image(
         root / "Textures" / f"Char_{label}_PrecisionRemodel_v21_Normal_2K.png",
