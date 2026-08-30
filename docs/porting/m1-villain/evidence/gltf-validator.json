@@ -1,0 +1,66 @@
+{
+  "capturedAt": "2026-08-28T15:40:57Z",
+  "validator": "gltf-validator 2.0.0-dev.3.10",
+  "method": "Pinned Node package; validateBytes against the final committed GLB payloads.",
+  "extensionCaveat": "This validator build does not decode EXT_meshopt_compression or KHR_texture_basisu. High reports 18 warnings; quantized LOD1/Bootstrap report 30 because gltfpack adds 12 local-transform dequantization children below the named semantic wrappers. Three.js browser playback and same-frame pose checks validate those transforms.",
+  "assets": [
+    {
+      "path": "public/models/characters/villain.glb",
+      "bytes": 3123624,
+      "sha256": "8ff6d59ab894a9b60d428e7d9a04f39ade20a69543b5a1ef9f0b2c98efb2e7fd",
+      "errors": 0,
+      "warnings": 18,
+      "infos": 5,
+      "drawCalls": 12,
+      "vertices": 50463,
+      "triangles": 74660
+    },
+    {
+      "path": "public/models/characters/villain-lod1.glb",
+      "bytes": 1526192,
+      "sha256": "66cccb2e32d0e771a7eef73a113ca8dd773d92563c665c983feba6dfae901352",
+      "errors": 0,
+      "warnings": 30,
+      "infos": 5,
+      "drawCalls": 12,
+      "vertices": 20711,
+      "triangles": 25599
+    },
+    {
+      "path": "public/models/characters/villain-bootstrap.glb",
+      "bytes": 891784,
+      "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a",
+      "errors": 0,
+      "warnings": 30,
+      "infos": 5,
+      "drawCalls": 12,
+      "vertices": 20711,
+      "triangles": 25599
+    }
+  ],
+  "diagnosticBreakdown": {
+    "high": {
+      "warnings": {
+        "VALUE_NOT_IN_LIST": 3,
+        "NODE_SKINNED_MESH_NON_ROOT": 12,
+        "IMAGE_UNRECOGNIZED_FORMAT": 3
+      },
+      "infos": {
+        "UNSUPPORTED_EXTENSION": 2,
+        "UNUSED_OBJECT": 3
+      }
+    },
+    "quantizedLodAndBootstrap": {
+      "warnings": {
+        "VALUE_NOT_IN_LIST": 3,
+        "NODE_SKINNED_MESH_NON_ROOT": 12,
+        "NODE_SKINNED_MESH_LOCAL_TRANSFORMS": 12,
+        "IMAGE_UNRECOGNIZED_FORMAT": 3
+      },
+      "infos": {
+        "UNSUPPORTED_EXTENSION": 2,
+        "UNUSED_OBJECT": 3
+      }
+    }
+  }
+}

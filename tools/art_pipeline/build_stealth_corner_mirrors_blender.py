@@ -57,7 +57,7 @@ GLTFPACK_VERSION = "gltfpack 1.2"
 GLTFPACK_BINARY_SHA256 = "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df"
 GLTFPACK_ARGUMENTS = (
     "-cc", "-kn", "-km", "-ke",
-    "-vp", "16", "-vn", "12", "-vt", "12", "-kv",
+    "-vp", "14", "-vn", "8", "-vt", "10",
     "-tc", "-tq", "10", "-tj", "4",
 )
 
@@ -236,6 +236,7 @@ def generated_surface_texture(
     theme_seed: int,
     roughness: bool,
     size: int = PBR_TEXTURE_SIZE,
+    image: bpy.types.Image | None = None,
 ) -> bpy.types.Image:
     """Create a compact, deterministic powder-coat/brushed-metal PBR map.
 
@@ -243,7 +244,9 @@ def generated_surface_texture(
     minification. Blender authors lossless PNG pixels; the final export keeps
     the full 192 px maps in embedded KTX2/BasisU inside a 520 KB runtime GLB.
     """
-    image = bpy.data.images.new(name, width=size, height=size, alpha=True)
+    image = image or bpy.data.images.new(name, width=size, height=size, alpha=True)
+    if tuple(image.size) != (size, size):
+        image.scale(size, size)
     image.file_format = "PNG"
     if roughness:
         image.colorspace_settings.name = "Non-Color"
@@ -259,20 +262,21 @@ def generated_surface_texture(
         v = y / max(size - 1, 1)
         for x in range(size):
             u = x / max(size - 1, 1)
-            brushed = math.sin(v * math.tau * 21.0 + phase_a) * 0.017
-            powder = math.sin((u * 7.0 + v * 5.0) * math.tau + phase_b) * 0.012
-            powder += math.sin((u * 19.0 - v * 11.0) * math.tau + phase_a) * 0.006
+            brushed = math.sin(v * math.tau * 21.0 + phase_a) * 0.055
+            powder = math.sin((u * 7.0 + v * 5.0) * math.tau + phase_b) * 0.040
+            powder += math.sin((u * 19.0 - v * 11.0) * math.tau + phase_a) * 0.025
             fleck = sparse_marks.get((x, y), 0.0)
             if roughness:
                 value = min(max(0.46 + brushed * 1.9 + powder * 1.35 + fleck, 0.30), 0.66)
                 pixels.extend((value, value, value, 1.0))
             else:
-                multiplier = 1.0 + brushed + powder + fleck * 0.20
+                multiplier = 1.0 + brushed + powder + fleck * 0.80
+                powder_coat_relief = (brushed + powder) * 0.72
                 pixels.extend(
                     (
-                        min(max(color[0] * multiplier, 0.0), 1.0),
-                        min(max(color[1] * multiplier, 0.0), 1.0),
-                        min(max(color[2] * multiplier, 0.0), 1.0),
+                        min(max(color[0] * multiplier + powder_coat_relief, 0.0), 1.0),
+                        min(max(color[1] * multiplier + powder_coat_relief, 0.0), 1.0),
+                        min(max(color[2] * multiplier + powder_coat_relief, 0.0), 1.0),
                         1.0,
                     )
                 )
@@ -1566,6 +1570,22 @@ def main() -> None:
         roots = [bpy.data.objects.get(name) for name in ROOT_NAMES]
         if any(root is None for root in roots):
             raise RuntimeError("Approved mirror master lost one or more themed roots")
+        if os.environ.get("CHASING_MIRROR_REFRESH_TEXTURES") == "1":
+            for index, theme in enumerate(THEMES):
+                prefix = theme.root_name.removesuffix("CornerMirror")
+                seed = 4171 + index * 733
+                for suffix, roughness in (("BaseColor", False), ("Roughness", True)):
+                    name = f"T_{prefix}_WallPlate_{suffix}_{PBR_TEXTURE_SIZE}"
+                    image = bpy.data.images.get(name)
+                    if image is None:
+                        raise RuntimeError(f"Approved mirror master lost {name}")
+                    generated_surface_texture(
+                        name,
+                        theme.plate_color,
+                        theme_seed=seed,
+                        roughness=roughness,
+                        image=image,
+                    )
         authored_report = inspect_authored_scene(roots)
         runtime_report = save_and_export(roots, authored_report, save_master=False)
         preview_files = []

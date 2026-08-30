@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-08-29",
+  "baselineCommit": "681c282",
+  "measurementNotes": {
+    "repositoryModels": "Sum of file byte lengths under public/models.",
+    "deployedModels": "Sum of file byte lengths under dist/client/models after the final production build.",
+    "firstPlayable": "dist/client/runtime-asset-manifest.json encoded-transfer estimate; local vinext start does not apply deployment gzip.",
+    "browserInventory": "production-first-screen-page-assets.json is a fresh production-process DOM-declared topology plus the runtime loader byte ledger; it does not pretend local cache transferSize is a deployment byte measurement."
+  },
+  "repositoryModels": {
+    "baselineBytes": 46533361,
+    "finalBytes": 47495153,
+    "deltaBytes": 961792,
+    "finalFiles": 83
+  },
+  "deployedModels": {
+    "baselineBytes": 10921429,
+    "finalBytes": 11111245,
+    "deltaBytes": 189816,
+    "finalFiles": 30,
+    "note": "The deployment contains police-bootstrap.glb but excludes the Police high-detail QA/reference asset."
+  },
+  "firstPlayable": {
+    "baselineEncodedTransferBytes": 7727510,
+    "finalEncodedTransferBytes": 7728906,
+    "deltaBytes": 1396,
+    "m1FrozenCeilingBytes": 8309819,
+    "remainingToM1FrozenCeilingBytes": 580913,
+    "manifestMaximumCriticalBytes": 8388608,
+    "remainingToManifestMaximumCriticalBytes": 659702,
+    "finalRawBytes": 8965357,
+    "dynamicHtmlReserveBytes": 32768,
+    "manifestAssetCount": 26
+  },
+  "runtimeLoaderFirstPlayable": {
+    "criticalTransferBytes": 6691805,
+    "criticalRequestCount": 17,
+    "estimatedSecondsAtTenMbps": 6.633444,
+    "fits": true
+  },
+  "policeOnDemand": {
+    "baselineBootstrapBytes": 1736768,
+    "finalBootstrapBytes": 1926584,
+    "deltaBytes": 189816,
+    "encoding": "already-compressed",
+    "highBytes": 7645844,
+    "highDeployed": false
+  },
+  "browserFirstScreen": {
+    "uniqueDeclaredAssetCount": 26,
+    "scripts": 6,
+    "stylesheets": 1,
+    "images": 1,
+    "other": 18,
+    "policeCharacterRequested": false,
+    "onlyPoliceNamedAsset": "models/environment/police-car.glb",
+    "consoleErrors": 0
+  }
+}

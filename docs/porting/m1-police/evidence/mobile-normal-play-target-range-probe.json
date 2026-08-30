@@ -1,0 +1,170 @@
+{
+  "capturedAt": "2026-08-28T19:45:15.263Z",
+  "method": "Actual 375x812 CSS viewport, DPR 1, normal-playing formal camera. Police is QA-loaded only to measure production-camera target scale; no camera or actor transform patch is applied.",
+  "url": "http://127.0.0.1:3002/?qa=1&qaQuality=high&qaLevel=1&qaPoliceAsset=bootstrap&qaPoliceClip=Idle&qaPoliceTime=0.68&qaPlayer=25,15.3&qaChaser=2,2&qaSpawnDelay=60&qaMobileTargetProbe=v16",
+  "viewport": {
+    "deviceScaleFactor": 1,
+    "height": 812,
+    "width": 375
+  },
+  "assetIdentity": {
+    "clips": [
+      {
+        "durationSeconds": 1.4,
+        "name": "Alert",
+        "tracks": 22
+      },
+      {
+        "durationSeconds": 2.5,
+        "name": "Idle",
+        "tracks": 22
+      },
+      {
+        "durationSeconds": 2,
+        "name": "Interact",
+        "tracks": 22
+      },
+      {
+        "durationSeconds": 1.233333,
+        "name": "Resolve",
+        "tracks": 22
+      },
+      {
+        "durationSeconds": 0.933333,
+        "name": "Run",
+        "tracks": 22
+      }
+    ],
+    "jointNames": [
+      "Chest",
+      "Head",
+      "Hips",
+      "LeftFoot",
+      "LeftHand",
+      "LeftLowerArm",
+      "LeftLowerLeg",
+      "LeftShoulder",
+      "LeftToes",
+      "LeftUpperArm",
+      "LeftUpperLeg",
+      "Neck",
+      "RightFoot",
+      "RightHand",
+      "RightLowerArm",
+      "RightLowerLeg",
+      "RightShoulder",
+      "RightToes",
+      "RightUpperArm",
+      "RightUpperLeg",
+      "Spine"
+    ],
+    "joints": 21,
+    "materials": 14,
+    "meshes": 25,
+    "nodes": 47,
+    "primitives": 26,
+    "requestedUrl": "/models/characters/police-bootstrap.glb?v=4",
+    "resolvedUrl": "http://127.0.0.1:3002/models/characters/police-bootstrap.glb?v=4",
+    "runtimeBones": 21,
+    "runtimeMeshObjects": 26,
+    "runtimeSkeletons": 1,
+    "runtimeSkinnedMeshes": 26,
+    "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+    "skins": 1,
+    "textures": 7,
+    "transferBytes": 1926584,
+    "triangles": 50800
+  },
+  "animation": {
+    "clip": "Idle",
+    "clipDuration": 2.5,
+    "normalizedTime": 0.68,
+    "playing": false,
+    "state": "idle",
+    "timeScale": 1
+  },
+  "camera": {
+    "aspect": 0.4993006993006993,
+    "azimuthDegrees": 149.62087398863164,
+    "direction": {
+      "x": 0.3451465392455413,
+      "y": 0.7308985536964403,
+      "z": -0.588779390477688
+    },
+    "distance": 12.748451905501025,
+    "focus": {
+      "x": 24.48509861937418,
+      "y": 0.5268071072444065,
+      "z": 6.2367315220913
+    },
+    "fov": 56,
+    "occlusion": {
+      "groups": 12,
+      "maxStrength": 0,
+      "obscured": []
+    },
+    "position": {
+      "x": 28.88518267529609,
+      "y": 9.844632166843732,
+      "z": -1.2692942203637123
+    },
+    "zoom": 1
+  },
+  "visibility": {
+    "alpha": 1,
+    "cameraClearance": {
+      "headClear": true,
+      "samples": [
+        {
+          "clear": true,
+          "hit": null,
+          "hitDistance": null,
+          "label": "head"
+        },
+        {
+          "clear": true,
+          "hit": null,
+          "hitDistance": null,
+          "label": "torso"
+        },
+        {
+          "clear": false,
+          "hit": "campus-wall-wide-batch-c89649ca",
+          "hitDistance": 20.94009937897782,
+          "label": "hips"
+        },
+        {
+          "clear": true,
+          "hit": null,
+          "hitDistance": null,
+          "label": "left-shoulder"
+        },
+        {
+          "clear": true,
+          "hit": null,
+          "hitDistance": null,
+          "label": "right-shoulder"
+        }
+      ],
+      "torsoClear": true,
+      "visibleSampleRatio": 0.8
+    },
+    "rootVisible": true,
+    "viewport": {
+      "bounds": {
+        "bottom": 0.10397891894450616,
+        "left": 0.013281726284951112,
+        "right": 0.096774600754213,
+        "top": 0.009257917090976064
+      },
+      "centerInFrustum": true,
+      "depth": 0.9937260410977936,
+      "pixelHeight": 67.72551632527403,
+      "pixelWidth": 29.8069561855265,
+      "worldHeight": 1.82,
+      "x": 0.056062168556218095,
+      "y": 0.057470224210496135
+    }
+  },
+  "consoleErrors": []
+}

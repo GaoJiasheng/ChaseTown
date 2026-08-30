@@ -17,7 +17,7 @@ from quality_gate import check
 
 ROOT = Path(__file__).resolve().parents[2]
 ENV = ROOT / "art-source" / "Environment"
-TEXTURES = ENV / "SharedTextures"
+TEXTURES = ROOT / "art-source" / "Environment" / "SharedTextures"
 DOCS = ROOT / "docs" / "art_production"
 
 

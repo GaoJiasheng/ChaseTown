@@ -1,0 +1,55 @@
+code,message,severity,pointer
+UNSUPPORTED_EXTENSION,Cannot validate an extension as it is not supported by the validator: 'EXT_meshopt_compression'.,2,/extensionsUsed/0
+UNSUPPORTED_EXTENSION,Cannot validate an extension as it is not supported by the validator: 'KHR_texture_basisu'.,2,/extensionsUsed/3
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/0/mimeType
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/1/mimeType
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/2/mimeType
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/3/mimeType
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/4/mimeType
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/5/mimeType
+VALUE_NOT_IN_LIST,"Invalid value 'image/ktx2'. Valid values are ('image/jpeg', 'image/png').",1,/images/6/mimeType
+MESH_PRIMITIVE_GENERATED_TANGENT_SPACE,Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.,1,/meshes/3/primitives/0/material
+MESH_PRIMITIVE_GENERATED_TANGENT_SPACE,Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.,1,/meshes/7/primitives/0/material
+MESH_PRIMITIVE_GENERATED_TANGENT_SPACE,Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.,1,/meshes/18/primitives/0/material
+MESH_PRIMITIVE_GENERATED_TANGENT_SPACE,Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.,1,/meshes/19/primitives/0/material
+MESH_PRIMITIVE_GENERATED_TANGENT_SPACE,Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.,1,/meshes/24/primitives/0/material
+MESH_PRIMITIVE_GENERATED_TANGENT_SPACE,Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.,1,/meshes/24/primitives/1/material
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/21
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/22
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/23
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/24
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/25
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/26
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/27
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/28
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/29
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/30
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/31
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/32
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/33
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/34
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/35
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/36
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/37
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/38
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/39
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/40
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/41
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/42
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/43
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/44
+NODE_SKINNED_MESH_NON_ROOT,Node with a skinned mesh is not root. Parent transforms will not affect a skinned mesh.,1,/nodes/45
+UNUSED_OBJECT,This object may be unused.,2,/images/0
+UNUSED_OBJECT,This object may be unused.,2,/images/1
+UNUSED_OBJECT,This object may be unused.,2,/images/2
+UNUSED_OBJECT,This object may be unused.,2,/images/3
+UNUSED_OBJECT,This object may be unused.,2,/images/4
+UNUSED_OBJECT,This object may be unused.,2,/images/5
+UNUSED_OBJECT,This object may be unused.,2,/images/6
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/0
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/1
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/2
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/3
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/4
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/5
+IMAGE_UNRECOGNIZED_FORMAT,Image format not recognized.,1,/images/6

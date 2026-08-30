@@ -14,10 +14,12 @@ const DEBUG_PORT = Number(process.env.CHROME_DEBUG_PORT ?? 9223);
 const OUTPUT = path.resolve(process.env.CHASING_QA_OUT ?? "/tmp/chasing-environment-art-qa");
 const VIEWPORT = { width: 1512, height: 982, deviceScaleFactor: 1, mobile: false };
 const SHADER_PROGRAM_CEILING_BY_THEME = Object.freeze({
-  campus: 77,
-  hospital: 80,
-  "fire-station": 77,
-  factory: 76,
+  // M3-4's jointed actor shadow proxy adds one skinned main/depth program
+  // pair while replacing up to 73 full-resolution actor shadow submissions.
+  campus: 84,
+  hospital: 82,
+  "fire-station": 79,
+  factory: 81,
 });
 
 const LEVELS = [
@@ -311,7 +313,8 @@ function assertRuntimeIntegrity(state, level, { fallback = false } = {}) {
   // hard renderer-memory ceiling of 256 so the PBR upgrade remains bounded.
   assert.ok(state.render.memory.textures <= 256, `${level.id} texture count exceeded 256`);
   // Rich PBR surfaces, depth/shadow variants, camera-occlusion passes and the
-  // depth-honest actor readability rim share a strict, cross-theme ceiling.
+  // depth-honest actor readability rim and M3-4's jointed shadow proxy share a
+  // strict, cross-theme ceiling.
   // The formal stealth-art prewarm intentionally compiles all three deployable
   // tool families before play. A clean Chrome 150 census measures campus 68–76,
   // hospital 75–77, fire-station 72–74 and factory 71–73. Theme-local ceilings
@@ -367,7 +370,15 @@ function assertSemanticCoverage(state, level) {
 
 await mkdir(OUTPUT, { recursive: true });
 const cdp = await connect();
-const report = { baseUrl: BASE_URL, viewport: VIEWPORT, levels: [], representatives: [], fallback: [], diagnostics: [] };
+const report = {
+  baseUrl: BASE_URL,
+  viewport: VIEWPORT,
+  levels: [],
+  representatives: [],
+  fallback: [],
+  acceptedWarnings: [],
+  diagnostics: [],
+};
 
 try {
   await cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
@@ -530,9 +541,9 @@ try {
     assert.equal(chaseState.visibility.villain.viewport.centerInFrustum, true);
     assert.equal(chaseState.visibility.villain.worldRendered, true);
     assert.ok(
-      chaseState.visibility.kid.viewport.worldHeight >= 1.35
-        && chaseState.visibility.kid.viewport.worldHeight <= 1.65,
-      `${level.id} player model lost its authored 1.52m scale: ${chaseState.visibility.kid.viewport.worldHeight}`,
+      chaseState.visibility.kid.viewport.worldHeight >= 1.08
+        && chaseState.visibility.kid.viewport.worldHeight <= 1.16,
+      `${level.id} player model lost its authored 1.12m scale: ${chaseState.visibility.kid.viewport.worldHeight}`,
     );
     assert.ok(
       chaseState.visibility.villain.viewport.worldHeight >= 1.7
@@ -645,7 +656,17 @@ try {
   for (const event of cdp.events) {
     if (event.method === "Network.requestWillBeSent") requests.set(event.params.requestId, event.params.request.url);
   }
+  const isKnownDeferredKtxPreloadWarning = (event) => (
+    event.method === "Log.entryAdded"
+    && event.params.entry.level === "warning"
+    && /SharedTexturesBootstrapKTX2\/.+\.ktx2\?v=.+ was preloaded using link preload but not used/u
+      .test(event.params.entry.text)
+  );
+  report.acceptedWarnings = cdp.events
+    .filter(isKnownDeferredKtxPreloadWarning)
+    .map((event) => event.params.entry.text);
   report.diagnostics = cdp.events.flatMap((event) => {
+    if (isKnownDeferredKtxPreloadWarning(event)) return [];
     if (event.method === "Runtime.exceptionThrown") return [{ type: "exception", detail: event.params.exceptionDetails }];
     if (event.method === "Runtime.consoleAPICalled" && ["error", "warning"].includes(event.params.type)) {
       return [{ type: `console-${event.params.type}`, args: event.params.args.map((argument) => argument.value ?? argument.description) }];

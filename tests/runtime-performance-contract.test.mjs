@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = await readFile(path.join(ROOT, "app", "chasing-game.tsx"), "utf8");
+const GLOBAL_CSS = await readFile(path.join(ROOT, "app", "globals.css"), "utf8");
 const RUNTIME_ASSETS_SOURCE = await readFile(
   path.join(ROOT, "app", "game", "runtime-assets.ts"),
   "utf8",
@@ -30,18 +31,68 @@ test("first playable frame gates only on navigation-critical scene assets", () =
 });
 
 test("resolution actor streams near the exit and retains an immediate victory fallback", () => {
-  assert.match(
-    SOURCE,
-    /police:\s*\{\s*url: "\/models\/characters\/police-bootstrap\.glb\?v=1"/,
-  );
+  const qaConfiguration = SOURCE.match(
+    /const qaPoliceAnimationScenario = qaSearchParams\.has\("qa"\)[\s\S]*?const qaPoliceAssetUrl = qaPoliceAssetVariant === "high"[\s\S]*?: ACTOR_SPECS\.police\.url;/,
+  )?.[0] ?? "";
+  const qaAnimationBlock = SOURCE.match(
+    /if \(qaPoliceAnimationScenario\) \{[\s\S]*?qaPoliceFrameSnapshotTimer = setInterval\(mirrorQaPoliceAnimationFrame, 16\);\n      \}/,
+  )?.[0] ?? "";
+  assert.match(RUNTIME_ASSETS_SOURCE, /export const ASSET_VERSION = "m2-20260829"/);
+  assert.match(SOURCE, /const POLICE_BOOTSTRAP_MODEL_HREF = versionRuntimeAsset\(/);
+  assert.match(SOURCE, /police:\s*\{\s*url: POLICE_BOOTSTRAP_MODEL_HREF/);
+  assert.match(SOURCE, /versionRuntimeAsset\("\/models\/characters\/police\.glb"\)/);
   assert.equal(
-    SOURCE.match(/loadGlbWithRetry\(ACTOR_SPECS\.police\.url\)/g)?.length,
+    SOURCE.match(/loadGlbWithRetry\(qaPoliceAssetUrl,/g)?.length,
     1,
     "Police should have one memoized on-demand load path",
   );
+  assert.match(qaConfiguration, /qaPoliceAnimationScenario = qaSearchParams\.has\("qa"\)/);
+  assert.match(qaConfiguration, /qaPoliceAssetVariant = qaSearchParams\.has\("qa"\)/);
+  assert.match(qaConfiguration, /qaPoliceAssetUrl = qaPoliceAssetVariant === "high"[\s\S]*: ACTOR_SPECS\.police\.url/);
+  assert.match(SOURCE, /captureQaIdentity: qaSearchParams\.has\("qa"\)/);
+  assert.match(SOURCE, /policeLoadedIdentity: qaLoadedPoliceAssetIdentity/);
+  assert.match(SOURCE, /inspectQaLoadedGlbIdentity\([\s\S]*sha256Hex\(bytes\)/);
   assert.match(SOURCE, /distanceBetween\(latestState\.player\.position, campaignLevel\.exit\)[\s\S]*POLICE_PREFETCH_DISTANCE_CELLS/);
   assert.match(SOURCE, /event\.to === "won"[\s\S]*requestAnimation\(actors\.kid!, "celebrate"/);
   assert.match(SOURCE, /event\.to === "won"[\s\S]*void requestPoliceAsset\?\.\(\)/);
+  assert.match(
+    qaAnimationBlock,
+    /if \(!actors\.police\) \{[\s\S]*void requestPoliceAsset\?\.\(\)/,
+    "the opt-in Police animation QA scenario must be able to stream its selected asset off-route",
+  );
+  assert.equal(
+    SOURCE.match(/preferencesRef\.current\.reducedMotion \? "idle" : "protect"/g)?.length,
+    2,
+    "Police must suppress its non-essential victory gesture for reduced-motion players",
+  );
+});
+
+test("formal art QA can remove HUD occlusion without changing the production camera layout", () => {
+  assert.match(
+    SOURCE,
+    /const qaCleanFrameRequested = qaSearchParams\.has\("qa"\)[\s\S]*?parseQaFlag\(qaSearchParams\.get\("qaCleanFrame"\)\)/u,
+  );
+  assert.match(
+    SOURCE,
+    /document\.documentElement\.dataset\.chasingQaCleanFrame = "true"/u,
+  );
+  assert.match(
+    SOURCE,
+    /qaCleanFrame: qaCleanFrameRequested/u,
+  );
+  assert.match(
+    SOURCE,
+    /delete document\.documentElement\.dataset\.chasingQaCleanFrame/u,
+  );
+  assert.match(
+    GLOBAL_CSS,
+    /html\[data-chasing-qa-clean-frame="true"\][\s\S]*visibility: hidden !important/u,
+  );
+  assert.doesNotMatch(
+    GLOBAL_CSS,
+    /data-chasing-qa-clean-frame[\s\S]{0,500}(?:display:\s*none|transform:|position:)/u,
+    "clean-frame evidence must preserve the production playfield geometry",
+  );
 });
 
 test("quantized authored geometry expands before CPU world-matrix baking", () => {
@@ -119,7 +170,7 @@ test("scene loading is cancellable, retryable, concurrency-limited and KTX2 awar
   );
   assert.match(
     SOURCE,
-    /return \(\) => \{\s*disposed = true;\s*sceneAssets\.abort\([\s\S]*releaseControlledDependencyResourcesWhenSettled\(\);\s*renderer\.renderLists\.dispose\(\);/u,
+    /return \(\) => \{\s*disposed = true;\s*sceneAssets\.abort\([\s\S]*releaseControlledDependencyResourcesWhenSettled\(\);\s*qaRenderBreakdownTracker\?\.dispose\(\);\s*renderer\.renderLists\.dispose\(\);/u,
     "chapter cleanup must abort first and defer URL/KTX2 disposal until pending GLB parses settle",
   );
 });
@@ -310,7 +361,7 @@ test("stealth tools use distinct formal themed subassemblies with auditable prov
   );
   assert.match(
     RUNTIME_ASSETS_SOURCE,
-    /cornerMirror:\s*"\/models\/environment\/stealth-corner-mirrors\.glb\?v=2"/u,
+    /cornerMirror:\s*versionRuntimeAsset\("\/models\/environment\/stealth-corner-mirrors\.glb"\)/u,
   );
   assert.match(SOURCE, /const template = stealthToolModelTemplates\[receipt\.tool\]/u);
   assert.match(SOURCE, /authored-blackout-status-lens/u);
@@ -377,7 +428,7 @@ test("resource QA locks render quality before renderer creation and compiles one
   );
   assert.match(
     SOURCE,
-    /renderer\.render\(scene, camera\);\s*qaRenderedFrameCount \+= 1;\s*compileSettledQaScene\(\);/u,
+    /renderer\.render\(scene, camera\);\s*qaRenderBreakdownTracker\?\.endFrame\(\);\s*qaRenderedFrameCount \+= 1;\s*compileSettledQaScene\(\);/u,
   );
   assert.match(SOURCE, /let qaCaptureHoldDeadline = 0/u);
   assert.match(

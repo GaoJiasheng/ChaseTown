@@ -1,0 +1,1023 @@
+{
+  "role": "kid",
+  "artifactStage": "A2 source visual master before authoritative animation rebake",
+  "source": {
+    "path": "art-source/Characters/Kid/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Rigged/Kid_PrecisionRemodel_v21_Rigged.blend",
+    "bytes": 3828673,
+    "sha256": "c5e69edbb3037cded83e34b912d046023f7d4eef5928f95d63a12b8d8181b9c7",
+    "geometryLineage": "Tencent Hunyuan3D-derived v21 PrecisionRemodel"
+  },
+  "outputs": {
+    "staticBlend": {
+      "path": "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Kid_A2_VisualRework_v22.blend",
+      "bytes": 3854848,
+      "sha256": "c2deeca9a4cba4a119a4020bf53f68ce0c91bf427ea581f04ee0bf733256ccb9"
+    },
+    "riggedBlend": {
+      "path": "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Rigged/Kid_A2_VisualRework_v22_Rigged.blend",
+      "bytes": 3854935,
+      "sha256": "c7a13d13db8e4afad6d91c35a7a787df62561949233aba5ea0b0ae8020c92feb"
+    },
+    "semanticBaseColor": {
+      "path": "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Textures/Char_Kid_A2_Semantic_BaseColor_2K.png",
+      "bytes": 1187176,
+      "sha256": "9fde5298a0487a1e56eea3aebf9bf6f17e40888cb35eafacb81986adf5bc8bbc",
+      "resolution": [
+        2048,
+        2048
+      ],
+      "semanticSource": "Kid_v20_NativeBodyHead.BodyPalette POINT color attribute",
+      "lightingBaked": false,
+      "uvChanged": false
+    }
+  },
+  "before": {
+    "hierarchy": {
+      "Hips": null,
+      "Spine": "Hips",
+      "Chest": "Spine",
+      "Neck": "Chest",
+      "Head": "Neck",
+      "LeftShoulder": "Chest",
+      "LeftUpperArm": "LeftShoulder",
+      "LeftLowerArm": "LeftUpperArm",
+      "LeftHand": "LeftLowerArm",
+      "RightShoulder": "Chest",
+      "RightUpperArm": "RightShoulder",
+      "RightLowerArm": "RightUpperArm",
+      "RightHand": "RightLowerArm",
+      "LeftUpperLeg": "Hips",
+      "LeftLowerLeg": "LeftUpperLeg",
+      "LeftFoot": "LeftLowerLeg",
+      "LeftToes": "LeftFoot",
+      "RightUpperLeg": "Hips",
+      "RightLowerLeg": "RightUpperLeg",
+      "RightFoot": "RightLowerLeg",
+      "RightToes": "RightFoot"
+    },
+    "weights": {
+      "vertices": 70676,
+      "zeroWeightVertices": 0,
+      "zeroWeightRatio": 0.0,
+      "maxInfluences": 4,
+      "leftHandNonzeroVertices": 3801,
+      "rightHandNonzeroVertices": 3999,
+      "invalidWeightedGroups": []
+    },
+    "triangles": 140284,
+    "meshes": 35
+  },
+  "changes": {
+    "bodySilhouette": {
+      "headVerticesChanged": 9811,
+      "shoulderVerticesChanged": 13359,
+      "headWidthFactor": 1.065,
+      "headDepthFactor": 1.055,
+      "shoulderWidthFactor": 1.045,
+      "maximumVertexDeltaMeters": 0.0110102,
+      "restSkeletonChanged": false
+    },
+    "accessorySilhouette": {
+      "Kid_Backpack_Adjuster_+1": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            0.124,
+            -0.158,
+            0.669
+          ],
+          [
+            0.158,
+            -0.144,
+            0.721
+          ]
+        ],
+        "boundsAfter": [
+          [
+            0.1223,
+            -0.15856,
+            0.66744
+          ],
+          [
+            0.1597,
+            -0.14344,
+            0.72256
+          ]
+        ]
+      },
+      "Kid_Backpack_Adjuster_-1": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            -0.158,
+            -0.158,
+            0.669
+          ],
+          [
+            -0.124,
+            -0.144,
+            0.721
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.1597,
+            -0.15856,
+            0.66744
+          ],
+          [
+            -0.1223,
+            -0.14344,
+            0.72256
+          ]
+        ]
+      },
+      "Kid_Backpack_Handle": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            -0.044448,
+            0.202405,
+            0.869995
+          ],
+          [
+            0.044448,
+            0.250688,
+            0.909798
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.048893,
+            0.200474,
+            0.868801
+          ],
+          [
+            0.048893,
+            0.25262,
+            0.910992
+          ]
+        ]
+      },
+      "Kid_Backpack_LeatherBase": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            -0.116,
+            0.206,
+            0.487
+          ],
+          [
+            0.116,
+            0.27,
+            0.553
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.1276,
+            0.20344,
+            0.48502
+          ],
+          [
+            0.1276,
+            0.27256,
+            0.55498
+          ]
+        ]
+      },
+      "Kid_Backpack_Main": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            -0.132,
+            0.124,
+            0.512
+          ],
+          [
+            0.132,
+            0.252,
+            0.888
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.1452,
+            0.11888,
+            0.50072
+          ],
+          [
+            0.1452,
+            0.25712,
+            0.89928
+          ]
+        ]
+      },
+      "Kid_Backpack_Pocket": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            -0.101,
+            0.214,
+            0.563
+          ],
+          [
+            0.101,
+            0.276,
+            0.727
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.1111,
+            0.21152,
+            0.55808
+          ],
+          [
+            0.1111,
+            0.27848,
+            0.73192
+          ]
+        ]
+      },
+      "Kid_Backpack_PocketZipper": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            -0.076256,
+            0.274305,
+            0.673357
+          ],
+          [
+            0.076256,
+            0.2837,
+            0.686659
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.083881,
+            0.273929,
+            0.672958
+          ],
+          [
+            0.083881,
+            0.284076,
+            0.687058
+          ]
+        ]
+      },
+      "Kid_Backpack_Strap_+1": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            0.095002,
+            -0.156879,
+            0.583928
+          ],
+          [
+            0.156971,
+            -0.089908,
+            0.923605
+          ]
+        ],
+        "boundsAfter": [
+          [
+            0.091904,
+            -0.159558,
+            0.573737
+          ],
+          [
+            0.160069,
+            -0.087229,
+            0.933796
+          ]
+        ]
+      },
+      "Kid_Backpack_Strap_-1": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            -0.156971,
+            -0.156879,
+            0.583928
+          ],
+          [
+            -0.095002,
+            -0.089908,
+            0.923605
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.160069,
+            -0.159558,
+            0.573737
+          ],
+          [
+            -0.091904,
+            -0.087229,
+            0.933796
+          ]
+        ]
+      },
+      "Kid_Backpack_Zipper": {
+        "scale": [
+          1.1,
+          1.08,
+          1.06
+        ],
+        "boundsBefore": [
+          [
+            -0.099607,
+            0.26311,
+            0.713237
+          ],
+          [
+            0.099607,
+            0.2769,
+            0.748859
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.109567,
+            0.262558,
+            0.712168
+          ],
+          [
+            0.109567,
+            0.277451,
+            0.749927
+          ]
+        ]
+      },
+      "Kid_ShoeLace_+1_0": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            0.057683,
+            -0.0558,
+            0.072251
+          ],
+          [
+            0.108317,
+            -0.048223,
+            0.077757
+          ]
+        ],
+        "boundsAfter": [
+          [
+            0.055151,
+            -0.056103,
+            0.07203
+          ],
+          [
+            0.110849,
+            -0.04792,
+            0.077978
+          ]
+        ]
+      },
+      "Kid_ShoeLace_+1_1": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            0.057683,
+            -0.0658,
+            0.064251
+          ],
+          [
+            0.108317,
+            -0.058223,
+            0.069757
+          ]
+        ],
+        "boundsAfter": [
+          [
+            0.055151,
+            -0.066103,
+            0.06403
+          ],
+          [
+            0.110849,
+            -0.05792,
+            0.069978
+          ]
+        ]
+      },
+      "Kid_ShoeLace_+1_2": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            0.057683,
+            -0.0758,
+            0.056251
+          ],
+          [
+            0.108317,
+            -0.068223,
+            0.061757
+          ]
+        ],
+        "boundsAfter": [
+          [
+            0.055151,
+            -0.076103,
+            0.05603
+          ],
+          [
+            0.110849,
+            -0.06792,
+            0.061978
+          ]
+        ]
+      },
+      "Kid_ShoeLace_+1_3": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            0.057683,
+            -0.0858,
+            0.048251
+          ],
+          [
+            0.108317,
+            -0.078223,
+            0.053757
+          ]
+        ],
+        "boundsAfter": [
+          [
+            0.055151,
+            -0.086103,
+            0.04803
+          ],
+          [
+            0.110849,
+            -0.07792,
+            0.053978
+          ]
+        ]
+      },
+      "Kid_ShoeLace_-1_0": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            -0.108317,
+            -0.0558,
+            0.072251
+          ],
+          [
+            -0.057683,
+            -0.048223,
+            0.077757
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.110849,
+            -0.056103,
+            0.07203
+          ],
+          [
+            -0.055151,
+            -0.04792,
+            0.077978
+          ]
+        ]
+      },
+      "Kid_ShoeLace_-1_1": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            -0.108317,
+            -0.0658,
+            0.064251
+          ],
+          [
+            -0.057683,
+            -0.058223,
+            0.069757
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.110849,
+            -0.066103,
+            0.06403
+          ],
+          [
+            -0.055151,
+            -0.05792,
+            0.069978
+          ]
+        ]
+      },
+      "Kid_ShoeLace_-1_2": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            -0.108317,
+            -0.0758,
+            0.056251
+          ],
+          [
+            -0.057683,
+            -0.068223,
+            0.061757
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.110849,
+            -0.076103,
+            0.05603
+          ],
+          [
+            -0.055151,
+            -0.06792,
+            0.061978
+          ]
+        ]
+      },
+      "Kid_ShoeLace_-1_3": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            -0.108317,
+            -0.0858,
+            0.048251
+          ],
+          [
+            -0.057683,
+            -0.078223,
+            0.053757
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.110849,
+            -0.086103,
+            0.04803
+          ],
+          [
+            -0.055151,
+            -0.07792,
+            0.053978
+          ]
+        ]
+      },
+      "Kid_SockStripe_+1_0": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            0.0476,
+            -0.0354,
+            0.2006
+          ],
+          [
+            0.1184,
+            0.0354,
+            0.2074
+          ]
+        ],
+        "boundsAfter": [
+          [
+            0.04406,
+            -0.038232,
+            0.200328
+          ],
+          [
+            0.12194,
+            0.038232,
+            0.207672
+          ]
+        ]
+      },
+      "Kid_SockStripe_+1_1": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            0.0476,
+            -0.0354,
+            0.2166
+          ],
+          [
+            0.1184,
+            0.0354,
+            0.2234
+          ]
+        ],
+        "boundsAfter": [
+          [
+            0.04406,
+            -0.038232,
+            0.216328
+          ],
+          [
+            0.12194,
+            0.038232,
+            0.223672
+          ]
+        ]
+      },
+      "Kid_SockStripe_-1_0": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            -0.1184,
+            -0.0354,
+            0.2006
+          ],
+          [
+            -0.0476,
+            0.0354,
+            0.2074
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.12194,
+            -0.038232,
+            0.200328
+          ],
+          [
+            -0.04406,
+            0.038232,
+            0.207672
+          ]
+        ]
+      },
+      "Kid_SockStripe_-1_1": {
+        "scale": [
+          1.1,
+          1.08,
+          1.08
+        ],
+        "boundsBefore": [
+          [
+            -0.1184,
+            -0.0354,
+            0.2166
+          ],
+          [
+            -0.0476,
+            0.0354,
+            0.2234
+          ]
+        ],
+        "boundsAfter": [
+          [
+            -0.12194,
+            -0.038232,
+            0.216328
+          ],
+          [
+            -0.04406,
+            0.038232,
+            0.223672
+          ]
+        ]
+      }
+    },
+    "materialProfiles": {
+      "before": {
+        "M_Kid_BackpackNavy": {
+          "baseColor": [
+            0.005,
+            0.015,
+            0.042,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.76
+        },
+        "M_Kid_BackpackTrim": {
+          "baseColor": [
+            0.007,
+            0.006,
+            0.005,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.6
+        },
+        "M_Kid_BackpackLeather": {
+          "baseColor": [
+            0.095,
+            0.025,
+            0.008,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.56
+        },
+        "M_Kid_ZipperMetal": {
+          "baseColor": [
+            0.23,
+            0.25,
+            0.28,
+            1.0
+          ],
+          "metallic": 0.78,
+          "roughness": 0.3
+        },
+        "M_Kid_Sock": {
+          "baseColor": [
+            0.57,
+            0.58,
+            0.55,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.84
+        },
+        "M_Kid_HoodieNavy": {
+          "baseColor": [
+            0.004,
+            0.01,
+            0.03,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.76
+        },
+        "M_Kid_FacialHair": {
+          "baseColor": [
+            0.018,
+            0.008,
+            0.004,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.44
+        },
+        "M_Kid_IrisBrown_EyeGloss": {
+          "baseColor": [
+            0.12,
+            0.026,
+            0.0045,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.18
+        },
+        "M_Kid_Pupil_EyeGloss": {
+          "baseColor": [
+            0.003,
+            0.002,
+            0.001,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.1
+        }
+      },
+      "after": {
+        "M_Kid_BackpackNavy": {
+          "baseColor": [
+            0.018,
+            0.085,
+            0.235,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.61,
+          "read": "saturated blue backpack identity block"
+        },
+        "M_Kid_BackpackTrim": {
+          "baseColor": [
+            0.012,
+            0.035,
+            0.09,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.47,
+          "read": "deep navy straps separated from the bag body"
+        },
+        "M_Kid_BackpackLeather": {
+          "baseColor": [
+            0.225,
+            0.07,
+            0.022,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.43,
+          "read": "warm leather base anchors the backpack"
+        },
+        "M_Kid_ZipperMetal": {
+          "baseColor": [
+            0.54,
+            0.64,
+            0.76,
+            1.0
+          ],
+          "metallic": 0.82,
+          "roughness": 0.22,
+          "read": "cool metal zipper glint"
+        },
+        "M_Kid_Sock": {
+          "baseColor": [
+            0.88,
+            0.94,
+            1.0,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.72,
+          "read": "bright sock and lace break above dark shoes"
+        },
+        "M_Kid_HoodieNavy": {
+          "baseColor": [
+            0.014,
+            0.055,
+            0.175,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.73,
+          "read": "clean navy sock stripe accent"
+        },
+        "M_Kid_FacialHair": {
+          "baseColor": [
+            0.01,
+            0.004,
+            0.003,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.58,
+          "read": "dark facial line mass"
+        },
+        "M_Kid_IrisBrown_EyeGloss": {
+          "baseColor": [
+            0.12,
+            0.035,
+            0.012,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.22,
+          "read": "warm dark iris focus"
+        },
+        "M_Kid_Pupil_EyeGloss": {
+          "baseColor": [
+            0.002,
+            0.001,
+            0.001,
+            1.0
+          ],
+          "metallic": 0.0,
+          "roughness": 0.18,
+          "read": "black pupil focus"
+        }
+      }
+    },
+    "authoringVertexColorsRemovedAfterBake": {
+      "Kid_v20_NativeBodyHead": [
+        "BodyPalette"
+      ]
+    }
+  },
+  "after": {
+    "bones": 21,
+    "boneNames": [
+      "Chest",
+      "Head",
+      "Hips",
+      "LeftFoot",
+      "LeftHand",
+      "LeftLowerArm",
+      "LeftLowerLeg",
+      "LeftShoulder",
+      "LeftToes",
+      "LeftUpperArm",
+      "LeftUpperLeg",
+      "Neck",
+      "RightFoot",
+      "RightHand",
+      "RightLowerArm",
+      "RightLowerLeg",
+      "RightShoulder",
+      "RightToes",
+      "RightUpperArm",
+      "RightUpperLeg",
+      "Spine"
+    ],
+    "hierarchyUnchanged": true,
+    "weights": {
+      "vertices": 70676,
+      "zeroWeightVertices": 0,
+      "zeroWeightRatio": 0.0,
+      "maxInfluences": 4,
+      "leftHandNonzeroVertices": 3801,
+      "rightHandNonzeroVertices": 3999,
+      "invalidWeightedGroups": []
+    },
+    "triangles": 140284,
+    "meshes": 35,
+    "forward": "+Z runtime (Blender -Y export convention)",
+    "rootScale": [
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "qualityGates": {
+    "canonicalBoneNamesAndCount": true,
+    "canonicalHierarchyUnchanged": true,
+    "skinWeightsPreserved": true,
+    "topologyPreserved": true,
+    "uvsPreserved": true,
+    "runtimeClipsOwnedByAnimationPipeline": true,
+    "runtimeVertexColorSemanticsRemoved": true,
+    "noRuntimeScaleOrOrientationPatch": true
+  },
+  "evidence": {
+    "beforeTopdown": "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Reports/evidence/kid_a2_before_topdown.png",
+    "afterTopdown": "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29/Reports/evidence/kid_a2_after_topdown.png"
+  }
+}

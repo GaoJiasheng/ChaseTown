@@ -19,7 +19,7 @@ const require = createRequire(import.meta.url);
 const sharp = require("sharp");
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const TEXTURES = path.join(ROOT, "public/models/SharedTextures");
+const TEXTURES = path.join(ROOT, "art-source/Environment/SharedTextures");
 const OUTPUT = path.join(ROOT, "work/art_pipeline/environment-orm");
 const REPORT = path.join(ROOT, "docs/art_production/environment-runtime-orm-report.json");
 
@@ -76,7 +76,9 @@ async function buildFamily(stem, spec, index) {
       ) / 6;
       const fineGrain = hashNoise(x >> 1, y >> 1, index + 1) - 0.5;
       const cavity = clamp(normalSlope * 0.72 + (1 - luminance) * 0.28, 0, 1);
-      const ao = clamp(0.985 - cavity * spec.cavity - Math.max(0, broadGrain) * 0.08, 0.55, 1);
+      // M2 gate: keep the authored mean but retain enough real cavity range to
+      // survive ETC/UASTC quantization with AO(R) stddev >= 3.
+      const ao = clamp(0.985 - cavity * spec.cavity * 1.38 - Math.max(0, broadGrain) * 0.11, 0.55, 1);
       const roughness = clamp(
         spec.roughness
           + (0.5 - luminance) * spec.variation

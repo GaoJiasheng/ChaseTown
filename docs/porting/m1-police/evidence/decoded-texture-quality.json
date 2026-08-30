@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-08-29",
+  "method": "Decode the embedded KTX2 payload with the same checked-in Basis transcoder used by build_character_bootstrap.mjs, convert to RGBA8, then compute population standard deviation over decoded pixels.",
+  "gates": {
+    "baseColorOverallStddevMinimum": 8,
+    "normalOverallStddevMinimum": 4,
+    "normalRedGreenChannelStddevMinimum": 4,
+    "ormAoRedChannelStddevMinimum": 3
+  },
+  "sourcePng": {
+    "Police_v22_Uniform_BaseColor_768": { "overallStddev": 14.404405 },
+    "Police_v22_Trouser_BaseColor_768": { "overallStddev": 10.410458 },
+    "Police_v22_Skin_ORM_768": { "aoRedStddev": 3.893017 },
+    "Police_v22_Uniform_ORM_768": { "aoRedStddev": 3.906133 }
+  },
+  "variants": {
+    "high": {
+      "path": "public/models/characters/police.glb",
+      "bytes": 7645844,
+      "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5",
+      "textures": {
+        "young_lightskinned_male_diffuse2": { "overallStddev": 37.586089 },
+        "Police_v22_Uniform_BaseColor_768": { "overallStddev": 14.451049 },
+        "Police_v22_Trouser_BaseColor_768": { "overallStddev": 10.426536 },
+        "Police_v22_Skin_MicroNormal_768": { "redStddev": 13.101362, "greenStddev": 13.189887 },
+        "Police_v22_CasualSuit_Normal_1K": { "redStddev": 60.553772, "greenStddev": 60.397583 },
+        "Police_v22_Skin_ORM_768": { "aoRedStddev": 3.9231 },
+        "Police_v22_Uniform_ORM_768": { "aoRedStddev": 3.936844 }
+      },
+      "passed": true
+    },
+    "bootstrap": {
+      "path": "public/models/characters/police-bootstrap.glb",
+      "bytes": 1926584,
+      "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+      "textures": {
+        "young_lightskinned_male_diffuse2": { "overallStddev": 37.525471 },
+        "Police_v22_Uniform_BaseColor_768": { "overallStddev": 14.841539 },
+        "Police_v22_Trouser_BaseColor_768": { "overallStddev": 10.091814 },
+        "Police_v22_Skin_MicroNormal_768": { "redStddev": 12.938961, "greenStddev": 13.046707 },
+        "Police_v22_CasualSuit_Normal_1K": { "redStddev": 59.902682, "greenStddev": 59.748385 },
+        "Police_v22_Skin_ORM_768": { "aoRedStddev": 3.968156 },
+        "Police_v22_Uniform_ORM_768": { "aoRedStddev": 3.991933 }
+      },
+      "passed": true
+    }
+  }
+}

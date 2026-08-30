@@ -1,0 +1,924 @@
+{
+  "assets": [
+    {
+      "id": "22a4f055bd4f4023",
+      "kind": "stylesheet",
+      "name": "index-DDx7DkXa.css",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5975,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/assets/index-DDx7DkXa.css"
+    },
+    {
+      "id": "8c7d4f6688e201fc",
+      "kind": "other",
+      "name": "basis_transcoder.wasm",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5979,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6016,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/basis/basis_transcoder.wasm"
+    },
+    {
+      "id": "9942e78dcc66648b",
+      "kind": "other",
+      "name": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5981,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6018,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2"
+    },
+    {
+      "id": "936ff18531120302",
+      "kind": "other",
+      "name": "kid-bootstrap.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5976,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6013,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/characters/kid-bootstrap.glb?v=1"
+    },
+    {
+      "id": "efe8226d0355420c",
+      "kind": "other",
+      "name": "villain-bootstrap.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5977,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6014,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/characters/villain-bootstrap.glb?v=1"
+    },
+    {
+      "id": "567a88251970236b",
+      "kind": "other",
+      "name": "campus-kit-bootstrap.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5978,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6015,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/themes/campus-kit-bootstrap.glb?v=1"
+    },
+    {
+      "id": "531c75be2c35a2a3",
+      "kind": "script",
+      "name": "basis_transcoder.js",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5980,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6017,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/basis/basis_transcoder.js"
+    },
+    {
+      "id": "158140126364d086",
+      "kind": "other",
+      "name": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5982,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6019,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2"
+    },
+    {
+      "id": "553854b297b4c480",
+      "kind": "other",
+      "name": "9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5983,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6020,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2"
+    },
+    {
+      "id": "94299996ba51c46b",
+      "kind": "other",
+      "name": "locker.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5984,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6021,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/locker.glb?v=32"
+    },
+    {
+      "id": "2799df7e22bf5aef",
+      "kind": "other",
+      "name": "stealth-corner-mirrors.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5985,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6022,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/stealth-corner-mirrors.glb?v=2"
+    },
+    {
+      "id": "23984d757fed950f",
+      "kind": "other",
+      "name": "front-gate.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5986,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6023,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/front-gate.glb?v=5"
+    },
+    {
+      "id": "bcc277ee3855d37d",
+      "kind": "other",
+      "name": "tree.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5989,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6026,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/tree.glb?v=5"
+    },
+    {
+      "id": "203de7649c0eb400",
+      "kind": "other",
+      "name": "basketball.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5992,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6029,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/basketball.glb?v=5"
+    },
+    {
+      "id": "ec645db208d08a01",
+      "kind": "other",
+      "name": "exit.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5987,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6024,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/exit.glb?v=5"
+    },
+    {
+      "id": "0e4a1acb6823fc2b",
+      "kind": "other",
+      "name": "bench.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5988,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6025,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/bench.glb?v=5"
+    },
+    {
+      "id": "9c313dfdf4c0fc4a",
+      "kind": "other",
+      "name": "shrub.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5990,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6027,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/shrub.glb?v=5"
+    },
+    {
+      "id": "c68c6622d0d7d1d0",
+      "kind": "other",
+      "name": "police-car.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5991,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6028,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/police-car.glb?v=5"
+    },
+    {
+      "id": "93e1e44c36d94dcc",
+      "kind": "other",
+      "name": "desk-chair.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5993,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6030,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/desk-chair.glb?v=5"
+    },
+    {
+      "id": "912a02c903bff045",
+      "kind": "script",
+      "name": "layout-segment-context-Vkj51M1h.js",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "other"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5995,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/assets/layout-segment-context-Vkj51M1h.js"
+    },
+    {
+      "id": "196e7ebb85f71b8d",
+      "kind": "other",
+      "name": "podium.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "link"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5994,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6031,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/podium.glb?v=5"
+    },
+    {
+      "id": "0b03b0a3044ce5cd",
+      "kind": "script",
+      "name": "rolldown-runtime-S-ySWqyJ.js",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "other"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5996,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/assets/rolldown-runtime-S-ySWqyJ.js"
+    },
+    {
+      "id": "9162a30b38a7c2fb",
+      "kind": "script",
+      "name": "index-D1LFyNf4.js",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "other"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5997,
+          "property": "href"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 6034,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/assets/index-D1LFyNf4.js"
+    },
+    {
+      "id": "7baca92faf1047b6",
+      "kind": "script",
+      "name": "framework-CXnKph_e.js",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "other"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5998,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/assets/framework-CXnKph_e.js"
+    },
+    {
+      "id": "6ae30140e2b14cf5",
+      "kind": "script",
+      "name": "chasing-game-BbVfXmK5.js",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "other"
+        },
+        {
+          "kind": "attribute",
+          "nodeId": 5999,
+          "property": "href"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/assets/chasing-game-BbVfXmK5.js"
+    },
+    {
+      "id": "8e736c8f046a151e",
+      "kind": "other",
+      "name": "slow-drift-explore.m4a",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        },
+        {
+          "kind": "resource",
+          "property": "audio"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/slow-drift-explore.m4a"
+    },
+    {
+      "id": "4aeac302da7e5a38",
+      "kind": "other",
+      "name": "slow-drift-threat.m4a",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        },
+        {
+          "kind": "resource",
+          "property": "audio"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/slow-drift-threat.m4a"
+    },
+    {
+      "id": "d9cb3d53917fd4d9",
+      "kind": "other",
+      "name": "step-soft-01.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-soft-01.ogg"
+    },
+    {
+      "id": "1c2c1c85f41e8e9d",
+      "kind": "other",
+      "name": "step-soft-02.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-soft-02.ogg"
+    },
+    {
+      "id": "a28d5f3a61d49b20",
+      "kind": "other",
+      "name": "step-soft-03.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-soft-03.ogg"
+    },
+    {
+      "id": "879047f7b5167fa1",
+      "kind": "other",
+      "name": "ceiling-light.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/ceiling-light.glb?v=5"
+    },
+    {
+      "id": "bf5f56456f59cf89",
+      "kind": "other",
+      "name": "bulletin.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/bulletin.glb?v=5"
+    },
+    {
+      "id": "8dae82998ea01abf",
+      "kind": "other",
+      "name": "trash.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/trash.glb?v=5"
+    },
+    {
+      "id": "bd03ed0f3773c6b5",
+      "kind": "other",
+      "name": "classroom-door.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/classroom-door.glb?v=5"
+    },
+    {
+      "id": "bd5292b4673b937d",
+      "kind": "other",
+      "name": "blackboard.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/blackboard.glb?v=5"
+    },
+    {
+      "id": "35b39c2a5dff8e23",
+      "kind": "other",
+      "name": "books.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/books.glb?v=5"
+    },
+    {
+      "id": "d4c02529f19f3bce",
+      "kind": "other",
+      "name": "step-soft-04.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-soft-04.ogg"
+    },
+    {
+      "id": "418e0416558785d4",
+      "kind": "other",
+      "name": "step-soft-05.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-soft-05.ogg"
+    },
+    {
+      "id": "0a9e507141623d3a",
+      "kind": "other",
+      "name": "step-hard-01.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-hard-01.ogg"
+    },
+    {
+      "id": "5e2abd9014e97e37",
+      "kind": "other",
+      "name": "backpack.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/backpack.glb?v=5"
+    },
+    {
+      "id": "25d3b2ad9a9f9a7f",
+      "kind": "other",
+      "name": "station.glb",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/models/environment/station.glb?v=5"
+    },
+    {
+      "id": "487b7460af604203",
+      "kind": "other",
+      "name": "step-hard-02.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-hard-02.ogg"
+    },
+    {
+      "id": "736e34e01f17fb8d",
+      "kind": "other",
+      "name": "step-hard-03.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-hard-03.ogg"
+    },
+    {
+      "id": "ebf649bb822c2dee",
+      "kind": "other",
+      "name": "step-hard-04.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-hard-04.ogg"
+    },
+    {
+      "id": "d152fa0c0c7876bb",
+      "kind": "other",
+      "name": "step-hard-05.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/step-hard-05.ogg"
+    },
+    {
+      "id": "de05eb42fa681ade",
+      "kind": "other",
+      "name": "locker-open-01.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/locker-open-01.ogg"
+    },
+    {
+      "id": "88eb6ec20b98da52",
+      "kind": "other",
+      "name": "locker-open-02.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/locker-open-02.ogg"
+    },
+    {
+      "id": "8a6b3be7e93bc3ae",
+      "kind": "other",
+      "name": "locker-close-01.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/locker-close-01.ogg"
+    },
+    {
+      "id": "f47b90feed4ce0c9",
+      "kind": "other",
+      "name": "locker-close-02.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/locker-close-02.ogg"
+    },
+    {
+      "id": "1250ac1d2086f92e",
+      "kind": "other",
+      "name": "locker-latch.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/locker-latch.ogg"
+    },
+    {
+      "id": "192bfad34db19065",
+      "kind": "other",
+      "name": "cloth-01.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/cloth-01.ogg"
+    },
+    {
+      "id": "e79d0a8b2338167f",
+      "kind": "other",
+      "name": "cloth-02.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/cloth-02.ogg"
+    },
+    {
+      "id": "ea35d51b83ea6622",
+      "kind": "other",
+      "name": "caught-01.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/caught-01.ogg"
+    },
+    {
+      "id": "70e01cfe0be1bc5c",
+      "kind": "other",
+      "name": "caught-02.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/caught-02.ogg"
+    },
+    {
+      "id": "68e672d323188d1b",
+      "kind": "other",
+      "name": "metal-hit-01.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/metal-hit-01.ogg"
+    },
+    {
+      "id": "74a4affbf660264c",
+      "kind": "other",
+      "name": "metal-hit-02.ogg",
+      "sources": [
+        {
+          "kind": "resource",
+          "property": "fetch"
+        }
+      ],
+      "url": "http://127.0.0.1:4173/audio/foley/metal-hit-02.ogg"
+    }
+  ],
+  "id": "ffe6106b-6a7b-4d35-acb2-5a35dd6b46f1",
+  "inlineSvgs": [],
+  "pageUrl": "http://127.0.0.1:4173/?qa=1&autostart=1&qaQuality=mobile",
+  "summary": {
+    "byKind": {
+      "font": 0,
+      "image": 0,
+      "other": 49,
+      "script": 6,
+      "stylesheet": 1,
+      "video": 0
+    },
+    "inlineSvgCount": 0,
+    "totalCount": 56
+  }
+}

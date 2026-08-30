@@ -1,7 +1,323 @@
 {
   "role": "villain",
-  "output": "public/models/characters/villain.glb",
-  "outputBytes": 9421672,
+  "artifactStage": "preMeshoptAnimationBakedRealisticLod0Staging",
+  "outputAtBuildTime": {
+    "path": "public/models/characters/villain.glb",
+    "ephemeral": false,
+    "bytes": 8457876,
+    "sha256": "a2d66175f82eb7d432a9026a9bbe88566588c57765eed11773290033727df2cb"
+  },
+  "finalRuntime": {
+    "high": {
+      "path": "public/models/characters/villain.glb",
+      "bytes": 3123624,
+      "sha256": "8ff6d59ab894a9b60d428e7d9a04f39ade20a69543b5a1ef9f0b2c98efb2e7fd",
+      "triangles": 74660,
+      "nodes": 34,
+      "materials": 6,
+      "joints": 21,
+      "clips": [
+        "Alert",
+        "Catch",
+        "CheckHide",
+        "Idle",
+        "LostSight",
+        "PatrolWalk",
+        "Run",
+        "Search"
+      ],
+      "clipDurationsSeconds": {
+        "Alert": 0.600000024,
+        "Catch": 1.20000005,
+        "CheckHide": 2.26666665,
+        "Idle": 2.5,
+        "LostSight": 1.76666665,
+        "PatrolWalk": 1.4666667,
+        "Run": 0.866666675,
+        "Search": 1.43333328
+      },
+      "textures": [
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
+          "slot": "normal",
+          "ktx2Bytes": 263414,
+          "ktx2Sha256": "eccfa05aed2d675bfe3cf1e8accb515ad947d4cdd092f9069fccff1a0379f3fd",
+          "width": 768,
+          "height": 768,
+          "decodedRgb": {
+            "mean": 169.565,
+            "stddev": 60.0562,
+            "channelStddev": [
+              2.3688,
+              1.5023,
+              0.8242
+            ],
+            "pixelSha256": "85c3426335883ec0ae64fc22471f1409ab8b3f5cbbbdc62d34c3bbcc66edb226"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_Normal_2K.png",
+            "rootMeanSquaredError": 1.5725,
+            "peakSignalToNoiseRatioDb": 44.1991,
+            "maximumChannelDelta": 11
+          }
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+          "slot": "baseColor",
+          "ktx2Bytes": 568847,
+          "ktx2Sha256": "f5cbade6d044146ecada7e2181e40d6d7d1ef66c9dbc796844efd65ce361b40b",
+          "width": 768,
+          "height": 768,
+          "decodedRgb": {
+            "mean": 19.7919,
+            "stddev": 8.1659,
+            "channelStddev": [
+              7.5994,
+              7.63,
+              7.5965
+            ],
+            "pixelSha256": "74d36e4c24ddaa50a1356264d68e37ab288c0a8a78050a0ce1250b2f176d543c"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_BaseColor_2K.png",
+            "rootMeanSquaredError": 1.2989,
+            "peakSignalToNoiseRatioDb": 45.8593,
+            "maximumChannelDelta": 7
+          }
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+          "slot": "orm",
+          "ktx2Bytes": 234460,
+          "ktx2Sha256": "56921db961e9d6b3bd7f00bb667d7a241bc032d3286a3695fa8cd9c0cb709592",
+          "width": 768,
+          "height": 768,
+          "decodedRgb": {
+            "mean": 134.1167,
+            "stddev": 96.67,
+            "channelStddev": [
+              3.9342,
+              2.7751,
+              0.6428
+            ],
+            "pixelSha256": "bd6a47b4cdf51afa4bc3c770d243440b44fbf23b867c1d9a1823fad38f18dc74"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_ORM_2K.png",
+            "rootMeanSquaredError": 1.1059,
+            "peakSignalToNoiseRatioDb": 47.2563,
+            "maximumChannelDelta": 8
+          }
+        }
+      ]
+    },
+    "lod1": {
+      "path": "public/models/characters/villain-lod1.glb",
+      "bytes": 1526192,
+      "sha256": "66cccb2e32d0e771a7eef73a113ca8dd773d92563c665c983feba6dfae901352",
+      "triangles": 25599,
+      "nodes": 46,
+      "materials": 6,
+      "joints": 21,
+      "clips": [
+        "Alert",
+        "Catch",
+        "CheckHide",
+        "Idle",
+        "LostSight",
+        "PatrolWalk",
+        "Run",
+        "Search"
+      ],
+      "clipDurationsSeconds": {
+        "Alert": 0.600000024,
+        "Catch": 1.20000005,
+        "CheckHide": 2.26666665,
+        "Idle": 2.5,
+        "LostSight": 1.76666665,
+        "PatrolWalk": 1.4666667,
+        "Run": 0.866666675,
+        "Search": 1.43333328
+      },
+      "textures": [
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
+          "slot": "normal",
+          "ktx2Bytes": 263414,
+          "ktx2Sha256": "eccfa05aed2d675bfe3cf1e8accb515ad947d4cdd092f9069fccff1a0379f3fd",
+          "width": 768,
+          "height": 768,
+          "decodedRgb": {
+            "mean": 169.565,
+            "stddev": 60.0562,
+            "channelStddev": [
+              2.3688,
+              1.5023,
+              0.8242
+            ],
+            "pixelSha256": "85c3426335883ec0ae64fc22471f1409ab8b3f5cbbbdc62d34c3bbcc66edb226"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_Normal_2K.png",
+            "rootMeanSquaredError": 1.5725,
+            "peakSignalToNoiseRatioDb": 44.1991,
+            "maximumChannelDelta": 11
+          }
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+          "slot": "baseColor",
+          "ktx2Bytes": 568847,
+          "ktx2Sha256": "f5cbade6d044146ecada7e2181e40d6d7d1ef66c9dbc796844efd65ce361b40b",
+          "width": 768,
+          "height": 768,
+          "decodedRgb": {
+            "mean": 19.7919,
+            "stddev": 8.1659,
+            "channelStddev": [
+              7.5994,
+              7.63,
+              7.5965
+            ],
+            "pixelSha256": "74d36e4c24ddaa50a1356264d68e37ab288c0a8a78050a0ce1250b2f176d543c"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_BaseColor_2K.png",
+            "rootMeanSquaredError": 1.2989,
+            "peakSignalToNoiseRatioDb": 45.8593,
+            "maximumChannelDelta": 7
+          }
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+          "slot": "orm",
+          "ktx2Bytes": 234460,
+          "ktx2Sha256": "56921db961e9d6b3bd7f00bb667d7a241bc032d3286a3695fa8cd9c0cb709592",
+          "width": 768,
+          "height": 768,
+          "decodedRgb": {
+            "mean": 134.1167,
+            "stddev": 96.67,
+            "channelStddev": [
+              3.9342,
+              2.7751,
+              0.6428
+            ],
+            "pixelSha256": "bd6a47b4cdf51afa4bc3c770d243440b44fbf23b867c1d9a1823fad38f18dc74"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_ORM_2K.png",
+            "rootMeanSquaredError": 1.1059,
+            "peakSignalToNoiseRatioDb": 47.2563,
+            "maximumChannelDelta": 8
+          }
+        }
+      ]
+    },
+    "bootstrap": {
+      "path": "public/models/characters/villain-bootstrap.glb",
+      "bytes": 891784,
+      "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a",
+      "triangles": 25599,
+      "nodes": 46,
+      "materials": 6,
+      "joints": 21,
+      "clips": [
+        "Alert",
+        "Catch",
+        "CheckHide",
+        "Idle",
+        "LostSight",
+        "PatrolWalk",
+        "Run",
+        "Search"
+      ],
+      "clipDurationsSeconds": {
+        "Alert": 0.600000024,
+        "Catch": 1.20000005,
+        "CheckHide": 2.26666665,
+        "Idle": 2.5,
+        "LostSight": 1.76666665,
+        "PatrolWalk": 1.4666667,
+        "Run": 0.866666675,
+        "Search": 1.43333328
+      },
+      "textures": [
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
+          "slot": "normal",
+          "ktx2Bytes": 151074,
+          "ktx2Sha256": "3f7b3e58d69416c77037971a9148fb5a3e1444e268461a39a91d2cae6d0c0726",
+          "width": 384,
+          "height": 384,
+          "decodedRgb": {
+            "mean": 169.6185,
+            "stddev": 60.1024,
+            "channelStddev": [
+              2.2409,
+              1.4151,
+              0.7069
+            ],
+            "pixelSha256": "4c91425602ef231595e037f2f7fd929ee5943a99c11b01b8dbd843b09de37a37"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_Normal_2K.png",
+            "rootMeanSquaredError": 1.3823,
+            "peakSignalToNoiseRatioDb": 45.3186,
+            "maximumChannelDelta": 8
+          }
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+          "slot": "baseColor",
+          "ktx2Bytes": 132729,
+          "ktx2Sha256": "318c0b955af6aa5e7658e0a908ba7a3096edc2b5ec64bd466c0da17478e2d5d1",
+          "width": 768,
+          "height": 768,
+          "decodedRgb": {
+            "mean": 19.321,
+            "stddev": 8.2913,
+            "channelStddev": [
+              7.6389,
+              7.7777,
+              7.3914
+            ],
+            "pixelSha256": "f468d3b8391caf49195a9f256940afb083b2ea5a3c315294cf6ea119ee8b7421"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_BaseColor_2K.png",
+            "rootMeanSquaredError": 3.4687,
+            "peakSignalToNoiseRatioDb": 37.3274,
+            "maximumChannelDelta": 18
+          }
+        },
+        {
+          "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+          "slot": "orm",
+          "ktx2Bytes": 148541,
+          "ktx2Sha256": "ddd11adb6281251f83c87f4a5cacca85967d2d7c4cfff083dfbe292abe9dec79",
+          "width": 384,
+          "height": 384,
+          "decodedRgb": {
+            "mean": 134.0847,
+            "stddev": 96.7523,
+            "channelStddev": [
+              3.9439,
+              2.7805,
+              0.5317
+            ],
+            "pixelSha256": "09faa6a7123f245c966b2eb339416d4663584cfaeccce0b68858c91a8769cae6"
+          },
+          "scaledAuthoredSource": {
+            "path": "art-source/Characters/Villain/ReferenceStandard/PrecisionRemodel_2026_07_13_v21/Textures/Char_Villain_PrecisionRemodel_v21_ORM_2K.png",
+            "rootMeanSquaredError": 0.9196,
+            "peakSignalToNoiseRatioDb": 48.8593,
+            "maximumChannelDelta": 5
+          }
+        }
+      ]
+    }
+  },
   "rig": "Rig_Humanoid_Shared",
   "bones": 21,
   "meshes": 12,
@@ -9,80 +325,88 @@
     {
       "name": "Idle",
       "frames": [
-        0.0,
-        75.0
+        0,
+        75
       ],
       "durationSeconds": 2.5,
+      "sourceRetargetDurationSeconds": 2.5,
       "source": "Quaternius UAL Standard/Idle_Loop",
       "loop": true
     },
     {
       "name": "PatrolWalk",
       "frames": [
-        0.0,
-        44.0
+        0,
+        44
       ],
-      "durationSeconds": 1.4815,
+      "durationSeconds": 1.4667,
+      "sourceRetargetDurationSeconds": 1.4815,
       "source": "Quaternius UAL Standard/Walk_Formal_Loop",
       "loop": true
     },
     {
       "name": "Run",
       "frames": [
-        0.0,
-        26.0
+        0,
+        26
       ],
-      "durationSeconds": 0.8642,
+      "durationSeconds": 0.8667,
+      "sourceRetargetDurationSeconds": 0.8642,
       "source": "Quaternius UAL Standard/Jog_Fwd_Loop",
       "loop": true
     },
     {
       "name": "Alert",
       "frames": [
-        0.0,
-        18.0
+        0,
+        18
       ],
-      "durationSeconds": 0.6019,
+      "durationSeconds": 0.6,
+      "sourceRetargetDurationSeconds": 0.6019,
       "source": "Quaternius UAL Standard/Hit_Head",
       "loop": false
     },
     {
       "name": "LostSight",
       "frames": [
-        0.0,
-        53.0
+        0,
+        53
       ],
-      "durationSeconds": 1.7593,
+      "durationSeconds": 1.7667,
+      "sourceRetargetDurationSeconds": 1.7593,
       "source": "Quaternius UAL Standard/Idle_Torch_Loop",
       "loop": true
     },
     {
       "name": "Search",
       "frames": [
-        0.0,
-        43.0
+        0,
+        43
       ],
-      "durationSeconds": 1.4394,
+      "durationSeconds": 1.4333,
+      "sourceRetargetDurationSeconds": 1.4394,
       "source": "Quaternius UAL Standard/Idle_Torch_Loop",
       "loop": true
     },
     {
       "name": "CheckHide",
       "frames": [
-        0.0,
-        68.0
+        0,
+        68
       ],
-      "durationSeconds": 2.2727,
+      "durationSeconds": 2.2667,
+      "sourceRetargetDurationSeconds": 2.2727,
       "source": "Quaternius UAL Standard/Interact",
       "loop": false
     },
     {
       "name": "Catch",
       "frames": [
-        0.0,
-        36.0
+        0,
+        36
       ],
-      "durationSeconds": 1.2037,
+      "durationSeconds": 1.2,
+      "sourceRetargetDurationSeconds": 1.2037,
       "source": "Quaternius UAL Standard/Punch_Enter",
       "loop": false
     }
@@ -91,6 +415,71 @@
     "hasRuntimeProceduralPose": false,
     "fullBodySampleRateFps": 30,
     "requiredBoneMapComplete": true,
-    "sourceLicense": "CC0-1.0"
+    "sourceLicense": "CC0-1.0",
+    "motionSource": {
+      "bytes": 6671104,
+      "sha256": "1b7bf67866360665426bb99e4c71bd619f19b408453c24e30f0c3071601eee5c",
+      "matchesPinnedQuaterniusStandard": true
+    },
+    "packedOrmOcclusionMaterials": 6,
+    "semanticMaterialProfiles": {
+      "coat": {
+        "roughnessFactor": 0.92,
+        "metallicFactor": 0,
+        "normalScale": 0.55
+      },
+      "hood": {
+        "roughnessFactor": 0.98,
+        "metallicFactor": 0,
+        "normalScale": 0.42
+      },
+      "face_shadow": {
+        "roughnessFactor": 0.76,
+        "metallicFactor": 0,
+        "normalScale": 0.28
+      },
+      "pants": {
+        "roughnessFactor": 0.96,
+        "metallicFactor": 0,
+        "normalScale": 0.48
+      },
+      "boots": {
+        "roughnessFactor": 0.74,
+        "metallicFactor": 0.04,
+        "normalScale": 0.62
+      },
+      "lining_hardware": {
+        "roughnessFactor": 0.68,
+        "metallicFactor": 0.14,
+        "normalScale": 0.58
+      }
+    },
+    "realisticLod0": {
+      "tool": "gltfpack 1.2",
+      "binarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+      "arguments": [
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-si",
+        "0.54",
+        "-se",
+        "0.00337",
+        "-slb",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24"
+      ],
+      "sourceTriangles": 134608,
+      "triangles": 74660,
+      "triangleRatio": 0.554648,
+      "uncompressedPreMeshopt": true
+    }
   }
 }

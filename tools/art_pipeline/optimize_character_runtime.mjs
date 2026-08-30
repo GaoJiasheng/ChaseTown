@@ -15,6 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as THREE from "three";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+import sharp from "sharp";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const DEFAULT_CHARACTER_DIRECTORY = path.join(ROOT, "public", "models", "characters");
@@ -32,7 +33,9 @@ const DEFAULT_KTX2_REPORT = path.join(
   "reports",
   "runtime-ktx2.json",
 );
-const GLTFPACK = path.join(ROOT, "node_modules", ".bin", "gltfpack");
+const DEFAULT_GLTFPACK = path.join(ROOT, "node_modules", ".bin", "gltfpack");
+const M1_VILLAIN_NATIVE_GLTFPACK_SHA256 =
+  "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df";
 const ROLES = ["kid", "villain", "police"];
 const FORMAT_VERSION = 1;
 
@@ -55,6 +58,28 @@ export const GLTFPACK_ARGUMENTS = Object.freeze([
   "-as",
   "24",
 ]);
+const VILLAIN_GLTFPACK_ARGUMENTS = Object.freeze([
+  ...GLTFPACK_ARGUMENTS,
+  "-tw",
+  "-tl",
+  "768",
+  "-tq",
+  "10",
+]);
+
+function expectedRoleOverrides() {
+  return {
+    villain: {
+      sourceTextures: "Lossless authored PNG maps embedded by Blender.",
+      textureTranscode: "Native gltfpack WebP quality 10 intermediate before production KTX2.",
+      textureMaxDimension: 768,
+      executable: "external native gltfpack (pass --gltfpack PATH)",
+      version: "gltfpack 1.2",
+      binarySha256: M1_VILLAIN_NATIVE_GLTFPACK_SHA256,
+      arguments: VILLAIN_GLTFPACK_ARGUMENTS,
+    },
+  };
+}
 
 const COMPONENTS = new Map([
   ["SCALAR", 1],
@@ -93,8 +118,14 @@ function parseArguments(argv) {
     sourceDirectory: DEFAULT_CHARACTER_DIRECTORY,
     outputDirectory: DEFAULT_CHARACTER_DIRECTORY,
     report: DEFAULT_REPORT,
+    reportExplicit: false,
     ktx2Report: DEFAULT_KTX2_REPORT,
+    gltfpack: process.env.GLTFPACK_NATIVE
+      ? path.resolve(process.env.GLTFPACK_NATIVE)
+      : DEFAULT_GLTFPACK,
+    gltfpackExplicit: Boolean(process.env.GLTFPACK_NATIVE),
     check: false,
+    role: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -106,12 +137,31 @@ function parseArguments(argv) {
     if (!value) throw new Error(`${argument} needs a value`);
     if (argument === "--source-dir") result.sourceDirectory = path.resolve(value);
     else if (argument === "--output-dir") result.outputDirectory = path.resolve(value);
-    else if (argument === "--report") result.report = path.resolve(value);
+    else if (argument === "--report") {
+      result.report = path.resolve(value);
+      result.reportExplicit = true;
+    }
     else if (argument === "--ktx2-report") result.ktx2Report = path.resolve(value);
+    else if (argument === "--gltfpack") {
+      result.gltfpack = path.resolve(value);
+      result.gltfpackExplicit = true;
+    }
+    else if (argument === "--role") result.role = value;
     else throw new Error(`Unknown argument: ${argument}`);
     index += 1;
   }
+  if (result.role !== null && !ROLES.includes(result.role)) {
+    throw new Error(`Unknown character role: ${result.role}`);
+  }
   return result;
+}
+
+function selectedRoles(options) {
+  return options.role ? [options.role] : ROLES;
+}
+
+function optimizationArguments(role) {
+  return role === "villain" ? VILLAIN_GLTFPACK_ARGUMENTS : GLTFPACK_ARGUMENTS;
 }
 
 function sha256(buffer) {
@@ -355,7 +405,7 @@ function triangleCount(asset) {
   ), 0);
 }
 
-function imagePayloads(asset) {
+function embeddedImageRecords(asset) {
   return (asset.json.images ?? []).map((image) => {
     assert.equal(image.uri, undefined, `${asset.filename} character textures must remain embedded`);
     const view = asset.json.bufferViews[image.bufferView];
@@ -371,10 +421,88 @@ function imagePayloads(asset) {
     return {
       name: image.name,
       mimeType: image.mimeType,
-      bytes: payload.length,
-      sha256: sha256(payload),
+      payload,
     };
   });
+}
+
+function imagePayloads(asset) {
+  return embeddedImageRecords(asset).map(({ name, mimeType, payload }) => ({
+    name,
+    mimeType,
+    bytes: payload.length,
+    sha256: sha256(payload),
+  }));
+}
+
+async function textureTranscodeQuality(source, optimized, textureMaxDimension = null) {
+  const sourceImages = embeddedImageRecords(source);
+  const optimizedImages = embeddedImageRecords(optimized);
+  assert.deepEqual(
+    optimizedImages.map(({ name }) => name),
+    sourceImages.map(({ name }) => name),
+    `${optimized.filename} changed the authored image contract`,
+  );
+  const textures = [];
+  const minimumPsnrDb = textureMaxDimension === null ? 48 : 45;
+  const maximumChannelDeltaGate = textureMaxDimension === null ? 10 : 20;
+  for (const [imageIndex, sourceImage] of sourceImages.entries()) {
+    const optimizedImage = optimizedImages[imageIndex];
+    assert.equal(sourceImage.mimeType, "image/png", `${source.filename}/${sourceImage.name} is not a lossless PNG source`);
+    assert.equal(optimizedImage.mimeType, "image/webp", `${optimized.filename}/${optimizedImage.name} is not WebP`);
+    let sourcePipeline = sharp(sourceImage.payload);
+    if (textureMaxDimension !== null) {
+      sourcePipeline = sourcePipeline.resize({
+        width: textureMaxDimension,
+        height: textureMaxDimension,
+        fit: "inside",
+        withoutEnlargement: true,
+        kernel: sharp.kernel.lanczos3,
+      });
+    }
+    const sourcePixels = await sourcePipeline
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const optimizedPixels = await sharp(optimizedImage.payload)
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    assert.deepEqual(optimizedPixels.info, sourcePixels.info, `${optimizedImage.name} dimensions changed`);
+    let squaredError = 0;
+    let maximumDelta = 0;
+    for (let index = 0; index < sourcePixels.data.length; index += 1) {
+      const delta = Math.abs(sourcePixels.data[index] - optimizedPixels.data[index]);
+      squaredError += delta * delta;
+      maximumDelta = Math.max(maximumDelta, delta);
+    }
+    const rootMeanSquaredError = Math.sqrt(squaredError / sourcePixels.data.length);
+    const peakSignalToNoiseRatio = 20 * Math.log10(255 / Math.max(rootMeanSquaredError, Number.EPSILON));
+    assert.ok(
+      peakSignalToNoiseRatio >= minimumPsnrDb,
+      `${optimizedImage.name} WebP+resize PSNR fell to ${peakSignalToNoiseRatio} dB`,
+    );
+    assert.ok(
+      maximumDelta <= maximumChannelDeltaGate,
+      `${optimizedImage.name} WebP+resize channel delta reached ${maximumDelta}`,
+    );
+    textures.push({
+      name: sourceImage.name,
+      width: sourcePixels.info.width,
+      height: sourcePixels.info.height,
+      peakSignalToNoiseRatioDb: Number(peakSignalToNoiseRatio.toFixed(3)),
+      rootMeanSquaredError: Number(rootMeanSquaredError.toFixed(3)),
+      maximumChannelDelta: maximumDelta,
+    });
+  }
+  return {
+    sourceMimeType: "image/png",
+    outputMimeType: "image/webp",
+    minimumPsnrDb,
+    maximumChannelDelta: maximumChannelDeltaGate,
+    ...(textureMaxDimension === null ? {} : { textureMaxDimension }),
+    textures,
+  };
 }
 
 function animationDurations(asset) {
@@ -398,7 +526,11 @@ function arrayMaximumDelta(left, right) {
   return Math.max(0, ...left.map((value, index) => Math.abs(value - right[index])));
 }
 
-async function validateOptimization(source, optimized) {
+async function validateOptimization(
+  source,
+  optimized,
+  { textureTranscode = false, textureMaxDimension = null } = {},
+) {
   await Promise.all([decodeMeshopt(source), decodeMeshopt(optimized)]);
   assert.equal(hasMeshopt(source), false, `${source.filename} is already Meshopt-compressed; refusing cumulative repacking`);
   assert.equal(hasMeshopt(optimized), true, `${optimized.filename} is missing EXT_meshopt_compression`);
@@ -440,11 +572,16 @@ async function validateOptimization(source, optimized) {
       `${optimized.filename}/${clip} duration changed`,
     );
   }
-  assert.deepEqual(
-    imagePayloads(optimized),
-    imagePayloads(source),
-    `${optimized.filename} changed embedded texture bytes`,
-  );
+  const transcodeQuality = textureTranscode
+    ? await textureTranscodeQuality(source, optimized, textureMaxDimension)
+    : null;
+  if (!textureTranscode) {
+    assert.deepEqual(
+      imagePayloads(optimized),
+      imagePayloads(source),
+      `${optimized.filename} changed embedded texture bytes`,
+    );
+  }
   const sourceTriangles = triangleCount(source);
   const optimizedTriangles = triangleCount(optimized);
   const removedTriangles = sourceTriangles - optimizedTriangles;
@@ -490,6 +627,7 @@ async function validateOptimization(source, optimized) {
       Object.entries(sourceDurations).sort(([left], [right]) => left.localeCompare(right)),
     ),
     textures: imagePayloads(source),
+    ...(transcodeQuality ? { textureTranscode: transcodeQuality } : {}),
     boundsMaxDeltaMeters,
     animationDeviation: deviation,
   };
@@ -502,6 +640,18 @@ async function readExistingReport(filename) {
     if (error.code === "ENOENT") return null;
     throw error;
   }
+}
+
+function mergedCharacterEntries(existing, updates) {
+  const updatedByRole = new Map(updates.map((entry) => [entry.role, entry]));
+  const existingByRole = new Map(
+    (existing?.characters ?? []).map((entry) => [entry.role, entry]),
+  );
+  return ROLES.map((role) => {
+    const entry = updatedByRole.get(role) ?? existingByRole.get(role);
+    assert.ok(entry, `The Meshopt report has no preserved ${role} entry`);
+    return entry;
+  });
 }
 
 async function verifyCurrentAsset(
@@ -550,11 +700,24 @@ async function ensureExecutable(filename) {
   await access(filename);
   const version = spawnSync(filename, ["-v"], { cwd: ROOT, encoding: "utf8" });
   if (version.status !== 0) throw new Error(version.stderr || version.stdout || "gltfpack -v failed");
-  return version.stdout.trim();
+  return {
+    version: version.stdout.trim(),
+    binarySha256: sha256(await readFile(filename)),
+  };
 }
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
+  if (
+    !options.check
+    && path.resolve(options.outputDirectory) !== path.resolve(DEFAULT_CHARACTER_DIRECTORY)
+    && (
+      !options.reportExplicit
+      || path.resolve(options.report) === path.resolve(DEFAULT_REPORT)
+    )
+  ) {
+    throw new Error("A non-default --output-dir requires an explicit non-default --report path");
+  }
   const existingReport = await readExistingReport(options.report);
   const ktx2Report = options.check
     ? await readExistingReport(options.ktx2Report)
@@ -567,8 +730,9 @@ async function main() {
   const staged = [];
   const entries = [];
   let toolVersion = existingReport?.tool?.version ?? null;
+  const roleOverrides = expectedRoleOverrides();
 
-  for (const role of ROLES) {
+  for (const role of selectedRoles(options)) {
     const sourceFilename = path.join(options.sourceDirectory, `${role}.glb`);
     const outputFilename = path.join(options.outputDirectory, `${role}.glb`);
     const source = await loadGlb(sourceFilename);
@@ -589,22 +753,40 @@ async function main() {
       continue;
     }
     assert.equal(options.check, false, `${sourceFilename} is not optimized`);
-    toolVersion ??= await ensureExecutable(GLTFPACK);
+    const roleGltfpack = role === "villain" ? options.gltfpack : DEFAULT_GLTFPACK;
+    const roleTool = await ensureExecutable(roleGltfpack);
+    if (role === "villain") {
+      assert.equal(
+        options.gltfpackExplicit,
+        true,
+        "Fresh Villain builds require --gltfpack PATH or GLTFPACK_NATIVE=PATH because the bundled Node wrapper cannot encode the audited WebP intermediate.",
+      );
+      assert.match(roleTool.version, /gltfpack 1\.2/u, "Villain requires native gltfpack 1.2");
+      assert.equal(
+        roleTool.binarySha256,
+        M1_VILLAIN_NATIVE_GLTFPACK_SHA256,
+        "Villain requires the audited native gltfpack binary; update the provenance record deliberately before changing it.",
+      );
+    }
+    const argumentsForRole = optimizationArguments(role);
     const temporary = path.join(
       options.outputDirectory,
       `.${role}.meshopt-${process.pid}-${Date.now()}.glb`,
     );
     try {
       const result = spawnSync(
-        GLTFPACK,
-        ["-i", sourceFilename, "-o", temporary, ...GLTFPACK_ARGUMENTS],
+        roleGltfpack,
+        ["-i", sourceFilename, "-o", temporary, ...argumentsForRole],
         { cwd: ROOT, encoding: "utf8" },
       );
       if (result.status !== 0) {
         throw new Error(result.stderr || result.stdout || `gltfpack failed for ${role}`);
       }
       const optimized = await loadGlb(temporary);
-      const quality = await validateOptimization(source, optimized);
+      const quality = await validateOptimization(source, optimized, {
+        textureTranscode: role === "villain",
+        textureMaxDimension: role === "villain" ? 768 : null,
+      });
       const sourceInfo = await stat(sourceFilename);
       const optimizedInfo = await stat(temporary);
       assert.ok(
@@ -625,6 +807,14 @@ async function main() {
         },
         quality,
       };
+      if (role === "villain") {
+        assert.deepEqual(roleOverrides.villain, {
+          ...expectedRoleOverrides().villain,
+          version: roleTool.version,
+          binarySha256: roleTool.binarySha256,
+          arguments: argumentsForRole,
+        });
+      }
       staged.push({ role, temporary, outputFilename });
       entries.push(entry);
     } catch (error) {
@@ -636,7 +826,10 @@ async function main() {
     }
   }
 
-  if (!toolVersion) toolVersion = await ensureExecutable(GLTFPACK);
+  const defaultTool = await ensureExecutable(DEFAULT_GLTFPACK);
+  if (!toolVersion) toolVersion = defaultTool.version;
+  else assert.equal(toolVersion, defaultTool.version, "Meshopt report tool version drifted");
+  const mergedEntries = mergedCharacterEntries(existingReport, entries);
   const report = {
     formatVersion: FORMAT_VERSION,
     generatedAt: staged.length
@@ -649,20 +842,21 @@ async function main() {
       cumulativeRepacking: false,
     },
     tool: {
-      executable: path.relative(ROOT, GLTFPACK),
+      executable: path.relative(ROOT, DEFAULT_GLTFPACK),
       version: toolVersion,
       arguments: GLTFPACK_ARGUMENTS,
     },
+    ...(Object.keys(roleOverrides).length ? { roleOverrides } : {}),
     totals: {
-      sourceBytes: entries.reduce((total, entry) => total + entry.source.bytes, 0),
-      optimizedBytes: entries.reduce((total, entry) => total + entry.optimized.bytes, 0),
-      savedBytes: entries.reduce((total, entry) => total + entry.optimized.savedBytes, 0),
+      sourceBytes: mergedEntries.reduce((total, entry) => total + entry.source.bytes, 0),
+      optimizedBytes: mergedEntries.reduce((total, entry) => total + entry.optimized.bytes, 0),
+      savedBytes: mergedEntries.reduce((total, entry) => total + entry.optimized.savedBytes, 0),
       savedPercent: Number((
-        (1 - entries.reduce((total, entry) => total + entry.optimized.bytes, 0)
-          / entries.reduce((total, entry) => total + entry.source.bytes, 0)) * 100
+        (1 - mergedEntries.reduce((total, entry) => total + entry.optimized.bytes, 0)
+          / mergedEntries.reduce((total, entry) => total + entry.source.bytes, 0)) * 100
       ).toFixed(3)),
     },
-    characters: entries,
+    characters: mergedEntries,
   };
 
   // Validate every role before replacing any production asset.

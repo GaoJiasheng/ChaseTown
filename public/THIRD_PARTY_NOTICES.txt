@@ -1,9 +1,191 @@
-Chasing — Third-Party Software Notices
-======================================
+Chasing — Third-Party Notices
+===============================
 
-This file records the licenses shipped with the locally installed package
-versions used by this Web build. Copyright notices and license text below are
-copied from the corresponding package LICENSE files in node_modules.
+This file records third-party software and content used by this Web build.
+Software license text below is copied from the corresponding package LICENSE
+files in node_modules. Asset provenance and release restrictions are recorded
+separately and link to their fixed upstream sources.
+
+
+Tencent Hunyuan 3D 2.0 — generated Kid and Villain geometry
+-----------------------------------------------------------
+
+The Kid and Villain characters use geometry descended from Outputs generated
+with Tencent Hunyuan 3D 2.0. The game does not ship Tencent model weights,
+model code, or a hosted Hunyuan inference service.
+
+Official agreement snapshot:
+  https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/f8db63096c8282cb27354314d896feba5ba6ff8a/LICENSE
+
+Official notice snapshot:
+  https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/f8db63096c8282cb27354314d896feba5ba6ff8a/NOTICE
+
+Notice required by Section 3(d) of the official agreement:
+
+Tencent Hunyuan 3D 2.0 is licensed under the Tencent Hunyuan 3D 2.0 Community License Agreement, Copyright © 2025 Tencent. All Rights Reserved. The trademark rights of “Tencent Hunyuan” are owned by Tencent or its affiliate.
+
+Modification notice:
+
+The generated geometry was substantially modified for Chasing. Both characters
+were reshaped in Blender, cleaned and normalized on retained 21-joint armatures,
+simplified and compressed, converted to KTX2 runtime materials, and retargeted
+to the game's separately licensed gameplay animations. The Villain additionally
+uses a cropped MakeHuman/MPFB CC0 nose-and-mouth relief and project-specific
+material maps. The Kid A2 pass preserves project-authored semantic vertex
+colours as its clean runtime BaseColor zoning. Runtime high, LOD and bootstrap
+derivatives are modified files; they are not unmodified Tencent model outputs.
+
+PUBLIC RELEASE BLOCKED PENDING PRODUCT LEGAL REVIEW:
+
+The community agreement restricts use and display, including Output, to a
+Territory that excludes the European Union, United Kingdom, and South Korea.
+It also contains a 1,000,000-monthly-active-user threshold measured at the
+model's January 21, 2025 release date, distribution and downstream-use terms,
+and a provider-disclosure requirement. This repository does not know or invent
+the publisher's full legal name and does not claim legal approval. Before any
+public release, the product owner must document the actual provider legal
+entity, applicable historical MAU, release territories, distribution method,
+end-user terms, and any separate Tencent permission. The end-user disclosure
+must also make clear that Tencent does not sponsor, endorse, or have an
+affiliation with this game.
+
+The audited provenance, fixed upstream hashes, interpretation boundary, and
+remaining release decisions are recorded in:
+  docs/licenses/TENCENT_HUNYUAN3D_2_COMMUNITY_LICENSE.md
+
+
+MakeHuman / MPFB core graphical assets — Police character
+-----------------------------------------------------------
+
+The Police character uses modified content descended from MakeHuman / MPFB
+core graphical assets, including the adult human basis, skin, hair, eyebrows,
+eyelashes, eye source data, and uniform basis. The audited local input bytes are
+identified by path, byte length, and SHA-256 below:
+
+  tools/third_party/makehuman-assets/base/skins/textures/young_lightskinned_male_diffuse2.png
+  Bytes: 3,595,270
+  SHA-256: 03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874
+
+  tools/third_party/makehuman-assets/base/hair/short01/short01_diffuse.png
+  Bytes: 2,354,146
+  SHA-256: f34a0957184e3d1e911ed59245f874f8d4843f61ee44ff49f43edb4be0196949
+
+  tools/third_party/makehuman-assets/base/clothes/male_casualsuit03/male_casualsuit03_normal.png
+  Bytes: 9,610,278
+  SHA-256: 412c4610d3b2ea1cb04aa3c0715e747a7c9f61d865133b7d69f70eaa738cf99b
+
+  tools/third_party/makehuman-assets/base/eyebrows/eyebrow001/eyebrow001.png
+  Bytes: 89,619
+  SHA-256: 9940f7d0b1b223709a19b05156ba6f6e9e4dbdbced02d7574f4d51d72c58967b
+
+  tools/third_party/makehuman-assets/base/eyelashes/eyelashes01/eyelashes01.png
+  Bytes: 91,600
+  SHA-256: 4b69c0fff2648874460e9caf80c31413c444218a5c50afebc425aeaa65484a35
+
+  tools/third_party/makehuman-assets/base/eyes/high-poly/high-poly.obj
+  Bytes: 100,882
+  SHA-256: da2493215b708a344c33dc72f2a9a5b8fa985dcc5a70ad3b208995cf871da8e1
+
+  tools/third_party/makehuman-assets/base/eyes/materials/brown_eye.png
+  Bytes: 610,817
+  SHA-256: 4659691c7295ad6206c78b003e5fd0e5f91dcd53032fa914a229bb48cabe424b
+
+These values identify the local working-copy bytes used for provenance review;
+they do not claim that the root repository's current makehuman-assets submodule
+pin reproduces all seven files. At the audit point, five paths differed from
+that pin and the eye OBJ and brown-eye texture were untracked within the
+submodule. The retained, auditable project-source boundary begins at the Police
+v22 Blender masters recorded in SOURCE_AND_LICENSES.md. This notice does not
+claim a missing raw source is committed.
+
+MakeHuman's official license page identifies its core graphical assets as
+Creative Commons Zero 1.0 Universal (CC0 1.0):
+  https://static.makehumancommunity.org/about/license.html
+
+Official MakeHuman FAQ:
+  https://static.makehumancommunity.org/makehuman/faq/are_makehuman_files_free.html
+
+Canonical CC0 legal code:
+  https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+CC0 applies a copyright-and-related-rights waiver to the greatest extent
+permitted by law and provides a public-license fallback where that waiver is
+not effective. Its limitations do not waive trademark or patent rights, offer
+the work as-is without warranties, and do not clear unrelated third-party
+rights. CC0 does not require attribution; this notice is included voluntarily
+for provenance and reproducibility.
+
+Modification notice:
+
+The recorded Police modification chain covers silhouette and uniform remodeling,
+Police-specific cap, badge, epaulet and material treatment, topology, UV and
+skinning work, mapping to the project's shared 21-joint skeleton, and Meshopt +
+KTX2 Web preparation. Final runtime hashes and browser evidence are recorded in
+the role report after asset freeze. Runtime GLBs do not contain the MakeHuman or
+MPFB application code or build caches.
+
+The Police character in this M1 lineage does not use Tencent Hunyuan geometry,
+textures, weights, or generated output. The separate Villain Hunyuan notice
+above must not be read as Police provenance.
+
+An older report names
+`Police_Photoreal_MPFBHuman_v29.blend` as an early MPFB intermediate, but that
+file is not retained in this branch, origin/main, or origin/local-polish-line;
+no bytes or SHA-256 are claimed for it. The retained source chain begins at the
+v22 Police Blender masters.
+
+PUBLIC RELEASE REVIEW REQUIRED — CONCEPT 03 PROVENANCE UNCONFIRMED:
+
+`art-source/Concepts/03_police_character_sheet.png` is an internal visual
+reference and is not copied into the public runtime bundle. Its file hash and
+initial Git commit are known, but its author, generation tool, upstream source,
+commission terms, and license are not recorded. Product ownership or replacement
+evidence must be documented before public release. This notice does not apply
+CC0 to Concept 03.
+
+Detailed fixed inputs and the unresolved internal concept-reference gate are
+recorded in:
+  docs/licenses/MAKEHUMAN_CORE_ASSETS_CC0.md
+  art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/SOURCE_AND_LICENSES.md
+
+
+Quaternius Universal Animation Library 2.0 — Police animations
+----------------------------------------------------------------
+
+The Police character's five gameplay clips are modified and retargeted from
+Quaternius Universal Animation Library 2.0, Standard edition, released under
+Creative Commons Zero 1.0 Universal (CC0 1.0):
+
+  Universal Animation Library 2.0 · Standard.zip
+  Bytes: 14,541,205
+  SHA-256: 18ff1a7215f4852b320203e8aaf02a1578b5c8eef9027fbaedfcedc7b85a3ac2
+
+  AnimationLibrary_Godot_Standard.glb
+  Bytes: 6,671,104
+  SHA-256: 1b7bf67866360665426bb99e4c71bd619f19b408453c24e30f0c3071601eee5c
+
+Official source:
+  https://quaternius.com/packs/universalanimationlibrary2.html
+
+OpenGameArt source and license record:
+  https://opengameart.org/content/universal-animation-library
+
+Canonical CC0 legal code:
+  https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+CC0 applies the waiver, fallback-license, limitation, and disclaimer terms
+summarized in the MakeHuman section above. Attribution is not required; this
+voluntary notice preserves the author, edition, hashes, and modification chain.
+
+The source motions were retargeted to the project's 21-joint skeleton, stripped
+of runtime root motion, adjusted for contact and transitions, and published as
+the Police gameplay clips Idle, Run, Alert, Interact, and Resolve. The original
+download archive and source animation GLB are build inputs and are not
+distributed with the game.
+
+Detailed source-to-clip mapping is recorded in:
+  docs/licenses/QUATERNIUS_UNIVERSAL_ANIMATION_LIBRARY_CC0.md
+  art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/SOURCE_AND_LICENSES.md
 
 
 React family

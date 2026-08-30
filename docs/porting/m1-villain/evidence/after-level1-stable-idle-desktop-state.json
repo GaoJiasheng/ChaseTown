@@ -1,0 +1,30 @@
+{
+  "capturedAt": "2026-08-28",
+  "sourceRevision": "codex/remote-trunk-port M1 Villain working tree",
+  "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPlayer=6,1&qaChaser=6,10&qaSpawnDelay=60&autostart=1&m1=after-villain-final-v5-desktop",
+  "viewport": { "width": 1280, "height": 720, "deviceScaleFactor": 1 },
+  "scenario": { "player": { "x": 6, "y": 1 }, "chaser": { "x": 6, "y": 10 }, "spawnDelaySeconds": 60 },
+  "phase": "playing",
+  "chaserMode": "spawn-delay",
+  "villainAnimation": { "state": "idle", "clip": "Idle", "clipDuration": 2.5, "playing": true },
+  "villainVisibility": {
+    "rootVisible": true,
+    "alpha": 1,
+    "worldRendered": true,
+    "pixelWidth": 30.499032374301688,
+    "pixelHeight": 56.79788859522857,
+    "centerInFrustum": true,
+    "headClear": true,
+    "torsoClear": true,
+    "visibleSampleRatio": 1
+  },
+  "camera": { "fov": 56, "aspect": 2.0495049504950495, "distance": 14.8, "zoom": 1 },
+  "render": { "calls": 363, "triangles": 614830, "shadowTriangles": 228415, "invalidSceneTextures": [] },
+  "firstPlayableBudget": { "fits": true, "criticalTransferBytes": 6691805, "threatTransferBytes": 891784 },
+  "threatAsset": { "bytes": 891784, "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a" },
+  "consoleWarnError": [],
+  "screenshot": {
+    "path": "docs/porting/m1-villain/evidence/after-level1-stable-idle-desktop-1280x720.png",
+    "sha256": "b330170ecfcc78beb743b2ed41ad9fc602c4361dc37ceba3c72313804fd1a71a"
+  }
+}

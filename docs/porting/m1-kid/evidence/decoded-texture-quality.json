@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-08-29T01:06:30.000Z",
+  "method": "Three.js pinned Basis transcoder; embedded KTX2 decoded to RGBA8; population standard deviation.",
+  "assets": {
+    "kid.glb": {"bytes":4471520,"sha256":"5d097ac2cccb0b1875f8a3668dd59676009cff11fe7cfa5924a459b3115be989"},
+    "kid-lod1.glb": {"bytes":2935512,"sha256":"8676e31fb32c77c734a1fa12a891eafde1acba720e0d2395caf9d26d6fd80d70"},
+    "kid-bootstrap.glb": {"bytes":1561604,"sha256":"d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86"}
+  },
+  "textures": [
+    {"asset":"kid.glb","name":"Char_Kid_PrecisionRemodel_v21_Normal_768","width":768,"height":768,"stddev":60.04121527199779,"channelStddev":[5.155255641556762,5.172752312354055,0.16112217174873195]},
+    {"asset":"kid.glb","name":"Char_Kid_PrecisionRemodel_v21_ORM_768","width":768,"height":768,"stddev":89.25283603428262,"channelStddev":[5.433460785765074,6.364173880151489,0]},
+    {"asset":"kid.glb","name":"Char_Kid_A2_Semantic_BaseColor_2K","width":2048,"height":2048,"stddev":42.40341292257071,"channelStddev":[49.87475685808222,39.989587632914464,36.09491355880688]},
+    {"asset":"kid-lod1.glb","name":"Char_Kid_PrecisionRemodel_v21_Normal_768","width":768,"height":768,"stddev":60.04121527199779,"channelStddev":[5.155255641556762,5.172752312354055,0.16112217174873195]},
+    {"asset":"kid-lod1.glb","name":"Char_Kid_PrecisionRemodel_v21_ORM_768","width":768,"height":768,"stddev":89.25283603428262,"channelStddev":[5.433460785765074,6.364173880151489,0]},
+    {"asset":"kid-lod1.glb","name":"Char_Kid_A2_Semantic_BaseColor_2K","width":2048,"height":2048,"stddev":42.40341292257071,"channelStddev":[49.87475685808222,39.989587632914464,36.09491355880688]},
+    {"asset":"kid-bootstrap.glb","name":"Char_Kid_PrecisionRemodel_v21_Normal_768","width":512,"height":512,"stddev":59.84542373631407,"channelStddev":[5.3632033750640735,5.374956747104715,0.1514444705729048]},
+    {"asset":"kid-bootstrap.glb","name":"Char_Kid_PrecisionRemodel_v21_ORM_768","width":512,"height":512,"stddev":90.57996325754381,"channelStddev":[5.5507304009531415,6.522131636994389,0.769083246498984]},
+    {"asset":"kid-bootstrap.glb","name":"Char_Kid_A2_Semantic_BaseColor_2K","width":512,"height":512,"stddev":41.69540882356196,"channelStddev":[49.017941978974555,39.35141223069327,35.48681035291811]}
+  ]
+}

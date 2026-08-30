@@ -1,0 +1,28 @@
+{
+  "capturedAt": "2026-08-28",
+  "sourceRevision": "codex/remote-trunk-port M1 Villain working tree",
+  "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaPlayer=6,5.9&qaChaser=1,12.4&qaSpawnDelay=60&autostart=1&m1=after-villain-final-v5-mobile",
+  "viewport": { "width": 375, "height": 812, "deviceScaleFactor": 1 },
+  "scenario": { "player": { "x": 6, "y": 5.9 }, "chaser": { "x": 1, "y": 12.4 }, "spawnDelaySeconds": 60 },
+  "phase": "playing",
+  "chaserMode": "spawn-delay",
+  "villainAnimation": { "state": "idle", "clip": "Idle", "clipDuration": 2.5, "playing": true },
+  "villainVisibility": {
+    "rootVisible": true,
+    "alpha": 1,
+    "worldRendered": true,
+    "pixelWidth": 30.29070339830288,
+    "pixelHeight": 67.53154867933874,
+    "centerInFrustum": true,
+    "visibleSampleRatio": 1
+  },
+  "camera": { "fov": 56, "aspect": 0.4993006993006993, "distance": 12.805544625319914, "zoom": 1 },
+  "render": { "calls": 258, "triangles": 467470, "shadowTriangles": 228415, "invalidSceneTextures": [] },
+  "firstPlayableBudget": { "fits": true, "criticalTransferBytes": 6691805, "threatTransferBytes": 891784 },
+  "threatAsset": { "bytes": 891784, "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a" },
+  "consoleWarnError": [],
+  "screenshot": {
+    "path": "docs/porting/m1-villain/evidence/after-level1-stable-idle-mobile-375x812.png",
+    "sha256": "39307984211a603ee0e56eb3e58afacd85f10862e0fc130d9ff26cac9db87395"
+  }
+}

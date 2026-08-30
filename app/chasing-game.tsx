@@ -32,7 +32,10 @@ import {
   type QaAssetFaultInjector,
 } from "./game/asset-loading.ts";
 import { runtimeAtmosphereForLevel } from "./game/atmosphere.ts";
-import { FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS } from "./game/runtime-assets.ts";
+import {
+  FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS,
+  versionRuntimeAsset,
+} from "./game/runtime-assets.ts";
 import {
   CAMPAIGN_LEVELS,
   createPlayerKnowledge,
@@ -88,6 +91,24 @@ import {
   screenMoveToWorld,
   shouldIgnoreFocusedControlKey,
 } from "./game/input.ts";
+import {
+  validateQaScenario,
+  type QaScenarioInput,
+  type QaScenarioValidation,
+} from "./game/qa-scenario.ts";
+import {
+  parseQaDelaySeconds,
+  parseQaFlag,
+  parseQaKidAnimation,
+  parseQaKidAssetVariant,
+  parseQaLevel,
+  parseQaNormalizedTime,
+  parseQaPoliceAssetVariant,
+  parseQaPoliceAnimation,
+  parseQaPoint,
+  summarizeQaGltfDocument,
+  type QaGltfDocument,
+} from "./game/qa-browser.ts";
 import {
   MASTERY_CHALLENGE_IDS,
   applyRunTelemetryFrame,
@@ -227,6 +248,17 @@ import {
   type RenderQualityProfile,
   type RenderQualityTier,
 } from "./game/quality.ts";
+import {
+  createQaRenderBreakdownTracker,
+  tagQaRenderCategory,
+} from "./game/render-breakdown.ts";
+import { createMazeShadowProxy } from "./game/maze-shadow-proxy.ts";
+import { createDirectionalShadowTexelSnapper } from "./game/shadow-camera.ts";
+import {
+  batchCompatibleActorSkins,
+  createActorShadowProxy,
+  enableActorShadowLayer,
+} from "./game/player/actor-batching.ts";
 import { resolveRuntimeObjectPolicy } from "./game/runtime-visibility.ts";
 import {
   authoredRoomFloorRegions,
@@ -318,10 +350,18 @@ const LOCOMOTION_MARKERS: MarkerManifest = Object.freeze({
   ]),
 });
 
+const POLICE_BOOTSTRAP_MODEL_HREF = versionRuntimeAsset(
+  "/models/characters/police-bootstrap.glb",
+);
+
 const ACTOR_SPECS = {
   kid: {
     bootstrapUrl: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.player,
-    height: 1.52,
+    // The authored child is intentionally shorter than both adults. At the
+    // production camera this keeps the player inside the audited 34--58 px
+    // desktop / 42--68 px touch silhouette bands without changing collision,
+    // navigation, camera tuning or any gameplay coordinate.
+    height: 1.12,
     aliases: {
       idle: "Idle",
       walk: "Walk",
@@ -353,8 +393,10 @@ const ACTOR_SPECS = {
     },
     required: ["idle", "walk", "run", "alert", "loseSight", "search", "checkLocker", "catch"] as AnimationState[],
   },
+  // Police stays deferred, but the A2 asset needs a cache key distinct from
+  // the pre-remodel bootstrap shipped by the remote trunk.
   police: {
-    url: "/models/characters/police-bootstrap.glb?v=1",
+    url: POLICE_BOOTSTRAP_MODEL_HREF,
     height: 1.82,
     aliases: {
       idle: "Idle",
@@ -363,7 +405,7 @@ const ACTOR_SPECS = {
       protect: "Resolve",
       alert: "Alert",
     },
-    required: ["idle", "run", "point", "protect"] as AnimationState[],
+    required: ["idle", "run", "point", "protect", "alert"] as AnimationState[],
   },
 } as const;
 
@@ -377,26 +419,26 @@ const DETAIL_ASSETS = {
   bench: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.bench,
   car: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.policeCar,
   tree: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.tree,
-  classroomDoor: "/models/environment/classroom-door.glb?v=5",
-  ceilingLight: "/models/environment/ceiling-light.glb?v=5",
+  classroomDoor: versionRuntimeAsset("/models/environment/classroom-door.glb"),
+  ceilingLight: versionRuntimeAsset("/models/environment/ceiling-light.glb"),
   basketball: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.basketball,
   deskChair: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.deskChair,
-  blackboard: "/models/environment/blackboard.glb?v=5",
-  bulletin: "/models/environment/bulletin.glb?v=5",
+  blackboard: versionRuntimeAsset("/models/environment/blackboard.glb"),
+  bulletin: versionRuntimeAsset("/models/environment/bulletin.glb"),
   podium: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.podium,
-  extinguisher: "/models/environment/extinguisher.glb?v=5",
-  trash: "/models/environment/trash.glb?v=5",
-  books: "/models/environment/books.glb?v=5",
-  backpack: "/models/environment/backpack.glb?v=5",
+  extinguisher: versionRuntimeAsset("/models/environment/extinguisher.glb"),
+  trash: versionRuntimeAsset("/models/environment/trash.glb"),
+  books: versionRuntimeAsset("/models/environment/books.glb"),
+  backpack: versionRuntimeAsset("/models/environment/backpack.glb"),
   shrub: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.shrub,
-  station: "/models/environment/station.glb?v=5",
+  station: versionRuntimeAsset("/models/environment/station.glb"),
 } as const;
 
 const THEME_KIT_ASSETS: Readonly<Record<CampaignTheme, string>> = {
   campus: FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS.theme,
-  hospital: "/models/environment/themes/hospital-kit-bootstrap.glb?v=1",
-  "fire-station": "/models/environment/themes/fire-station-kit-bootstrap.glb?v=1",
-  factory: "/models/environment/themes/factory-kit-bootstrap.glb?v=1",
+  hospital: versionRuntimeAsset("/models/environment/themes/hospital-kit-bootstrap.glb"),
+  "fire-station": versionRuntimeAsset("/models/environment/themes/fire-station-kit-bootstrap.glb"),
+  factory: versionRuntimeAsset("/models/environment/themes/factory-kit-bootstrap.glb"),
 };
 
 const STEALTH_CORNER_MIRROR_ASSET =
@@ -1460,9 +1502,22 @@ function fitActor(source: THREE.Object3D, height: number) {
   const fitted = staticMeshBounds(visual);
   const center = fitted.getCenter(new THREE.Vector3());
   visual.position.set(-center.x, -fitted.min.y, -center.z);
+  const authoredFittedHeight = fitted.max.y - fitted.min.y;
   const actor = new THREE.Group();
   actor.name = "production-character";
   actor.add(visual);
+  // Preserve M1's authored height contract using the untouched source skins.
+  // A merged SkinnedMesh has different static bounds and must not drive fit.
+  const actorBatch = batchCompatibleActorSkins(cloned);
+  const batchedBounds = staticMeshBounds(visual);
+  const shadowProxy = createActorShadowProxy(actor, { height });
+  actor.userData.actorBatch = actorBatch.budget;
+  actor.userData.shadowBudget = shadowProxy.budget;
+  actor.userData.actorFit = {
+    requestedHeight: height,
+    authoredFittedHeight,
+    batchedHeight: batchedBounds.max.y - batchedBounds.min.y,
+  };
   return actor;
 }
 
@@ -1808,6 +1863,79 @@ type ActorView = {
     baseDepthWrite: boolean;
   }>;
 };
+
+type QaLoadedGlbIdentity = Readonly<{
+  requestedUrl: string;
+  resolvedUrl: string;
+  transferBytes: number;
+  sha256: string;
+  nodes: number;
+  meshes: number;
+  primitives: number;
+  triangles: number;
+  materials: number;
+  textures: number;
+  skins: number;
+  joints: number;
+  jointNames: readonly string[];
+  runtimeMeshObjects: number;
+  runtimeSkinnedMeshes: number;
+  runtimeSkeletons: number;
+  runtimeBones: number;
+  clips: readonly Readonly<{
+    name: string;
+    durationSeconds: number;
+    tracks: number;
+  }>[];
+}>;
+
+function inspectQaLoadedGlbIdentity(
+  asset: GLTF,
+  requestedUrl: string,
+  resolvedUrl: string,
+  transferBytes: number,
+  sha256: string,
+): QaLoadedGlbIdentity {
+  const json = (asset.parser as unknown as { json?: QaGltfDocument }).json;
+  const source = summarizeQaGltfDocument(json);
+  let runtimeMeshObjects = 0;
+  let runtimeSkinnedMeshes = 0;
+  let runtimeBones = 0;
+  const runtimeSkeletons = new Set<string>();
+  asset.scene.traverse((object) => {
+    if (object instanceof THREE.Mesh) runtimeMeshObjects += 1;
+    if (object instanceof THREE.SkinnedMesh) {
+      runtimeSkinnedMeshes += 1;
+      runtimeSkeletons.add(object.skeleton.uuid);
+    }
+    if (object instanceof THREE.Bone) runtimeBones += 1;
+  });
+  return Object.freeze({
+    requestedUrl,
+    resolvedUrl,
+    transferBytes,
+    sha256,
+    ...source,
+    runtimeMeshObjects,
+    runtimeSkinnedMeshes,
+    runtimeSkeletons: runtimeSkeletons.size,
+    runtimeBones,
+    clips: Object.freeze(asset.animations
+      .map((clip) => Object.freeze({
+        name: clip.name,
+        durationSeconds: Number(clip.duration.toFixed(6)),
+        tracks: clip.tracks.length,
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name))),
+  });
+}
+
+async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 function installActorReadabilityRim(
   root: THREE.Object3D,
@@ -3592,7 +3720,14 @@ export function ChasingGame() {
       simulation.config.fixedStepSeconds,
     );
     const ghostInputBuffer = new GhostFixedStepInputBuffer();
-    const storedGhost = preferences.personalGhostEnabled
+    const initialQaSearchParams = new URLSearchParams(location.search);
+    const qaSessionRequested = initialQaSearchParams.has("qa");
+    const suppressGhostForQaResolution = qaSessionRequested
+      && parseQaFlag(initialQaSearchParams.get("qaResolution"));
+    // QA evidence must be deterministic and independent of a browser profile's
+    // previously recorded personal-best ghost. Normal player sessions keep the
+    // saved-ghost path unchanged.
+    const storedGhost = preferences.personalGhostEnabled && !qaSessionRequested
       ? loadPersonalGhost(localStorage, ghostRunLevelId)
       : null;
     const ghostEligible = canRacePersonalGhost({
@@ -3757,6 +3892,7 @@ export function ChasingGame() {
     const performanceLights: Array<{ light: THREE.Light; priority: number }> = [];
     let exitMissionLight: THREE.SpotLight | null = null;
     const nonCriticalShadowCasters: Array<{ object: THREE.Object3D; castShadow: boolean }> = [];
+    const mazeShadowProxies: THREE.InstancedMesh[] = [];
     let requestPoliceAsset: (() => Promise<void>) | null = null;
     let deferredDressingFade: {
       elapsedSeconds: number;
@@ -3780,6 +3916,59 @@ export function ChasingGame() {
       gameplayCameraInsetsForViewport(cameraViewportWidth, cameraViewportHeight, touchLayoutMedia.matches),
     );
     const qaSearchParams = new URLSearchParams(location.search);
+    const qaPlayerScenario = qaSearchParams.has("qa")
+      ? parseQaPoint(qaSearchParams.get("qaPlayer"))
+      : null;
+    const qaChaserScenario = qaSearchParams.has("qa")
+      ? parseQaPoint(qaSearchParams.get("qaChaser"))
+      : null;
+    const qaLevelScenario = qaSearchParams.has("qa")
+      ? parseQaLevel(qaSearchParams.get("qaLevel"), CAMPAIGN_LEVELS.length)
+      : null;
+    const qaSpawnDelaySeconds = qaSearchParams.has("qa")
+      ? parseQaDelaySeconds(qaSearchParams.get("qaSpawnDelay"))
+      : 0;
+    const qaCleanFrameRequested = qaSearchParams.has("qa")
+      && parseQaFlag(qaSearchParams.get("qaCleanFrame"));
+    if (qaCleanFrameRequested) {
+      document.documentElement.dataset.chasingQaCleanFrame = "true";
+    }
+    const qaResolutionScenario = suppressGhostForQaResolution;
+    const qaKidAnimationScenario = qaSearchParams.has("qa")
+      ? parseQaKidAnimation(qaSearchParams.get("qaKidClip"))
+      : null;
+    const qaKidAnimationTime = qaKidAnimationScenario
+      ? parseQaNormalizedTime(qaSearchParams.get("qaKidTime"))
+      : null;
+    const qaKidAssetVariant = qaSearchParams.has("qa")
+      ? parseQaKidAssetVariant(qaSearchParams.get("qaKidAsset"))
+      : null;
+    const qaKidAssetUrl = qaKidAssetVariant === "high"
+      ? versionRuntimeAsset("/models/characters/kid.glb")
+      : qaKidAssetVariant === "lod1"
+        ? versionRuntimeAsset("/models/characters/kid-lod1.glb")
+        : ACTOR_SPECS.kid.bootstrapUrl;
+    const qaPoliceAnimationScenario = qaSearchParams.has("qa")
+      ? parseQaPoliceAnimation(qaSearchParams.get("qaPoliceClip"))
+      : null;
+    const qaPoliceAnimationTime = qaPoliceAnimationScenario
+      ? parseQaNormalizedTime(qaSearchParams.get("qaPoliceTime"))
+      : null;
+    const qaPoliceAssetVariant = qaSearchParams.has("qa")
+      ? parseQaPoliceAssetVariant(qaSearchParams.get("qaPoliceAsset"))
+      : null;
+    const qaPoliceAssetUrl = qaPoliceAssetVariant === "high"
+      ? versionRuntimeAsset("/models/characters/police.glb")
+      : ACTOR_SPECS.police.url;
+    let qaLoadedKidAssetIdentity: QaLoadedGlbIdentity | null = null;
+    let qaLoadedPoliceAssetIdentity: QaLoadedGlbIdentity | null = null;
+    const qaLoadedGlbIdentities = new WeakMap<THREE.Object3D, QaLoadedGlbIdentity>();
+    let qaDomSnapshotTimer: ReturnType<typeof setInterval> | null = null;
+    let qaLevelSelectionTimer: ReturnType<typeof setTimeout> | null = null;
+    let qaKidAnimationTimer: ReturnType<typeof setTimeout> | null = null;
+    let qaKidFrameSnapshotTimer: ReturnType<typeof setInterval> | null = null;
+    let qaPoliceAnimationTimer: ReturnType<typeof setTimeout> | null = null;
+    let qaPoliceFrameSnapshotTimer: ReturnType<typeof setInterval> | null = null;
     const qaQualityValue = qaSearchParams.has("qa")
       ? qaSearchParams.get("qaQuality")
       : null;
@@ -3867,6 +4056,9 @@ export function ChasingGame() {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = atmosphere.exposure;
     renderer.info.autoReset = false;
+    const qaRenderBreakdownTracker = qaSearchParams.has("qa")
+      ? createQaRenderBreakdownTracker(renderer, scene)
+      : null;
     const supportsMultiDraw = renderer.extensions.has("WEBGL_multi_draw")
       && !new URLSearchParams(location.search).has("no-multi-draw");
     host.appendChild(renderer.domElement);
@@ -3948,9 +4140,17 @@ export function ChasingGame() {
       campaignLevel.campaign.theme === "factory" ? 0x91dced : 0xb9d7ff,
       atmosphere.keyIntensity,
     );
-    moon.position.set(14, 28, 18);
+    const moonOffset = new THREE.Vector3(14, 28, 18);
+    const shadowTexelSnapper = createDirectionalShadowTexelSnapper(moonOffset);
+    const shadowAnchor = new THREE.Vector3();
+    let shadowSnapSnapshot = shadowTexelSnapper.snap(
+      shadowAnchor.copy(cameraFocus).setY(0),
+      moon.target.position,
+      18,
+      renderQualityProfile.shadowMapSize,
+    );
+    moon.position.copy(moon.target.position).add(moonOffset);
     moon.castShadow = true;
-    moon.target.position.copy(cameraFocus);
     moon.layers.enable(1);
     scene.add(moon.target);
     moon.shadow.mapSize.set(renderQualityProfile.shadowMapSize, renderQualityProfile.shadowMapSize);
@@ -5253,6 +5453,22 @@ export function ChasingGame() {
         }).castShadow;
       }
     };
+    const applyMazeShadowProxyPolicy = () => {
+      for (const proxy of mazeShadowProxies) {
+        const enabled = resolveRuntimeObjectPolicy({
+          role: "architecture",
+          baseVisible: true,
+          baseCastShadow: renderQualityProfile.staticEnvironmentShadows,
+          nearShadowCaster: false,
+          emergencyLevel: emergencyDegradation.level,
+        }).castShadow;
+        // A hidden proxy is excluded from both main and shadow traversal. This
+        // makes balanced/mobile's staticEnvironmentShadows=false contract
+        // cover the maze walls instead of leaving their original batches live.
+        proxy.visible = enabled;
+        proxy.castShadow = enabled;
+      }
+    };
     const registerNonCriticalShadowCasters = (root: THREE.Object3D) => {
       root.traverse((object) => {
         if (!(object instanceof THREE.Mesh) || !object.castShadow) return;
@@ -5381,6 +5597,7 @@ export function ChasingGame() {
         renderQualityProfile.occlusionProbeSeconds,
       );
       applyNonCriticalShadowPolicy();
+      applyMazeShadowProxyPolicy();
       if (deferredDressingRoot) {
         deferredDressingRoot.visible = resolveRuntimeObjectPolicy({
           role: "decoration",
@@ -5763,7 +5980,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           type: "run-completed",
         });
         const ghost = ghostRecorder.finish(completedTick);
-        const ghostSave = ghost
+        const ghostSave = ghost && !qaResolutionScenario
           ? savePersonalBestGhost(localStorage, ghost, preferences.ruleset)
           : null;
         if (ghost && ghostSave?.saved) {
@@ -5773,7 +5990,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           // effect was originally created.
           ghostRecording = ghost;
         }
-        if (selectedRemixContract) {
+        if (selectedRemixContract && !qaResolutionScenario) {
           saveCertifiedRemixRecord(
             localStorage,
             selectedRemixContract,
@@ -5798,10 +6015,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               campaignLevel.campaign.levelNumber + 1,
             ),
           );
-          try {
-            localStorage.setItem(CAMPAIGN_PROGRESS_KEY, JSON.stringify(updated));
-          } catch {
-            // Progress still works for this session if persistence is denied.
+          if (!qaResolutionScenario) {
+            try {
+              localStorage.setItem(CAMPAIGN_PROGRESS_KEY, JSON.stringify(updated));
+            } catch {
+              // Progress still works for this session if persistence is denied.
+            }
           }
           return updated;
         });
@@ -6590,7 +6809,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       return load;
     };
 
-    const loadGlbWithRetry = async (url: string) => {
+    const loadGlbWithRetry = async (
+      url: string,
+      options: { captureQaIdentity?: boolean } = {},
+    ) => {
       if (disposed) throw new DOMException("Scene disposed", "AbortError");
       pendingGlbLoadCount += 1;
       try {
@@ -6612,6 +6834,18 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         );
         const loader = await parser;
         const asset = await loader.parseAsync(bytes, assetBaseUrl.href);
+        if (options.captureQaIdentity) {
+          qaLoadedGlbIdentities.set(
+            asset.scene,
+            inspectQaLoadedGlbIdentity(
+              asset,
+              url,
+              absoluteUrl.href,
+              bytes.byteLength,
+              await sha256Hex(bytes),
+            ),
+          );
+        }
         if (disposed) {
           disposeObjectResources([asset.scene]);
           throw new DOMException("Scene disposed", "AbortError");
@@ -6710,9 +6944,15 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       // never postpone the first playable frame.
       const initialLoads = [
         ...essentialActorEntries.map(async ([name, spec]) => {
-          const bootstrapUrl = "bootstrapUrl" in spec ? spec.bootstrapUrl : spec.url;
-          const asset = await loadGlbWithRetry(bootstrapUrl);
+          const defaultUrl = "bootstrapUrl" in spec ? spec.bootstrapUrl : spec.url;
+          const bootstrapUrl = name === "kid" ? qaKidAssetUrl : defaultUrl;
+          const asset = await loadGlbWithRetry(bootstrapUrl, {
+            captureQaIdentity: qaSearchParams.has("qa") && name === "kid",
+          });
           actorAssets[name] = asset;
+          if (name === "kid") {
+            qaLoadedKidAssetIdentity = qaLoadedGlbIdentities.get(asset.scene) ?? null;
+          }
           const id = `actor:${name}`;
           loadedAssets.push({ id, asset });
           loadedAssetIds.add(id);
@@ -6807,7 +7047,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         if (performance.now() < policeRetryAfterMilliseconds) return Promise.resolve();
         policeLoadPromise = (async () => {
           try {
-            const policeAsset = await loadGlbWithRetry(ACTOR_SPECS.police.url);
+            const policeAsset = await loadGlbWithRetry(qaPoliceAssetUrl, {
+              captureQaIdentity: qaSearchParams.has("qa"),
+            });
             if (disposed) {
               disposeObjectResources([policeAsset.scene]);
               return;
@@ -6819,8 +7061,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             configureAssetTextures([loadedPolice], renderer);
             textureDeduplication = deduplicateAssetTextures(loadedAssets);
             placeActors(actorAssets, actors, scene, ["police"]);
+            qaLoadedPoliceAssetIdentity = qaLoadedGlbIdentities.get(policeAsset.scene) ?? null;
             if (latestState.phase === "won" && actors.police) {
-              requestAnimation(actors.police, "protect", { fade: 0.08 });
+              requestAnimation(
+                actors.police,
+                preferencesRef.current.reducedMotion ? "idle" : "protect",
+                { fade: 0.08 },
+              );
             }
           } catch (error) {
             policeRetryAfterMilliseconds = performance.now() + 5_000;
@@ -7186,11 +7433,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           { source: wallJunction, placements: wallBatches.junction, preserveAuthoredScale: preserveAuthoredWallScale },
         ], new THREE.Vector3(CELL, 2.7, CELL), parent, true, `${theme}-junction`, supportsMultiDraw),
       ];
-      // Walls still cast grounded shadows onto floors and props. They do not
-      // need to receive the same directional map themselves: the dense,
-      // double-sided bevel shells sit within a few millimetres of one another
-      // and otherwise exhibit visible self-shadow acne at the game camera.
+      for (const wallMesh of wallMeshes) {
+        tagQaRenderCategory(wallMesh, "maze-walls");
+        wallMesh.castShadow = false;
+      }
+      // A low-poly proxy below casts the authored silhouette onto floors and
+      // props. The visible bevel shells neither cast nor receive the map:
+      // neighbouring millimetre-close faces otherwise add hundreds of
+      // thousands of shadow triangles and exhibit self-shadow acne.
       for (const wallMesh of wallMeshes) wallMesh.receiveShadow = false;
+      const { proxy: mazeShadowProxy } = createMazeShadowProxy(
+        wallBatches,
+        CELL,
+        wallHeight,
+        `${theme}-maze-shadow-proxy`,
+      );
+      tagQaRenderCategory(mazeShadowProxy, "maze-walls");
+      mazeShadowProxies.push(mazeShadowProxy);
+      parent.add(mazeShadowProxy);
+      applyMazeShadowProxyPolicy();
+      placedAssetIds.add("runtime:maze-shadow-proxy");
       registerCameraOccluder(`${theme}-walls`, wallMeshes);
 
       const wallContactGeometry = new THREE.PlaneGeometry(CELL + 0.12, 0.48);
@@ -8414,6 +8676,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         const spec = ACTOR_SPECS[name];
         const root = fitActor(asset.scene, spec.height);
         root.name = `actor-${name}`;
+        tagQaRenderCategory(root, "actor");
         const animator = new ActorAnimator(
           root,
           asset.animations,
@@ -8710,11 +8973,21 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
               preferencesRef.current.hapticsEnabled,
               navigator.vibrate?.bind(navigator),
             );
-            requestAnimation(actors.kid!, "celebrate", { fade: 0.18 });
+            if (preferencesRef.current.reducedMotion) {
+              requestAnimation(actors.kid!, "idle", { fade: 0.18 });
+            } else {
+              requestAnimation(actors.kid!, "celebrate", { fade: 0.18 });
+            }
             // The authored kid celebration is the reliable immediate fallback.
             // Police joins as soon as its on-demand stream completes.
             void requestPoliceAsset?.();
-            if (actors.police) requestAnimation(actors.police, "protect", { fade: 0.14 });
+            if (actors.police) {
+              requestAnimation(
+                actors.police,
+                preferencesRef.current.reducedMotion ? "idle" : "protect",
+                { fade: 0.14 },
+              );
+            }
           }
           continue;
         }
@@ -8856,7 +9129,10 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       syncActorTransform(villain, state.chaser.position, state.chaser.heading, delta, captureStaging ? 34 : 18, captureStaging ? 15 : 9.5);
 
       if (state.phase === "playing") {
-        if (state.player.mode === "free" || state.player.mode === "aligning-hide") {
+        if (
+          !qaKidAnimationScenario
+          && (state.player.mode === "free" || state.player.mode === "aligning-hide")
+        ) {
           const kidTurn: AnimationState | null = state.player.hideTurnDirection > 0
             ? "turnLeft"
             : state.player.hideTurnDirection < 0
@@ -10851,8 +11127,13 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           playerPresentationPose(latestState, campaignLevel, simulation).point,
           campaignLevel,
         ).add(new THREE.Vector3(0, 0.92, 0));
-        moon.target.position.copy(playerAnchor).setY(0);
-        moon.position.copy(moon.target.position).add(new THREE.Vector3(14, 28, 18));
+        shadowSnapSnapshot = shadowTexelSnapper.snap(
+          shadowAnchor.copy(playerAnchor).setY(0),
+          moon.target.position,
+          (moon.shadow.camera.right - moon.shadow.camera.left) / 2,
+          moon.shadow.mapSize.x,
+        );
+        moon.position.copy(moon.target.position).add(moonOffset);
         moon.target.updateMatrixWorld();
         updatePerformanceLightBudget(playerAnchor);
         const chaserAnchor = world(latestState.chaser.position, campaignLevel).add(new THREE.Vector3(0, 1.05, 0));
@@ -11226,9 +11507,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       if (ready) {
         renderer.autoClear = false;
         renderer.info.reset();
+        qaRenderBreakdownTracker?.beginFrame();
         camera.layers.set(0);
+        enableActorShadowLayer(camera);
         renderer.clear(true, true, true);
         renderer.render(scene, camera);
+        qaRenderBreakdownTracker?.endFrame();
         qaRenderedFrameCount += 1;
         compileSettledQaScene();
       }
@@ -11535,12 +11819,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           leaseMilliseconds?: number,
         ) => void;
         inspectScene: () => unknown;
-        setScenario: (positions: {
-          player: Point;
-          chaser: Point;
-          chaserHeading?: Point;
-          spawnDelaySeconds?: number;
-        }) => void;
+        setScenario: (positions: QaScenarioInput) => QaScenarioValidation;
         completeMission: () => void;
         selectLevel: (level: number | string) => void;
         selectLayout: (layoutNumber: number | null) => void;
@@ -11550,8 +11829,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         setDirectorEnabled: (enabled: boolean) => void;
       };
     };
+    let installedQaHook: NonNullable<typeof qaWindow.__CHASING_QA__> | null = null;
     if (new URLSearchParams(location.search).has("qa")) {
-      qaWindow.__CHASING_QA__ = {
+      installedQaHook = {
         getStealthProbe: () => ({
           ready,
           phase: latestState.phase,
@@ -11649,6 +11929,11 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           activeHideArchetype: simulation.getActiveHideSpotArchetype(),
           hideExitSelection: simulation.getHideExitSelection(),
           animations: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, view?.animator.snapshot()])),
+          actorOptimization: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, {
+            batch: view?.root.userData.actorBatch ?? null,
+            shadow: view?.root.userData.shadowBudget ?? null,
+            fit: view?.root.userData.actorFit ?? null,
+          }])),
           visibility: Object.fromEntries(Object.entries(actors).map(([name, view]) => [name, {
             rootVisible: view?.root.visible ?? false,
             alpha: view?.visibilityAlpha ?? 0,
@@ -11890,6 +12175,12 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             qaDecorativeSceneCompiled,
             qaDecorativeSceneCompileCount,
             qaTransientArtPrewarmCount,
+            qaCleanFrame: qaCleanFrameRequested,
+            kidAssetUrl: qaKidAssetUrl,
+            kidLoadedIdentity: qaLoadedKidAssetIdentity,
+            policeAssetUrl: qaPoliceAssetUrl,
+            policeLoaded: Boolean(actors.police),
+            policeLoadedIdentity: qaLoadedPoliceAssetIdentity,
             loadedAssetIds: [...loadedAssetIds].sort(),
             placedAssetIds: [...placedAssetIds].sort(),
             unusedLoadedAssetIds: [...loadedAssetIds].filter((id) => !placedAssetIds.has(id)).sort(),
@@ -11956,9 +12247,25 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
             emergencyTransitionCount: emergencyQualityTransitionCount,
             pixelRatio: renderer.getPixelRatio(),
             shadowMapSize: moon.shadow.mapSize.x,
+            shadowCamera: {
+              halfExtent: (moon.shadow.camera.right - moon.shadow.camera.left) / 2,
+              target: {
+                x: moon.target.position.x,
+                y: moon.target.position.y,
+                z: moon.target.position.z,
+              },
+              ...shadowSnapSnapshot,
+            },
             emergencyDegradation,
             calls: renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
+            breakdown: qaRenderBreakdownTracker?.snapshot() ?? null,
+            mazeShadowProxy: mazeShadowProxies.map((proxy) => ({
+              name: proxy.name,
+              visible: proxy.visible,
+              castShadow: proxy.castShadow,
+              ...(proxy.userData.mazeShadowProxyStats as Record<string, number>),
+            })),
             shadow: estimateShadowWorkload(),
             memory: renderer.info.memory,
             programs: renderer.info.programs?.length ?? 0,
@@ -12113,16 +12420,26 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
                 missionState,
                 objective.id,
               ).state;
+              recordPlayerRuleEvent({
+                tick: latestState.tick,
+                type: "objective-completed",
+                objectiveId: objective.id,
+              });
+              if (missionState.exitUnlocked) {
+                recordPlayerRuleEvent({
+                  tick: latestState.tick,
+                  type: "exit-unlocked",
+                  objectiveId: objective.id,
+                });
+              }
             }
           }
           updateThemeMissionViews(performance.now());
         },
-        setScenario: ({
-          player,
-          chaser,
-          chaserHeading,
-          spawnDelaySeconds = 0,
-        }) => {
+        setScenario: (input) => {
+          const validation = validateQaScenario(input);
+          if (!validation.ok) return validation;
+          const { player, chaser, chaserHeading, spawnDelaySeconds } = validation.value;
           simulation = new GameSimulation({
             level: campaignLevel,
             autoStart: true,
@@ -12141,15 +12458,206 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
           // Idempotent: a settled QA scene compiles exactly once, whether the
           // harness waits at the briefing or immediately installs a scenario.
           compileSettledQaScene();
+          return validation;
         },
       };
+      qaWindow.__CHASING_QA__ = installedQaHook;
+      if (
+        qaLevelScenario !== null
+        && qaLevelScenario !== campaignLevel.campaign.levelNumber
+      ) {
+        const selectQaLevelAfterCurrentSceneSettles = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          if (
+            !ready
+            || !decorativeAssetsReady
+            || deferredDressingFade !== null
+            || pendingGlbLoadCount !== 0
+            || !dependencyLoadingManagerIdle
+          ) {
+            qaLevelSelectionTimer = setTimeout(selectQaLevelAfterCurrentSceneSettles, 100);
+            return;
+          }
+          installedQaHook.setUnlockedThrough(qaLevelScenario);
+          installedQaHook.selectLevel(qaLevelScenario - 1);
+        };
+        qaLevelSelectionTimer = setTimeout(selectQaLevelAfterCurrentSceneSettles, 0);
+      } else if (qaResolutionScenario) {
+        const resolveQaMissionAfterSceneSettles = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          if (
+            !ready
+            || !decorativeAssetsReady
+            || deferredDressingFade !== null
+            || pendingGlbLoadCount !== 0
+            || !dependencyLoadingManagerIdle
+          ) {
+            qaLevelSelectionTimer = setTimeout(resolveQaMissionAfterSceneSettles, 100);
+            return;
+          }
+          installedQaHook.setScenario({
+            player: campaignLevel.exit,
+            chaser: campaignLevel.chaserStart,
+            chaserHeading: campaignLevel.chaserStartHeading,
+            spawnDelaySeconds: 60,
+          });
+          ghostSimulation = null;
+          ghostCursor = null;
+          ghostState = null;
+          ghostRecording = null;
+          ghostRuleProgressTracker = null;
+          ghostRuleProgress = null;
+          if (ghostActor) ghostActor.root.visible = false;
+          installedQaHook.completeMission();
+        };
+        qaLevelSelectionTimer = setTimeout(resolveQaMissionAfterSceneSettles, 0);
+      } else if (qaPlayerScenario && qaChaserScenario) {
+        queueMicrotask(() => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          installedQaHook.setScenario({
+            player: qaPlayerScenario,
+            chaser: qaChaserScenario,
+            spawnDelaySeconds: qaSpawnDelaySeconds,
+          });
+        });
+      }
+      if (qaPoliceAnimationScenario) {
+        const applyQaPoliceAnimationWhenReady = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          if (!ready) {
+            qaPoliceAnimationTimer = setTimeout(applyQaPoliceAnimationWhenReady, 100);
+            return;
+          }
+          if (!actors.police) {
+            void requestPoliceAsset?.();
+            qaPoliceAnimationTimer = setTimeout(applyQaPoliceAnimationWhenReady, 100);
+            return;
+          }
+          const action = actors.police.animator.play(
+            qaPoliceAnimationScenario as AnimationState,
+            {
+              fade: 0,
+              restart: true,
+              loop: qaPoliceAnimationScenario === "idle"
+                || qaPoliceAnimationScenario === "run"
+                || qaPoliceAnimationScenario === "alert",
+            },
+          );
+          if (!action) return;
+          actors.police.lastRequested = qaPoliceAnimationScenario as AnimationState;
+          if (qaPoliceAnimationTime !== null) {
+            action.time = action.getClip().duration * qaPoliceAnimationTime;
+            action.paused = true;
+            actors.police.animator.mixer.update(0);
+          }
+        };
+        qaPoliceAnimationTimer = setTimeout(applyQaPoliceAnimationWhenReady, 0);
+        const mirrorQaPoliceAnimationFrame = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          document.documentElement.dataset.chasingQaPoliceAnimationSnapshot = JSON.stringify({
+            capturedAtMilliseconds: performance.now(),
+            animation: actors.police?.animator.snapshot() ?? null,
+          });
+        };
+        mirrorQaPoliceAnimationFrame();
+        qaPoliceFrameSnapshotTimer = setInterval(mirrorQaPoliceAnimationFrame, 16);
+      }
+      if (qaKidAnimationScenario) {
+        const applyQaKidAnimationWhenReady = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          if (!ready || !actors.kid) {
+            qaKidAnimationTimer = setTimeout(applyQaKidAnimationWhenReady, 100);
+            return;
+          }
+          const action = actors.kid.animator.play(
+            qaKidAnimationScenario as AnimationState,
+            {
+              fade: 0,
+              restart: true,
+              loop: qaKidAnimationScenario === "idle"
+                || qaKidAnimationScenario === "walk"
+                || qaKidAnimationScenario === "run"
+                || qaKidAnimationScenario === "hideIdle",
+            },
+          );
+          if (!action) return;
+          actors.kid.lastRequested = qaKidAnimationScenario as AnimationState;
+          if (qaKidAnimationTime !== null) {
+            action.time = action.getClip().duration * qaKidAnimationTime;
+            action.paused = true;
+            actors.kid.animator.mixer.update(0);
+          }
+        };
+        qaKidAnimationTimer = setTimeout(applyQaKidAnimationWhenReady, 0);
+        const mirrorQaKidAnimationFrame = () => {
+          if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+          document.documentElement.dataset.chasingQaKidAnimationSnapshot = JSON.stringify({
+            capturedAtMilliseconds: performance.now(),
+            animation: actors.kid?.animator.snapshot() ?? null,
+          });
+        };
+        mirrorQaKidAnimationFrame();
+        qaKidFrameSnapshotTimer = setInterval(mirrorQaKidAnimationFrame, 16);
+      }
+      const mirrorQaSnapshot = () => {
+        if (disposed || qaWindow.__CHASING_QA__ !== installedQaHook) return;
+        const snapshot = installedQaHook.getState() as {
+          ready?: boolean;
+          campaign?: unknown;
+          game?: {
+            phase?: unknown;
+            player?: unknown;
+            chaser?: unknown;
+          };
+          animations?: { kid?: unknown; villain?: unknown; police?: unknown };
+          visibility?: { kid?: unknown; villain?: unknown; police?: unknown };
+          assets?: unknown;
+          preferences?: unknown;
+          themeMission?: unknown;
+          sceneIntegrity?: unknown;
+          camera?: unknown;
+          render?: unknown;
+          firstPlayableBudget?: unknown;
+        } | undefined;
+        if (!snapshot) return;
+        document.documentElement.dataset.chasingQaSnapshot = JSON.stringify({
+          ready: snapshot.ready,
+          campaign: snapshot.campaign,
+          game: {
+            phase: snapshot.game?.phase,
+            player: snapshot.game?.player,
+            chaser: snapshot.game?.chaser,
+          },
+          animations: {
+            kid: snapshot.animations?.kid,
+            villain: snapshot.animations?.villain,
+            police: snapshot.animations?.police,
+          },
+          visibility: {
+            kid: snapshot.visibility?.kid,
+            villain: snapshot.visibility?.villain,
+            police: snapshot.visibility?.police,
+          },
+          assets: snapshot.assets,
+          preferences: snapshot.preferences,
+          themeMission: snapshot.themeMission,
+          sceneIntegrity: snapshot.sceneIntegrity,
+          camera: snapshot.camera,
+          render: snapshot.render,
+          firstPlayableBudget: snapshot.firstPlayableBudget,
+        });
+      };
+      mirrorQaSnapshot();
+      qaDomSnapshotTimer = setInterval(mirrorQaSnapshot, 180);
     }
 
     void loadAll().catch((error: unknown) => {
+      // A level switch/unmount intentionally aborts in-flight loads. Reporting
+      // that expected cancellation as a production failure creates false
+      // console errors and obscures genuine asset faults.
+      if (disposed) return;
       console.error("Production asset load failed", error);
-      if (!disposed) {
-        setLoadError(assetLoadRecoveryMessage(error, navigator.onLine));
-      }
+      setLoadError(assetLoadRecoveryMessage(error, navigator.onLine));
     });
     frame = requestAnimationFrame(animate);
 
@@ -12169,9 +12677,22 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       removeEventListener("pageshow", resetFrameClock);
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
-      delete document.documentElement.dataset.chasingReady;
-      delete document.documentElement.dataset.chasingQuality;
-      delete document.documentElement.dataset.chasingEmergency;
+      const ownsQaHook = installedQaHook === null || qaWindow.__CHASING_QA__ === installedQaHook;
+      if (ownsQaHook) {
+        delete document.documentElement.dataset.chasingReady;
+        delete document.documentElement.dataset.chasingQuality;
+        delete document.documentElement.dataset.chasingEmergency;
+        delete document.documentElement.dataset.chasingQaSnapshot;
+        delete document.documentElement.dataset.chasingQaKidAnimationSnapshot;
+        delete document.documentElement.dataset.chasingQaPoliceAnimationSnapshot;
+        delete document.documentElement.dataset.chasingQaCleanFrame;
+      }
+      if (qaDomSnapshotTimer !== null) clearInterval(qaDomSnapshotTimer);
+      if (qaLevelSelectionTimer !== null) clearTimeout(qaLevelSelectionTimer);
+      if (qaKidAnimationTimer !== null) clearTimeout(qaKidAnimationTimer);
+      if (qaKidFrameSnapshotTimer !== null) clearInterval(qaKidFrameSnapshotTimer);
+      if (qaPoliceAnimationTimer !== null) clearTimeout(qaPoliceAnimationTimer);
+      if (qaPoliceFrameSnapshotTimer !== null) clearInterval(qaPoliceFrameSnapshotTimer);
       const runtimePlayfield = host.parentElement;
       if (runtimePlayfield?.classList.contains("playfield")) {
         runtimePlayfield.classList.remove(
@@ -12182,7 +12703,9 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
         );
         runtimePlayfield.style.removeProperty("--director-progress");
       }
-      if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
+      if (installedQaHook && qaWindow.__CHASING_QA__ === installedQaHook) {
+        if (qaWindow.__CHASING_QA__) delete qaWindow.__CHASING_QA__;
+      }
       for (const actor of Object.values(actors)) actor?.animator.dispose();
       ghostActor?.animator.dispose();
       for (const locker of lockers.values()) locker.mixer.stopAllAction();
@@ -12222,6 +12745,7 @@ diffuseColor.a *= mix( 1.0, 0.12, cameraOcclusionFade );`}
       // parse settles; the disposed branch above immediately destroys any
       // late scene, so this retains neither render objects nor long-lived URLs.
       releaseControlledDependencyResourcesWhenSettled();
+      qaRenderBreakdownTracker?.dispose();
       renderer.renderLists.dispose();
       renderer.dispose();
       if (renderer.domElement.parentElement === host) host.removeChild(renderer.domElement);

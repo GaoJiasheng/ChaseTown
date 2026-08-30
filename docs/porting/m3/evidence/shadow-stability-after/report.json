@@ -1,0 +1,395 @@
+{
+  "source": "stage-a-working-tree",
+  "expectedSnapped": true,
+  "method": "1280x720 DPR1 high formal camera; ten sequential 45ms W-key pulses; same-frame state plus PNG capture",
+  "movementCells": 1.232,
+  "uniqueMovementSamples": 10,
+  "frames": [
+    {
+      "index": 0,
+      "screenshot": "move-00.png",
+      "player": {
+        "x": 8.933245026037959,
+        "y": 15.11387613205289
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -6.132159372039901,
+          "y": -0.0028867435504283147,
+          "z": 6.231192306163195
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -8.664969723537668,
+        "sourceLightSpaceY": -0.8919130160081092,
+        "lightSpaceX": -8.666015625,
+        "lightSpaceY": -0.896484375,
+        "texelIndexX": -493,
+        "texelIndexY": -51,
+        "preSnapResidualTexelsX": 0.05950017207931069,
+        "preSnapResidualTexelsY": 0.2600595337608951,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 1,
+      "screenshot": "move-01.png",
+      "player": {
+        "x": 8.866490052075918,
+        "y": 15.227752264105781
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -6.268996262660243,
+          "y": 0.0006040404208428256,
+          "z": 6.456102083966313
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -8.910182461727857,
+        "sourceLightSpaceY": -0.967753414976984,
+        "lightSpaceX": -8.912109375,
+        "lightSpaceY": -0.966796875,
+        "texelIndexX": -507,
+        "texelIndexY": -55,
+        "preSnapResidualTexelsX": 0.10961995503748767,
+        "preSnapResidualTexelsY": -0.05441649646841995,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 2,
+      "screenshot": "move-02.png",
+      "player": {
+        "x": 8.799735078113876,
+        "y": 15.341628396158672
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -6.405833153280587,
+          "y": 0.004094824392113966,
+          "z": 6.681011861769431
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -9.155395199918043,
+        "sourceLightSpaceY": -1.0435938139458587,
+        "lightSpaceX": -9.158203125,
+        "lightSpaceY": -1.037109375,
+        "texelIndexX": -521,
+        "texelIndexY": -59,
+        "preSnapResidualTexelsX": 0.15973973799577834,
+        "preSnapResidualTexelsY": -0.3688925266977421,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 3,
+      "screenshot": "move-03.png",
+      "player": {
+        "x": 8.732980104151835,
+        "y": 15.455504528211563
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -6.534302111792615,
+          "y": -0.0035147097394786437,
+          "z": 6.916680409426092
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -9.400607938108234,
+        "sourceLightSpaceY": -1.119434212914733,
+        "lightSpaceX": -9.404296875,
+        "lightSpaceY": -1.125,
+        "texelIndexX": -535,
+        "texelIndexY": -64,
+        "preSnapResidualTexelsX": 0.20985952095384164,
+        "preSnapResidualTexelsY": 0.3166314430729642,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 4,
+      "screenshot": "move-04.png",
+      "player": {
+        "x": 8.666225130189794,
+        "y": 15.569380660264454
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -6.67113900241296,
+          "y": -0.00002392576820694248,
+          "z": 7.14159018722921
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -9.64582067629842,
+        "sourceLightSpaceY": -1.1952746118836086,
+        "lightSpaceX": -9.650390625,
+        "lightSpaceY": -1.1953125,
+        "texelIndexX": -549,
+        "texelIndexY": -68,
+        "preSnapResidualTexelsX": 0.2599793039121323,
+        "preSnapResidualTexelsY": 0.0021554128435923303,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 5,
+      "screenshot": "move-05.png",
+      "player": {
+        "x": 8.6217218142151,
+        "y": 15.645298081633047
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -6.754949174808393,
+          "y": -0.0013968424883143793,
+          "z": 7.29151898743349
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -9.80929583509188,
+        "sourceLightSpaceY": -1.2458348778628578,
+        "lightSpaceX": -9.80859375,
+        "lightSpaceY": -1.248046875,
+        "texelIndexX": -558,
+        "texelIndexY": -71,
+        "preSnapResidualTexelsX": -0.03994084078249216,
+        "preSnapResidualTexelsY": 0.1258380593574202,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 6,
+      "screenshot": "move-06.png",
+      "player": {
+        "x": 8.554966840253059,
+        "y": 15.759174213685938
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -6.891786065428738,
+          "y": 0.002093941482957322,
+          "z": 7.516428765236607
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -10.054508573282067,
+        "sourceLightSpaceY": -1.3216752768317335,
+        "lightSpaceX": -10.0546875,
+        "lightSpaceY": -1.318359375,
+        "texelIndexX": -572,
+        "texelIndexY": -75,
+        "preSnapResidualTexelsX": 0.010178942175684824,
+        "preSnapResidualTexelsY": -0.18863797087195167,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 7,
+      "screenshot": "move-07.png",
+      "player": {
+        "x": 8.488211866291017,
+        "y": 15.873050345738829
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -7.020255023940769,
+          "y": -0.005515592648635007,
+          "z": 7.75209731289327
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -10.299721311472254,
+        "sourceLightSpaceY": -1.3975156758006082,
+        "lightSpaceX": -10.30078125,
+        "lightSpaceY": -1.40625,
+        "texelIndexX": -586,
+        "texelIndexY": -80,
+        "preSnapResidualTexelsX": 0.060298725133975495,
+        "preSnapResidualTexelsY": 0.4968859988987333,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 8,
+      "screenshot": "move-08.png",
+      "player": {
+        "x": 8.443708550316323,
+        "y": 15.948967767107423
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -7.112433128444514,
+          "y": 0.004211808734121025,
+          "z": 7.891267343244004
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -10.463196470265714,
+        "sourceLightSpaceY": -1.4480759417798574,
+        "lightSpaceX": -10.458984375,
+        "lightSpaceY": -1.44140625,
+        "texelIndexX": -595,
+        "texelIndexY": -82,
+        "preSnapResidualTexelsX": -0.23962141956064897,
+        "preSnapResidualTexelsY": -0.3794313545874388,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "index": 9,
+      "screenshot": "move-09.png",
+      "player": {
+        "x": 8.376953576354282,
+        "y": 16.062843899160313
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -7.240902086956546,
+          "y": -0.003397725397470743,
+          "z": 8.126935890900667
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -10.708409208455901,
+        "sourceLightSpaceY": -1.523916340748733,
+        "lightSpaceX": -10.705078125,
+        "lightSpaceY": -1.529296875,
+        "texelIndexX": -609,
+        "texelIndexY": -87,
+        "preSnapResidualTexelsX": -0.1895016366023583,
+        "preSnapResidualTexelsY": 0.3060926151831893,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      },
+      "postSnapFractionalTexels": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "coverage": [
+    {
+      "kind": "level-edge",
+      "screenshot": "level-01-edge.png",
+      "campaign": 1,
+      "phase": "playing",
+      "player": {
+        "x": 1,
+        "y": 2
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": -21.993118357457714,
+          "y": -0.0019472933089843853,
+          "z": -20.00232326571891
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": -5.08693651198077,
+        "sourceLightSpaceY": 22.714021174258683,
+        "lightSpaceX": -5.080078125,
+        "lightSpaceY": 22.7109375,
+        "texelIndexX": -289,
+        "texelIndexY": 1292,
+        "preSnapResidualTexelsX": -0.3901660149060717,
+        "preSnapResidualTexelsY": 0.17542680227165874,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      }
+    },
+    {
+      "kind": "victory",
+      "screenshot": "level-10-victory.png",
+      "campaign": 10,
+      "phase": "won",
+      "player": {
+        "x": 23,
+        "y": 1
+      },
+      "shadowCamera": {
+        "halfExtent": 18,
+        "target": {
+          "x": 21.997749162809086,
+          "y": -0.0025164746604498128,
+          "z": -21.994334832713033
+        },
+        "texelWorldSize": 0.017578125,
+        "sourceLightSpaceX": 30.87244227960743,
+        "sourceLightSpaceY": 2.9922662624771927,
+        "lightSpaceX": 30.8671875,
+        "lightSpaceY": 2.98828125,
+        "texelIndexX": 1756,
+        "texelIndexY": 170,
+        "preSnapResidualTexelsX": 0.29893857322258555,
+        "preSnapResidualTexelsY": 0.22670293203586311,
+        "snappedToTexelGridX": true,
+        "snappedToTexelGridY": true
+      }
+    }
+  ],
+  "adjacentRgbMae": [
+    2.5528,
+    2.4941,
+    1.6726,
+    16.1092,
+    21.2179,
+    22.9791,
+    24.9376,
+    22.3194,
+    23.9391
+  ],
+  "maximumAbsolutePreSnapResidualTexels": {
+    "x": 0.2599793039121323,
+    "y": 0.4968859988987333
+  },
+  "nonZeroPreSnapFrameCount": 10
+}

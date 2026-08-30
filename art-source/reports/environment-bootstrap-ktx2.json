@@ -2,10 +2,10 @@
   "formatVersion": 1,
   "policy": {
     "geometryAndAnimationBinaryByteStable": true,
-    "sourceResolution": "BaseColor retains 512px tiles; Normal uses a reviewed 256px first-paint derivative.",
-    "atlasLayout": "BaseColor 512px+8px and Normal 256px+4px share an exactly equivalent normalized 4x3 layout.",
+    "sourceResolution": "Authoring textures remain 512px; first-paint BaseColor uses reviewed 256px tiles and Normal uses 128px tiles.",
+    "atlasLayout": "BaseColor 256px+4px and Normal 128px+2px share an exactly equivalent normalized 4x3 layout.",
     "baseColor": "ETC1S quality 10 with BasisLZ supercompression",
-    "normal": "Reuse theme-bootstrap 256px/tile UASTC quality 10 atlas with Zstandard supercompression",
+    "normal": "128px/tile UASTC quality 10 with Zstandard supercompression",
     "normalAtlasNormalizedUvEquivalent": true,
     "normalAtlasSourceHashesExact": true,
     "fallbackImages": false,
@@ -55,35 +55,35 @@
     "normalizedUvLayoutEquivalent": true,
     "normalizedTransformMaxDelta": 0,
     "baseColor": {
-      "sourceTileWidth": 512,
-      "sourceTileHeight": 512,
-      "gutterPixels": 8,
-      "width": 2112,
-      "height": 1584
-    },
-    "normal": {
       "sourceTileWidth": 256,
       "sourceTileHeight": 256,
       "gutterPixels": 4,
       "width": 1056,
       "height": 792
+    },
+    "normal": {
+      "sourceTileWidth": 128,
+      "sourceTileHeight": 128,
+      "gutterPixels": 2,
+      "width": 528,
+      "height": 396
     }
   },
   "totals": {
-    "originalGlbBytes": 2265652,
-    "sourceTextureBytes": 8721102,
-    "originalRuntimeBytes": 10986754,
+    "originalGlbBytes": 1733988,
+    "sourceTextureBytes": 8769280,
+    "originalRuntimeBytes": 10503268,
     "originalRuntimeRequests": 41,
-    "outputGlbBytes": 2318312,
-    "atlasBytes": 1064908,
-    "outputRuntimeBytes": 3383220,
+    "outputGlbBytes": 1786636,
+    "atlasBytes": 310351,
+    "outputRuntimeBytes": 2096987,
     "outputRuntimeRequests": 21,
-    "savedBytes": 7603534,
-    "savedPercent": 69.206,
+    "savedBytes": 8406281,
+    "savedPercent": 80.035,
     "requestsSaved": 20,
-    "supersededNormalAtlasBytes": 2288853,
-    "compactNormalAtlasBytes": 597993,
-    "normalAtlasBytesSaved": 1690860
+    "supersededNormalAtlasBytes": 158414,
+    "compactNormalAtlasBytes": 158414,
+    "normalAtlasBytesSaved": 0
   },
   "levelOneFirstPlayable": {
     "assets": [
@@ -98,15 +98,15 @@
       "desk-chair.glb",
       "podium.glb"
     ],
-    "originalGlbBytes": 1825924,
+    "originalGlbBytes": 1294260,
     "sourceTextureBytes": 6161273,
-    "originalRuntimeBytes": 7987197,
+    "originalRuntimeBytes": 7455533,
     "originalRuntimeRequests": 26,
-    "outputGlbBytes": 1852280,
-    "atlasBytes": 1064908,
-    "outputRuntimeBytes": 2917188,
+    "outputGlbBytes": 1320604,
+    "atlasBytes": 310351,
+    "outputRuntimeBytes": 1630955,
     "outputRuntimeRequests": 12,
-    "savedBytes": 5070009,
+    "savedBytes": 5824578,
     "requestsSaved": 14
   },
   "sourceTextures": [
@@ -114,7 +114,7 @@
       "family": "Blackboard",
       "textureClass": "BaseColor",
       "basename": "Env_Blackboard_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_Blackboard_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_Blackboard_BaseColor_2K.png",
       "bytes": 255344,
       "sha256": "8fcf2af1339fed40a0c38c925fcc7d32f5ad47b925e6d378351ca571090acd82",
       "width": 512,
@@ -124,7 +124,7 @@
       "family": "Blackboard",
       "textureClass": "Normal",
       "basename": "Env_Blackboard_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_Blackboard_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_Blackboard_Normal_2K.png",
       "bytes": 468441,
       "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
       "width": 512,
@@ -134,7 +134,7 @@
       "family": "BluePaintedMetal",
       "textureClass": "BaseColor",
       "basename": "Env_BluePaintedMetal_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png",
       "bytes": 240862,
       "sha256": "6d3e3dd97e6e2531b4150216ebf196aca57f3087e9f433dbd0a5fe9d97ebd43b",
       "width": 512,
@@ -144,7 +144,7 @@
       "family": "BluePaintedMetal",
       "textureClass": "Normal",
       "basename": "Env_BluePaintedMetal_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_BluePaintedMetal_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_BluePaintedMetal_Normal_2K.png",
       "bytes": 238232,
       "sha256": "f4e9a793da2f3d7196a1012592b63e7c8d3d5ed1dfceaff5bdd15ad500e9c0c2",
       "width": 512,
@@ -154,7 +154,7 @@
       "family": "GlassBlue",
       "textureClass": "BaseColor",
       "basename": "Env_GlassBlue_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_GlassBlue_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_GlassBlue_BaseColor_2K.png",
       "bytes": 386676,
       "sha256": "65ca81808f86ad9320b878446ead399fa00b50351e3dd447a104f1576f71b427",
       "width": 512,
@@ -164,7 +164,7 @@
       "family": "GlassBlue",
       "textureClass": "Normal",
       "basename": "Env_GlassBlue_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_GlassBlue_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_GlassBlue_Normal_2K.png",
       "bytes": 514865,
       "sha256": "a55a377be48adb85e399f7a27170a323a4a9cdc69d80c18de91d06ea6c810a43",
       "width": 512,
@@ -174,7 +174,7 @@
       "family": "Grass",
       "textureClass": "BaseColor",
       "basename": "Env_Grass_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_Grass_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_Grass_BaseColor_2K.png",
       "bytes": 424344,
       "sha256": "5b95e9f3b62a4a3fbe86bc0e688d0f213e9f73ad27b77b31636c8c0a9462576d",
       "width": 512,
@@ -184,7 +184,7 @@
       "family": "Grass",
       "textureClass": "Normal",
       "basename": "Env_Grass_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_Grass_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_Grass_Normal_2K.png",
       "bytes": 633575,
       "sha256": "ffe94134bb492e0ab9f8b5a7d81831d9817d0faf14cd3373932fb86e43391f50",
       "width": 512,
@@ -194,7 +194,7 @@
       "family": "HallwayTile",
       "textureClass": "BaseColor",
       "basename": "Env_HallwayTile_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_HallwayTile_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_HallwayTile_BaseColor_2K.png",
       "bytes": 515697,
       "sha256": "5e8c88d503835559c4d572c50e16f7252aadc774ffec22ad2090f89139ec3fa1",
       "width": 512,
@@ -204,7 +204,7 @@
       "family": "HallwayTile",
       "textureClass": "Normal",
       "basename": "Env_HallwayTile_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_HallwayTile_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_HallwayTile_Normal_2K.png",
       "bytes": 514865,
       "sha256": "a55a377be48adb85e399f7a27170a323a4a9cdc69d80c18de91d06ea6c810a43",
       "width": 512,
@@ -214,9 +214,9 @@
       "family": "PaintedWall",
       "textureClass": "BaseColor",
       "basename": "Env_PaintedWall_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_PaintedWall_BaseColor_2K.png",
-      "bytes": 337041,
-      "sha256": "d170145aeceef25f0d495e5c9b7a014409ec1b59611e152f4e064fb076d4f055",
+      "path": "art-source/Environment/SharedTextures/Env_PaintedWall_BaseColor_2K.png",
+      "bytes": 385219,
+      "sha256": "ad0af798f874ba39a46148d23cf107980311c35f5921d6ff7e24b32d5bbcd18b",
       "width": 512,
       "height": 512
     },
@@ -224,7 +224,7 @@
       "family": "PaintedWall",
       "textureClass": "Normal",
       "basename": "Env_PaintedWall_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_PaintedWall_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_PaintedWall_Normal_2K.png",
       "bytes": 468441,
       "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
       "width": 512,
@@ -234,7 +234,7 @@
       "family": "Paper",
       "textureClass": "BaseColor",
       "basename": "Env_Paper_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_Paper_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_Paper_BaseColor_2K.png",
       "bytes": 357651,
       "sha256": "2a8f4b209774d22864b7e8760156f3c298b636f6db246a2c8f3f810f5e34bde2",
       "width": 512,
@@ -244,7 +244,7 @@
       "family": "Paper",
       "textureClass": "Normal",
       "basename": "Env_Paper_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_Paper_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_Paper_Normal_2K.png",
       "bytes": 468441,
       "sha256": "3e84fb9e0ccb75608bf96f4a3a458dd1034a1c1223aa68e787822eca33f17779",
       "width": 512,
@@ -254,7 +254,7 @@
       "family": "RedPaintedMetal",
       "textureClass": "BaseColor",
       "basename": "Env_RedPaintedMetal_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_RedPaintedMetal_BaseColor_2K.png",
       "bytes": 236566,
       "sha256": "ac5dd05be43b5e0cd37163919fe822ac72fba807e724e28787fe5a53d101ce19",
       "width": 512,
@@ -264,7 +264,7 @@
       "family": "RedPaintedMetal",
       "textureClass": "Normal",
       "basename": "Env_RedPaintedMetal_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_RedPaintedMetal_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_RedPaintedMetal_Normal_2K.png",
       "bytes": 238232,
       "sha256": "f4e9a793da2f3d7196a1012592b63e7c8d3d5ed1dfceaff5bdd15ad500e9c0c2",
       "width": 512,
@@ -274,7 +274,7 @@
       "family": "RubberBlack",
       "textureClass": "BaseColor",
       "basename": "Env_RubberBlack_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_RubberBlack_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_RubberBlack_BaseColor_2K.png",
       "bytes": 322399,
       "sha256": "9a2ff207de46d99a44726225029090f85b4a64cc6dea4766aa42ffab348fa246",
       "width": 512,
@@ -284,7 +284,7 @@
       "family": "RubberBlack",
       "textureClass": "Normal",
       "basename": "Env_RubberBlack_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_RubberBlack_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_RubberBlack_Normal_2K.png",
       "bytes": 538559,
       "sha256": "9524e289cee12352e3be693ba485203443e46b120643d88a3215a8b0fadfe52f",
       "width": 512,
@@ -294,7 +294,7 @@
       "family": "WoodTrim",
       "textureClass": "BaseColor",
       "basename": "Env_WoodTrim_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_WoodTrim_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_WoodTrim_BaseColor_2K.png",
       "bytes": 320934,
       "sha256": "3c5afb866e270bc57d91f86d7f475b6f3549f312b04177b2c6e44ffa5cf7c0c4",
       "width": 512,
@@ -304,7 +304,7 @@
       "family": "WoodTrim",
       "textureClass": "Normal",
       "basename": "Env_WoodTrim_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_WoodTrim_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_WoodTrim_Normal_2K.png",
       "bytes": 424334,
       "sha256": "cc38fef8995e817656c78bc713466d1a96003096c1c63efa1a713c9c2d4d8e44",
       "width": 512,
@@ -314,7 +314,7 @@
       "family": "WornMetal",
       "textureClass": "BaseColor",
       "basename": "Env_WornMetal_BaseColor_2K.png",
-      "path": "public/models/SharedTextures/Env_WornMetal_BaseColor_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_WornMetal_BaseColor_2K.png",
       "bytes": 335168,
       "sha256": "0005313319441eafc994109d7cf8243e381db94cd83365a2b8f567895ef2d3eb",
       "width": 512,
@@ -324,7 +324,7 @@
       "family": "WornMetal",
       "textureClass": "Normal",
       "basename": "Env_WornMetal_Normal_2K.png",
-      "path": "public/models/SharedTextures/Env_WornMetal_Normal_2K.png",
+      "path": "art-source/Environment/SharedTextures/Env_WornMetal_Normal_2K.png",
       "bytes": 480435,
       "sha256": "2c860a16a61ba4bd7a4f9f27c8a8951a5ffbb5ccc68de0680823a16033d62c29",
       "width": 512,
@@ -335,33 +335,33 @@
     {
       "textureClass": "baseColor",
       "expectedMode": "ETC1S",
-      "path": "public/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
-      "bytes": 466915,
-      "sha256": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91",
-      "width": 2112,
-      "height": 1584,
-      "levels": 12,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+      "bytes": 151937,
+      "sha256": "26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b",
+      "width": 1056,
+      "height": 792,
+      "levels": 11,
       "supercompressionScheme": 1,
-      "sourceTileWidth": 512,
-      "sourceTileHeight": 512,
-      "gutterPixels": 8,
+      "sourceTileWidth": 256,
+      "sourceTileHeight": 256,
+      "gutterPixels": 4,
       "reusedFromThemeBootstrap": false,
       "normalizedTransformMaxDelta": 0
     },
     {
       "textureClass": "normal",
       "expectedMode": "UASTC",
-      "path": "public/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
-      "bytes": 597993,
-      "sha256": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9",
-      "width": 1056,
-      "height": 792,
-      "levels": 11,
+      "path": "public/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2",
+      "bytes": 158414,
+      "sha256": "632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b",
+      "width": 528,
+      "height": 396,
+      "levels": 10,
       "supercompressionScheme": 2,
-      "sourceTileWidth": 256,
-      "sourceTileHeight": 256,
-      "gutterPixels": 4,
-      "reusedFromThemeBootstrap": true,
+      "sourceTileWidth": 128,
+      "sourceTileHeight": 128,
+      "gutterPixels": 2,
+      "reusedFromThemeBootstrap": false,
       "normalizedTransformMaxDelta": 0
     }
   ],
@@ -375,7 +375,7 @@
       },
       "output": {
         "bytes": 36332,
-        "sha256": "6000bda494202641e8a668a8ecf60d61154a7be3270d4ddb1cca88d78f211e9c",
+        "sha256": "4d6630b46dff9314629509d769a862d3ee20416277031fe8c60675767e04c828",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "0989f582934f71902e1f6fae3f4087091a1a4363a3342110f2d0b27250747457",
@@ -451,7 +451,7 @@
       },
       "output": {
         "bytes": 74016,
-        "sha256": "1e1b5b8a84775d2f1629de0cae894ef496371bd5151224e477fab4c6c9bd1b6a",
+        "sha256": "6ad26116695165444548dfc5a391a29a835f1581c0f3ea47f804948ed5d979aa",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "244da326601dc3e4be175030e721c3dd0434205cb3855023f1a4b1181378f18a",
@@ -537,7 +537,7 @@
       },
       "output": {
         "bytes": 47916,
-        "sha256": "a08a99e383bb6b1f8cdec69435d6cf360753b40a162ce569b39f002f2a6490de",
+        "sha256": "595157465b39f811ffe8b3526d3565aa5890f5a7b172a98ac6f5c7d77d997bc0",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "8435fc6ab7ea1ba33d3e84cc793e45325ba19dfe1de5232262a0087b128e0dba",
@@ -603,7 +603,7 @@
       },
       "output": {
         "bytes": 35484,
-        "sha256": "f0296fc3f40de91d80d18a15608e55f71f2cd4802f40af18003c3dd974538ec6",
+        "sha256": "d23562a1e60cf911c8c2e12e0a3e7c0f79363c77d35574be9c9da1df0cd8ec4c",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "d5e7d3954d29da931818c9de599cb3d6185c4ac8ff13c26281f9c6b8fba0488f",
@@ -689,7 +689,7 @@
       },
       "output": {
         "bytes": 134308,
-        "sha256": "a77d15163fecd4cf3e4e3b170eed61ca38ef5b557b466ddea1bce708836b4d01",
+        "sha256": "51aac3fcccfe04e0dc8a33f7d90eff140a203d3486a1732b0b0da3eca6233188",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "d71fcf98b68ce445d74b80a8bbf3a493da0d07f407cbce05dd3d8db919997696",
@@ -785,7 +785,7 @@
       },
       "output": {
         "bytes": 41896,
-        "sha256": "2887d03d2a8f52dfa8252b15094c51b5b225e0331015d6f930b71eb6cc43fc5d",
+        "sha256": "e165212d0f750483c81c9c14fc218e529ea1ea9f7a2bd4d67a2494d480fe67ef",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "67ceeb99d8beb58b7513e071e870b22b991eb061974627ae21c70d59f0ddccad",
@@ -881,7 +881,7 @@
       },
       "output": {
         "bytes": 23260,
-        "sha256": "5b00870c3ab5e538711d1556cdf38249f1e77186738b6c4bf95918603d230f62",
+        "sha256": "b64d064e2541ee94523009865a34f0506c4576aa6cd6b27c3c902666cb717d4a",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "76a54c3aa6be7e379c8a6df33dd905c88f499d660207b8582c65773dc1e40e73",
@@ -957,7 +957,7 @@
       },
       "output": {
         "bytes": 37300,
-        "sha256": "4a34edaafe824625d2d58c364fad02e2c1e76642e186e93ec58e01c70d274e70",
+        "sha256": "ac2f514cc83b665cb3bf9145c1093abaaac529584a7e07e90e86170bbdad7a91",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "78a688d6ca565602002b162157cd7ed7945cb50f73fa77ca780a805305e91f7d",
@@ -1043,7 +1043,7 @@
       },
       "output": {
         "bytes": 97416,
-        "sha256": "b557c143b59c67efa5e85ece9a3f4bc6feee44078e295a91649ad8310fd983d4",
+        "sha256": "9f525357043914e6fa44a9f9d119ad6a54a76f4de4cd04dd708775dc7830c177",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "5f37e7eb0195768d9585d780819a4f31f89ac39e3c19b8ceac878f92b6ebb1f1",
@@ -1149,7 +1149,7 @@
       },
       "output": {
         "bytes": 37336,
-        "sha256": "b54b385a1ffb93a720ecb5ba7d1ebe06ae6535010d813381dacc4f983757936a",
+        "sha256": "379ae50505ff5c7c815c8bae92496864953d7bc6eb0ae00538146b2f3cdd0824",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "78a688d6ca565602002b162157cd7ed7945cb50f73fa77ca780a805305e91f7d",
@@ -1235,7 +1235,7 @@
       },
       "output": {
         "bytes": 30320,
-        "sha256": "018305a1f9ccd8ebba2d44e2dcb94cf18057fbb1020cfbc92e5a037d980d8b56",
+        "sha256": "4bb88f39c66f5d18763b16aad5252f8462c8ba5c33efffb202132d76d81fd585",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "491ed0aca67cef7da28d6c4f9b937a9d69b3e81544fc7e300cdf261158735049",
@@ -1321,7 +1321,7 @@
       },
       "output": {
         "bytes": 40876,
-        "sha256": "6bcd6862b38fdb21ffd9b5ee9b256252ddbbeac8142e0f47ce29600d5458f60e",
+        "sha256": "50a04c4b3bbe69ad62ff2fc285e8a9f16a09648ef9000c880779d4b1e018e1d6",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "a94b25b7bab906f45a6babd77740651fb7d25a6bbf0bf8ce69de31497d47ce58",
@@ -1401,16 +1401,16 @@
     {
       "path": "public/models/environment/locker.glb",
       "original": {
-        "bytes": 1211620,
-        "sha256": "b53e81785a7d803a55f0abf0b8b93c6ab691bf6379f61c1ace33b6a432c1db14",
+        "bytes": 679956,
+        "sha256": "eb25da24c764790e8f4ade3d0a0f851b96e730e02d9e3b3b17eb70710341a902",
         "externalPngRequests": 6
       },
       "output": {
-        "bytes": 1213672,
-        "sha256": "4f9e9aaf5d0cb8683be34630d5fffb7e0999476020852c8e87a2c81723d09554",
+        "bytes": 681996,
+        "sha256": "11d7ac4da697825915a5506f7cba816ed06aad9aa6e50837e1401fb083c01134",
         "atlasRequests": 2
       },
-      "geometryBinarySha256": "7d033df88c8740f6de721859a054d1eafbb6367d89b96188e1d50cd20ab9140e",
+      "geometryBinarySha256": "8921b9a707de5c073a1af4fd8ce541dc79a26ab63bb6fc56a50cb2e50f18e331",
       "structure": {
         "nodes": {
           "count": 43,
@@ -1429,8 +1429,8 @@
           "sha256": "b59b83f05a3cba776407e1b08ed2e8b900f270163d7f6bc15d98b08668e9fe29"
         },
         "accessors": {
-          "count": 102,
-          "sha256": "dcd4a7f6c59f8234b24f087c39ca124ef135218f61e9e65f9c9976808f8637f4"
+          "count": 78,
+          "sha256": "58cc130e4a102656b9576c9f326c2d9eb075af1157262469947970f1b70e6d8b"
         },
         "skins": {
           "count": 0,
@@ -1452,32 +1452,32 @@
         {
           "materialIndex": 0,
           "slot": "baseColor",
-          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
+          "sourceUri": "../../../art-source/Environment/SharedTextures/Env_BluePaintedMetal_BaseColor_2K.png"
         },
         {
           "materialIndex": 0,
           "slot": "normal",
-          "sourceUri": "../SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
+          "sourceUri": "../../../art-source/Environment/SharedTextures/Env_BluePaintedMetal_Normal_2K.png"
         },
         {
           "materialIndex": 5,
           "slot": "baseColor",
-          "sourceUri": "../SharedTextures/Env_Paper_BaseColor_2K.png"
+          "sourceUri": "../../../art-source/Environment/SharedTextures/Env_Paper_BaseColor_2K.png"
         },
         {
           "materialIndex": 5,
           "slot": "normal",
-          "sourceUri": "../SharedTextures/Env_Paper_Normal_2K.png"
+          "sourceUri": "../../../art-source/Environment/SharedTextures/Env_Paper_Normal_2K.png"
         },
         {
           "materialIndex": 8,
           "slot": "baseColor",
-          "sourceUri": "../SharedTextures/Env_WornMetal_BaseColor_2K.png"
+          "sourceUri": "../../../art-source/Environment/SharedTextures/Env_WornMetal_BaseColor_2K.png"
         },
         {
           "materialIndex": 8,
           "slot": "normal",
-          "sourceUri": "../SharedTextures/Env_WornMetal_Normal_2K.png"
+          "sourceUri": "../../../art-source/Environment/SharedTextures/Env_WornMetal_Normal_2K.png"
         }
       ]
     },
@@ -1490,7 +1490,7 @@
       },
       "output": {
         "bytes": 39184,
-        "sha256": "02b348399de7f55f658825fe8a2675dfb86f14e0c7db2ec947efc6b0cf5c1055",
+        "sha256": "b50bf9f8195aa51820fd0d8e8b7ec52c0020e386bdd3eb16a91c3ac1b92c1220",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "ba6529668bb4ee1739af6716f34f970389ce111a710eb884cb95c09182441f7d",
@@ -1576,7 +1576,7 @@
       },
       "output": {
         "bytes": 86200,
-        "sha256": "a4d3b3a1b078d39a368c82d55a79e01257b64e93127da40d59e7d65d077fe66f",
+        "sha256": "0d056edbf5893e16b8702b72753306305ae281d2c6a75f56aaec55f371a6a63a",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "7512b2109043006082ff778bf3c8ab9a4205ad79f75510bd110fd6a9fe11107d",
@@ -1682,7 +1682,7 @@
       },
       "output": {
         "bytes": 96252,
-        "sha256": "6aab68330da24469113221e85c0a77ca8b6710f50f37b1b4879548a7bdbf75d0",
+        "sha256": "9c300aac3f3cfdd959bed3973923046be604785f5cbd036351382f9559afa738",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "cd760545d6bfb463a2f132d0cc5d0418c2bfb2477080df2a97310df1337f570e",
@@ -1758,7 +1758,7 @@
       },
       "output": {
         "bytes": 94460,
-        "sha256": "ce5fe91cd5380cbee3da00ceff814baa733a074b15be666a9dc98bb2eb3745bb",
+        "sha256": "fd380875e46fe46c08f67c312bc5fb6150dc66f45d50c6f25cea46e87fce465d",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "a4dcf79127abba7056b7c1e4e98fccbd05c27ab04e1f7437886b6ec70184e99b",
@@ -1884,7 +1884,7 @@
       },
       "output": {
         "bytes": 32672,
-        "sha256": "efde034193fe92a4f1d04d2593918d5a1c5107120a970b56fbdaf78efa63a10c",
+        "sha256": "9685e4ebdc9942beaf6cf8a19a6cd8ff9b822c9529a5bcb6fa82ead60d638df8",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "5aff6a04161762209f07ff5e4533390b155ae0ab9543d794c6cd93d11a269a8b",
@@ -1970,7 +1970,7 @@
       },
       "output": {
         "bytes": 119412,
-        "sha256": "35ac4813973506856dcd7feeebefc3928417e0d731d225d06976ee6d92af30f3",
+        "sha256": "4387986b0bcec67fa7d03a9c5ca613f7be57c4fa4f2553af0cc0ac1e0c466565",
         "atlasRequests": 2
       },
       "geometryBinarySha256": "6c9f14449f44c0a6ce666a5c37c48417f837ccb61f0415b992079f06c6e651ef",

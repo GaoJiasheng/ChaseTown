@@ -1,0 +1,375 @@
+{
+  "capturedAt": "2026-08-28T20:20:07.806Z",
+  "method": "Fresh production process after the final clean build. Inventory is the unique DOM-declared script/link/image first-screen topology; QA firstPlayableBudget is the runtime loader byte ledger.",
+  "url": "http://localhost:3003/?qa=1&qaQuality=high&qaLevel=1&qaNetwork=v5-final",
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "deviceScaleFactor": 1
+  },
+  "screenshot": {
+    "path": "production-first-screen.jpg",
+    "format": "jpeg",
+    "bytes": 132557,
+    "sha256": "1eb1a940a1018c92a47a4c8e4a8155c5e1aa6f648b56a917fe1808453c2692b1",
+    "signature": "ffd8ffe000104a4649460001"
+  },
+  "console": [],
+  "inventory": {
+    "assets": [
+      {
+        "url": "http://localhost:3003/assets/chasing-game-bRmSn1KR.js",
+        "name": "chasing-game-bRmSn1KR.js",
+        "kind": "script",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "modulepreload"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/assets/framework-ItqtACJ4.js",
+        "name": "framework-ItqtACJ4.js",
+        "kind": "script",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "modulepreload"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/assets/index-ClWPJyrz.js",
+        "name": "index-ClWPJyrz.js",
+        "kind": "script",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "modulepreload"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/assets/index-Dni_abC9.css",
+        "name": "index-Dni_abC9.css",
+        "kind": "stylesheet",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "stylesheet"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/assets/layout-segment-context-Dp7H5BW2.js",
+        "name": "layout-segment-context-Dp7H5BW2.js",
+        "kind": "script",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "modulepreload"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/assets/rolldown-runtime-QTnfLwEv.js",
+        "name": "rolldown-runtime-QTnfLwEv.js",
+        "kind": "script",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "modulepreload"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/basis/basis_transcoder.js",
+        "name": "basis_transcoder.js",
+        "kind": "script",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/basis/basis_transcoder.wasm",
+        "name": "basis_transcoder.wasm",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/favicon.svg",
+        "name": "favicon.svg",
+        "kind": "image",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "icon"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/characters/kid-bootstrap.glb?v=1",
+        "name": "kid-bootstrap.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/characters/villain-bootstrap.glb?v=5",
+        "name": "villain-bootstrap.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/basketball.glb?v=5",
+        "name": "basketball.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/bench.glb?v=5",
+        "name": "bench.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/desk-chair.glb?v=5",
+        "name": "desk-chair.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/exit.glb?v=5",
+        "name": "exit.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/front-gate.glb?v=5",
+        "name": "front-gate.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/locker.glb?v=32",
+        "name": "locker.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/podium.glb?v=5",
+        "name": "podium.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/police-car.glb?v=5",
+        "name": "police-car.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+        "name": "52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+        "name": "9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+        "name": "9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/shrub.glb?v=5",
+        "name": "shrub.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/stealth-corner-mirrors.glb?v=2",
+        "name": "stealth-corner-mirrors.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/themes/campus-kit-bootstrap.glb?v=1",
+        "name": "campus-kit-bootstrap.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      },
+      {
+        "url": "http://localhost:3003/models/environment/tree.glb?v=5",
+        "name": "tree.glb",
+        "kind": "other",
+        "sources": [
+          {
+            "tag": "link",
+            "rel": "preload",
+            "as": "fetch"
+          }
+        ]
+      }
+    ],
+    "totalUnique": 26,
+    "counts": {
+      "script": 6,
+      "stylesheet": 1,
+      "image": 1,
+      "other": 18
+    }
+  },
+  "qaFirstPlayableBudget": {
+    "fits": true,
+    "fitsTransferBudget": true,
+    "fitsTimeBudget": true,
+    "criticalTransferBytes": 6691805,
+    "deferredTransferBytes": 0,
+    "requiredSavingsBytes": 0,
+    "estimatedSeconds": 6.633444,
+    "criticalRequestCount": 17,
+    "categoryTransferBytes": {
+      "shell": 40876,
+      "navigation": 1662640,
+      "player": 1573988,
+      "threat": 891784,
+      "hide-spot": 1213672,
+      "theme": 1308845
+    },
+    "exceededCategories": [],
+    "duplicateUrls": [
+      "http://localhost:3003/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+      "http://localhost:3003/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2"
+    ],
+    "invalidEntryIds": []
+  },
+  "policeLoaded": false,
+  "policeLoadedIdentity": null,
+  "policeCharacterRequests": [],
+  "policeNamedRequests": [
+    {
+      "url": "http://localhost:3003/models/environment/police-car.glb?v=5",
+      "name": "police-car.glb",
+      "kind": "other",
+      "sources": [
+        {
+          "tag": "link",
+          "rel": "preload",
+          "as": "fetch"
+        }
+      ]
+    }
+  ]
+}

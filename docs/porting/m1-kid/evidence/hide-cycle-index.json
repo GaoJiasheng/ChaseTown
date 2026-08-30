@@ -1,0 +1,51 @@
+{
+  "runId": "kid-hide-cycle-v3",
+  "url": "http://localhost:3002/?qa=1&qaQuality=mobile&qaLevel=1&qaPlayer=9,5&qaChaser=1,12.4&qaSpawnDelay=60&autostart=1&m1=kid-hide-cycle-v3",
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "inputNote": "On-screen Enter/Leave exercises the E interaction path; a real held touch on “按住观察” exercises the same held q input path as keyboard Q.",
+  "sequence": [
+    {
+      "step": "E-enter",
+      "capturedAt": "2026-08-29T00:54:39.745Z",
+      "playerMode": "entering-hide",
+      "clip": "HideEnter",
+      "normalizedTime": 0.4575775893669287,
+      "bytes": 1561604,
+      "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "consoleEntries": 0
+    },
+    {
+      "step": "hidden-idle",
+      "capturedAt": "2026-08-29T00:54:48.577Z",
+      "playerMode": "hidden",
+      "clip": "HideIdle",
+      "normalizedTime": 0.6768398181233196,
+      "bytes": 1561604,
+      "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "consoleEntries": 0
+    },
+    {
+      "step": "Q-equivalent-touch-hold-peek",
+      "capturedAt": "2026-08-29T01:04:48.292Z",
+      "playerMode": "peeking",
+      "clip": "HidePeek",
+      "normalizedTime": 0.8071528623826373,
+      "bytes": 1561604,
+      "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "consoleEntries": 0
+    },
+    {
+      "step": "E-exit",
+      "capturedAt": "2026-08-29T01:05:12.370Z",
+      "playerMode": "exiting-hide",
+      "clip": "HideExit",
+      "normalizedTime": 0.31034327762397124,
+      "bytes": 1561604,
+      "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "consoleEntries": 0
+    }
+  ]
+}

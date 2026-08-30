@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-07-23T04:38:47.516Z",
+  "generatedAt": "2026-08-29T00:47:42.540Z",
   "policy": {
     "geometryQuantization": false,
     "textureTranscode": false,
@@ -26,24 +26,54 @@
       "24"
     ]
   },
+  "roleOverrides": {
+    "villain": {
+      "sourceTextures": "Lossless authored PNG maps embedded by Blender.",
+      "textureTranscode": "Native gltfpack WebP quality 10 intermediate before production KTX2.",
+      "textureMaxDimension": 768,
+      "executable": "external native gltfpack (pass --gltfpack PATH)",
+      "version": "gltfpack 1.2",
+      "binarySha256": "037336fafa46f342fe118ce8d17877fecb3deb1cd6dd8f62ee2a95bfaf2b79df",
+      "arguments": [
+        "-c",
+        "-kn",
+        "-km",
+        "-ke",
+        "-noq",
+        "-af",
+        "0",
+        "-at",
+        "24",
+        "-ar",
+        "16",
+        "-as",
+        "24",
+        "-tw",
+        "-tl",
+        "768",
+        "-tq",
+        "10"
+      ]
+    }
+  },
   "totals": {
-    "sourceBytes": 30537232,
-    "optimizedBytes": 18290148,
-    "savedBytes": 12247084,
-    "savedPercent": 40.105
+    "sourceBytes": 27901188,
+    "optimizedBytes": 16649948,
+    "savedBytes": 11251240,
+    "savedPercent": 40.325
   },
   "characters": [
     {
       "role": "kid",
       "source": {
-        "bytes": 9997836,
-        "sha256": "08952a54915ede2de2c24d9c8abdc7ad2287fa0dff01f1cbd6b3cb71aec2e32a"
+        "bytes": 8812156,
+        "sha256": "78e9753ba6bbf9ddb949dea18ad25b021ea4c71b9d7aa48a7b0a04a10bd58844"
       },
       "optimized": {
-        "bytes": 4946804,
-        "sha256": "4a63a216f0d55c61ac047f98eff28bafdd3757dcb6de1529a7a3c250c9939186",
-        "savedBytes": 5051032,
-        "savedPercent": 50.521
+        "bytes": 5008420,
+        "sha256": "fe5db35d2db7fa7b8b4f0fb4829def96acb78609e98b7228b27a151f87c0c071",
+        "savedBytes": 3803736,
+        "savedPercent": 43.165
       },
       "quality": {
         "namedNodes": 57,
@@ -97,10 +127,10 @@
             "sha256": "33aedcb0b9ea8ae59768477dabbedf6f821a17b2b29dc1f4ea2d8a68711a850e"
           },
           {
-            "name": "Char_Kid_PrecisionRemodel_v21_BaseColor_2K",
+            "name": "Char_Kid_A2_Semantic_BaseColor_2K",
             "mimeType": "image/png",
-            "bytes": 1103463,
-            "sha256": "0ac2b4c10404c7ea68c9647e36acd4d91bd6d9ff293285dfbe018801d0b9d732"
+            "bytes": 1187176,
+            "sha256": "9fde5298a0487a1e56eea3aebf9bf6f17e40888cb35eafacb81986adf5bc8bbc"
           }
         ],
         "boundsMaxDeltaMeters": 7.348632813375389e-10,
@@ -114,14 +144,14 @@
     {
       "role": "villain",
       "source": {
-        "bytes": 10748024,
-        "sha256": "cee4c14fbf0a5d4d9598b611eddd8998a6f42a44261bd7fd2bb03b8790a67392"
+        "bytes": 8457876,
+        "sha256": "a2d66175f82eb7d432a9026a9bbe88566588c57765eed11773290033727df2cb"
       },
       "optimized": {
-        "bytes": 4669516,
-        "sha256": "06f8e90ed2e34e2dce9d9d1a57b1dd3e88eda8afa275d69d00c70d7a032807d4",
-        "savedBytes": 6078508,
-        "savedPercent": 56.555
+        "bytes": 2380468,
+        "sha256": "33769f721a212b1d081a31e4e94b914823181fc21d7734dd1e114bdfdbdbb8c2",
+        "savedBytes": 6077408,
+        "savedPercent": 71.855
       },
       "quality": {
         "namedNodes": 34,
@@ -130,8 +160,8 @@
         "materials": 6,
         "skins": 1,
         "joints": 21,
-        "sourceTriangles": 157148,
-        "optimizedTriangles": 157148,
+        "sourceTriangles": 74660,
+        "optimizedTriangles": 74660,
         "removedDegenerateTriangles": 0,
         "clips": [
           "Alert",
@@ -144,64 +174,97 @@
           "Search"
         ],
         "clipDurations": {
-          "Alert": 0.6,
-          "Catch": 1.2,
-          "CheckHide": 2.2666666666666666,
+          "Alert": 0.600000024,
+          "Catch": 1.20000005,
+          "CheckHide": 2.26666665,
           "Idle": 2.5,
-          "LostSight": 1.7666666666666666,
-          "PatrolWalk": 1.4666666666666666,
-          "Run": 0.8666666666666667,
-          "Search": 1.4333333333333333
+          "LostSight": 1.76666665,
+          "PatrolWalk": 1.4666667,
+          "Run": 0.866666675,
+          "Search": 1.43333328
         },
         "textures": [
           {
-            "name": "Char_Villain_PrecisionRemodel_v21_Normal_768",
+            "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
             "mimeType": "image/png",
-            "bytes": 735234,
-            "sha256": "0fe361dbcf537515f681419dec7cab3a13173c461a06bc2e2386c7706446c8b4"
-          },
-          {
-            "name": "Char_Villain_PrecisionRemodel_v21_ORM_768",
-            "mimeType": "image/png",
-            "bytes": 716987,
-            "sha256": "7536d1e1407974421ac9db7a4417d8dd8e47e48f4e32e0ff9d5ae45a61043eba"
+            "bytes": 1784413,
+            "sha256": "faf5561079fa1f922e8010202281e6535b5d18e33339909b8233ef966b43056d"
           },
           {
             "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
             "mimeType": "image/png",
-            "bytes": 712561,
-            "sha256": "1c708f5d1a75e86c87d092ed26cf23cca32a84fb8012e3d73ef0decb22b43a5a"
+            "bytes": 1703364,
+            "sha256": "f7678754fdcf0634c9b7414e70ce6d730ac520a034c16d4e034cb35f8c26cd49"
+          },
+          {
+            "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+            "mimeType": "image/png",
+            "bytes": 1384118,
+            "sha256": "a9812a92dcdeeb19d5b28c59be9687d53fd596026f5c333ad342a6b3dc1094ba"
           }
         ],
-        "boundsMaxDeltaMeters": 4.632568328943876e-9,
+        "textureTranscode": {
+          "sourceMimeType": "image/png",
+          "outputMimeType": "image/webp",
+          "minimumPsnrDb": 45,
+          "maximumChannelDelta": 20,
+          "textureMaxDimension": 768,
+          "textures": [
+            {
+              "name": "Char_Villain_PrecisionRemodel_v21_Normal_2K",
+              "width": 768,
+              "height": 768,
+              "peakSignalToNoiseRatioDb": 45.896,
+              "rootMeanSquaredError": 1.293,
+              "maximumChannelDelta": 8
+            },
+            {
+              "name": "Char_Villain_PrecisionRemodel_v21_BaseColor_2K",
+              "width": 768,
+              "height": 768,
+              "peakSignalToNoiseRatioDb": 46.235,
+              "rootMeanSquaredError": 1.244,
+              "maximumChannelDelta": 6
+            },
+            {
+              "name": "Char_Villain_PrecisionRemodel_v21_ORM_2K",
+              "width": 768,
+              "height": 768,
+              "peakSignalToNoiseRatioDb": 47.973,
+              "rootMeanSquaredError": 1.018,
+              "maximumChannelDelta": 6
+            }
+          ]
+        },
+        "boundsMaxDeltaMeters": 0,
         "animationDeviation": {
-          "maxRotationDegrees": 0.0031805528701229894,
-          "maxTranslationMeters": 8.440078676208512e-7,
-          "maxScaleDelta": 0.0000014529165107158164
+          "maxRotationDegrees": 0.000003818191820832845,
+          "maxTranslationMeters": 0,
+          "maxScaleDelta": 0
         }
       }
     },
     {
       "role": "police",
       "source": {
-        "bytes": 9791372,
-        "sha256": "b088e02b7eb4dadf0a1707a92bf2cf605b0a796b4951f1ac3c25289b4ef50dc3"
+        "bytes": 10631156,
+        "sha256": "bf11fab8471d339dddaba4cb9da325d0b3a2c842fbcbada76b718b6183761d10"
       },
       "optimized": {
-        "bytes": 8673828,
-        "sha256": "03791e4f688477ccd1aaafc4cb8adfd6b8fa6dadc1e6cc7d1977469262bae618",
-        "savedBytes": 1117544,
-        "savedPercent": 11.414
+        "bytes": 9261060,
+        "sha256": "77bafaeb1f07990339ba212a87cc808502d690d6479d3ce32e32109397ee5a49",
+        "savedBytes": 1370096,
+        "savedPercent": 12.888
       },
       "quality": {
-        "namedNodes": 60,
-        "nodes": 60,
-        "meshes": 38,
+        "namedNodes": 47,
+        "nodes": 47,
+        "meshes": 25,
         "materials": 14,
         "skins": 1,
         "joints": 21,
-        "sourceTriangles": 40120,
-        "optimizedTriangles": 40120,
+        "sourceTriangles": 50800,
+        "optimizedTriangles": 50800,
         "removedDegenerateTriangles": 0,
         "clips": [
           "Alert",
@@ -219,24 +282,6 @@
         },
         "textures": [
           {
-            "name": "Police_v22_Skin_MicroNormal_768",
-            "mimeType": "image/png",
-            "bytes": 1076882,
-            "sha256": "fbbe80605782b6adba32305bfaca133e5d3f971dcb5ee77e28f0b8999890b1ac"
-          },
-          {
-            "name": "Police_v22_Skin_ORM_768",
-            "mimeType": "image/png",
-            "bytes": 697822,
-            "sha256": "474b539c0dc8844621dfa42284cdbb84f5efdc635659a808df152a115d97116b"
-          },
-          {
-            "name": "young_lightskinned_male_diffuse2",
-            "mimeType": "image/png",
-            "bytes": 3595270,
-            "sha256": "03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874"
-          },
-          {
             "name": "Police_v22_CasualSuit_Normal_1K",
             "mimeType": "image/png",
             "bytes": 1170852,
@@ -245,27 +290,45 @@
           {
             "name": "Police_v22_Uniform_ORM_768",
             "mimeType": "image/png",
-            "bytes": 695705,
-            "sha256": "66d64d81cd07e0cccf52807090c5aa62ea79e7f684561af8246496aa82f9111b"
+            "bytes": 719201,
+            "sha256": "39854d625e80d0af058f878092a6677f2cb43c7d8203d9013cfbb0bfd8ff7641"
           },
           {
             "name": "Police_v22_Uniform_BaseColor_768",
             "mimeType": "image/png",
-            "bytes": 399299,
-            "sha256": "7eab670e32f26c80fcc297f9510920b8801a824db1c4f5e55f1e34dc6eca8337"
+            "bytes": 615264,
+            "sha256": "6d50617fbda7b5dc72243daac76421376124f9410cad5e1404191907f5bc95d3"
+          },
+          {
+            "name": "Police_v22_Skin_MicroNormal_768",
+            "mimeType": "image/png",
+            "bytes": 1076882,
+            "sha256": "fbbe80605782b6adba32305bfaca133e5d3f971dcb5ee77e28f0b8999890b1ac"
+          },
+          {
+            "name": "Police_v22_Skin_ORM_768",
+            "mimeType": "image/png",
+            "bytes": 720456,
+            "sha256": "1a9bbcdec27eaa13ca6ce41ca7abc62c6a157852ec2632339623e36cd57e2f16"
+          },
+          {
+            "name": "young_lightskinned_male_diffuse2",
+            "mimeType": "image/png",
+            "bytes": 3595270,
+            "sha256": "03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874"
           },
           {
             "name": "Police_v22_Trouser_BaseColor_768",
             "mimeType": "image/png",
-            "bytes": 387483,
-            "sha256": "301e7dc6cc718c338aedb61db056603e5459a1cae0d71e000178c623a0a8cb28"
+            "bytes": 596642,
+            "sha256": "ed9c2a228274ef62b1169e8147cd96a749cee8c2615d47eab79064afcd837f78"
           }
         ],
-        "boundsMaxDeltaMeters": 7.139798530175767e-9,
+        "boundsMaxDeltaMeters": 3.5699463385441277e-9,
         "animationDeviation": {
-          "maxRotationDegrees": 0.0032256110717361797,
-          "maxTranslationMeters": 7.886090441661207e-7,
-          "maxScaleDelta": 0.000001234025946294471
+          "maxRotationDegrees": 0.0031761880595261747,
+          "maxTranslationMeters": 8.941008572151917e-7,
+          "maxScaleDelta": 0.0000010221913589305346
         }
       }
     }

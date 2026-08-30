@@ -45,6 +45,25 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CACHE = Path(tempfile.gettempdir()) / "chasing-character-pbr-cache"
 WEB_DETAIL_RESOLUTION = 768
 
+# Police camera-scale cloth is intentionally dark, but the former purely
+# multiplicative grain collapsed to a nearly flat 8-bit trouser map.  These
+# deterministic authoring constants preserve a deep navy read while retaining
+# visible dye/weave information through UASTC and the 512 px bootstrap ETC1S
+# derivative.  The micro-weave is periodic; the lower-frequency dye field is
+# deterministic in authored UV space, so repeated builds have no seed drift.
+POLICE_FABRIC_DYE_FLOOR = np.asarray((0.010, 0.035, 0.100), dtype=np.float32)
+POLICE_FABRIC_WEAVE_STRENGTH = 0.035
+POLICE_FABRIC_WEAVE_TINT = np.asarray((0.25, 0.48, 1.0), dtype=np.float32)
+POLICE_AO_FINE_STRENGTH = 0.032
+POLICE_AO_MACRO_STRENGTH = 0.014
+
+QUALITY_THRESHOLDS = {
+    "baseColor": 8.0,
+    "normal": 4.0,
+    "ormAoR": 3.0,
+}
+GENERATED_TEXTURE_QUALITY: dict[str, dict[str, Any]] = {}
+
 
 @dataclass(frozen=True)
 class RemoteTexture:
@@ -92,6 +111,12 @@ V21_ROOTS = {
     for role in ("kid", "villain", "police")
 }
 
+KID_A2_BASE_COLOR = (
+    ROOT
+    / "art-source/Characters/Kid/ReferenceStandard/A2_VisualRework_2026_08_29"
+    / "Textures/Char_Kid_A2_Semantic_BaseColor_2K.png"
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -112,6 +137,14 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def display_path(path: Path) -> str:
+    resolved = path.expanduser().resolve()
+    try:
+        return resolved.relative_to(ROOT).as_posix()
+    except ValueError:
+        return resolved.name
 
 
 def verified(path: Path, expected_sha256: str, expected_size: int | None = None) -> bool:
@@ -289,6 +322,7 @@ def save_generated_image(
     values: np.ndarray,
     path: Path,
     colorspace: str,
+    quality_kind: str | None = None,
 ) -> bpy.types.Image:
     if values.ndim != 3 or values.shape[2] != 4:
         raise ValueError(f"Expected HxWx4 image, got {values.shape}")
@@ -300,6 +334,32 @@ def save_generated_image(
     image.filepath_raw = str(path.resolve())
     image.file_format = "PNG"
     image.save()
+    if quality_kind is not None:
+        rgb8 = np.clip(
+            np.rint(np.asarray(values[:, :, :3], dtype=np.float64) * 255.0),
+            0.0,
+            255.0,
+        )
+        channel_stddev = [float(rgb8[:, :, channel].std()) for channel in range(3)]
+        if quality_kind == "baseColor":
+            measured = float(rgb8.std())
+        elif quality_kind == "normal":
+            measured = float(rgb8.std())
+        elif quality_kind == "ormAoR":
+            measured = channel_stddev[0]
+        else:
+            raise ValueError(f"Unknown generated texture quality kind: {quality_kind}")
+        threshold = QUALITY_THRESHOLDS[quality_kind]
+        GENERATED_TEXTURE_QUALITY[name] = {
+            "path": display_path(path),
+            "kind": quality_kind,
+            "encodedRgbOverallStddev": round(float(rgb8.std()), 6),
+            "encodedRgbChannelStddev": [round(value, 6) for value in channel_stddev],
+            "measuredStddev": round(measured, 6),
+            "minimumStddev": threshold,
+            "passed": measured >= threshold,
+            "measurement": "deterministic authored pixels quantized to RGB8 before PNG encoding",
+        }
     return image
 
 
@@ -327,6 +387,7 @@ def build_v21_orm(role: str, output_dir: Path) -> bpy.types.Image:
         orm,
         output_dir / f"Char_{label}_PrecisionRemodel_v21_ORM_{WEB_DETAIL_RESOLUTION}.png",
         "Non-Color",
+        "ormAoR",
     )
 
 
@@ -360,6 +421,26 @@ def periodic_noise(size: int, seed: float) -> tuple[np.ndarray, np.ndarray, np.n
     return grain, du, dv
 
 
+def periodic_macro_variation(size: int, seed: float) -> np.ndarray:
+    """Low-frequency deterministic dye/occlusion variation in authored UV space."""
+    axis = np.arange(size, dtype=np.float32) / float(size)
+    u, v = np.meshgrid(axis, axis)
+    return (
+        np.sin((u * 5.0 + v * 1.5 + seed * 0.7) * math.tau)
+        + np.sin((v * 7.0 - u + seed * 1.3) * math.tau)
+    ) / 2.0
+
+
+def periodic_twill_weave(size: int, seed: float) -> np.ndarray:
+    """Tile-safe warp/weft plus diagonal twill highlights, never random noise."""
+    axis = np.arange(size, dtype=np.float32) / float(size)
+    u, v = np.meshgrid(axis, axis)
+    warp = 0.5 + 0.5 * np.sin((u * 96.0 + v * 6.0 + seed) * math.tau)
+    weft = 0.5 + 0.5 * np.sin((v * 128.0 - u * 4.0 + seed * 1.37) * math.tau)
+    twill = 0.5 + 0.5 * np.sin((u * 48.0 + v * 48.0 + seed * 0.73) * math.tau)
+    return 0.55 * (warp * weft) + 0.45 * np.power(twill, 6.0)
+
+
 def generated_micro_normal(name: str, output_dir: Path, size: int, seed: float, strength: float) -> bpy.types.Image:
     _, du, dv = periodic_noise(size, seed)
     x = -du * strength
@@ -370,7 +451,13 @@ def generated_micro_normal(name: str, output_dir: Path, size: int, seed: float, 
     values[:, :, 0] = x / length * 0.5 + 0.5
     values[:, :, 1] = y / length * 0.5 + 0.5
     values[:, :, 2] = z / length * 0.5 + 0.5
-    return save_generated_image(name, values, output_dir / f"{name}.png", "Non-Color")
+    return save_generated_image(
+        name,
+        values,
+        output_dir / f"{name}.png",
+        "Non-Color",
+        "normal",
+    )
 
 
 def generated_orm(
@@ -383,11 +470,27 @@ def generated_orm(
     metallic: float,
 ) -> bpy.types.Image:
     grain, _, _ = periodic_noise(size, seed)
+    macro = periodic_macro_variation(size, seed)
     values = np.ones((size, size, 4), dtype=np.float32)
-    values[:, :, 0] = np.clip(ao + grain * 0.018, 0.0, 1.0)
+    # Fine fibres provide close-range grounding; the lower-frequency component
+    # reads as soft fold/self-shadow at the formal camera.  The fibre field is
+    # periodic; both components are deterministic rather than build-random.
+    values[:, :, 0] = np.clip(
+        ao
+        + grain * POLICE_AO_FINE_STRENGTH
+        + macro * POLICE_AO_MACRO_STRENGTH,
+        0.0,
+        1.0,
+    )
     values[:, :, 1] = np.clip(roughness + grain * 0.055, 0.04, 1.0)
     values[:, :, 2] = metallic
-    return save_generated_image(name, values, output_dir / f"{name}.png", "Non-Color")
+    return save_generated_image(
+        name,
+        values,
+        output_dir / f"{name}.png",
+        "Non-Color",
+        "ormAoR",
+    )
 
 
 def generated_fabric_base(
@@ -398,13 +501,32 @@ def generated_fabric_base(
     seed: float,
 ) -> bpy.types.Image:
     grain, _, _ = periodic_noise(size, seed)
+    macro = periodic_macro_variation(size, seed)
+    weave = periodic_twill_weave(size, seed)
     # Values written through Blender's image API are scene-linear.  Saving as
     # sRGB and decoding in the shader returns the same material-space color.
     values = np.ones((size, size, 4), dtype=np.float32)
-    modulation = np.clip(1.0 + grain * 0.11, 0.82, 1.18)
-    for channel, color in enumerate(linear_color):
-        values[:, :, channel] = np.clip(color * modulation, 0.0, 1.0)
-    return save_generated_image(name, values, output_dir / f"{name}.png", "sRGB")
+    dye = np.maximum(
+        np.asarray(linear_color, dtype=np.float32),
+        POLICE_FABRIC_DYE_FLOOR,
+    )
+    modulation = np.clip(1.0 + grain * 0.08 + macro * 0.035, 0.80, 1.20)
+    for channel, color in enumerate(dye):
+        fibre_highlight = (
+            weave * POLICE_FABRIC_WEAVE_STRENGTH * POLICE_FABRIC_WEAVE_TINT[channel]
+        )
+        values[:, :, channel] = np.clip(
+            color * modulation + fibre_highlight,
+            0.0,
+            1.0,
+        )
+    return save_generated_image(
+        name,
+        values,
+        output_dir / f"{name}.png",
+        "sRGB",
+        "baseColor",
+    )
 
 
 def ensure_gltf_occlusion_group() -> bpy.types.NodeTree:
@@ -479,10 +601,15 @@ def configure_export_safe_pbr(
 def role_v21_images(role: str, generated_dir: Path) -> tuple[bpy.types.Image, bpy.types.Image, bpy.types.Image]:
     label = role.title()
     root = V21_ROOTS[role]
+    base_path = KID_A2_BASE_COLOR if role == "kid" else (
+        root / "Rigged/Textures" / f"Char_{label}_PrecisionRemodel_v21_BaseColor_2K.png"
+    )
     base = load_image(
-        root / "Rigged/Textures" / f"Char_{label}_PrecisionRemodel_v21_BaseColor_2K.png",
+        base_path,
         "sRGB",
-        f"Char_{label}_PrecisionRemodel_v21_BaseColor_2K",
+        "Char_Kid_A2_Semantic_BaseColor_2K"
+        if role == "kid"
+        else f"Char_{label}_PrecisionRemodel_v21_BaseColor_2K",
     )
     normal = resized_image(
         root / "Textures" / f"Char_{label}_PrecisionRemodel_v21_Normal_2K.png",
@@ -847,6 +974,16 @@ def main() -> None:
         generated_dir,
         args.no_download,
     )
+    failed_texture_gates = [
+        name
+        for name, evidence in GENERATED_TEXTURE_QUALITY.items()
+        if not evidence["passed"]
+    ]
+    if failed_texture_gates:
+        raise RuntimeError(
+            "Generated texture stddev gate failed for: "
+            + ", ".join(sorted(failed_texture_gates))
+        )
 
     if args.review_dir:
         studio = setup_review_studio(meshes, args.role)
@@ -870,14 +1007,15 @@ def main() -> None:
 
     report = {
         "role": args.role,
-        "input": str(input_path),
+        "input": display_path(input_path),
         "inputBytes": input_path.stat().st_size,
-        "output": str(output_path),
+        "output": display_path(output_path),
         "sourceUvEvidence": uv_evidence,
         "appliedMaterials": applied,
         "unchangedAccessoryMaterialCount": len(accessory_before),
         "meshTopologyUnchanged": True,
         "animationSetUnchanged": True,
+        "generatedTextureQuality": GENERATED_TEXTURE_QUALITY,
         "exportedGlb": exported,
         "qualityGates": {
             "everyPrimaryMaterialHasBaseColorNormalOrm": True,
@@ -885,6 +1023,9 @@ def main() -> None:
             "primaryMeshesHaveUVs": True,
             "noGeometryGenerated": True,
             "inputNotOverwritten": True,
+            "generatedTextureStddevPassed": all(
+                entry["passed"] for entry in GENERATED_TEXTURE_QUALITY.values()
+            ),
         },
     }
     report_path.parent.mkdir(parents=True, exist_ok=True)

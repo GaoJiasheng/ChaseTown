@@ -388,7 +388,7 @@ test("library exterior ground covers every exit plaza without receiving wall-sha
 });
 
 test("portable decoys are extracted only from the named books.glb notebook assembly", () => {
-  assert.match(GAME, /books:\s*"\/models\/environment\/books\.glb\?v=\d+"/u);
+  assert.match(GAME, /books:\s*versionRuntimeAsset\("\/models\/environment\/books\.glb"\)/u);
   assert.match(
     GAME,
     /const\s+booksAsset\s*=\s*detailAssets\.books;[\s\S]{0,240}buildPortableDecoyTemplate\(booksAsset\);/u,

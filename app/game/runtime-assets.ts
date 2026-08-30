@@ -6,26 +6,34 @@ export type RuntimePreloadAsset = Readonly<{
   blocksFirstPlayable: boolean;
 }>;
 
+/** One cache-busting authority for every runtime model and KTX2 request. */
+export const ASSET_VERSION = "m2-20260829";
+
+export const versionRuntimeAsset = (pathname: string): string => {
+  const separator = pathname.includes("?") ? "&" : "?";
+  return `${pathname}${separator}v=${ASSET_VERSION}`;
+};
+
 /**
  * Single source of truth for every model that blocks the first campaign's
  * first playable frame. The scene loader imports these exact URLs, while the
  * release manifest derives its preload accounting from the same object.
  */
 export const FIRST_CAMPAIGN_BLOCKING_MODEL_HREFS = Object.freeze({
-  player: "/models/characters/kid-bootstrap.glb?v=1",
-  threat: "/models/characters/villain-bootstrap.glb?v=1",
-  theme: "/models/environment/themes/campus-kit-bootstrap.glb?v=1",
-  locker: "/models/environment/locker.glb?v=32",
-  cornerMirror: "/models/environment/stealth-corner-mirrors.glb?v=2",
-  frontGate: "/models/environment/front-gate.glb?v=5",
-  exit: "/models/environment/exit.glb?v=5",
-  bench: "/models/environment/bench.glb?v=5",
-  tree: "/models/environment/tree.glb?v=5",
-  shrub: "/models/environment/shrub.glb?v=5",
-  policeCar: "/models/environment/police-car.glb?v=5",
-  basketball: "/models/environment/basketball.glb?v=5",
-  deskChair: "/models/environment/desk-chair.glb?v=5",
-  podium: "/models/environment/podium.glb?v=5",
+  player: versionRuntimeAsset("/models/characters/kid-bootstrap.glb"),
+  threat: versionRuntimeAsset("/models/characters/villain-bootstrap.glb"),
+  theme: versionRuntimeAsset("/models/environment/themes/campus-kit-bootstrap.glb"),
+  locker: versionRuntimeAsset("/models/environment/locker.glb"),
+  cornerMirror: versionRuntimeAsset("/models/environment/stealth-corner-mirrors.glb"),
+  frontGate: versionRuntimeAsset("/models/environment/front-gate.glb"),
+  exit: versionRuntimeAsset("/models/environment/exit.glb"),
+  bench: versionRuntimeAsset("/models/environment/bench.glb"),
+  tree: versionRuntimeAsset("/models/environment/tree.glb"),
+  shrub: versionRuntimeAsset("/models/environment/shrub.glb"),
+  policeCar: versionRuntimeAsset("/models/environment/police-car.glb"),
+  basketball: versionRuntimeAsset("/models/environment/basketball.glb"),
+  deskChair: versionRuntimeAsset("/models/environment/desk-chair.glb"),
+  podium: versionRuntimeAsset("/models/environment/podium.glb"),
 } as const);
 
 const blockingModelPreload = (
@@ -61,19 +69,19 @@ export const FIRST_CAMPAIGN_PRELOAD_ASSETS: readonly RuntimePreloadAsset[] = Obj
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: "/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+    href: versionRuntimeAsset("/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2"),
     type: "image/ktx2",
     fetchPriority: "high",
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: "/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2",
+    href: versionRuntimeAsset("/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2"),
     type: "image/ktx2",
     fetchPriority: "high",
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: "/models/environment/SharedTexturesBootstrapKTX2/9c68b4a0471dc9847d6de259c5d33970cb07a949acdb6c807d3b8784801a6b8a.ktx2",
+    href: versionRuntimeAsset("/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2"),
     type: "image/ktx2",
     fetchPriority: "auto",
     blocksFirstPlayable: true,
@@ -102,7 +110,6 @@ export const FIRST_CAMPAIGN_PRELOAD_ASSETS: readonly RuntimePreloadAsset[] = Obj
  * variants. Directories are removed recursively from `dist/client`.
  */
 export const DEPLOYMENT_SOURCE_ASSET_EXCLUDES: readonly string[] = Object.freeze([
-  "models/SharedTextures",
   "models/environment/SharedTexturesKTX2",
   "models/characters/kid.glb",
   "models/characters/kid-lod1.glb",

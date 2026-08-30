@@ -1,0 +1,3141 @@
+{
+  "ready": true,
+  "paused": false,
+  "campaign": {
+    "id": "hospital-outpatient-afterhours",
+    "index": 3,
+    "number": 4,
+    "name": "午夜门诊",
+    "theme": "hospital",
+    "propSet": "hospital-outpatient",
+    "config": {
+      "fixedStepSeconds": 0.016666666666666666,
+      "maxFrameDeltaSeconds": 0.25,
+      "aiTickSeconds": 0.05,
+      "playerSpeed": 2.64,
+      "chaserSpeed": 2.264,
+      "spawnDelaySeconds": 0,
+      "suspiciousSeconds": 0.2,
+      "lostSightGraceSeconds": 0.35,
+      "lastKnownScanSeconds": 1.5,
+      "searchSeconds": 5.2,
+      "searchWaypointSeconds": 0.74,
+      "searchHideCheckBudget": 1,
+      "searchHideRadiusCells": 2.6,
+      "checkHideSeconds": 2.38,
+      "hearingRange": 6.6,
+      "soundUncertaintyCells": 1.35,
+      "visionRange": 7.6,
+      "visionConeDegrees": 110,
+      "proximitySenseRange": 0.85,
+      "catchRange": 0.58,
+      "exitRange": 0.62,
+      "hideInteractRange": 1.05,
+      "hideAlignSpeed": 1.32,
+      "hideAlignTurnSpeed": 3.141592653589793,
+      "hideEnterSeconds": 1.8916666666666668,
+      "hideEnterExposureSeconds": 1.4833333333333334,
+      "hideExitSeconds": 1.6166666666666667,
+      "hideExitExposureSeconds": 0.3166666666666667,
+      "peekEnterSeconds": 0.15,
+      "peekExitSeconds": 0.15
+    },
+    "progress": {
+      "unlockedThrough": 1,
+      "bestSeconds": {},
+      "mastery": {},
+      "assistedBestSeconds": {},
+      "assistedMastery": {},
+      "assistedUnlockedThrough": 1,
+      "progressVersion": 3
+    },
+    "themeAsset": "/models/environment/themes/hospital-kit-bootstrap.glb?v=m2-20260829",
+    "playerStart": {
+      "x": 1,
+      "y": 12
+    },
+    "exit": {
+      "x": 23,
+      "y": 12
+    },
+    "chaserStart": {
+      "x": 19,
+      "y": 8
+    },
+    "walkable": [
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    ],
+    "hideSpots": [
+      {
+        "id": "hospital-linen-north",
+        "approach": {
+          "x": 5,
+          "y": 8
+        },
+        "concealed": {
+          "x": 4.65,
+          "y": 8
+        },
+        "facing": {
+          "x": 1,
+          "y": 0
+        },
+        "archetype": "soft-cover"
+      },
+      {
+        "id": "hospital-pharmacy-store",
+        "approach": {
+          "x": 2,
+          "y": 18
+        },
+        "concealed": {
+          "x": 1.65,
+          "y": 18
+        },
+        "facing": {
+          "x": 1,
+          "y": 0
+        },
+        "archetype": "hard-locker"
+      },
+      {
+        "id": "hospital-supply-east",
+        "approach": {
+          "x": 21,
+          "y": 15
+        },
+        "concealed": {
+          "x": 21.35,
+          "y": 15
+        },
+        "facing": {
+          "x": -1,
+          "y": 0
+        },
+        "archetype": "traversal-hide",
+        "alternateExit": {
+          "x": 18,
+          "y": 18
+        }
+      }
+    ]
+  },
+  "certifiedRemix": {
+    "selected": false,
+    "layoutNumber": null,
+    "missionVersion": "mission-v2",
+    "seed": null,
+    "contract": null,
+    "runIdentity": null,
+    "replayLevelId": "hospital-outpatient-afterhours#mission-v2",
+    "recordStorageKey": null,
+    "record": null
+  },
+  "game": {
+    "phase": "playing",
+    "captureReason": null,
+    "elapsedSeconds": 1.2000000000000006,
+    "tick": 72,
+    "player": {
+      "position": {
+        "x": 2,
+        "y": 18
+      },
+      "heading": {
+        "x": 1,
+        "y": 0
+      },
+      "mode": "entering-hide",
+      "hideSpotId": "hospital-pharmacy-store",
+      "transitionRemainingSeconds": 1.3083333333333356,
+      "hideTurnDirection": 0,
+      "hideTurnCycle": -1,
+      "hideTurnSegmentDurationSeconds": 0
+    },
+    "chaser": {
+      "position": {
+        "x": 23,
+        "y": 10.777439999999984
+      },
+      "heading": {
+        "x": 0,
+        "y": -1
+      },
+      "mode": "patrol",
+      "modeElapsedSeconds": 1.2000000000000004,
+      "visualConfirmationSeconds": null,
+      "patrolIndex": 0,
+      "scanOriginHeading": {
+        "x": 0,
+        "y": 1
+      },
+      "searchSeed": 1,
+      "searchIndex": 0,
+      "searchWaypointElapsedSeconds": 0,
+      "searchHideSpotId": null,
+      "hideCheckSource": null,
+      "searchHideChecksCompleted": 0,
+      "inspectedHideSpotIds": [],
+      "memory": {
+        "lastKnownPosition": null,
+        "lastSeenAtSeconds": null,
+        "lastHeardAtSeconds": null,
+        "lastClueAtSeconds": null,
+        "lastKnownEvidence": null,
+        "deferredSoundEvidence": null,
+        "witnessedHideSpotId": null,
+        "evidenceTrail": []
+      }
+    },
+    "hideSpots": {
+      "hospital-linen-north": {
+        "id": "hospital-linen-north",
+        "occupiedByPlayer": false
+      },
+      "hospital-pharmacy-store": {
+        "id": "hospital-pharmacy-store",
+        "occupiedByPlayer": true
+      },
+      "hospital-supply-east": {
+        "id": "hospital-supply-east",
+        "occupiedByPlayer": false
+      }
+    },
+    "aiAccumulatorSeconds": 0,
+    "events": []
+  },
+  "interaction": null,
+  "activeHideArchetype": {
+    "hideSpotId": "hospital-pharmacy-store",
+    "archetype": "hard-locker",
+    "profile": {
+      "kind": "hard-locker",
+      "label": "硬质藏柜",
+      "playerHint": "进入较慢且柜门有声；关严后完全遮蔽，但追捕者可能检查柜门。",
+      "risk": {
+        "entry": "medium",
+        "waiting": "low",
+        "search": "high",
+        "exit": "medium"
+      },
+      "capabilities": {
+        "concealment": "full",
+        "canPeek": true,
+        "canExitOrigin": true,
+        "canExitAlternate": false,
+        "requiresAlternateExit": false
+      },
+      "evidence": {
+        "entrySoundStrength": 0.5,
+        "exitSoundStrength": 0.28,
+        "peekSoundStrength": 0.12,
+        "occupiedVisualDisturbance": 0,
+        "publicSearchAppeal": 0.82,
+        "exactCheckRequiresWitnessedEntry": true
+      },
+      "timing": {
+        "enterDurationMultiplier": 1,
+        "exitDurationMultiplier": 1,
+        "peekDurationMultiplier": 1
+      }
+    },
+    "approach": {
+      "x": 2,
+      "y": 18
+    },
+    "concealed": {
+      "x": 1.65,
+      "y": 18
+    },
+    "facing": {
+      "x": 1,
+      "y": 0
+    },
+    "alternateExit": null,
+    "legacyDefault": false
+  },
+  "hideExitSelection": {
+    "hideSpotId": "hospital-pharmacy-store",
+    "selected": "origin",
+    "options": [
+      {
+        "kind": "origin",
+        "position": {
+          "x": 2,
+          "y": 18
+        }
+      }
+    ]
+  },
+  "animations": {
+    "kid": {
+      "state": "enterHide",
+      "clip": "HideEnter",
+      "clipDuration": 1.2999999523162842,
+      "timeScale": 0.6872246443962735,
+      "normalizedTime": 0.3364041111731862,
+      "playing": true
+    },
+    "villain": {
+      "state": "walk",
+      "clip": "PatrolWalk",
+      "clipDuration": 1.4666666984558105,
+      "timeScale": 1.2349090909091067,
+      "normalizedTime": 0.21709152511851562,
+      "playing": true
+    }
+  },
+  "actorOptimization": {
+    "kid": {
+      "batch": {
+        "beforeMeshes": 35,
+        "afterMeshes": 12,
+        "mergedGroups": 10,
+        "mergedSourceMeshes": 33,
+        "singletonGroups": 2,
+        "trianglesBefore": 92680,
+        "trianglesAfter": 92680,
+        "disposedGeometries": 33,
+        "fallbacks": []
+      },
+      "shadow": {
+        "created": true,
+        "sourceMeshes": 12,
+        "proxyMeshes": 1,
+        "proxyTriangles": 344,
+        "segments": 12,
+        "shadowLayer": 1
+      },
+      "fit": {
+        "requestedHeight": 1.12,
+        "authoredFittedHeight": 1.12,
+        "batchedHeight": 1.12
+      }
+    },
+    "villain": {
+      "batch": {
+        "beforeMeshes": 12,
+        "afterMeshes": 6,
+        "mergedGroups": 3,
+        "mergedSourceMeshes": 9,
+        "singletonGroups": 3,
+        "trianglesBefore": 25599,
+        "trianglesAfter": 25599,
+        "disposedGeometries": 9,
+        "fallbacks": []
+      },
+      "shadow": {
+        "created": true,
+        "sourceMeshes": 6,
+        "proxyMeshes": 1,
+        "proxyTriangles": 344,
+        "segments": 12,
+        "shadowLayer": 1
+      },
+      "fit": {
+        "requestedHeight": 1.88,
+        "authoredFittedHeight": 1.88,
+        "batchedHeight": 1.88
+      }
+    }
+  },
+  "visibility": {
+    "kid": {
+      "rootVisible": true,
+      "alpha": 1,
+      "viewport": {
+        "x": 0.6490305193363505,
+        "y": 0.41271945872833504,
+        "depth": 0.9890216254708684,
+        "worldHeight": 1.139148728149988,
+        "pixelWidth": 50.543608207857254,
+        "pixelHeight": 76.0898255432589,
+        "bounds": {
+          "left": 0.6323644028588383,
+          "right": 0.6669359543006012,
+          "top": 0.36796647599732357,
+          "bottom": 0.45603340370942874
+        },
+        "centerInFrustum": true
+      },
+      "cameraClearance": {
+        "headClear": false,
+        "torsoClear": false,
+        "visibleSampleRatio": 0,
+        "samples": [
+          {
+            "label": "head",
+            "clear": false,
+            "hit": "hospital-wall-batch-abbdfb19",
+            "hitDistance": 11.409163603767876
+          },
+          {
+            "label": "torso",
+            "clear": false,
+            "hit": "hospital-wall-batch-abbdfb19",
+            "hitDistance": 11.578467808089174
+          },
+          {
+            "label": "hips",
+            "clear": false,
+            "hit": "hospital-wall-batch-abbdfb19",
+            "hitDistance": 11.751492497208254
+          },
+          {
+            "label": "left-shoulder",
+            "clear": false,
+            "hit": "hospital-wall-batch-8081f40a",
+            "hitDistance": 11.258762238153377
+          },
+          {
+            "label": "right-shoulder",
+            "clear": false,
+            "hit": "hospital-wall-batch-8081f40a",
+            "hitDistance": 11.71425889647267
+          }
+        ]
+      }
+    },
+    "villain": {
+      "rootVisible": true,
+      "alpha": 1,
+      "worldRendered": true,
+      "viewport": {
+        "x": 1.93554382776981,
+        "y": -1.6909309406503485,
+        "depth": 1.01726076094932,
+        "worldHeight": 1.90357765550281,
+        "pixelWidth": 393.6500668034178,
+        "pixelHeight": 443.2406116992786,
+        "bounds": {
+          "left": 1.8134778398496385,
+          "right": 2.082732331507243,
+          "top": -1.973687552282462,
+          "bottom": -1.4606775850379266
+        },
+        "centerInFrustum": false
+      },
+      "cameraClearance": {
+        "headClear": false,
+        "torsoClear": false,
+        "visibleSampleRatio": 0,
+        "samples": [
+          {
+            "label": "head",
+            "clear": false,
+            "hit": "hospital-wall-wide-batch-abbdfb19",
+            "hitDistance": 34.387767326808365
+          },
+          {
+            "label": "torso",
+            "clear": false,
+            "hit": "hospital-wall-wide-batch-abbdfb19",
+            "hitDistance": 34.503198417595144
+          },
+          {
+            "label": "hips",
+            "clear": false,
+            "hit": "hospital-wall-wide-batch-abbdfb19",
+            "hitDistance": 34.62589694925304
+          },
+          {
+            "label": "left-shoulder",
+            "clear": false,
+            "hit": "hospital-wall-wide-batch-abbdfb19",
+            "hitDistance": 34.429351898629434
+          },
+          {
+            "label": "right-shoulder",
+            "clear": false,
+            "hit": "hospital-wall-wide-batch-abbdfb19",
+            "hitDistance": 34.5106884491242
+          }
+        ]
+      }
+    }
+  },
+  "knowledge": {
+    "chaserObservable": false,
+    "publicThreat": {
+      "threat": "calm",
+      "quietSeconds": 0.75
+    }
+  },
+  "chaserArchetype": {
+    "profile": {
+      "theme": "hospital",
+      "kind": "hospital-inspector",
+      "rule": "inspect-public-hide-clue",
+      "label": "医院检查者",
+      "readableRule": "看到进柜或听到藏具动静后，会预告并检查公开证据附近最合理的藏点。",
+      "warningSeconds": 0.65,
+      "cueLabel": "检查者戴上手套，准备检查藏点",
+      "cueAudioToken": "hospital-glove-snap",
+      "cueAnimationToken": "InspectorPrepare"
+    },
+    "runtime": {
+      "enabled": true,
+      "archetype": "hospital-inspector",
+      "rule": "inspect-public-hide-clue",
+      "phase": "idle",
+      "warningSeconds": 0.65,
+      "cueProgress": 0,
+      "cueLabel": null,
+      "cueAudioToken": null,
+      "cueAnimationToken": null,
+      "action": null,
+      "navigationTarget": null,
+      "speedMultiplier": 1
+    }
+  },
+  "themeMechanic": {
+    "definition": {
+      "id": "hospital-outpatient-afterhours:primary-mechanic",
+      "theme": "hospital",
+      "kind": "hospital-screen",
+      "position": {
+        "x": 8,
+        "y": 8
+      },
+      "interactionRadius": 1.35,
+      "warningSeconds": 0.65,
+      "activeDurationSeconds": 3.6,
+      "effectRadius": 6,
+      "cooldownSeconds": 14.4,
+      "label": "自动门与帘幕",
+      "warningHint": "正在操作自动门与帘幕，完成前保持位置",
+      "activeHint": "门帘移动，视线短暂受扰",
+      "maximumSoundMasking": 0.18,
+      "minimumVisionRangeMultiplier": 0.82,
+      "soundSource": {
+        "sourceId": "hospital-outpatient-afterhours:primary-mechanic:emitter",
+        "sourceType": "environment-decoy",
+        "strength": 0.82,
+        "confidence": 0.62,
+        "decayPerSecond": 0.12
+      },
+      "activationCost": {
+        "kind": "exposure",
+        "amount": 0.3,
+        "label": "操作面板时短暂暴露"
+      }
+    },
+    "state": {
+      "definition": {
+        "id": "hospital-outpatient-afterhours:primary-mechanic",
+        "theme": "hospital",
+        "kind": "hospital-screen",
+        "position": {
+          "x": 8,
+          "y": 8
+        },
+        "interactionRadius": 1.35,
+        "warningSeconds": 0.65,
+        "activeDurationSeconds": 3.6,
+        "effectRadius": 6,
+        "cooldownSeconds": 14.4,
+        "label": "自动门与帘幕",
+        "warningHint": "正在操作自动门与帘幕，完成前保持位置",
+        "activeHint": "门帘移动，视线短暂受扰",
+        "maximumSoundMasking": 0.18,
+        "minimumVisionRangeMultiplier": 0.82,
+        "soundSource": {
+          "sourceId": "hospital-outpatient-afterhours:primary-mechanic:emitter",
+          "sourceType": "environment-decoy",
+          "strength": 0.82,
+          "confidence": 0.62,
+          "decayPerSecond": 0.12
+        },
+        "activationCost": {
+          "kind": "exposure",
+          "amount": 0.3,
+          "label": "操作面板时短暂暴露"
+        }
+      },
+      "phase": "ready",
+      "phaseElapsedSeconds": 0,
+      "activationCount": 0,
+      "lastActivatedAtSeconds": null
+    },
+    "sample": {
+      "phase": "ready",
+      "progress": 0,
+      "canActivate": false,
+      "inEffectArea": false,
+      "label": "自动门与帘幕",
+      "hudHint": "自动门与帘幕",
+      "soundMasking": 0,
+      "visionRangeMultiplier": 1
+    },
+    "view": {
+      "beaconVisible": false,
+      "beaconOpacity": 0,
+      "viewport": {
+        "x": -0.4468440707329506,
+        "y": -5.110679553473867,
+        "depth": 1.0647637888943167,
+        "pixelWidth": 1890.7333168874814,
+        "pixelHeight": 8112.323186645368,
+        "bounds": {
+          "left": -1.4609638214074168,
+          "right": -0.16771257866632128,
+          "top": -12.473391982931973,
+          "bottom": -3.084129035425761
+        },
+        "centerInFrustum": false
+      }
+    }
+  },
+  "themeMission": {
+    "definition": {
+      "id": "theme-mission:hospital:v1",
+      "theme": "hospital",
+      "title": "解除隔离封锁",
+      "briefing": "启用备用电源并平衡负压；两项准备完成后才能释放隔离门。",
+      "exitObjectiveId": "hospital:release-isolation",
+      "objectives": [
+        {
+          "id": "hospital:backup-generator",
+          "theme": "hospital",
+          "stage": "preparation",
+          "verb": "engage-backup-generator",
+          "label": "启动备用电源",
+          "interactionPrompt": "切入医疗备用发电机",
+          "completionHint": "隔离门控制器已重新上电",
+          "commitmentSeconds": 1.2,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "hospital:pressure-bypass",
+          "theme": "hospital",
+          "stage": "preparation",
+          "verb": "equalize-isolation-pressure",
+          "label": "平衡负压",
+          "interactionPrompt": "开启负压旁通阀",
+          "completionHint": "门体两侧压差已回到安全范围",
+          "commitmentSeconds": 1.1,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "hospital:release-isolation",
+          "theme": "hospital",
+          "stage": "escape-unlock",
+          "verb": "release-isolation-lock",
+          "label": "释放隔离门",
+          "interactionPrompt": "解除隔离区磁力锁",
+          "completionHint": "隔离门已解锁，立即撤离",
+          "commitmentSeconds": 0.9,
+          "prerequisites": [
+            "hospital:backup-generator",
+            "hospital:pressure-bypass"
+          ],
+          "unlocksExit": true,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        }
+      ]
+    },
+    "runtimeObjectives": [
+      {
+        "id": "hospital:backup-generator",
+        "theme": "hospital",
+        "stage": "preparation",
+        "verb": "engage-backup-generator",
+        "label": "启动备用电源",
+        "interactionPrompt": "切入医疗备用发电机",
+        "completionHint": "隔离门控制器已重新上电",
+        "commitmentSeconds": 1.2,
+        "prerequisites": [],
+        "unlocksExit": false,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      },
+      {
+        "id": "hospital:pressure-bypass",
+        "theme": "hospital",
+        "stage": "preparation",
+        "verb": "equalize-isolation-pressure",
+        "label": "平衡负压",
+        "interactionPrompt": "开启负压旁通阀",
+        "completionHint": "门体两侧压差已回到安全范围",
+        "commitmentSeconds": 1.1,
+        "prerequisites": [],
+        "unlocksExit": false,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      },
+      {
+        "id": "hospital:release-isolation",
+        "theme": "hospital",
+        "stage": "escape-unlock",
+        "verb": "release-isolation-lock",
+        "label": "释放隔离门",
+        "interactionPrompt": "解除隔离区磁力锁",
+        "completionHint": "隔离门已解锁，立即撤离",
+        "commitmentSeconds": 0.9,
+        "prerequisites": [
+          "hospital:backup-generator",
+          "hospital:pressure-bypass"
+        ],
+        "unlocksExit": true,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      }
+    ],
+    "state": {
+      "definitionId": "theme-mission:hospital:v1",
+      "stage": "preparation",
+      "completedObjectiveIds": [],
+      "exitUnlocked": false
+    },
+    "playerRuleProgress": {
+      "version": 1,
+      "tick": 72,
+      "stage": "preparation",
+      "normalizedProgress": 0,
+      "routeProgress": 0,
+      "completedObjectiveIds": [],
+      "committedMechanicIds": [],
+      "exitUnlocked": false,
+      "runCompleted": false,
+      "events": []
+    },
+    "views": [
+      {
+        "id": "hospital:backup-generator",
+        "position": {
+          "x": 12,
+          "y": 2
+        },
+        "lightColor": 11134673,
+        "lightIntensity": 0.08
+      },
+      {
+        "id": "hospital:pressure-bypass",
+        "position": {
+          "x": 12,
+          "y": 8
+        },
+        "lightColor": 11134673,
+        "lightIntensity": 0.08
+      },
+      {
+        "id": "hospital:release-isolation",
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "lightColor": 5333098,
+        "lightIntensity": 0.08
+      }
+    ],
+    "commitment": null,
+    "library": null,
+    "placements": [
+      {
+        "objectiveId": "hospital:backup-generator",
+        "position": {
+          "x": 12,
+          "y": 2
+        }
+      },
+      {
+        "objectiveId": "hospital:pressure-bypass",
+        "position": {
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "objectiveId": "hospital:release-isolation",
+        "position": {
+          "x": 20,
+          "y": 18
+        }
+      }
+    ],
+    "availableObjectiveIds": [
+      "hospital:backup-generator",
+      "hospital:pressure-bypass"
+    ],
+    "audit": {
+      "passed": true,
+      "failures": [],
+      "orders": [
+        {
+          "objectiveIds": [
+            "hospital:backup-generator",
+            "hospital:pressure-bypass",
+            "hospital:release-isolation"
+          ],
+          "reachable": true,
+          "failedLeg": null,
+          "routeDistanceCells": 54
+        },
+        {
+          "objectiveIds": [
+            "hospital:pressure-bypass",
+            "hospital:backup-generator",
+            "hospital:release-isolation"
+          ],
+          "reachable": true,
+          "failedLeg": null,
+          "routeDistanceCells": 54
+        }
+      ],
+      "directRouteDistanceCells": 42,
+      "shortestOrderDistanceCells": 54,
+      "longestOrderDistanceCells": 54,
+      "shortestDetourRatio": 1.2857142857142858,
+      "orderImbalanceRatio": 0
+    }
+  },
+  "portableDecoy": null,
+  "stealth": {
+    "selectedTool": "door-wedge",
+    "evidence": {
+      "tick": 72,
+      "countermeasureBudgetRemaining": 10,
+      "countermeasureBudgetSpent": 0,
+      "countermeasureBusyUntilTick": 0,
+      "erasedEvidenceCount": 0,
+      "forgedEvidenceCount": 0,
+      "records": [
+        {
+          "id": "campaign-stealth-evidence-v1:evidence:1",
+          "kind": "door-state",
+          "position": {
+            "x": 2,
+            "y": 18
+          },
+          "source": {
+            "publicId": "hospital-outpatient-afterhours:hide-door:hospital-pharmacy-store",
+            "kind": "door",
+            "publicity": "world-observable"
+          },
+          "detail": {
+            "state": "closed"
+          },
+          "createdAtTick": 37,
+          "expiresAtTick": 1837
+        }
+      ],
+      "deliveredIds": [],
+      "investigatedIds": [],
+      "worldClueDelivery": {
+        "pending": [],
+        "acceptedCount": 0,
+        "deliveredCount": 0,
+        "lastDeliveredClueId": null
+      },
+      "views": [
+        {
+          "id": "campaign-stealth-evidence-v1:evidence:1",
+          "rootName": "stealth-evidence-campaign-stealth-evidence-v1:evidence:1",
+          "createdAtTick": 37,
+          "expiresAtTick": 1837,
+          "worldPosition": {
+            "x": -20,
+            "y": 0,
+            "z": 12
+          },
+          "meshCount": 8,
+          "materialCount": 8,
+          "texturedMaterialCount": 6,
+          "semanticNames": [
+            "stealth-evidence-campaign-stealth-evidence-v1:evidence:1",
+            "authored-door-state-evidence"
+          ],
+          "parts": [],
+          "authoredSources": [
+            {
+              "node": "HospitalCrashCart",
+              "label": "急救车门楔锁",
+              "assetId": "theme-kit:hospital",
+              "sourceUrl": "/models/environment/themes/hospital-kit-bootstrap.glb?v=m2-20260829",
+              "geometrySignature": "24:36:1534.0000:834.0000:1135.0000|24:36:2202.0000:667.0000:117.0000|24:36:2202.0000:667.0000:117.0000|24:36:2202.0000:667.0000:117.0000|24:36:2202.0000:667.0000:117.0000|24:36:2602.0000:3937.0000:1869.0000|24:36:3003.0000:300.0000:2269.0000|24:36:3136.0000:400.0000:2403.0000|24:36:868.0000:83.0000:117.0000|24:36:868.0000:83.0000:117.0000|24:36:868.0000:83.0000:117.0000|24:36:868.0000:83.0000:117.0000|24:36:968.0000:434.0000:83.0000|297:1536:702.0000:102.0000:703.0000|297:1536:702.0000:102.0000:703.0000|297:1536:702.0000:102.0000:703.0000|297:1536:702.0000:102.0000:703.0000|42:156:228.0000:67.0000:233.0000|58:156:228.0000:67.0000:233.0000|98:276:108.0000:78.0000:108.0000|98:276:108.0000:78.0000:108.0000|98:276:108.0000:78.0000:108.0000|98:276:108.0000:78.0000:108.0000",
+              "fallbackUsed": false
+            }
+          ],
+          "viewport": {
+            "x": 0.6412861417891984,
+            "y": 0.42813724133097164,
+            "depth": 0.9892712827640824,
+            "pixelWidth": 28.134602450352588,
+            "pixelHeight": 33.52700262111303,
+            "bounds": {
+              "left": 0.6317912440727605,
+              "right": 0.6510351581974887,
+              "top": 0.4086935507244791,
+              "bottom": 0.4474979519063229
+            },
+            "centerInFrustum": true
+          }
+        }
+      ]
+    },
+    "toolbelt": {
+      "state": {
+        "definition": {
+          "id": "gold-stealth-toolbelt",
+          "ticksPerSecond": 60,
+          "maximumFailsafeTicks": 1200,
+          "receiptLedgerCapacity": 12,
+          "tools": {
+            "door-wedge": {
+              "kind": "door-wedge",
+              "capacity": 2,
+              "interactionRangeCells": 1.45,
+              "commitmentTicks": 24,
+              "cooldownTicks": 180,
+              "effectTicks": 300,
+              "chaserTraversalDelayTicks": 72,
+              "risk": {
+                "channel": "sound",
+                "strength": 0.34,
+                "confidence": 0.76,
+                "evidenceLifetimeTicks": 240
+              }
+            },
+            "corner-mirror": {
+              "kind": "corner-mirror",
+              "capacity": 4,
+              "interactionRangeCells": 1.2,
+              "commitmentTicks": 9,
+              "cooldownTicks": 45,
+              "effectTicks": 90,
+              "observationRangeCells": 8,
+              "observationConeDegrees": 58,
+              "risk": {
+                "channel": "visual",
+                "strength": 0.14,
+                "confidence": 0.58,
+                "evidenceLifetimeTicks": 90
+              }
+            },
+            "temporary-blackout": {
+              "kind": "temporary-blackout",
+              "capacity": 1,
+              "interactionRangeCells": 1.5,
+              "commitmentTicks": 36,
+              "cooldownTicks": 600,
+              "effectTicks": 420,
+              "visionRangeMultiplier": 0.52,
+              "ambientSoundMasking": 0.3,
+              "risk": {
+                "channel": "infrastructure",
+                "strength": 0.7,
+                "confidence": 0.9,
+                "evidenceLifetimeTicks": 420
+              }
+            }
+          }
+        },
+        "tick": 72,
+        "useSequence": 0,
+        "tools": {
+          "door-wedge": {
+            "inventoryRemaining": 2,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          },
+          "corner-mirror": {
+            "inventoryRemaining": 4,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          },
+          "temporary-blackout": {
+            "inventoryRemaining": 1,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          }
+        },
+        "commitment": null,
+        "activeEffects": {},
+        "receiptLedger": []
+      },
+      "sample": {
+        "tick": 72,
+        "tools": {
+          "door-wedge": {
+            "tool": "door-wedge",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 2,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          },
+          "corner-mirror": {
+            "tool": "corner-mirror",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 4,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          },
+          "temporary-blackout": {
+            "tool": "temporary-blackout",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 1,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          }
+        }
+      },
+      "qaPlacementAnchors": {
+        "door-wedge": {
+          "player": {
+            "x": 5,
+            "y": 8
+          },
+          "target": {
+            "kind": "door",
+            "id": "hospital-outpatient-afterhours:threshold:5:7",
+            "interactionPoint": {
+              "x": 5,
+              "y": 7
+            },
+            "routeSafetyAuditId": "hospital-outpatient-afterhours:player-route-remains-open:v1",
+            "traversalAxis": "vertical",
+            "playerPassageRemainsAvailable": true,
+            "autoReleaseTicks": 300
+          }
+        },
+        "corner-mirror": {
+          "player": {
+            "x": 5,
+            "y": 6
+          },
+          "target": {
+            "kind": "corner",
+            "id": "hospital-outpatient-afterhours:corner:5:5",
+            "interactionPoint": {
+              "x": 5,
+              "y": 5
+            },
+            "hasOpaqueCorner": true,
+            "outwardHeading": {
+              "x": 1,
+              "y": 0
+            }
+          }
+        },
+        "temporary-blackout": {
+          "player": {
+            "x": 8,
+            "y": 8
+          },
+          "target": {
+            "kind": "power-circuit",
+            "id": "hospital-outpatient-afterhours:primary-lighting-circuit",
+            "interactionPoint": {
+              "x": 8,
+              "y": 8
+            },
+            "autoRestoreTicks": 360,
+            "emergencyVisibilityFloor": 0.35
+          }
+        }
+      },
+      "views": [],
+      "mirrorThreatVisible": false,
+      "activeWedgeHoldUntilTick": 0
+    },
+    "resources": {
+      "registeredLights": 0,
+      "sceneRoots": 1,
+      "transientPlacedAssetIds": [
+        "stealth-evidence-campaign-stealth-evidence-v1:evidence:1"
+      ]
+    },
+    "director": {
+      "definition": {
+        "version": 1,
+        "id": "hospital-outpatient-afterhours:fair-tension-director",
+        "routeIds": [
+          "hospital-outpatient-afterhours:mission-route:1:hospital:backup-generator>hospital:pressure-bypass>hospital:release-isolation",
+          "hospital-outpatient-afterhours:mission-route:2:hospital:pressure-bypass>hospital:backup-generator>hospital:release-isolation"
+        ],
+        "minimumLegalRouteCount": 1,
+        "policy": {
+          "fixedStepSeconds": 0.016666666666666666,
+          "minimumWarningTicks": 120,
+          "maximumEventDurationTicks": 720,
+          "minimumEventCooldownTicks": 480,
+          "minimumSafeTicksBeforePressure": 480,
+          "minimumCalmTicksAfterEvent": 360,
+          "suspiciousBreatherTicks": 300,
+          "chaseBreatherTicks": 480,
+          "escapeBreatherTicks": 600,
+          "resourceRecoveryBreatherTicks": 300,
+          "criticalResourcePermille": 150,
+          "heightenedResourceFloorPermille": 350,
+          "safeRampStartTicks": 480,
+          "safeRampEndTicks": 1800,
+          "safeScoreMaximum": 550,
+          "missionScoreMaximum": 350,
+          "resourceScoreMaximum": 100,
+          "watchfulEnterScore": 360,
+          "watchfulExitScore": 260,
+          "heightenedEnterScore": 720,
+          "heightenedExitScore": 560
+        },
+        "events": [
+          {
+            "id": "public-address-sweep",
+            "label": "广播巡检",
+            "kind": "broadcast",
+            "minimumTier": "watchful",
+            "warningTicks": 120,
+            "durationTicks": 240,
+            "cooldownTicks": 660,
+            "publicChannelId": "hospital-outpatient-afterhours:public-address",
+            "blockedRouteIds": [],
+            "intensityPermille": 620
+          },
+          {
+            "id": "patrol-pressure-window",
+            "label": "巡逻提速",
+            "kind": "patrol-pressure",
+            "minimumTier": "heightened",
+            "warningTicks": 150,
+            "durationTicks": 360,
+            "cooldownTicks": 780,
+            "publicChannelId": null,
+            "blockedRouteIds": [],
+            "intensityPermille": 180
+          },
+          {
+            "id": "lighting-load-shed",
+            "label": "照明降载",
+            "kind": "blackout",
+            "minimumTier": "watchful",
+            "warningTicks": 180,
+            "durationTicks": 300,
+            "cooldownTicks": 900,
+            "publicChannelId": "hospital-outpatient-afterhours:lighting-grid",
+            "blockedRouteIds": [],
+            "intensityPermille": 480
+          }
+        ]
+      },
+      "state": {
+        "version": 1,
+        "definitionId": "hospital-outpatient-afterhours:fair-tension-director",
+        "currentTick": 72,
+        "tier": "rest",
+        "score": 100,
+        "activeEvent": null,
+        "cooldowns": [
+          {
+            "eventId": "public-address-sweep",
+            "readyAtTick": 0
+          },
+          {
+            "eventId": "patrol-pressure-window",
+            "readyAtTick": 0
+          },
+          {
+            "eventId": "lighting-load-shed",
+            "readyAtTick": 0
+          }
+        ],
+        "globalReadyAtTick": 0,
+        "breatherUntilTick": 0,
+        "selectionCursor": 0,
+        "nextSequence": 1,
+        "lastEventId": null,
+        "completedEventCount": 0
+      },
+      "safeTicks": 72,
+      "chaseTicks": 0,
+      "ticksSinceChaseEscape": null
+    }
+  },
+  "ghost": {
+    "eligible": false,
+    "recording": null,
+    "state": null,
+    "race": null,
+    "viewport": {
+      "x": 1.3993741291827781,
+      "y": 1.2522966578205779,
+      "depth": 0.978026458490569,
+      "worldHeight": 1.139148728149988,
+      "pixelWidth": 242.9911616529318,
+      "pixelHeight": 98.25973761427227,
+      "bounds": {
+        "left": 1.3217605111634496,
+        "right": 1.4879651360970554,
+        "top": 1.1936186734036842,
+        "bottom": 1.307345221568351
+      },
+      "centerInFrustum": false
+    }
+  },
+  "preferences": {
+    "version": 1,
+    "ruleset": "standard",
+    "personalGhostEnabled": true,
+    "hudDensity": "cinematic",
+    "hapticsEnabled": true,
+    "highContrast": false,
+    "reducedMotion": false
+  },
+  "environmentComposition": {
+    "profile": {
+      "levelId": "hospital-outpatient-afterhours",
+      "propSet": "hospital-outpatient",
+      "theme": "hospital",
+      "materialSalt": 41,
+      "landmarkSegments": [
+        {
+          "id": "hospital-outpatient-establish",
+          "role": "establish",
+          "nodeCandidates": [
+            "HospitalTriageCluster"
+          ],
+          "routeFraction": 0.17,
+          "lateralBias": -1
+        },
+        {
+          "id": "hospital-outpatient-pressure",
+          "role": "pressure",
+          "nodeCandidates": [
+            "HospitalWaitingCluster"
+          ],
+          "routeFraction": 0.51,
+          "lateralBias": 1
+        },
+        {
+          "id": "hospital-outpatient-payoff",
+          "role": "payoff",
+          "nodeCandidates": [
+            "HospitalPharmacyCluster"
+          ],
+          "routeFraction": 0.81,
+          "lateralBias": -1
+        }
+      ],
+      "arrivalNodeCandidates": [
+        "HospitalOutpatientArrivalCluster"
+      ],
+      "hideDressingNodeCandidates": [
+        "HospitalOutpatientHideDressing"
+      ],
+      "exitNodeCandidates": [
+        "HospitalOutpatientExitCluster"
+      ],
+      "placementPolicy": "nearest-authored-room-anchor"
+    },
+    "theme": {
+      "theme": "hospital",
+      "architecture": {
+        "wallVariants": [
+          "HospitalArchitectureWallA",
+          "HospitalArchitectureWallB",
+          "HospitalArchitectureWallC"
+        ],
+        "wallEnd": [
+          "HospitalArchitectureWallEnd"
+        ],
+        "corner": [
+          "HospitalArchitectureCorner"
+        ],
+        "floorPrimary": [
+          "HospitalFloorPrimary"
+        ],
+        "floorSecondary": [
+          "HospitalFloorSecondary"
+        ],
+        "floorService": [
+          "HospitalFloorService"
+        ],
+        "exteriorGround": [
+          "HospitalExteriorGround"
+        ]
+      },
+      "lightPools": [
+        {
+          "id": "hospital-triage-cool",
+          "colorToken": "emissive",
+          "intensity": 1.55,
+          "rangeMeters": 4.8,
+          "heightMeters": 2.45,
+          "priority": 3,
+          "castShadow": false
+        },
+        {
+          "id": "hospital-emergency-green",
+          "colorToken": "accent",
+          "intensity": 1.3,
+          "rangeMeters": 4.1,
+          "heightMeters": 2.3,
+          "priority": 2,
+          "castShadow": false
+        },
+        {
+          "id": "hospital-exit-panel",
+          "colorToken": "trim",
+          "intensity": 1.7,
+          "rangeMeters": 4.9,
+          "heightMeters": 2.5,
+          "priority": 3,
+          "castShadow": false
+        }
+      ],
+      "materialVariation": {
+        "wall": [
+          {
+            "id": "hospital-wall-clean",
+            "tintToken": "wall",
+            "colorMix": 0.01,
+            "roughnessDelta": -0.02,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "hospital-wall-sanitized",
+            "tintToken": "emissive",
+            "colorMix": 0.035,
+            "roughnessDelta": -0.08,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 1
+          },
+          {
+            "id": "hospital-wall-service",
+            "tintToken": "trim",
+            "colorMix": 0.055,
+            "roughnessDelta": 0.1,
+            "metalnessDelta": 0.01,
+            "sharedMaterialSlot": 2
+          }
+        ],
+        "floor": [
+          {
+            "id": "hospital-floor-dry",
+            "tintToken": "floor",
+            "colorMix": 0.01,
+            "roughnessDelta": -0.02,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "hospital-floor-cleaned",
+            "tintToken": "emissive",
+            "colorMix": 0.04,
+            "roughnessDelta": -0.13,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 1
+          },
+          {
+            "id": "hospital-floor-service",
+            "tintToken": "trim",
+            "colorMix": 0.045,
+            "roughnessDelta": 0.08,
+            "metalnessDelta": 0.01,
+            "sharedMaterialSlot": 2
+          }
+        ],
+        "trim": [
+          {
+            "id": "hospital-trim-base",
+            "tintToken": "trim",
+            "colorMix": 0.015,
+            "roughnessDelta": -0.02,
+            "metalnessDelta": 0.02,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "hospital-trim-emergency",
+            "tintToken": "accent",
+            "colorMix": 0.075,
+            "roughnessDelta": 0.04,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 1
+          }
+        ],
+        "landmark": [
+          {
+            "id": "hospital-hero-clinical",
+            "tintToken": "wall",
+            "colorMix": 0.01,
+            "roughnessDelta": -0.04,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "hospital-hero-emergency",
+            "tintToken": "emissive",
+            "colorMix": 0.07,
+            "roughnessDelta": -0.08,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 1
+          }
+        ],
+        "decal": {
+          "id": "hospital-threshold-dash",
+          "pattern": "threshold-dash",
+          "foregroundToken": "accent",
+          "secondaryToken": "emissive",
+          "opacity": 0.62,
+          "repeatCount": 6,
+          "strokeFraction": 0.09,
+          "maximumInstances": 20,
+          "batchKey": "environment-composition-markings",
+          "generatedResolution": 64
+        }
+      },
+      "edgeClosure": {
+        "capNodeCandidates": [
+          "HospitalExteriorGround"
+        ],
+        "wallEndNodeCandidates": [
+          "HospitalArchitectureWallEnd"
+        ],
+        "cornerNodeCandidates": [
+          "HospitalArchitectureCorner"
+        ],
+        "groundMarginCells": 1.1,
+        "skirtDepthMeters": 3.4,
+        "fogColorToken": "fog",
+        "fogOpacity": 0.94,
+        "geometryMode": "single-batched-skirt",
+        "castShadow": false,
+        "receiveShadow": false
+      },
+      "mechanicFeedback": {
+        "sourceNodeCandidates": [
+          "HospitalArchitectureDoorway",
+          "HospitalPrivacyScreen",
+          "HospitalWayfinding"
+        ],
+        "partMotion": {
+          "kind": "slide-opposed",
+          "axis": "x",
+          "targetNodeCandidates": [
+            "SlidingDoor_-0.4",
+            "SlidingDoor_0.4",
+            "ScreenPanel_-1",
+            "ScreenPanel_0",
+            "ScreenPanel_1"
+          ]
+        },
+        "stages": {
+          "warning": {
+            "stage": "warning",
+            "colorToken": "emissive",
+            "pulseCycles": 2,
+            "peakEmissiveIntensity": 1.02,
+            "peakLightIntensity": 1.85,
+            "lightRangeMeters": 4.7,
+            "rootScaleAmplitude": 0.01,
+            "partMotionAmplitude": 0.4,
+            "particleKind": "steam",
+            "maximumParticles": 14,
+            "effectOpacity": 0.22
+          },
+          "active": {
+            "stage": "active",
+            "colorToken": "emissive",
+            "pulseCycles": 3,
+            "peakEmissiveIntensity": 1.02,
+            "peakLightIntensity": 1.85,
+            "lightRangeMeters": 4.7,
+            "rootScaleAmplitude": 0.01,
+            "partMotionAmplitude": 0.4,
+            "particleKind": "steam",
+            "maximumParticles": 14,
+            "effectOpacity": 0.22
+          },
+          "recover": {
+            "stage": "recover",
+            "colorToken": "emissive",
+            "pulseCycles": 1,
+            "peakEmissiveIntensity": 1.02,
+            "peakLightIntensity": 1.85,
+            "lightRangeMeters": 4.7,
+            "rootScaleAmplitude": 0.01,
+            "partMotionAmplitude": 0.4,
+            "particleKind": "steam",
+            "maximumParticles": 14,
+            "effectOpacity": 0.22
+          }
+        },
+        "usesPooledLocalLight": true,
+        "usesAtmosphereParticleBuffer": true
+      }
+    },
+    "budget": {
+      "tier": "high",
+      "additionalNetworkRequests": 0,
+      "additionalNetworkBytes": 0,
+      "additionalTextureFiles": 0,
+      "maximumRuntimeTextureBytes": 16384,
+      "maximumAdditionalDrawCalls": 2,
+      "maximumAdditionalTriangles": 256,
+      "maximumLocalLightPools": 2,
+      "maximumProceduralDecals": 24,
+      "maximumMechanicParticles": 48,
+      "maximumMaterialVariantsPerSurface": 3
+    },
+    "criticalRoute": [
+      {
+        "x": 1,
+        "y": 12
+      },
+      {
+        "x": 2,
+        "y": 12
+      },
+      {
+        "x": 3,
+        "y": 12
+      },
+      {
+        "x": 4,
+        "y": 12
+      },
+      {
+        "x": 5,
+        "y": 12
+      },
+      {
+        "x": 5,
+        "y": 11
+      },
+      {
+        "x": 5,
+        "y": 10
+      },
+      {
+        "x": 5,
+        "y": 9
+      },
+      {
+        "x": 5,
+        "y": 8
+      },
+      {
+        "x": 6,
+        "y": 8
+      },
+      {
+        "x": 7,
+        "y": 8
+      },
+      {
+        "x": 8,
+        "y": 8
+      },
+      {
+        "x": 9,
+        "y": 8
+      },
+      {
+        "x": 10,
+        "y": 8
+      },
+      {
+        "x": 11,
+        "y": 8
+      },
+      {
+        "x": 12,
+        "y": 8
+      },
+      {
+        "x": 12,
+        "y": 9
+      },
+      {
+        "x": 12,
+        "y": 10
+      },
+      {
+        "x": 13,
+        "y": 10
+      },
+      {
+        "x": 14,
+        "y": 10
+      },
+      {
+        "x": 15,
+        "y": 10
+      },
+      {
+        "x": 16,
+        "y": 10
+      },
+      {
+        "x": 17,
+        "y": 10
+      },
+      {
+        "x": 18,
+        "y": 10
+      },
+      {
+        "x": 19,
+        "y": 10
+      },
+      {
+        "x": 19,
+        "y": 9
+      },
+      {
+        "x": 19,
+        "y": 8
+      },
+      {
+        "x": 19,
+        "y": 7
+      },
+      {
+        "x": 19,
+        "y": 6
+      },
+      {
+        "x": 19,
+        "y": 5
+      },
+      {
+        "x": 19,
+        "y": 4
+      },
+      {
+        "x": 20,
+        "y": 4
+      },
+      {
+        "x": 21,
+        "y": 4
+      },
+      {
+        "x": 22,
+        "y": 4
+      },
+      {
+        "x": 23,
+        "y": 4
+      },
+      {
+        "x": 23,
+        "y": 5
+      },
+      {
+        "x": 23,
+        "y": 6
+      },
+      {
+        "x": 23,
+        "y": 7
+      },
+      {
+        "x": 23,
+        "y": 8
+      },
+      {
+        "x": 23,
+        "y": 9
+      },
+      {
+        "x": 23,
+        "y": 10
+      },
+      {
+        "x": 23,
+        "y": 11
+      },
+      {
+        "x": 23,
+        "y": 12
+      }
+    ],
+    "landmarkBeats": [
+      {
+        "id": "hospital-outpatient-establish",
+        "role": "establish",
+        "nodeCandidates": [
+          "HospitalTriageCluster"
+        ],
+        "routeFraction": 0.17,
+        "lateralBias": -1,
+        "label": "急诊分诊台",
+        "routeIndex": 8,
+        "resolvedRouteFraction": 0.19047619047619047,
+        "focusCell": {
+          "x": 5,
+          "y": 8
+        },
+        "routeTangent": {
+          "x": 0.7071067811865475,
+          "y": -0.7071067811865475
+        },
+        "junctionDegree": 3,
+        "decisionStrength": 0.7
+      },
+      {
+        "id": "hospital-outpatient-pressure",
+        "role": "pressure",
+        "nodeCandidates": [
+          "HospitalWaitingCluster"
+        ],
+        "routeFraction": 0.51,
+        "lateralBias": 1,
+        "label": "住院药房",
+        "routeIndex": 19,
+        "resolvedRouteFraction": 0.4523809523809524,
+        "focusCell": {
+          "x": 14,
+          "y": 10
+        },
+        "routeTangent": {
+          "x": 1,
+          "y": 0
+        },
+        "junctionDegree": 3,
+        "decisionStrength": 0.5
+      },
+      {
+        "id": "hospital-outpatient-payoff",
+        "role": "payoff",
+        "nodeCandidates": [
+          "HospitalPharmacyCluster"
+        ],
+        "routeFraction": 0.81,
+        "lateralBias": -1,
+        "label": "输液大厅",
+        "routeIndex": 34,
+        "resolvedRouteFraction": 0.8095238095238095,
+        "focusCell": {
+          "x": 23,
+          "y": 4
+        },
+        "routeTangent": {
+          "x": 0.7071067811865475,
+          "y": 0.7071067811865475
+        },
+        "junctionDegree": 2,
+        "decisionStrength": 0.2
+      }
+    ],
+    "activeLightPools": [
+      {
+        "id": "hospital-triage-cool",
+        "colorToken": "emissive",
+        "intensity": 1.55,
+        "rangeMeters": 4.8,
+        "heightMeters": 2.45,
+        "priority": 3,
+        "castShadow": false,
+        "segmentId": "hospital-outpatient-establish",
+        "position": {
+          "x": 5,
+          "y": 8
+        },
+        "color": "#a9e6d1"
+      },
+      {
+        "id": "hospital-exit-panel",
+        "colorToken": "trim",
+        "intensity": 1.7,
+        "rangeMeters": 4.9,
+        "heightMeters": 2.5,
+        "priority": 3,
+        "castShadow": false,
+        "segmentId": "hospital-outpatient-payoff",
+        "position": {
+          "x": 23,
+          "y": 4
+        },
+        "color": "#47726f"
+      }
+    ],
+    "edgeClosure": {
+      "capNodeCandidates": [
+        "HospitalExteriorGround"
+      ],
+      "wallEndNodeCandidates": [
+        "HospitalArchitectureWallEnd"
+      ],
+      "cornerNodeCandidates": [
+        "HospitalArchitectureCorner"
+      ],
+      "groundMarginCells": 1.1,
+      "skirtDepthMeters": 3.4,
+      "fogColorToken": "fog",
+      "fogOpacity": 0.94,
+      "geometryMode": "single-batched-skirt",
+      "castShadow": false,
+      "receiveShadow": false,
+      "segments": [
+        {
+          "side": "north",
+          "center": {
+            "x": 12,
+            "y": -0.5
+          },
+          "outward": {
+            "x": 0,
+            "y": -1
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "east",
+          "center": {
+            "x": 24.5,
+            "y": 12
+          },
+          "outward": {
+            "x": 1,
+            "y": 0
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "south",
+          "center": {
+            "x": 12,
+            "y": 24.5
+          },
+          "outward": {
+            "x": 0,
+            "y": 1
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "west",
+          "center": {
+            "x": -0.5,
+            "y": 12
+          },
+          "outward": {
+            "x": -1,
+            "y": 0
+          },
+          "lengthCells": 25
+        }
+      ],
+      "fogColor": "#879c98",
+      "proceduralTriangles": 8,
+      "additionalDrawCalls": 1
+    },
+    "materialVariation": {
+      "wall": [
+        {
+          "id": "hospital-wall-clean",
+          "tintToken": "wall",
+          "colorMix": 0.01,
+          "roughnessDelta": -0.02,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "hospital-wall-sanitized",
+          "tintToken": "emissive",
+          "colorMix": 0.035,
+          "roughnessDelta": -0.08,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 1
+        },
+        {
+          "id": "hospital-wall-service",
+          "tintToken": "trim",
+          "colorMix": 0.055,
+          "roughnessDelta": 0.1,
+          "metalnessDelta": 0.01,
+          "sharedMaterialSlot": 2
+        }
+      ],
+      "floor": [
+        {
+          "id": "hospital-floor-dry",
+          "tintToken": "floor",
+          "colorMix": 0.01,
+          "roughnessDelta": -0.02,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "hospital-floor-cleaned",
+          "tintToken": "emissive",
+          "colorMix": 0.04,
+          "roughnessDelta": -0.13,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 1
+        },
+        {
+          "id": "hospital-floor-service",
+          "tintToken": "trim",
+          "colorMix": 0.045,
+          "roughnessDelta": 0.08,
+          "metalnessDelta": 0.01,
+          "sharedMaterialSlot": 2
+        }
+      ],
+      "trim": [
+        {
+          "id": "hospital-trim-base",
+          "tintToken": "trim",
+          "colorMix": 0.015,
+          "roughnessDelta": -0.02,
+          "metalnessDelta": 0.02,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "hospital-trim-emergency",
+          "tintToken": "accent",
+          "colorMix": 0.075,
+          "roughnessDelta": 0.04,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 1
+        }
+      ],
+      "landmark": [
+        {
+          "id": "hospital-hero-clinical",
+          "tintToken": "wall",
+          "colorMix": 0.01,
+          "roughnessDelta": -0.04,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "hospital-hero-emergency",
+          "tintToken": "emissive",
+          "colorMix": 0.07,
+          "roughnessDelta": -0.08,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 1
+        }
+      ],
+      "decal": {
+        "id": "hospital-threshold-dash",
+        "pattern": "threshold-dash",
+        "foregroundToken": "accent",
+        "secondaryToken": "emissive",
+        "opacity": 0.62,
+        "repeatCount": 6,
+        "strokeFraction": 0.09,
+        "maximumInstances": 20,
+        "batchKey": "environment-composition-markings",
+        "generatedResolution": 64
+      }
+    },
+    "decalInstanceLimit": 20
+  },
+  "telemetry": {
+    "detections": 0,
+    "hideEntries": 1,
+    "safeHideExits": 0,
+    "lockerSearches": 0,
+    "telemetryVersion": 2,
+    "hideExits": 0,
+    "threatReacquisitions": 0,
+    "decoysDeployed": 0,
+    "decoyInvestigations": 0,
+    "themeMechanicUses": 0,
+    "themeMechanicAdvantages": 0,
+    "routeReplans": 0,
+    "deployedDecoyIds": [],
+    "investigatedDecoyIds": [],
+    "usedThemeMechanicIds": [],
+    "benefitedThemeMechanicIds": [],
+    "lastRouteId": null,
+    "pendingSafeHideExitSeconds": null,
+    "masteryContext": {
+      "levelId": "hospital-outpatient-afterhours",
+      "theme": "hospital",
+      "ruleset": "standard"
+    }
+  },
+  "sceneIntegrity": {
+    "expectedMovementBlockers": 0,
+    "renderedMovementBlockers": 0,
+    "expectedVisionObscurers": 4,
+    "renderedVisionObscurers": 4
+  },
+  "assets": {
+    "decorativeReady": true,
+    "deferredDressingSettled": true,
+    "qaDecorativeSceneCompiled": true,
+    "qaDecorativeSceneCompileCount": 1,
+    "qaTransientArtPrewarmCount": 1,
+    "qaCleanFrame": false,
+    "kidAssetUrl": "/models/characters/kid-bootstrap.glb?v=m2-20260829",
+    "kidLoadedIdentity": {
+      "requestedUrl": "/models/characters/kid-bootstrap.glb?v=m2-20260829",
+      "resolvedUrl": "http://127.0.0.1:3000/models/characters/kid-bootstrap.glb?v=m2-20260829",
+      "transferBytes": 1561604,
+      "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "nodes": 92,
+      "meshes": 35,
+      "primitives": 35,
+      "triangles": 92680,
+      "materials": 12,
+      "textures": 3,
+      "skins": 1,
+      "joints": 21,
+      "jointNames": [
+        "Chest",
+        "Head",
+        "Hips",
+        "LeftFoot",
+        "LeftHand",
+        "LeftLowerArm",
+        "LeftLowerLeg",
+        "LeftShoulder",
+        "LeftToes",
+        "LeftUpperArm",
+        "LeftUpperLeg",
+        "Neck",
+        "RightFoot",
+        "RightHand",
+        "RightLowerArm",
+        "RightLowerLeg",
+        "RightShoulder",
+        "RightToes",
+        "RightUpperArm",
+        "RightUpperLeg",
+        "Spine"
+      ],
+      "runtimeMeshObjects": 35,
+      "runtimeSkinnedMeshes": 35,
+      "runtimeSkeletons": 1,
+      "runtimeBones": 21,
+      "clips": [
+        {
+          "name": "Caught",
+          "durationSeconds": 1,
+          "tracks": 22
+        },
+        {
+          "name": "EscapeCelebrate",
+          "durationSeconds": 1.233333,
+          "tracks": 22
+        },
+        {
+          "name": "HideEnter",
+          "durationSeconds": 1.3,
+          "tracks": 22
+        },
+        {
+          "name": "HideExit",
+          "durationSeconds": 1.033333,
+          "tracks": 22
+        },
+        {
+          "name": "HideIdle",
+          "durationSeconds": 1.666667,
+          "tracks": 22
+        },
+        {
+          "name": "HidePeek",
+          "durationSeconds": 1.6,
+          "tracks": 22
+        },
+        {
+          "name": "Idle",
+          "durationSeconds": 2.5,
+          "tracks": 22
+        },
+        {
+          "name": "Interact",
+          "durationSeconds": 2,
+          "tracks": 22
+        },
+        {
+          "name": "Run",
+          "durationSeconds": 0.666667,
+          "tracks": 22
+        },
+        {
+          "name": "TurnLeft",
+          "durationSeconds": 0.6,
+          "tracks": 22
+        },
+        {
+          "name": "TurnRight",
+          "durationSeconds": 0.6,
+          "tracks": 22
+        },
+        {
+          "name": "Walk",
+          "durationSeconds": 1.333333,
+          "tracks": 22
+        }
+      ]
+    },
+    "policeAssetUrl": "/models/characters/police-bootstrap.glb?v=m2-20260829",
+    "policeLoaded": false,
+    "policeLoadedIdentity": null,
+    "loadedAssetIds": [
+      "actor:kid",
+      "actor:villain",
+      "detail:bulletin",
+      "detail:ceilingLight",
+      "detail:locker",
+      "detail:trash",
+      "stealth:corner-mirrors",
+      "structure:exit",
+      "structure:frontGate",
+      "theme:hospital"
+    ],
+    "placedAssetIds": [
+      "actor:kid",
+      "actor:villain",
+      "detail:bulletin",
+      "detail:ceilingLight",
+      "detail:locker",
+      "detail:trash",
+      "gameplay:hide-archetype:soft-cover",
+      "gameplay:hide-archetype:traversal-hide",
+      "gameplay:mission-objective:hospital:backup-generator",
+      "gameplay:mission-objective:hospital:pressure-bypass",
+      "gameplay:mission-objective:hospital:release-isolation",
+      "gameplay:stealth-evidence:door-state:campaign-stealth-evidence-v1:evidence:1",
+      "gameplay:theme-mechanic:hospital-outpatient-afterhours:primary-mechanic",
+      "runtime:ambient-room-clusters",
+      "runtime:authored-room-floors",
+      "runtime:composition-edge-closure",
+      "runtime:composition-light:hospital-exit-panel",
+      "runtime:composition-light:hospital-triage-cool",
+      "runtime:hospital-threshold-dash",
+      "runtime:maze-shadow-proxy",
+      "runtime:personal-best-ghost",
+      "runtime:prop-contact-shadows",
+      "runtime:vision-obscurer-vfx",
+      "runtime:wall-contact-shadows",
+      "stealth:corner-mirrors",
+      "structure:exit",
+      "structure:frontGate",
+      "theme-node:FloorSeamX_-0001",
+      "theme-node:HospitalAirlockCluster",
+      "theme-node:HospitalArchitectureCorner",
+      "theme-node:HospitalArchitectureDoorway",
+      "theme-node:HospitalArchitectureJunction",
+      "theme-node:HospitalArchitectureWallA",
+      "theme-node:HospitalArchitectureWallB",
+      "theme-node:HospitalArchitectureWallC",
+      "theme-node:HospitalArchitectureWallEnd",
+      "theme-node:HospitalArchitectureWallWide",
+      "theme-node:HospitalBed",
+      "theme-node:HospitalCrashCart",
+      "theme-node:HospitalDressingClusterA",
+      "theme-node:HospitalDressingClusterB",
+      "theme-node:HospitalDressingClusterC",
+      "theme-node:HospitalExteriorGround:entrance-plaza",
+      "theme-node:HospitalExteriorGround:exit-plaza",
+      "theme-node:HospitalFloorPrimary",
+      "theme-node:HospitalFloorSecondary",
+      "theme-node:HospitalFloorService",
+      "theme-node:HospitalIVStation",
+      "theme-node:HospitalOutpatientArrivalCluster",
+      "theme-node:HospitalOutpatientExitCluster",
+      "theme-node:HospitalOutpatientHideDressing",
+      "theme-node:HospitalPharmacyCluster",
+      "theme-node:HospitalPrivacyScreen",
+      "theme-node:HospitalTriageCluster",
+      "theme-node:HospitalWaitingCluster",
+      "theme-node:HospitalWayfinding",
+      "theme-node:HospitalWheelchair",
+      "theme:hospital"
+    ],
+    "unusedLoadedAssetIds": []
+  },
+  "lockers": {
+    "hospital-linen-north": {
+      "archetype": "soft-cover",
+      "alternateExit": null,
+      "approach": {
+        "x": 5,
+        "y": 8
+      },
+      "rootPosition": {
+        "x": -14.34,
+        "y": 0,
+        "z": -8
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0.5154386614201437,
+      "beaconViewport": {
+        "x": -2.156113181301081,
+        "y": -5.772944932179315,
+        "depth": 1.089197637715292,
+        "centerInFrustum": false
+      },
+      "action": null,
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0,
+      "timeScale": 0,
+      "doorQuaternion": null,
+      "owner": "idle"
+    },
+    "hospital-pharmacy-store": {
+      "archetype": "hard-locker",
+      "alternateExit": null,
+      "approach": {
+        "x": 2,
+        "y": 18
+      },
+      "rootPosition": {
+        "x": -20.211656715098265,
+        "y": -0.12020886633058893,
+        "z": 12.00155956918957
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0,
+      "beaconViewport": {
+        "x": 0.6685960597533017,
+        "y": 0.2896120892227524,
+        "depth": 0.9876957684959683,
+        "centerInFrustum": true
+      },
+      "action": "Locker_Door_Open_Enter",
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0.6563249657699871,
+      "timeScale": 1.2,
+      "doorQuaternion": {
+        "x": 0,
+        "y": 0.7947050288617662,
+        "z": 0,
+        "w": -0.6069958130842577
+      },
+      "owner": "player"
+    },
+    "hospital-supply-east": {
+      "archetype": "traversal-hide",
+      "alternateExit": {
+        "x": 18,
+        "y": 18
+      },
+      "approach": {
+        "x": 21,
+        "y": 15
+      },
+      "rootPosition": {
+        "x": 18.340000000000003,
+        "y": 0,
+        "z": 6
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0.5154386614201437,
+      "beaconViewport": {
+        "x": 3.5450588490795143,
+        "y": -2.478092125725679,
+        "depth": 1.0340545492311985,
+        "centerInFrustum": false
+      },
+      "action": null,
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0,
+      "timeScale": 0,
+      "doorQuaternion": null,
+      "owner": "idle"
+    }
+  },
+  "audio": {
+    "status": "playing",
+    "unlocked": true,
+    "muted": false,
+    "threat": 0,
+    "targetGains": {
+      "explore": 1,
+      "threat": 0
+    },
+    "contextState": "running",
+    "driftSeconds": 0,
+    "explore": {
+      "url": "/audio/slow-drift-explore.m4a",
+      "currentTimeSeconds": 6.501333,
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "threatTrack": {
+      "url": "/audio/slow-drift-threat.m4a",
+      "currentTimeSeconds": 6.501333,
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "lastError": null
+  },
+  "camera": {
+    "fov": 56,
+    "aspect": 1.6921296296296295,
+    "distance": 11.67247140280612,
+    "zoom": 1,
+    "position": {
+      "x": -11.956032558968886,
+      "y": 9.422162615348746,
+      "z": 5.10048412379516
+    },
+    "focus": {
+      "x": -15.984745668089968,
+      "y": 0.8907701489746936,
+      "z": 11.972994721707591
+    },
+    "direction": {
+      "x": 0.3451465392455413,
+      "y": 0.7308985536964403,
+      "z": -0.588779390477688
+    },
+    "azimuthDegrees": 149.62087398863164,
+    "occlusion": {
+      "groups": 5,
+      "obscured": [
+        "hospital-walls",
+        "hero-locker-hospital-pharmacy-store"
+      ],
+      "maxStrength": 0.9999994426096307
+    }
+  },
+  "render": {
+    "batching": "multi-draw",
+    "qualityTier": "high",
+    "qualityLock": {
+      "enabled": true,
+      "requestedTier": "high",
+      "appliedBeforeRendererCreation": true
+    },
+    "qualityTransitionCount": 0,
+    "emergencyTransitionCount": 0,
+    "pixelRatio": 1,
+    "shadowMapSize": 2048,
+    "shadowCamera": {
+      "halfExtent": 18,
+      "target": {
+        "x": -20.098120235801183,
+        "y": -0.0021617602330081384,
+        "z": 11.896057722848184
+      },
+      "texelWorldSize": 0.017578125,
+      "lightSpaceX": -23.16796875,
+      "lightSpaceY": 2.28515625,
+      "texelIndexX": -1318,
+      "texelIndexY": 130,
+      "residualTexelsX": 0,
+      "residualTexelsY": 0
+    },
+    "emergencyDegradation": {
+      "level": 0,
+      "overloadSeconds": 0,
+      "recoverySeconds": 0
+    },
+    "calls": 177,
+    "triangles": 315121,
+    "breakdown": {
+      "actor": {
+        "calls": 20,
+        "triangles": 118967
+      },
+      "maze-walls": {
+        "calls": 24,
+        "triangles": 14136
+      },
+      "props-dressing": {
+        "calls": 64,
+        "triangles": 88940
+      },
+      "shadow-pass": {
+        "calls": 69,
+        "triangles": 93078
+      },
+      "shadowSources": {
+        "actor": {
+          "calls": 2,
+          "triangles": 688
+        },
+        "maze-walls": {
+          "calls": 1,
+          "triangles": 2880
+        },
+        "props-dressing": {
+          "calls": 66,
+          "triangles": 89510
+        }
+      },
+      "total": {
+        "calls": 177,
+        "triangles": 315121
+      },
+      "reconciliation": {
+        "exact": true,
+        "callsError": 0,
+        "trianglesError": 0,
+        "fallbackCalls": 0,
+        "fallbackTriangles": 0,
+        "note": "Every renderer.info.update call was attributed by an object render callback."
+      }
+    },
+    "mazeShadowProxy": [
+      {
+        "name": "hospital-maze-shadow-proxy",
+        "visible": true,
+        "castShadow": true,
+        "boxes": 240,
+        "triangles": 2880,
+        "sourceModules": 211
+      }
+    ],
+    "shadow": {
+      "shadowTriangles": 104770,
+      "shadowDrawCalls": 122
+    },
+    "memory": {
+      "geometries": 199,
+      "textures": 130
+    },
+    "programs": 81,
+    "sceneTextures": 20,
+    "invalidSceneTextures": [],
+    "textureDeduplication": {
+      "sourceTextures": 139,
+      "canonicalTextures": 123,
+      "assignmentsShared": 16,
+      "sourcesShared": 24
+    }
+  },
+  "firstPlayableBudget": {
+    "fits": true,
+    "fitsTransferBudget": true,
+    "fitsTimeBudget": true,
+    "criticalTransferBytes": 4419319,
+    "deferredTransferBytes": 0,
+    "requiredSavingsBytes": 0,
+    "estimatedSeconds": 4.6554552,
+    "criticalRequestCount": 10,
+    "categoryTransferBytes": {
+      "shell": 351227,
+      "navigation": 37336,
+      "player": 1561604,
+      "threat": 891784,
+      "hide-spot": 681996,
+      "theme": 895372
+    },
+    "exceededCategories": [],
+    "duplicateUrls": [
+      "http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+      "http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2"
+    ],
+    "invalidEntryIds": []
+  }
+}

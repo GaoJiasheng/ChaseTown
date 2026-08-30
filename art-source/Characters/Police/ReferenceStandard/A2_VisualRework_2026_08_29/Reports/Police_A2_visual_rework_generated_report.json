@@ -1,0 +1,2953 @@
+{
+  "asset": "Police_A2_VisualRework_v23",
+  "role": "police",
+  "pipeline": "remote-v22 source-preserving gameplay-camera silhouette and material rework",
+  "source": {
+    "master": "art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/Rigged/Police_HumanAnatomyRemodel_v22_Rigged.blend",
+    "sha256": "4470d21ecd2f66cddf8993a69df62a9ece01b908a3f24e81fecaf1817e2d31b5",
+    "geometryLineage": "existing remote v22 MakeHuman/MPFB-derived body, uniform, and authored Police accessories",
+    "conceptReference": "art-source/Concepts/03",
+    "externalDownloadsThisPass": []
+  },
+  "toolchain": {
+    "blender": "5.1.2",
+    "python": "3.13.9",
+    "script": "tools/art_pipeline/build_a2_police_visual_rework.py"
+  },
+  "authoritativeRuntimeClipContract": {
+    "clips": [
+      "Idle",
+      "Run",
+      "Alert",
+      "Interact",
+      "Resolve"
+    ],
+    "owner": "tools/art_pipeline/build_web_character_animation_sets.py",
+    "authoringAssetAnimations": 0,
+    "reason": "visual source stays animation-free; the existing retarget builder bakes the remote gameplay contract without renaming clips"
+  },
+  "designParameters": {
+    "upperBodyWidthFactor": 1.07,
+    "capCrownScale": [
+      1.12,
+      1.12,
+      1.04
+    ],
+    "capHeadbandScale": [
+      1.12,
+      1.12,
+      1.08
+    ],
+    "capBrimScale": [
+      1.14,
+      1.14,
+      1.18
+    ],
+    "capBadgeScale": [
+      1.9,
+      1.25,
+      1.9
+    ],
+    "chestBadgeScale": [
+      1.3,
+      1.25,
+      1.3
+    ],
+    "nameplateScale": [
+      1.6,
+      1.25,
+      1.5
+    ],
+    "beltBuckleScale": [
+      1.8,
+      1.25,
+      1.8
+    ],
+    "patchScale": [
+      1.18,
+      1.18,
+      1.18
+    ],
+    "epauletScale": [
+      1.12,
+      1.08,
+      1.1
+    ]
+  },
+  "before": {
+    "meshes": {
+      "Police_v22_BeltBuckle": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_BeltPouch_+1": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_DutyLeather"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_BeltPouch_-1": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_DutyLeather"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Body": {
+        "vertices": 7992,
+        "baseTriangles": 15816,
+        "evaluatedTriangles": 63264,
+        "materials": [
+          "M_Police_v22_SkinUV"
+        ],
+        "modifiers": [
+          "SUBSURF",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_CapBadge": {
+        "vertices": 12,
+        "baseTriangles": 20,
+        "evaluatedTriangles": 284,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ChestBadge": {
+        "vertices": 12,
+        "baseTriangles": 20,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ChestPocketFlap_+1": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_CapBand"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ChestPocketFlap_-1": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_CapBand"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ChestPocket_+1": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_UniformNavy"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ChestPocket_-1": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_UniformNavy"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_DutyBeltWrap": {
+        "vertices": 576,
+        "baseTriangles": 1152,
+        "evaluatedTriangles": 4608,
+        "materials": [
+          "M_Police_v22_DutyLeather"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_EpauletButton_+1": {
+        "vertices": 266,
+        "baseTriangles": 528,
+        "evaluatedTriangles": 528,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_EpauletButton_-1": {
+        "vertices": 266,
+        "baseTriangles": 528,
+        "evaluatedTriangles": 528,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Eyebrows": {
+        "vertices": 124,
+        "baseTriangles": 192,
+        "evaluatedTriangles": 192,
+        "materials": [
+          "M_Police_v22_BrowsUV"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Eyelashes": {
+        "vertices": 66,
+        "baseTriangles": 84,
+        "evaluatedTriangles": 84,
+        "materials": [
+          "M_Police_v22_LashesUV"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Hair": {
+        "vertices": 2984,
+        "baseTriangles": 3678,
+        "evaluatedTriangles": 3678,
+        "materials": [
+          "M_Police_v22_HairUV"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_HighPolyEyes": {
+        "vertices": 1064,
+        "baseTriangles": 2040,
+        "evaluatedTriangles": 2040,
+        "materials": [
+          "M_Police_v22_HighPolyEyeUV"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Nameplate": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_RadioCord": {
+        "vertices": 238,
+        "baseTriangles": 448,
+        "evaluatedTriangles": 448,
+        "materials": [
+          "M_Police_v22_DutyLeather"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ServiceCapBrim": {
+        "vertices": 20,
+        "baseTriangles": 36,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_CapBand"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ServiceCapCrown": {
+        "vertices": 896,
+        "baseTriangles": 1662,
+        "evaluatedTriangles": 2430,
+        "materials": [
+          "M_Police_v22_ServiceCap"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ServiceCapHeadband": {
+        "vertices": 512,
+        "baseTriangles": 1024,
+        "evaluatedTriangles": 4096,
+        "materials": [
+          "M_Police_v22_CapBand"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShirtButton_00": {
+        "vertices": 366,
+        "baseTriangles": 728,
+        "evaluatedTriangles": 728,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShirtButton_01": {
+        "vertices": 366,
+        "baseTriangles": 728,
+        "evaluatedTriangles": 728,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShirtButton_02": {
+        "vertices": 366,
+        "baseTriangles": 728,
+        "evaluatedTriangles": 728,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShirtButton_03": {
+        "vertices": 366,
+        "baseTriangles": 728,
+        "evaluatedTriangles": 728,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShirtButton_04": {
+        "vertices": 366,
+        "baseTriangles": 728,
+        "evaluatedTriangles": 728,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShirtButton_05": {
+        "vertices": 366,
+        "baseTriangles": 728,
+        "evaluatedTriangles": 728,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShirtPlacket": {
+        "vertices": 238,
+        "baseTriangles": 448,
+        "evaluatedTriangles": 448,
+        "materials": [
+          "M_Police_v22_CapBand"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Shoes": {
+        "vertices": 1594,
+        "baseTriangles": 3064,
+        "evaluatedTriangles": 3064,
+        "materials": [
+          "M_Police_v22_PolishedLeather"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_UniformNavy"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShoulderEpaulet_-1": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_UniformNavy"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShoulderRadio": {
+        "vertices": 8,
+        "baseTriangles": 12,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_DutyLeather"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "vertices": 12,
+        "baseTriangles": 20,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "vertices": 12,
+        "baseTriangles": 20,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_SleevePatch_+1": {
+        "vertices": 12,
+        "baseTriangles": 20,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_PatchBlue"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_SleevePatch_-1": {
+        "vertices": 12,
+        "baseTriangles": 20,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_PatchBlue"
+        ],
+        "modifiers": [
+          "BEVEL",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Uniform": {
+        "vertices": 2499,
+        "baseTriangles": 4800,
+        "evaluatedTriangles": 76800,
+        "materials": [
+          "M_Police_v22_UniformNavy",
+          "M_Police_v22_TrouserNavy"
+        ],
+        "modifiers": [
+          "SUBSURF",
+          "ARMATURE"
+        ]
+      }
+    },
+    "materials": {
+      "M_Police_v22_UniformNavy": {
+        "baseColor": [
+          0.012,
+          0.04,
+          0.095,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.72,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.025
+      },
+      "M_Police_v22_TrouserNavy": {
+        "baseColor": [
+          0.01,
+          0.034,
+          0.084,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.72,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.025
+      },
+      "M_Police_v22_ServiceCap": {
+        "baseColor": [
+          0.01,
+          0.032,
+          0.078,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.58,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.025
+      },
+      "M_Police_v22_CapBand": {
+        "baseColor": [
+          0.003,
+          0.008,
+          0.02,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.44,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_PatchBlue": {
+        "baseColor": [
+          0.015,
+          0.09,
+          0.24,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.66,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_InsigniaGold": {
+        "baseColor": [
+          0.52,
+          0.29,
+          0.055,
+          1.0
+        ],
+        "metallic": 0.76,
+        "roughness": 0.26,
+        "specularIorLevel": 0.5,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_BrushedSilver": {
+        "baseColor": [
+          0.34,
+          0.38,
+          0.43,
+          1.0
+        ],
+        "metallic": 0.82,
+        "roughness": 0.24,
+        "specularIorLevel": 0.5,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_DutyLeather": {
+        "baseColor": [
+          0.004,
+          0.005,
+          0.007,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.39,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_PolishedLeather": {
+        "baseColor": [
+          0.006,
+          0.007,
+          0.01,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.31,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      }
+    },
+    "hierarchy": {
+      "Hips": null,
+      "Spine": "Hips",
+      "Chest": "Spine",
+      "LeftShoulder": "Chest",
+      "LeftUpperArm": "LeftShoulder",
+      "LeftLowerArm": "LeftUpperArm",
+      "LeftHand": "LeftLowerArm",
+      "RightShoulder": "Chest",
+      "RightUpperArm": "RightShoulder",
+      "RightLowerArm": "RightUpperArm",
+      "RightHand": "RightLowerArm",
+      "Neck": "Chest",
+      "Head": "Neck",
+      "LeftUpperLeg": "Hips",
+      "LeftLowerLeg": "LeftUpperLeg",
+      "LeftFoot": "LeftLowerLeg",
+      "LeftToes": "LeftFoot",
+      "RightUpperLeg": "Hips",
+      "RightLowerLeg": "RightUpperLeg",
+      "RightFoot": "RightLowerLeg",
+      "RightToes": "RightFoot"
+    },
+    "weights": {
+      "vertices": 21691,
+      "zeroWeightVertices": 0,
+      "zeroWeightRatio": 0.0,
+      "maxInfluences": 4,
+      "maxWeightSumError": 1.19e-07,
+      "leftHandNonzeroVertices": 1852,
+      "rightHandNonzeroVertices": 1859,
+      "invalidWeightedGroups": [],
+      "perMesh": {
+        "Police_v22_BeltBuckle": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_BeltPouch_+1": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_BeltPouch_-1": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_Body": {
+          "vertices": 7992,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 4
+        },
+        "Police_v22_CapBadge": {
+          "vertices": 12,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ChestBadge": {
+          "vertices": 12,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ChestPocketFlap_+1": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ChestPocketFlap_-1": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ChestPocket_+1": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ChestPocket_-1": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_DutyBeltWrap": {
+          "vertices": 576,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_EpauletButton_+1": {
+          "vertices": 266,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_EpauletButton_-1": {
+          "vertices": 266,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_Eyebrows": {
+          "vertices": 124,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_Eyelashes": {
+          "vertices": 66,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_Hair": {
+          "vertices": 2984,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 4
+        },
+        "Police_v22_HighPolyEyes": {
+          "vertices": 1064,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_Nameplate": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_RadioCord": {
+          "vertices": 238,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ServiceCapBrim": {
+          "vertices": 20,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ServiceCapCrown": {
+          "vertices": 896,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ServiceCapHeadband": {
+          "vertices": 512,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShirtButton_00": {
+          "vertices": 366,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShirtButton_01": {
+          "vertices": 366,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShirtButton_02": {
+          "vertices": 366,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShirtButton_03": {
+          "vertices": 366,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShirtButton_04": {
+          "vertices": 366,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShirtButton_05": {
+          "vertices": 366,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShirtPlacket": {
+          "vertices": 238,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_Shoes": {
+          "vertices": 1594,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 3
+        },
+        "Police_v22_ShoulderEpaulet_+1": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShoulderEpaulet_-1": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_ShoulderRadio": {
+          "vertices": 8,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_SleevePatchInset_+1": {
+          "vertices": 12,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_SleevePatchInset_-1": {
+          "vertices": 12,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_SleevePatch_+1": {
+          "vertices": 12,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_SleevePatch_-1": {
+          "vertices": 12,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 1
+        },
+        "Police_v22_Uniform": {
+          "vertices": 2499,
+          "zeroWeightVertices": 0,
+          "maxInfluences": 4
+        }
+      }
+    }
+  },
+  "skinningRepair": {
+    "lateralBoneHeadXBefore": {
+      "LeftShoulder": 0.018793,
+      "RightShoulder": -0.018793,
+      "LeftUpperArm": 0.117638,
+      "RightUpperArm": -0.117638,
+      "LeftLowerArm": 0.175292,
+      "RightLowerArm": -0.181941,
+      "LeftHand": 0.183634,
+      "RightHand": -0.198994,
+      "LeftUpperLeg": 0.071577,
+      "RightUpperLeg": -0.071577,
+      "LeftLowerLeg": 0.104713,
+      "RightLowerLeg": -0.104713,
+      "LeftFoot": 0.118006,
+      "RightFoot": -0.118006,
+      "LeftToes": 0.125086,
+      "RightToes": -0.125086
+    },
+    "lateralBoneHeadXAfter": {
+      "LeftShoulder": -0.018793,
+      "RightShoulder": 0.018793,
+      "LeftUpperArm": -0.117638,
+      "RightUpperArm": 0.117638,
+      "LeftLowerArm": -0.181941,
+      "RightLowerArm": 0.175292,
+      "LeftHand": -0.198994,
+      "RightHand": 0.183634,
+      "LeftUpperLeg": -0.071577,
+      "RightUpperLeg": 0.071577,
+      "LeftLowerLeg": -0.104713,
+      "RightLowerLeg": 0.104713,
+      "LeftFoot": -0.118006,
+      "RightFoot": 0.118006,
+      "LeftToes": -0.125086,
+      "RightToes": 0.125086
+    },
+    "attachmentBindingsBefore": {
+      "Police_v22_ShoulderEpaulet_-1": {
+        "vertices": 8,
+        "groups": {
+          "RightShoulder": 8.0
+        }
+      },
+      "Police_v22_EpauletButton_-1": {
+        "vertices": 266,
+        "groups": {
+          "RightShoulder": 266.0
+        }
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "vertices": 8,
+        "groups": {
+          "LeftShoulder": 8.0
+        }
+      },
+      "Police_v22_EpauletButton_+1": {
+        "vertices": 266,
+        "groups": {
+          "LeftShoulder": 266.0
+        }
+      },
+      "Police_v22_SleevePatch_-1": {
+        "vertices": 12,
+        "groups": {
+          "RightUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "vertices": 12,
+        "groups": {
+          "RightUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatch_+1": {
+        "vertices": 12,
+        "groups": {
+          "LeftUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "vertices": 12,
+        "groups": {
+          "LeftUpperArm": 12.0
+        }
+      },
+      "Police_v22_ShoulderRadio": {
+        "vertices": 8,
+        "groups": {
+          "RightShoulder": 8.0
+        }
+      }
+    },
+    "attachmentBindingsAfter": {
+      "Police_v22_ShoulderEpaulet_-1": {
+        "vertices": 8,
+        "groups": {
+          "LeftShoulder": 8.0
+        }
+      },
+      "Police_v22_EpauletButton_-1": {
+        "vertices": 266,
+        "groups": {
+          "LeftShoulder": 266.0
+        }
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "vertices": 8,
+        "groups": {
+          "RightShoulder": 8.0
+        }
+      },
+      "Police_v22_EpauletButton_+1": {
+        "vertices": 266,
+        "groups": {
+          "RightShoulder": 266.0
+        }
+      },
+      "Police_v22_SleevePatch_-1": {
+        "vertices": 12,
+        "groups": {
+          "LeftUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "vertices": 12,
+        "groups": {
+          "LeftUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatch_+1": {
+        "vertices": 12,
+        "groups": {
+          "RightUpperArm": 12.0
+        }
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "vertices": 12,
+        "groups": {
+          "RightUpperArm": 12.0
+        }
+      },
+      "Police_v22_ShoulderRadio": {
+        "vertices": 8,
+        "groups": {
+          "Chest": 8.0
+        }
+      }
+    },
+    "uniformCrotchStabilization": {
+      "object": "Police_v22_Uniform",
+      "verticesChanged": 44,
+      "vertexIndices": [
+        1742,
+        1743,
+        1798,
+        1799,
+        1800,
+        1810,
+        1811,
+        1829,
+        1830,
+        1875,
+        1876,
+        1895,
+        1896,
+        1960,
+        1961,
+        1972,
+        1973,
+        2005,
+        2006,
+        2013,
+        2014,
+        2087,
+        2088,
+        2089,
+        2133,
+        2134,
+        2182,
+        2347,
+        2348,
+        2383,
+        2384,
+        2393,
+        2430,
+        2431,
+        2446,
+        2447,
+        2448,
+        2449,
+        2450,
+        2481,
+        2482,
+        2483,
+        2488,
+        2489
+      ],
+      "selection": {
+        "maxAbsLocalX": 0.04,
+        "minLocalZ": 0.72,
+        "fullStrengthLocalZ": 0.76,
+        "topFullStrengthLocalZ": 0.85,
+        "maxLocalZ": 0.9,
+        "minimumCombinedHipsAndUpperLegShare": 0.5
+      },
+      "replacement": {
+        "maximumHipsWeight": 0.9,
+        "horizontalFalloff": "inverse smoothstep from center to maxAbsLocalX",
+        "lowerVerticalFalloff": "smoothstep minLocalZ to fullStrengthLocalZ",
+        "upperVerticalFalloff": "inverse smoothstep topFullStrengthLocalZ to maxLocalZ",
+        "otherInfluenceRatiosPreserved": true
+      },
+      "maximumHipsWeightIncrease": 0.7382424
+    }
+  },
+  "rootNormalization": {
+    "beforeMatrixWorld": [
+      [
+        1.361931562,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.361931562,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.361931562,
+        0.020223567
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "bakedUniformScale": 1.361931562,
+    "afterMatrixWorld": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "upperBodyReshape": {
+    "factor": 1.07,
+    "meshes": {
+      "Police_v22_Body": {
+        "verticesChanged": 3851,
+        "maximumAbsXDeltaMeters": 0.0194142,
+        "weightDrivenFalloff": true
+      },
+      "Police_v22_Uniform": {
+        "verticesChanged": 1845,
+        "maximumAbsXDeltaMeters": 0.0216302,
+        "weightDrivenFalloff": true
+      }
+    },
+    "bones": {
+      "LeftHand": {
+        "headXBefore": -0.2710157,
+        "headXAfter": -0.2899868,
+        "tailXBefore": -0.2815279,
+        "tailXAfter": -0.3012349
+      },
+      "LeftLowerArm": {
+        "headXBefore": -0.2477911,
+        "headXAfter": -0.2651365,
+        "tailXBefore": -0.2710157,
+        "tailXAfter": -0.2899868
+      },
+      "LeftShoulder": {
+        "headXBefore": -0.0255954,
+        "headXAfter": -0.0273871,
+        "tailXBefore": -0.1602148,
+        "tailXAfter": -0.1714299
+      },
+      "LeftUpperArm": {
+        "headXBefore": -0.1602148,
+        "headXAfter": -0.1714299,
+        "tailXBefore": -0.2477911,
+        "tailXAfter": -0.2651365
+      },
+      "RightHand": {
+        "headXBefore": 0.250097,
+        "headXAfter": 0.2676038,
+        "tailXBefore": 0.2578478,
+        "tailXAfter": 0.2758972
+      },
+      "RightLowerArm": {
+        "headXBefore": 0.2387357,
+        "headXAfter": 0.2554472,
+        "tailXBefore": 0.250097,
+        "tailXAfter": 0.2676038
+      },
+      "RightShoulder": {
+        "headXBefore": 0.0255954,
+        "headXAfter": 0.0273871,
+        "tailXBefore": 0.1602148,
+        "tailXAfter": 0.1714299
+      },
+      "RightUpperArm": {
+        "headXBefore": 0.1602148,
+        "headXAfter": 0.1714299,
+        "tailXBefore": 0.2387357,
+        "tailXAfter": 0.2554472
+      }
+    }
+  },
+  "detailReshape": {
+    "scaled": {
+      "Police_v22_ServiceCapCrown": {
+        "scale": [
+          1.12,
+          1.12,
+          1.04
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.041,
+          1.7397237
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.041,
+          1.7397237
+        ]
+      },
+      "Police_v22_ServiceCapHeadband": {
+        "scale": [
+          1.12,
+          1.12,
+          1.08
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.025,
+          1.7029998
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.025,
+          1.7029998
+        ]
+      },
+      "Police_v22_ServiceCapBrim": {
+        "scale": [
+          1.14,
+          1.14,
+          1.18
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.1680779,
+          1.6999998
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.1680779,
+          1.6999998
+        ]
+      },
+      "Police_v22_CapBadge": {
+        "scale": [
+          1.9,
+          1.25,
+          1.9
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.173,
+          1.7331228
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.173,
+          1.7331228
+        ]
+      },
+      "Police_v22_ChestBadge": {
+        "scale": [
+          1.3,
+          1.25,
+          1.3
+        ],
+        "worldCenterBefore": [
+          0.078,
+          -0.1833984,
+          1.3042068
+        ],
+        "worldCenterAfter": [
+          0.078,
+          -0.1833984,
+          1.3042068
+        ]
+      },
+      "Police_v22_Nameplate": {
+        "scale": [
+          1.6,
+          1.25,
+          1.5
+        ],
+        "worldCenterBefore": [
+          -0.078,
+          -0.1755943,
+          1.2919999
+        ],
+        "worldCenterAfter": [
+          -0.078,
+          -0.1755943,
+          1.2919999
+        ]
+      },
+      "Police_v22_BeltBuckle": {
+        "scale": [
+          1.8,
+          1.25,
+          1.8
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.181,
+          0.9419999
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.181,
+          0.9419999
+        ]
+      },
+      "Police_v22_SleevePatch_-1": {
+        "scale": [
+          1.18,
+          1.18,
+          1.18
+        ],
+        "worldCenterBefore": [
+          -0.286,
+          -0.01,
+          1.3152041
+        ],
+        "worldCenterAfter": [
+          -0.286,
+          -0.01,
+          1.3152041
+        ]
+      },
+      "Police_v22_SleevePatch_+1": {
+        "scale": [
+          1.18,
+          1.18,
+          1.18
+        ],
+        "worldCenterBefore": [
+          0.286,
+          -0.01,
+          1.3152041
+        ],
+        "worldCenterAfter": [
+          0.286,
+          -0.01,
+          1.3152041
+        ]
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "scale": [
+          1.18,
+          1.18,
+          1.18
+        ],
+        "worldCenterBefore": [
+          -0.29,
+          -0.01,
+          1.315093
+        ],
+        "worldCenterAfter": [
+          -0.29,
+          -0.01,
+          1.315093
+        ]
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "scale": [
+          1.18,
+          1.18,
+          1.18
+        ],
+        "worldCenterBefore": [
+          0.29,
+          -0.01,
+          1.315093
+        ],
+        "worldCenterAfter": [
+          0.29,
+          -0.01,
+          1.315093
+        ]
+      },
+      "Police_v22_ShoulderEpaulet_-1": {
+        "scale": [
+          1.12,
+          1.08,
+          1.1
+        ],
+        "worldCenterBefore": [
+          -0.15,
+          -0.006,
+          1.4519999
+        ],
+        "worldCenterAfter": [
+          -0.15,
+          -0.006,
+          1.4519999
+        ]
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "scale": [
+          1.12,
+          1.08,
+          1.1
+        ],
+        "worldCenterBefore": [
+          0.15,
+          -0.006,
+          1.4519999
+        ],
+        "worldCenterAfter": [
+          0.15,
+          -0.006,
+          1.4519999
+        ]
+      },
+      "Police_v22_EpauletButton_-1": {
+        "scale": [
+          1.3,
+          1.2,
+          1.3
+        ],
+        "worldCenterBefore": [
+          -0.107,
+          -0.017,
+          1.4579998
+        ],
+        "worldCenterAfter": [
+          -0.107,
+          -0.017,
+          1.4579998
+        ]
+      },
+      "Police_v22_EpauletButton_+1": {
+        "scale": [
+          1.3,
+          1.2,
+          1.3
+        ],
+        "worldCenterBefore": [
+          0.107,
+          -0.017,
+          1.4579998
+        ],
+        "worldCenterAfter": [
+          0.107,
+          -0.017,
+          1.4579998
+        ]
+      },
+      "Police_v22_ShirtButton_00": {
+        "scale": [
+          1.2,
+          1.16,
+          1.2
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.1787863,
+          1.3149999
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.1787863,
+          1.3149999
+        ]
+      },
+      "Police_v22_ShirtButton_01": {
+        "scale": [
+          1.2,
+          1.16,
+          1.2
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.185584,
+          1.2449999
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.185584,
+          1.2449999
+        ]
+      },
+      "Police_v22_ShirtButton_02": {
+        "scale": [
+          1.2,
+          1.16,
+          1.2
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.1921668,
+          1.1749998
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.1921668,
+          1.1749998
+        ]
+      },
+      "Police_v22_ShirtButton_03": {
+        "scale": [
+          1.2,
+          1.16,
+          1.2
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.197464,
+          1.1049999
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.197464,
+          1.1049999
+        ]
+      },
+      "Police_v22_ShirtButton_04": {
+        "scale": [
+          1.2,
+          1.16,
+          1.2
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.1916389,
+          1.0349998
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.1916389,
+          1.0349998
+        ]
+      },
+      "Police_v22_ShirtButton_05": {
+        "scale": [
+          1.2,
+          1.16,
+          1.2
+        ],
+        "worldCenterBefore": [
+          0.0,
+          -0.1754941,
+          0.9649999
+        ],
+        "worldCenterAfter": [
+          0.0,
+          -0.1754941,
+          0.9649999
+        ]
+      }
+    },
+    "repositioned": {
+      "Police_v22_ChestBadge": {
+        "centerXBefore": 0.078,
+        "centerXAfter": 0.08112,
+        "factor": 1.04
+      },
+      "Police_v22_ChestPocketFlap_+1": {
+        "centerXBefore": 0.078,
+        "centerXAfter": 0.08112,
+        "factor": 1.04
+      },
+      "Police_v22_ChestPocketFlap_-1": {
+        "centerXBefore": -0.078,
+        "centerXAfter": -0.08112,
+        "factor": 1.04
+      },
+      "Police_v22_ChestPocket_+1": {
+        "centerXBefore": 0.078,
+        "centerXAfter": 0.08112,
+        "factor": 1.04
+      },
+      "Police_v22_ChestPocket_-1": {
+        "centerXBefore": -0.078,
+        "centerXAfter": -0.08112,
+        "factor": 1.04
+      },
+      "Police_v22_EpauletButton_+1": {
+        "centerXBefore": 0.107,
+        "centerXAfter": 0.11449,
+        "factor": 1.07
+      },
+      "Police_v22_EpauletButton_-1": {
+        "centerXBefore": -0.107,
+        "centerXAfter": -0.11449,
+        "factor": 1.07
+      },
+      "Police_v22_Nameplate": {
+        "centerXBefore": -0.078,
+        "centerXAfter": -0.08112,
+        "factor": 1.04
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "centerXBefore": 0.15,
+        "centerXAfter": 0.1605,
+        "factor": 1.07
+      },
+      "Police_v22_ShoulderEpaulet_-1": {
+        "centerXBefore": -0.15,
+        "centerXAfter": -0.1605,
+        "factor": 1.07
+      },
+      "Police_v22_ShoulderRadio": {
+        "centerXBefore": -0.155,
+        "centerXAfter": -0.16585,
+        "factor": 1.07
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "centerXBefore": 0.29,
+        "centerXAfter": 0.3103,
+        "factor": 1.07
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "centerXBefore": -0.29,
+        "centerXAfter": -0.3103,
+        "factor": 1.07
+      },
+      "Police_v22_SleevePatch_+1": {
+        "centerXBefore": 0.286,
+        "centerXAfter": 0.30602,
+        "factor": 1.07
+      },
+      "Police_v22_SleevePatch_-1": {
+        "centerXBefore": -0.286,
+        "centerXAfter": -0.30602,
+        "factor": 1.07
+      }
+    },
+    "capBadgeSurfaceSeating": {
+      "forwardAxis": "Blender -Y",
+      "clearanceMeters": 0.0015,
+      "crownFrontY": -0.18884,
+      "badgeFrontYBefore": -0.1755,
+      "badgeBackYBefore": -0.1705,
+      "translationY": -0.01984,
+      "badgeFrontYAfter": -0.1953399,
+      "badgeBackYAfter": -0.19034
+    }
+  },
+  "materialZoning": {
+    "before": {
+      "M_Police_v22_UniformNavy": {
+        "baseColor": [
+          0.012,
+          0.04,
+          0.095,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.72,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.025
+      },
+      "M_Police_v22_TrouserNavy": {
+        "baseColor": [
+          0.01,
+          0.034,
+          0.084,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.72,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.025
+      },
+      "M_Police_v22_ServiceCap": {
+        "baseColor": [
+          0.01,
+          0.032,
+          0.078,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.58,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.025
+      },
+      "M_Police_v22_CapBand": {
+        "baseColor": [
+          0.003,
+          0.008,
+          0.02,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.44,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_PatchBlue": {
+        "baseColor": [
+          0.015,
+          0.09,
+          0.24,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.66,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_InsigniaGold": {
+        "baseColor": [
+          0.52,
+          0.29,
+          0.055,
+          1.0
+        ],
+        "metallic": 0.76,
+        "roughness": 0.26,
+        "specularIorLevel": 0.5,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_BrushedSilver": {
+        "baseColor": [
+          0.34,
+          0.38,
+          0.43,
+          1.0
+        ],
+        "metallic": 0.82,
+        "roughness": 0.24,
+        "specularIorLevel": 0.5,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_DutyLeather": {
+        "baseColor": [
+          0.004,
+          0.005,
+          0.007,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.39,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_PolishedLeather": {
+        "baseColor": [
+          0.006,
+          0.007,
+          0.01,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.31,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      }
+    },
+    "after": {
+      "M_Police_v22_UniformNavy": {
+        "baseColor": [
+          0.012,
+          0.052,
+          0.14,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.64,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.025
+      },
+      "M_Police_v22_TrouserNavy": {
+        "baseColor": [
+          0.006,
+          0.018,
+          0.048,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.79,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.025
+      },
+      "M_Police_v22_ServiceCap": {
+        "baseColor": [
+          0.006,
+          0.025,
+          0.09,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.68,
+        "specularIorLevel": 0.08,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_CapBand": {
+        "baseColor": [
+          0.003,
+          0.006,
+          0.015,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.38,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_PatchBlue": {
+        "baseColor": [
+          0.018,
+          0.15,
+          0.42,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.56,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_InsigniaGold": {
+        "baseColor": [
+          0.78,
+          0.43,
+          0.07,
+          1.0
+        ],
+        "metallic": 0.85,
+        "roughness": 0.22,
+        "specularIorLevel": 0.5,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_BrushedSilver": {
+        "baseColor": [
+          0.58,
+          0.68,
+          0.8,
+          1.0
+        ],
+        "metallic": 0.88,
+        "roughness": 0.18,
+        "specularIorLevel": 0.5,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_DutyLeather": {
+        "baseColor": [
+          0.005,
+          0.007,
+          0.012,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.34,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      },
+      "M_Police_v22_PolishedLeather": {
+        "baseColor": [
+          0.006,
+          0.008,
+          0.012,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.23,
+        "specularIorLevel": 0.3,
+        "sheenWeight": 0.0
+      }
+    },
+    "profiles": {
+      "M_Police_v22_UniformNavy": {
+        "baseColor": [
+          0.012,
+          0.052,
+          0.14,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.64,
+        "read": "clean saturated navy shirt block"
+      },
+      "M_Police_v22_TrouserNavy": {
+        "baseColor": [
+          0.006,
+          0.018,
+          0.048,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.79,
+        "read": "darker matte trouser block"
+      },
+      "M_Police_v22_ServiceCap": {
+        "baseColor": [
+          0.006,
+          0.025,
+          0.09,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.68,
+        "specularIorLevel": 0.08,
+        "sheenWeight": 0.0,
+        "read": "structured deep-navy cap crown without a near-white hotspot"
+      },
+      "M_Police_v22_CapBand": {
+        "baseColor": [
+          0.003,
+          0.006,
+          0.015,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.38,
+        "read": "near-black cap band and uniform trim"
+      },
+      "M_Police_v22_PatchBlue": {
+        "baseColor": [
+          0.018,
+          0.15,
+          0.42,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.56,
+        "read": "high-separation sleeve patch blue"
+      },
+      "M_Police_v22_InsigniaGold": {
+        "baseColor": [
+          0.78,
+          0.43,
+          0.07,
+          1.0
+        ],
+        "metallic": 0.85,
+        "roughness": 0.22,
+        "read": "bright warm badge metal"
+      },
+      "M_Police_v22_BrushedSilver": {
+        "baseColor": [
+          0.58,
+          0.68,
+          0.8,
+          1.0
+        ],
+        "metallic": 0.88,
+        "roughness": 0.18,
+        "read": "cool bright hardware metal"
+      },
+      "M_Police_v22_DutyLeather": {
+        "baseColor": [
+          0.005,
+          0.007,
+          0.012,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.34,
+        "read": "dark duty-belt leather"
+      },
+      "M_Police_v22_PolishedLeather": {
+        "baseColor": [
+          0.006,
+          0.008,
+          0.012,
+          1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.23,
+        "read": "polished shoe leather"
+      }
+    }
+  },
+  "skinToneManagement": {
+    "before": {
+      "hue": 0.5,
+      "saturation": 0.84,
+      "value": 1.0,
+      "textureContribution": 0.86,
+      "warmUnderpaintLinear": [
+        0.43,
+        0.255,
+        0.175,
+        1.0
+      ],
+      "roughness": 0.57
+    },
+    "after": {
+      "hue": 0.5,
+      "saturation": 0.72,
+      "value": 0.95,
+      "textureContribution": 0.92,
+      "warmUnderpaintLinear": [
+        0.33,
+        0.165,
+        0.085,
+        1.0
+      ],
+      "roughness": 0.59
+    },
+    "policy": {
+      "textureContribution": 0.92,
+      "hue": 0.5,
+      "saturation": 0.72,
+      "value": 0.95,
+      "warmUnderpaintLinear": [
+        0.33,
+        0.165,
+        0.085,
+        1.0
+      ],
+      "roughness": 0.59,
+      "projection": "existing canonical MakeHuman UV0 unchanged",
+      "texturePixels": "unchanged; same SHA-pinned local CC0 source"
+    }
+  },
+  "resolvedSourceTextures": {
+    "male_casualsuit03_normal.png": {
+      "source": "tools/third_party/makehuman-assets/base/clothes/male_casualsuit03/male_casualsuit03_normal.png",
+      "bytes": 9610278,
+      "sha256": "412c4610d3b2ea1cb04aa3c0715e747a7c9f61d865133b7d69f70eaa738cf99b",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "packedCopies": 1,
+      "uvOrPixelsChanged": false
+    },
+    "young_lightskinned_male_diffuse2.png": {
+      "source": "tools/third_party/makehuman-assets/base/skins/textures/young_lightskinned_male_diffuse2.png",
+      "bytes": 3595270,
+      "sha256": "03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packedCopies": 1,
+      "uvOrPixelsChanged": false
+    }
+  },
+  "cameraScaleFaceAccessories": {
+    "M_Police_v22_HairUV": {
+      "baseColor": [
+        0.01,
+        0.0045,
+        0.0025,
+        1.0
+      ],
+      "roughness": 0.48,
+      "read": "dark brown hair mass",
+      "removedImageNodes": [
+        "short01_diffuse.png"
+      ],
+      "reason": "sub-pixel at formal game camera; preserves the seven-texture runtime contract"
+    },
+    "M_Police_v22_BrowsUV": {
+      "baseColor": [
+        0.018,
+        0.007,
+        0.0035,
+        1.0
+      ],
+      "roughness": 0.58,
+      "read": "dark brow line",
+      "removedImageNodes": [
+        "eyebrow001.png"
+      ],
+      "reason": "sub-pixel at formal game camera; preserves the seven-texture runtime contract"
+    },
+    "M_Police_v22_LashesUV": {
+      "baseColor": [
+        0.004,
+        0.0015,
+        0.001,
+        1.0
+      ],
+      "roughness": 0.52,
+      "read": "near-black lash line",
+      "removedImageNodes": [
+        "eyelashes01.png"
+      ],
+      "reason": "sub-pixel at formal game camera; preserves the seven-texture runtime contract"
+    },
+    "M_Police_v22_HighPolyEyeUV": {
+      "baseColor": [
+        0.022,
+        0.01,
+        0.004,
+        1.0
+      ],
+      "roughness": 0.24,
+      "read": "dark eye focal point at 34-68 px gameplay height",
+      "removedImageNodes": [
+        "brown_eye.png"
+      ],
+      "reason": "sub-pixel at formal game camera; preserves the seven-texture runtime contract"
+    }
+  },
+  "omittedRuntimeMicrotextureProvenance": {
+    "brown_eye.png": {
+      "source": "tools/third_party/makehuman-assets/base/eyes/materials/brown_eye.png",
+      "bytes": 610817,
+      "sha256": "4659691c7295ad6206c78b003e5fd0e5f91dcd53032fa914a229bb48cabe424b",
+      "license": "MakeHuman core assets CC0",
+      "runtimeBinding": false,
+      "reason": "sub-pixel at formal 34-68 px actor height; replaced by the recorded semantic PBR factor"
+    },
+    "eyebrow001.png": {
+      "source": "tools/third_party/makehuman-assets/base/eyebrows/eyebrow001/eyebrow001.png",
+      "bytes": 89619,
+      "sha256": "9940f7d0b1b223709a19b05156ba6f6e9e4dbdbced02d7574f4d51d72c58967b",
+      "license": "MakeHuman core assets CC0",
+      "runtimeBinding": false,
+      "reason": "sub-pixel at formal 34-68 px actor height; replaced by the recorded semantic PBR factor"
+    },
+    "eyelashes01.png": {
+      "source": "tools/third_party/makehuman-assets/base/eyelashes/eyelashes01/eyelashes01.png",
+      "bytes": 91600,
+      "sha256": "4b69c0fff2648874460e9caf80c31413c444218a5c50afebc425aeaa65484a35",
+      "license": "MakeHuman core assets CC0",
+      "runtimeBinding": false,
+      "reason": "sub-pixel at formal 34-68 px actor height; replaced by the recorded semantic PBR factor"
+    },
+    "short01_diffuse.png": {
+      "source": "tools/third_party/makehuman-assets/base/hair/short01/short01_diffuse.png",
+      "bytes": 2354146,
+      "sha256": "f34a0957184e3d1e911ed59245f874f8d4843f61ee44ff49f43edb4be0196949",
+      "license": "MakeHuman core assets CC0",
+      "runtimeBinding": false,
+      "reason": "sub-pixel at formal 34-68 px actor height; replaced by the recorded semantic PBR factor"
+    }
+  },
+  "rigidModifierBake": [
+    {
+      "object": "Police_v22_BeltBuckle",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_BeltPouch_+1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_BeltPouch_-1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_CapBadge",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ChestBadge",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ChestPocketFlap_+1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ChestPocketFlap_-1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ChestPocket_+1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ChestPocket_-1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_DutyBeltWrap",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_Nameplate",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ServiceCapBrim",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ServiceCapCrown",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ServiceCapHeadband",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ShoulderEpaulet_+1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ShoulderEpaulet_-1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_ShoulderRadio",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_SleevePatchInset_+1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_SleevePatchInset_-1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_SleevePatch_+1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    },
+    {
+      "object": "Police_v22_SleevePatch_-1",
+      "modifier": "PrecisionEdgeBevel",
+      "type": "BEVEL"
+    }
+  ],
+  "rigidAccessoryMerges": [
+    {
+      "output": "Police_A2_Rigid_Chest_M_Police_v22_BrushedSilver",
+      "material": "M_Police_v22_BrushedSilver",
+      "bone": "Chest",
+      "inputs": [
+        "Police_v22_Nameplate",
+        "Police_v22_ShirtButton_00",
+        "Police_v22_ShirtButton_01",
+        "Police_v22_ShirtButton_02",
+        "Police_v22_ShirtButton_03",
+        "Police_v22_ShirtButton_04",
+        "Police_v22_ShirtButton_05"
+      ],
+      "verticesBefore": 2292,
+      "verticesAfter": 2292
+    },
+    {
+      "output": "Police_A2_Rigid_Chest_M_Police_v22_CapBand",
+      "material": "M_Police_v22_CapBand",
+      "bone": "Chest",
+      "inputs": [
+        "Police_v22_ChestPocketFlap_+1",
+        "Police_v22_ChestPocketFlap_-1",
+        "Police_v22_ShirtPlacket"
+      ],
+      "verticesBefore": 430,
+      "verticesAfter": 430
+    },
+    {
+      "output": "Police_A2_Rigid_Head_M_Police_v22_CapBand",
+      "material": "M_Police_v22_CapBand",
+      "bone": "Head",
+      "inputs": [
+        "Police_v22_ServiceCapBrim",
+        "Police_v22_ServiceCapHeadband"
+      ],
+      "verticesBefore": 2160,
+      "verticesAfter": 2160
+    },
+    {
+      "output": "Police_A2_Rigid_Chest_M_Police_v22_DutyLeather",
+      "material": "M_Police_v22_DutyLeather",
+      "bone": "Chest",
+      "inputs": [
+        "Police_v22_RadioCord",
+        "Police_v22_ShoulderRadio"
+      ],
+      "verticesBefore": 334,
+      "verticesAfter": 334
+    },
+    {
+      "output": "Police_A2_Rigid_Hips_M_Police_v22_DutyLeather",
+      "material": "M_Police_v22_DutyLeather",
+      "bone": "Hips",
+      "inputs": [
+        "Police_v22_BeltPouch_+1",
+        "Police_v22_BeltPouch_-1",
+        "Police_v22_DutyBeltWrap"
+      ],
+      "verticesBefore": 2496,
+      "verticesAfter": 2496
+    },
+    {
+      "output": "Police_A2_Rigid_Chest_M_Police_v22_UniformNavy",
+      "material": "M_Police_v22_UniformNavy",
+      "bone": "Chest",
+      "inputs": [
+        "Police_v22_ChestPocket_+1",
+        "Police_v22_ChestPocket_-1"
+      ],
+      "verticesBefore": 192,
+      "verticesAfter": 192
+    }
+  ],
+  "weightNormalization": {
+    "verticesTruncatedToFourInfluences": 0,
+    "verticesRenormalized": 209
+  },
+  "floorCorrectionMeters": 1.4e-08,
+  "removedNonCharacterObjects": [
+    "Fill_Softbox",
+    "Key_Softbox",
+    "Rim_Softbox",
+    "Studio_Floor",
+    "Top_Softbox"
+  ],
+  "after": {
+    "meshes": {
+      "Police_A2_Rigid_Chest_M_Police_v22_BrushedSilver": {
+        "vertices": 2292,
+        "baseTriangles": 4556,
+        "evaluatedTriangles": 4556,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_A2_Rigid_Chest_M_Police_v22_CapBand": {
+        "vertices": 430,
+        "baseTriangles": 824,
+        "evaluatedTriangles": 824,
+        "materials": [
+          "M_Police_v22_CapBand"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_A2_Rigid_Chest_M_Police_v22_DutyLeather": {
+        "vertices": 334,
+        "baseTriangles": 636,
+        "evaluatedTriangles": 636,
+        "materials": [
+          "M_Police_v22_DutyLeather"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_A2_Rigid_Chest_M_Police_v22_UniformNavy": {
+        "vertices": 192,
+        "baseTriangles": 376,
+        "evaluatedTriangles": 376,
+        "materials": [
+          "M_Police_v22_UniformNavy"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_A2_Rigid_Head_M_Police_v22_CapBand": {
+        "vertices": 2160,
+        "baseTriangles": 4316,
+        "evaluatedTriangles": 4316,
+        "materials": [
+          "M_Police_v22_CapBand"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_A2_Rigid_Hips_M_Police_v22_DutyLeather": {
+        "vertices": 2496,
+        "baseTriangles": 4984,
+        "evaluatedTriangles": 4984,
+        "materials": [
+          "M_Police_v22_DutyLeather"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_BeltBuckle": {
+        "vertices": 96,
+        "baseTriangles": 188,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_BrushedSilver"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Body": {
+        "vertices": 7992,
+        "baseTriangles": 15816,
+        "evaluatedTriangles": 63264,
+        "materials": [
+          "M_Police_v22_SkinUV"
+        ],
+        "modifiers": [
+          "SUBSURF",
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_CapBadge": {
+        "vertices": 144,
+        "baseTriangles": 284,
+        "evaluatedTriangles": 284,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ChestBadge": {
+        "vertices": 112,
+        "baseTriangles": 220,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_EpauletButton_+1": {
+        "vertices": 266,
+        "baseTriangles": 528,
+        "evaluatedTriangles": 528,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_EpauletButton_-1": {
+        "vertices": 266,
+        "baseTriangles": 528,
+        "evaluatedTriangles": 528,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Eyebrows": {
+        "vertices": 124,
+        "baseTriangles": 192,
+        "evaluatedTriangles": 192,
+        "materials": [
+          "M_Police_v22_BrowsUV"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Eyelashes": {
+        "vertices": 66,
+        "baseTriangles": 84,
+        "evaluatedTriangles": 84,
+        "materials": [
+          "M_Police_v22_LashesUV"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Hair": {
+        "vertices": 2984,
+        "baseTriangles": 3678,
+        "evaluatedTriangles": 3678,
+        "materials": [
+          "M_Police_v22_HairUV"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_HighPolyEyes": {
+        "vertices": 1064,
+        "baseTriangles": 2040,
+        "evaluatedTriangles": 2040,
+        "materials": [
+          "M_Police_v22_HighPolyEyeUV"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ServiceCapCrown": {
+        "vertices": 1280,
+        "baseTriangles": 2430,
+        "evaluatedTriangles": 2430,
+        "materials": [
+          "M_Police_v22_ServiceCap"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Shoes": {
+        "vertices": 1594,
+        "baseTriangles": 3064,
+        "evaluatedTriangles": 3064,
+        "materials": [
+          "M_Police_v22_PolishedLeather"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShoulderEpaulet_+1": {
+        "vertices": 96,
+        "baseTriangles": 188,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_UniformNavy"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_ShoulderEpaulet_-1": {
+        "vertices": 96,
+        "baseTriangles": 188,
+        "evaluatedTriangles": 188,
+        "materials": [
+          "M_Police_v22_UniformNavy"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_SleevePatchInset_+1": {
+        "vertices": 112,
+        "baseTriangles": 220,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_SleevePatchInset_-1": {
+        "vertices": 112,
+        "baseTriangles": 220,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_InsigniaGold"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_SleevePatch_+1": {
+        "vertices": 112,
+        "baseTriangles": 220,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_PatchBlue"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_SleevePatch_-1": {
+        "vertices": 112,
+        "baseTriangles": 220,
+        "evaluatedTriangles": 220,
+        "materials": [
+          "M_Police_v22_PatchBlue"
+        ],
+        "modifiers": [
+          "ARMATURE"
+        ]
+      },
+      "Police_v22_Uniform": {
+        "vertices": 2499,
+        "baseTriangles": 4800,
+        "evaluatedTriangles": 76800,
+        "materials": [
+          "M_Police_v22_UniformNavy",
+          "M_Police_v22_TrouserNavy"
+        ],
+        "modifiers": [
+          "SUBSURF",
+          "ARMATURE"
+        ]
+      }
+    },
+    "riggedMetrics": {
+      "objects": 25,
+      "baseTriangles": 50800,
+      "evaluatedTriangles": 170248,
+      "materials": 14
+    },
+    "staticMetrics": {
+      "objects": 25,
+      "triangles": 170248,
+      "boundsBlenderZUp": {
+        "min": [
+          -0.3285434,
+          -0.2807654,
+          0.0
+        ],
+        "max": [
+          0.3226393,
+          0.13516,
+          1.7685559
+        ]
+      }
+    },
+    "validation": {
+      "armature": "Rig_Humanoid_Shared",
+      "boneCount": 21,
+      "uniqueBoneNames": 21,
+      "boneNames": [
+        "Hips",
+        "Spine",
+        "Chest",
+        "RightShoulder",
+        "RightUpperArm",
+        "RightLowerArm",
+        "RightHand",
+        "LeftShoulder",
+        "LeftUpperArm",
+        "LeftLowerArm",
+        "LeftHand",
+        "Neck",
+        "Head",
+        "RightUpperLeg",
+        "RightLowerLeg",
+        "RightFoot",
+        "RightToes",
+        "LeftUpperLeg",
+        "LeftLowerLeg",
+        "LeftFoot",
+        "LeftToes"
+      ],
+      "hierarchy": {
+        "Hips": null,
+        "Spine": "Hips",
+        "Chest": "Spine",
+        "RightShoulder": "Chest",
+        "RightUpperArm": "RightShoulder",
+        "RightLowerArm": "RightUpperArm",
+        "RightHand": "RightLowerArm",
+        "LeftShoulder": "Chest",
+        "LeftUpperArm": "LeftShoulder",
+        "LeftLowerArm": "LeftUpperArm",
+        "LeftHand": "LeftLowerArm",
+        "Neck": "Chest",
+        "Head": "Neck",
+        "RightUpperLeg": "Hips",
+        "RightLowerLeg": "RightUpperLeg",
+        "RightFoot": "RightLowerLeg",
+        "RightToes": "RightFoot",
+        "LeftUpperLeg": "Hips",
+        "LeftLowerLeg": "LeftUpperLeg",
+        "LeftFoot": "LeftLowerLeg",
+        "LeftToes": "LeftFoot"
+      },
+      "rootLocation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rootRotation": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "rootScale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "lateralBoneHeadX": {
+        "LeftShoulder": -0.027387,
+        "RightShoulder": 0.027387,
+        "LeftUpperArm": -0.17143,
+        "RightUpperArm": 0.17143,
+        "LeftLowerArm": -0.265136,
+        "RightLowerArm": 0.255447,
+        "LeftHand": -0.289987,
+        "RightHand": 0.267604,
+        "LeftUpperLeg": -0.097484,
+        "RightUpperLeg": 0.097484,
+        "LeftLowerLeg": -0.142611,
+        "RightLowerLeg": 0.142611,
+        "LeftFoot": -0.160716,
+        "RightFoot": 0.160716,
+        "LeftToes": -0.170358,
+        "RightToes": 0.170358
+      },
+      "weights": {
+        "vertices": 27031,
+        "zeroWeightVertices": 0,
+        "zeroWeightRatio": 0.0,
+        "maxInfluences": 4,
+        "maxWeightSumError": 7.6e-08,
+        "leftHandNonzeroVertices": 1859,
+        "rightHandNonzeroVertices": 1852,
+        "invalidWeightedGroups": [],
+        "perMesh": {
+          "Police_A2_Rigid_Chest_M_Police_v22_BrushedSilver": {
+            "vertices": 2292,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_A2_Rigid_Chest_M_Police_v22_CapBand": {
+            "vertices": 430,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_A2_Rigid_Chest_M_Police_v22_DutyLeather": {
+            "vertices": 334,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_A2_Rigid_Chest_M_Police_v22_UniformNavy": {
+            "vertices": 192,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_A2_Rigid_Head_M_Police_v22_CapBand": {
+            "vertices": 2160,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_A2_Rigid_Hips_M_Police_v22_DutyLeather": {
+            "vertices": 2496,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_BeltBuckle": {
+            "vertices": 96,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_Body": {
+            "vertices": 7992,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 4
+          },
+          "Police_v22_CapBadge": {
+            "vertices": 144,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_ChestBadge": {
+            "vertices": 112,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_EpauletButton_+1": {
+            "vertices": 266,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_EpauletButton_-1": {
+            "vertices": 266,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_Eyebrows": {
+            "vertices": 124,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_Eyelashes": {
+            "vertices": 66,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_Hair": {
+            "vertices": 2984,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 4
+          },
+          "Police_v22_HighPolyEyes": {
+            "vertices": 1064,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_ServiceCapCrown": {
+            "vertices": 1280,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_Shoes": {
+            "vertices": 1594,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 3
+          },
+          "Police_v22_ShoulderEpaulet_+1": {
+            "vertices": 96,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_ShoulderEpaulet_-1": {
+            "vertices": 96,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_SleevePatchInset_+1": {
+            "vertices": 112,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_SleevePatchInset_-1": {
+            "vertices": 112,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_SleevePatch_+1": {
+            "vertices": 112,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_SleevePatch_-1": {
+            "vertices": 112,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 1
+          },
+          "Police_v22_Uniform": {
+            "vertices": 2499,
+            "zeroWeightVertices": 0,
+            "maxInfluences": 4
+          }
+        }
+      },
+      "boundsBlenderZUp": {
+        "min": [
+          -0.3285434,
+          -0.2807654,
+          0.0
+        ],
+        "max": [
+          0.3226393,
+          0.13516,
+          1.7685559
+        ],
+        "height": 1.7685559,
+        "width": 0.6511827,
+        "depth": 0.4159253
+      },
+      "orientation": {
+        "authoringUp": "+Z",
+        "authoringForward": "-Y",
+        "glTFUp": "+Y",
+        "glTFForward": "+Z",
+        "footFloor": "Blender Z=0 / glTF Y=0"
+      }
+    },
+    "authoringGlb": {
+      "bytes": 2244276,
+      "sha256": "adc3d85bb56df1c7a33f5d6893ef6743fd339231684f5817395bdcceae8f9a60",
+      "nodes": 47,
+      "meshes": 25,
+      "primitives": 26,
+      "materials": 14,
+      "textures": 3,
+      "skins": 1,
+      "joints": 21,
+      "uniqueJointNames": 21,
+      "jointNames": [
+        "Hips",
+        "Spine",
+        "Chest",
+        "RightShoulder",
+        "RightUpperArm",
+        "RightLowerArm",
+        "RightHand",
+        "LeftShoulder",
+        "LeftUpperArm",
+        "LeftLowerArm",
+        "LeftHand",
+        "Neck",
+        "Head",
+        "RightUpperLeg",
+        "RightLowerLeg",
+        "RightFoot",
+        "RightToes",
+        "LeftUpperLeg",
+        "LeftLowerLeg",
+        "LeftFoot",
+        "LeftToes"
+      ],
+      "animations": [],
+      "armatureRootScales": {
+        "Rig_Humanoid_Shared": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    }
+  },
+  "previews": {
+    "beforeTopDown": "art-source/Characters/Police/ReferenceStandard/A2_VisualRework_2026_08_29/Reports/evidence/police_a2_before_topdown.png",
+    "afterTopDown": "art-source/Characters/Police/ReferenceStandard/A2_VisualRework_2026_08_29/Reports/evidence/police_a2_after_topdown.png"
+  },
+  "outputs": {
+    "riggedBlend": {
+      "path": "art-source/Characters/Police/ReferenceStandard/A2_VisualRework_2026_08_29/Rigged/Police_A2_VisualRework_v23_Rigged.blend",
+      "bytes": 14438194,
+      "sha256": "a3bc56875f9dc63fb56f0fee1d51b0b7942dad6282c6f07eecc56bed26c28dc9"
+    },
+    "staticBlend": {
+      "path": "art-source/Characters/Police/ReferenceStandard/A2_VisualRework_2026_08_29/Police_A2_VisualRework_v23.blend",
+      "bytes": 16920224,
+      "sha256": "fefb1a0cff86bf5d09ebdcc729652eae6dca09265a67a8046f584df7b80b4078"
+    },
+    "animationFreeAuthoringGlb": {
+      "path": "Police_A2_VisualRework_v23_Rigged_Static.glb",
+      "bytes": 2244276,
+      "sha256": "adc3d85bb56df1c7a33f5d6893ef6743fd339231684f5817395bdcceae8f9a60",
+      "retained": false
+    }
+  },
+  "qualityGates": {
+    "sourceNotOverwritten": true,
+    "boneCount21": true,
+    "boneNamesUnique": true,
+    "projectLateralSemantics": true,
+    "zeroWeightVertices": 0,
+    "leftHandNonzeroVertices": 1859,
+    "rightHandNonzeroVertices": 1852,
+    "maximumInfluencesPerVertex": 4,
+    "unitRootScale": true,
+    "feetAtFloor": true,
+    "forwardPositiveZAfterGltfExport": true,
+    "authoritativeClipNamesUntouched": [
+      "Idle",
+      "Run",
+      "Alert",
+      "Interact",
+      "Resolve"
+    ],
+    "safeAccessoryMergeKey": "identical material + identical rigid bone binding"
+  }
+}

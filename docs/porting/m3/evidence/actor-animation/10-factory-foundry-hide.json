@@ -1,0 +1,3200 @@
+{
+  "ready": true,
+  "paused": false,
+  "campaign": {
+    "id": "factory-foundry-final-run",
+    "index": 9,
+    "number": 10,
+    "name": "熔炉终逃",
+    "theme": "factory",
+    "propSet": "factory-foundry",
+    "config": {
+      "fixedStepSeconds": 0.016666666666666666,
+      "maxFrameDeltaSeconds": 0.25,
+      "aiTickSeconds": 0.05,
+      "playerSpeed": 2.64,
+      "chaserSpeed": 2.442,
+      "spawnDelaySeconds": 0,
+      "suspiciousSeconds": 0.14,
+      "lostSightGraceSeconds": 0.35,
+      "lastKnownScanSeconds": 1.5,
+      "searchSeconds": 7.2,
+      "searchWaypointSeconds": 0.62,
+      "searchHideCheckBudget": 2,
+      "searchHideRadiusCells": 5.4,
+      "checkHideSeconds": 2.1,
+      "hearingRange": 8.2,
+      "soundUncertaintyCells": 0.9,
+      "visionRange": 9,
+      "visionConeDegrees": 110,
+      "proximitySenseRange": 0.85,
+      "catchRange": 0.58,
+      "exitRange": 0.62,
+      "hideInteractRange": 1.05,
+      "hideAlignSpeed": 1.32,
+      "hideAlignTurnSpeed": 3.141592653589793,
+      "hideEnterSeconds": 1.8916666666666668,
+      "hideEnterExposureSeconds": 1.4833333333333334,
+      "hideExitSeconds": 1.6166666666666667,
+      "hideExitExposureSeconds": 0.3166666666666667,
+      "peekEnterSeconds": 0.15,
+      "peekExitSeconds": 0.15
+    },
+    "progress": {
+      "unlockedThrough": 1,
+      "bestSeconds": {},
+      "mastery": {},
+      "assistedBestSeconds": {},
+      "assistedMastery": {},
+      "assistedUnlockedThrough": 1,
+      "progressVersion": 3
+    },
+    "themeAsset": "/models/environment/themes/factory-kit-bootstrap.glb?v=m2-20260829",
+    "playerStart": {
+      "x": 1,
+      "y": 23
+    },
+    "exit": {
+      "x": 23,
+      "y": 1
+    },
+    "chaserStart": {
+      "x": 6,
+      "y": 13
+    },
+    "walkable": [
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        true,
+        true,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    ],
+    "hideSpots": [
+      {
+        "id": "foundry-slag-shield",
+        "approach": {
+          "x": 2,
+          "y": 7
+        },
+        "concealed": {
+          "x": 1.65,
+          "y": 7
+        },
+        "facing": {
+          "x": 1,
+          "y": 0
+        },
+        "archetype": "hard-locker"
+      },
+      {
+        "id": "foundry-maintenance-locker",
+        "approach": {
+          "x": 1,
+          "y": 15
+        },
+        "concealed": {
+          "x": 0.65,
+          "y": 15
+        },
+        "facing": {
+          "x": 1,
+          "y": 0
+        },
+        "archetype": "soft-cover"
+      },
+      {
+        "id": "foundry-coolant-cabinet",
+        "approach": {
+          "x": 2,
+          "y": 21
+        },
+        "concealed": {
+          "x": 2,
+          "y": 20.65
+        },
+        "facing": {
+          "x": 0,
+          "y": 1
+        },
+        "archetype": "traversal-hide",
+        "alternateExit": {
+          "x": 3,
+          "y": 18
+        }
+      },
+      {
+        "id": "foundry-control-bay",
+        "approach": {
+          "x": 7,
+          "y": 22
+        },
+        "concealed": {
+          "x": 7,
+          "y": 21.65
+        },
+        "facing": {
+          "x": 0,
+          "y": 1
+        },
+        "archetype": "hard-locker"
+      }
+    ]
+  },
+  "certifiedRemix": {
+    "selected": false,
+    "layoutNumber": null,
+    "missionVersion": "mission-v2",
+    "seed": null,
+    "contract": null,
+    "runIdentity": null,
+    "replayLevelId": "factory-foundry-final-run#mission-v2",
+    "recordStorageKey": null,
+    "record": null
+  },
+  "game": {
+    "phase": "playing",
+    "captureReason": null,
+    "elapsedSeconds": 1.0666666666666678,
+    "tick": 64,
+    "player": {
+      "position": {
+        "x": 2,
+        "y": 7
+      },
+      "heading": {
+        "x": 1,
+        "y": 0
+      },
+      "mode": "entering-hide",
+      "hideSpotId": "foundry-slag-shield",
+      "transitionRemainingSeconds": 1.3416666666666688,
+      "hideTurnDirection": 0,
+      "hideTurnCycle": -1,
+      "hideTurnSegmentDurationSeconds": 0
+    },
+    "chaser": {
+      "position": {
+        "x": 22.399161972873742,
+        "y": 1.775962700671924
+      },
+      "heading": {
+        "x": -0.9874217559952905,
+        "y": 0.1581084304747137
+      },
+      "mode": "patrol",
+      "modeElapsedSeconds": 1.0500000000000003,
+      "visualConfirmationSeconds": null,
+      "patrolIndex": 0,
+      "scanOriginHeading": {
+        "x": 1,
+        "y": 0
+      },
+      "searchSeed": 1,
+      "searchIndex": 0,
+      "searchWaypointElapsedSeconds": 0,
+      "searchHideSpotId": null,
+      "hideCheckSource": null,
+      "searchHideChecksCompleted": 0,
+      "inspectedHideSpotIds": [],
+      "memory": {
+        "lastKnownPosition": null,
+        "lastSeenAtSeconds": null,
+        "lastHeardAtSeconds": null,
+        "lastClueAtSeconds": null,
+        "lastKnownEvidence": null,
+        "deferredSoundEvidence": null,
+        "witnessedHideSpotId": null,
+        "evidenceTrail": []
+      }
+    },
+    "hideSpots": {
+      "foundry-slag-shield": {
+        "id": "foundry-slag-shield",
+        "occupiedByPlayer": true
+      },
+      "foundry-maintenance-locker": {
+        "id": "foundry-maintenance-locker",
+        "occupiedByPlayer": false
+      },
+      "foundry-coolant-cabinet": {
+        "id": "foundry-coolant-cabinet",
+        "occupiedByPlayer": false
+      },
+      "foundry-control-bay": {
+        "id": "foundry-control-bay",
+        "occupiedByPlayer": false
+      }
+    },
+    "aiAccumulatorSeconds": 0.016666666666666666,
+    "events": []
+  },
+  "interaction": null,
+  "activeHideArchetype": {
+    "hideSpotId": "foundry-slag-shield",
+    "archetype": "hard-locker",
+    "profile": {
+      "kind": "hard-locker",
+      "label": "硬质藏柜",
+      "playerHint": "进入较慢且柜门有声；关严后完全遮蔽，但追捕者可能检查柜门。",
+      "risk": {
+        "entry": "medium",
+        "waiting": "low",
+        "search": "high",
+        "exit": "medium"
+      },
+      "capabilities": {
+        "concealment": "full",
+        "canPeek": true,
+        "canExitOrigin": true,
+        "canExitAlternate": false,
+        "requiresAlternateExit": false
+      },
+      "evidence": {
+        "entrySoundStrength": 0.5,
+        "exitSoundStrength": 0.28,
+        "peekSoundStrength": 0.12,
+        "occupiedVisualDisturbance": 0,
+        "publicSearchAppeal": 0.82,
+        "exactCheckRequiresWitnessedEntry": true
+      },
+      "timing": {
+        "enterDurationMultiplier": 1,
+        "exitDurationMultiplier": 1,
+        "peekDurationMultiplier": 1
+      }
+    },
+    "approach": {
+      "x": 2,
+      "y": 7
+    },
+    "concealed": {
+      "x": 1.65,
+      "y": 7
+    },
+    "facing": {
+      "x": 1,
+      "y": 0
+    },
+    "alternateExit": null,
+    "legacyDefault": false
+  },
+  "hideExitSelection": {
+    "hideSpotId": "foundry-slag-shield",
+    "selected": "origin",
+    "options": [
+      {
+        "kind": "origin",
+        "position": {
+          "x": 2,
+          "y": 7
+        }
+      }
+    ]
+  },
+  "animations": {
+    "kid": {
+      "state": "enterHide",
+      "clip": "HideEnter",
+      "clipDuration": 1.2999999523162842,
+      "timeScale": 0.6872246443962735,
+      "normalizedTime": 0.3390335424061948,
+      "playing": true
+    },
+    "villain": {
+      "state": "walk",
+      "clip": "PatrolWalk",
+      "clipDuration": 1.4666666984558105,
+      "timeScale": 1.3320000000000152,
+      "normalizedTime": 0.0678047380369686,
+      "playing": true
+    }
+  },
+  "actorOptimization": {
+    "kid": {
+      "batch": {
+        "beforeMeshes": 35,
+        "afterMeshes": 12,
+        "mergedGroups": 10,
+        "mergedSourceMeshes": 33,
+        "singletonGroups": 2,
+        "trianglesBefore": 92680,
+        "trianglesAfter": 92680,
+        "disposedGeometries": 33,
+        "fallbacks": []
+      },
+      "shadow": {
+        "created": true,
+        "sourceMeshes": 12,
+        "proxyMeshes": 1,
+        "proxyTriangles": 344,
+        "segments": 12,
+        "shadowLayer": 1
+      },
+      "fit": {
+        "requestedHeight": 1.12,
+        "authoredFittedHeight": 1.12,
+        "batchedHeight": 1.12
+      }
+    },
+    "villain": {
+      "batch": {
+        "beforeMeshes": 12,
+        "afterMeshes": 6,
+        "mergedGroups": 3,
+        "mergedSourceMeshes": 9,
+        "singletonGroups": 3,
+        "trianglesBefore": 25599,
+        "trianglesAfter": 25599,
+        "disposedGeometries": 9,
+        "fallbacks": []
+      },
+      "shadow": {
+        "created": true,
+        "sourceMeshes": 6,
+        "proxyMeshes": 1,
+        "proxyTriangles": 344,
+        "segments": 12,
+        "shadowLayer": 1
+      },
+      "fit": {
+        "requestedHeight": 1.88,
+        "authoredFittedHeight": 1.88,
+        "batchedHeight": 1.88
+      }
+    }
+  },
+  "visibility": {
+    "kid": {
+      "rootVisible": true,
+      "alpha": 1,
+      "viewport": {
+        "x": 0.6483072065934641,
+        "y": 0.4130257246713103,
+        "depth": 0.9890455114639422,
+        "worldHeight": 1.139148728149988,
+        "pixelWidth": 50.36736117232862,
+        "pixelHeight": 75.93022905049047,
+        "bounds": {
+          "left": 0.6316979808737606,
+          "right": 0.6661489803076379,
+          "top": 0.368368033980759,
+          "bottom": 0.45625024352993776
+        },
+        "centerInFrustum": true
+      },
+      "cameraClearance": {
+        "headClear": false,
+        "torsoClear": false,
+        "visibleSampleRatio": 0,
+        "samples": [
+          {
+            "label": "head",
+            "clear": false,
+            "hit": "factory-wall-batch-1b78020d",
+            "hitDistance": 11.406795009653422
+          },
+          {
+            "label": "torso",
+            "clear": false,
+            "hit": "factory-wall-batch-1b78020d",
+            "hitDistance": 11.532151165854566
+          },
+          {
+            "label": "hips",
+            "clear": false,
+            "hit": "factory-wall-batch-1b78020d",
+            "hitDistance": 11.704317986663211
+          },
+          {
+            "label": "left-shoulder",
+            "clear": false,
+            "hit": "factory-wall-batch-f9bb9b3f",
+            "hitDistance": 11.233953397660661
+          },
+          {
+            "label": "right-shoulder",
+            "clear": false,
+            "hit": "factory-wall-batch-2cd78e75",
+            "hitDistance": 11.732984352926897
+          }
+        ]
+      }
+    },
+    "villain": {
+      "rootVisible": true,
+      "alpha": 1,
+      "worldRendered": true,
+      "viewport": {
+        "x": 2.5469046815906093,
+        "y": -2.1354915544581834,
+        "depth": 1.0232878485534707,
+        "worldHeight": 1.90357765550281,
+        "pixelWidth": 930.9005661300721,
+        "pixelHeight": 763.9302442618845,
+        "bounds": {
+          "left": 2.2773502321850585,
+          "right": 2.9140811255708807,
+          "top": -2.6453608406149027,
+          "bottom": -1.7611823171636476
+        },
+        "centerInFrustum": false
+      },
+      "cameraClearance": {
+        "headClear": true,
+        "torsoClear": false,
+        "visibleSampleRatio": 0.2,
+        "samples": [
+          {
+            "label": "head",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "torso",
+            "clear": false,
+            "hit": "factory-wall-batch-f9bb9b3f",
+            "hitDistance": 29.829353947555834
+          },
+          {
+            "label": "hips",
+            "clear": false,
+            "hit": "factory-wall-batch-1b78020d",
+            "hitDistance": 29.956721241567774
+          },
+          {
+            "label": "left-shoulder",
+            "clear": false,
+            "hit": "factory-wall-batch-1b78020d",
+            "hitDistance": 29.858114381246576
+          },
+          {
+            "label": "right-shoulder",
+            "clear": false,
+            "hit": "factory-wall-batch-f9bb9b3f",
+            "hitDistance": 29.81945772098669
+          }
+        ]
+      }
+    }
+  },
+  "knowledge": {
+    "chaserObservable": false,
+    "publicThreat": {
+      "threat": "calm",
+      "quietSeconds": 0.75
+    }
+  },
+  "chaserArchetype": {
+    "profile": {
+      "theme": "factory",
+      "kind": "factory-interceptor",
+      "rule": "intercept-public-exit-route",
+      "label": "工厂截路者",
+      "readableRule": "目击玩家后会亮起路径指示并尝试截住最后目击点通往公开出口的前方节点。",
+      "warningSeconds": 0.6,
+      "cueLabel": "截路者看向出口，准备切入前方通道",
+      "cueAudioToken": "factory-route-relay",
+      "cueAnimationToken": "InterceptorPoint"
+    },
+    "runtime": {
+      "enabled": true,
+      "archetype": "factory-interceptor",
+      "rule": "intercept-public-exit-route",
+      "phase": "idle",
+      "warningSeconds": 0.6,
+      "cueProgress": 0,
+      "cueLabel": null,
+      "cueAudioToken": null,
+      "cueAnimationToken": null,
+      "action": null,
+      "navigationTarget": null,
+      "speedMultiplier": 1
+    }
+  },
+  "themeMechanic": {
+    "definition": {
+      "id": "factory-foundry-final-run:primary-mechanic",
+      "theme": "factory",
+      "kind": "factory-machinery",
+      "position": {
+        "x": 12,
+        "y": 15
+      },
+      "interactionRadius": 1.35,
+      "warningSeconds": 0.65,
+      "activeDurationSeconds": 5.4,
+      "effectRadius": 8,
+      "cooldownSeconds": 8.6,
+      "label": "机器轰鸣",
+      "warningHint": "机器轰鸣启动声已暴露控制点，立即转移",
+      "activeHint": "机器轰鸣，行动声更难分辨",
+      "maximumSoundMasking": 0.58,
+      "minimumVisionRangeMultiplier": 0.93,
+      "soundSource": {
+        "sourceId": "factory-foundry-final-run:primary-mechanic:emitter",
+        "sourceType": "environment-decoy",
+        "strength": 1,
+        "confidence": 0.78,
+        "decayPerSecond": 0.12
+      },
+      "activationCost": {
+        "kind": "noise",
+        "amount": 0.55,
+        "label": "阀门启动会制造高置信噪声"
+      }
+    },
+    "state": {
+      "definition": {
+        "id": "factory-foundry-final-run:primary-mechanic",
+        "theme": "factory",
+        "kind": "factory-machinery",
+        "position": {
+          "x": 12,
+          "y": 15
+        },
+        "interactionRadius": 1.35,
+        "warningSeconds": 0.65,
+        "activeDurationSeconds": 5.4,
+        "effectRadius": 8,
+        "cooldownSeconds": 8.6,
+        "label": "机器轰鸣",
+        "warningHint": "机器轰鸣启动声已暴露控制点，立即转移",
+        "activeHint": "机器轰鸣，行动声更难分辨",
+        "maximumSoundMasking": 0.58,
+        "minimumVisionRangeMultiplier": 0.93,
+        "soundSource": {
+          "sourceId": "factory-foundry-final-run:primary-mechanic:emitter",
+          "sourceType": "environment-decoy",
+          "strength": 1,
+          "confidence": 0.78,
+          "decayPerSecond": 0.12
+        },
+        "activationCost": {
+          "kind": "noise",
+          "amount": 0.55,
+          "label": "阀门启动会制造高置信噪声"
+        }
+      },
+      "phase": "ready",
+      "phaseElapsedSeconds": 0,
+      "activationCount": 0,
+      "lastActivatedAtSeconds": null
+    },
+    "sample": {
+      "phase": "ready",
+      "progress": 0,
+      "canActivate": false,
+      "inEffectArea": false,
+      "label": "机器轰鸣",
+      "hudHint": "机器轰鸣",
+      "soundMasking": 0,
+      "visionRangeMultiplier": 1
+    },
+    "view": {
+      "beaconVisible": false,
+      "beaconOpacity": 0,
+      "viewport": {
+        "x": -0.3368467159206894,
+        "y": 0.27286884049457516,
+        "depth": 0.9905703544696708,
+        "pixelWidth": 220.09995837528615,
+        "pixelHeight": 139.78956665682693,
+        "bounds": {
+          "left": -0.4187084247154138,
+          "right": -0.2681612575640553,
+          "top": 0.19277162426674999,
+          "bottom": 0.354565104193633
+        },
+        "centerInFrustum": false
+      }
+    }
+  },
+  "themeMission": {
+    "definition": {
+      "id": "theme-mission:factory:v1",
+      "theme": "factory",
+      "title": "解除产线联锁",
+      "briefing": "先泄放蒸汽并复位安全联锁；完成后释放产线出口。",
+      "exitObjectiveId": "factory:release-line-gate",
+      "objectives": [
+        {
+          "id": "factory:steam-bleed",
+          "theme": "factory",
+          "stage": "preparation",
+          "verb": "bleed-steam-pressure",
+          "label": "泄放蒸汽",
+          "interactionPrompt": "旋开主管泄压阀",
+          "completionHint": "主管压力已降到安全阈值",
+          "commitmentSeconds": 1.2,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "factory:safety-interlock",
+          "theme": "factory",
+          "stage": "preparation",
+          "verb": "reset-safety-interlock",
+          "label": "复位安全联锁",
+          "interactionPrompt": "复位总装线安全继电器",
+          "completionHint": "产线联锁已允许人工释放",
+          "commitmentSeconds": 1,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "factory:release-line-gate",
+          "theme": "factory",
+          "stage": "escape-unlock",
+          "verb": "release-line-gate",
+          "label": "释放产线出口",
+          "interactionPrompt": "解除出口机械联锁",
+          "completionHint": "产线出口已经开放",
+          "commitmentSeconds": 1.15,
+          "prerequisites": [
+            "factory:steam-bleed",
+            "factory:safety-interlock"
+          ],
+          "unlocksExit": true,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        }
+      ]
+    },
+    "runtimeObjectives": [
+      {
+        "id": "factory:steam-bleed",
+        "theme": "factory",
+        "stage": "preparation",
+        "verb": "bleed-steam-pressure",
+        "label": "泄放蒸汽",
+        "interactionPrompt": "旋开主管泄压阀",
+        "completionHint": "主管压力已降到安全阈值",
+        "commitmentSeconds": 1.2,
+        "prerequisites": [],
+        "unlocksExit": false,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      },
+      {
+        "id": "factory:safety-interlock",
+        "theme": "factory",
+        "stage": "preparation",
+        "verb": "reset-safety-interlock",
+        "label": "复位安全联锁",
+        "interactionPrompt": "复位总装线安全继电器",
+        "completionHint": "产线联锁已允许人工释放",
+        "commitmentSeconds": 1,
+        "prerequisites": [],
+        "unlocksExit": false,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      },
+      {
+        "id": "factory:release-line-gate",
+        "theme": "factory",
+        "stage": "escape-unlock",
+        "verb": "release-line-gate",
+        "label": "释放产线出口",
+        "interactionPrompt": "解除出口机械联锁",
+        "completionHint": "产线出口已经开放",
+        "commitmentSeconds": 1.15,
+        "prerequisites": [
+          "factory:steam-bleed",
+          "factory:safety-interlock"
+        ],
+        "unlocksExit": true,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      }
+    ],
+    "state": {
+      "definitionId": "theme-mission:factory:v1",
+      "stage": "preparation",
+      "completedObjectiveIds": [],
+      "exitUnlocked": false
+    },
+    "playerRuleProgress": {
+      "version": 1,
+      "tick": 64,
+      "stage": "preparation",
+      "normalizedProgress": 0,
+      "routeProgress": 0,
+      "completedObjectiveIds": [],
+      "committedMechanicIds": [],
+      "exitUnlocked": false,
+      "runCompleted": false,
+      "events": []
+    },
+    "views": [
+      {
+        "id": "factory:steam-bleed",
+        "position": {
+          "x": 5,
+          "y": 4
+        },
+        "lightColor": 16751154,
+        "lightIntensity": 1.2008924259598768
+      },
+      {
+        "id": "factory:safety-interlock",
+        "position": {
+          "x": 2,
+          "y": 7
+        },
+        "lightColor": 16751154,
+        "lightIntensity": 3.403353600150456
+      },
+      {
+        "id": "factory:release-line-gate",
+        "position": {
+          "x": 22,
+          "y": 4
+        },
+        "lightColor": 5333098,
+        "lightIntensity": 0.08
+      }
+    ],
+    "commitment": null,
+    "library": null,
+    "placements": [
+      {
+        "objectiveId": "factory:steam-bleed",
+        "position": {
+          "x": 5,
+          "y": 4
+        }
+      },
+      {
+        "objectiveId": "factory:safety-interlock",
+        "position": {
+          "x": 2,
+          "y": 7
+        }
+      },
+      {
+        "objectiveId": "factory:release-line-gate",
+        "position": {
+          "x": 22,
+          "y": 4
+        }
+      }
+    ],
+    "availableObjectiveIds": [
+      "factory:steam-bleed",
+      "factory:safety-interlock"
+    ],
+    "audit": {
+      "passed": true,
+      "failures": [],
+      "orders": [
+        {
+          "objectiveIds": [
+            "factory:steam-bleed",
+            "factory:safety-interlock",
+            "factory:release-line-gate"
+          ],
+          "reachable": true,
+          "failedLeg": null,
+          "routeDistanceCells": 62
+        },
+        {
+          "objectiveIds": [
+            "factory:safety-interlock",
+            "factory:steam-bleed",
+            "factory:release-line-gate"
+          ],
+          "reachable": true,
+          "failedLeg": null,
+          "routeDistanceCells": 62
+        }
+      ],
+      "directRouteDistanceCells": 44,
+      "shortestOrderDistanceCells": 62,
+      "longestOrderDistanceCells": 62,
+      "shortestDetourRatio": 1.4090909090909092,
+      "orderImbalanceRatio": 0
+    }
+  },
+  "portableDecoy": null,
+  "stealth": {
+    "selectedTool": "door-wedge",
+    "evidence": {
+      "tick": 64,
+      "countermeasureBudgetRemaining": 10,
+      "countermeasureBudgetSpent": 0,
+      "countermeasureBusyUntilTick": 0,
+      "erasedEvidenceCount": 0,
+      "forgedEvidenceCount": 0,
+      "records": [
+        {
+          "id": "campaign-stealth-evidence-v1:evidence:1",
+          "kind": "door-state",
+          "position": {
+            "x": 2,
+            "y": 7
+          },
+          "source": {
+            "publicId": "factory-foundry-final-run:hide-door:foundry-slag-shield",
+            "kind": "door",
+            "publicity": "world-observable"
+          },
+          "detail": {
+            "state": "closed"
+          },
+          "createdAtTick": 31,
+          "expiresAtTick": 1831
+        }
+      ],
+      "deliveredIds": [],
+      "investigatedIds": [],
+      "worldClueDelivery": {
+        "pending": [],
+        "acceptedCount": 0,
+        "deliveredCount": 0,
+        "lastDeliveredClueId": null
+      },
+      "views": [
+        {
+          "id": "campaign-stealth-evidence-v1:evidence:1",
+          "rootName": "stealth-evidence-campaign-stealth-evidence-v1:evidence:1",
+          "createdAtTick": 31,
+          "expiresAtTick": 1831,
+          "worldPosition": {
+            "x": -20,
+            "y": 0,
+            "z": -10
+          },
+          "meshCount": 3,
+          "materialCount": 3,
+          "texturedMaterialCount": 2,
+          "semanticNames": [
+            "stealth-evidence-campaign-stealth-evidence-v1:evidence:1",
+            "authored-door-state-evidence"
+          ],
+          "parts": [],
+          "authoredSources": [
+            {
+              "node": "FactorySafetyBarrier",
+              "label": "安全栅门楔锁",
+              "assetId": "theme-kit:factory",
+              "sourceUrl": "/models/environment/themes/factory-kit-bootstrap.glb?v=m2-20260829",
+              "geometrySignature": "24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1024.0000:396.0000:397.0000|24:36:1718.0000:297.0000:1915.0000|24:36:1718.0000:297.0000:1915.0000|24:36:462.0000:4459.0000:463.0000|24:36:462.0000:4459.0000:463.0000",
+              "fallbackUsed": false
+            }
+          ],
+          "viewport": {
+            "x": 0.6405987766686718,
+            "y": 0.4308268038152851,
+            "depth": 0.9893268164255113,
+            "pixelWidth": 52.79494282115051,
+            "pixelHeight": 44.15944076219944,
+            "bounds": {
+              "left": 0.6227243570148424,
+              "right": 0.6588358090128933,
+              "top": 0.40552398052552224,
+              "bottom": 0.4566344443706605
+            },
+            "centerInFrustum": true
+          }
+        }
+      ]
+    },
+    "toolbelt": {
+      "state": {
+        "definition": {
+          "id": "gold-stealth-toolbelt",
+          "ticksPerSecond": 60,
+          "maximumFailsafeTicks": 1200,
+          "receiptLedgerCapacity": 12,
+          "tools": {
+            "door-wedge": {
+              "kind": "door-wedge",
+              "capacity": 2,
+              "interactionRangeCells": 1.45,
+              "commitmentTicks": 24,
+              "cooldownTicks": 180,
+              "effectTicks": 300,
+              "chaserTraversalDelayTicks": 72,
+              "risk": {
+                "channel": "sound",
+                "strength": 0.34,
+                "confidence": 0.76,
+                "evidenceLifetimeTicks": 240
+              }
+            },
+            "corner-mirror": {
+              "kind": "corner-mirror",
+              "capacity": 4,
+              "interactionRangeCells": 1.2,
+              "commitmentTicks": 9,
+              "cooldownTicks": 45,
+              "effectTicks": 90,
+              "observationRangeCells": 8,
+              "observationConeDegrees": 58,
+              "risk": {
+                "channel": "visual",
+                "strength": 0.14,
+                "confidence": 0.58,
+                "evidenceLifetimeTicks": 90
+              }
+            },
+            "temporary-blackout": {
+              "kind": "temporary-blackout",
+              "capacity": 1,
+              "interactionRangeCells": 1.5,
+              "commitmentTicks": 36,
+              "cooldownTicks": 600,
+              "effectTicks": 420,
+              "visionRangeMultiplier": 0.52,
+              "ambientSoundMasking": 0.3,
+              "risk": {
+                "channel": "infrastructure",
+                "strength": 0.7,
+                "confidence": 0.9,
+                "evidenceLifetimeTicks": 420
+              }
+            }
+          }
+        },
+        "tick": 64,
+        "useSequence": 0,
+        "tools": {
+          "door-wedge": {
+            "inventoryRemaining": 2,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          },
+          "corner-mirror": {
+            "inventoryRemaining": 4,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          },
+          "temporary-blackout": {
+            "inventoryRemaining": 1,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          }
+        },
+        "commitment": null,
+        "activeEffects": {},
+        "receiptLedger": []
+      },
+      "sample": {
+        "tick": 64,
+        "tools": {
+          "door-wedge": {
+            "tool": "door-wedge",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 2,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          },
+          "corner-mirror": {
+            "tool": "corner-mirror",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 4,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          },
+          "temporary-blackout": {
+            "tool": "temporary-blackout",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 1,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          }
+        }
+      },
+      "qaPlacementAnchors": {
+        "door-wedge": {
+          "player": {
+            "x": 2,
+            "y": 7
+          },
+          "target": {
+            "kind": "door",
+            "id": "factory-foundry-final-run:threshold:3:7",
+            "interactionPoint": {
+              "x": 3,
+              "y": 7
+            },
+            "routeSafetyAuditId": "factory-foundry-final-run:player-route-remains-open:v1",
+            "traversalAxis": "horizontal",
+            "playerPassageRemainsAvailable": true,
+            "autoReleaseTicks": 300
+          }
+        },
+        "corner-mirror": {
+          "player": {
+            "x": 2,
+            "y": 7
+          },
+          "target": {
+            "kind": "corner",
+            "id": "factory-foundry-final-run:corner:2:7",
+            "interactionPoint": {
+              "x": 2,
+              "y": 7
+            },
+            "hasOpaqueCorner": true,
+            "outwardHeading": {
+              "x": 1,
+              "y": 0
+            }
+          }
+        },
+        "temporary-blackout": {
+          "player": {
+            "x": 12,
+            "y": 15
+          },
+          "target": {
+            "kind": "power-circuit",
+            "id": "factory-foundry-final-run:primary-lighting-circuit",
+            "interactionPoint": {
+              "x": 12,
+              "y": 15
+            },
+            "autoRestoreTicks": 360,
+            "emergencyVisibilityFloor": 0.35
+          }
+        }
+      },
+      "views": [],
+      "mirrorThreatVisible": false,
+      "activeWedgeHoldUntilTick": 0
+    },
+    "resources": {
+      "registeredLights": 0,
+      "sceneRoots": 1,
+      "transientPlacedAssetIds": [
+        "stealth-evidence-campaign-stealth-evidence-v1:evidence:1"
+      ]
+    },
+    "director": {
+      "definition": {
+        "version": 1,
+        "id": "factory-foundry-final-run:fair-tension-director",
+        "routeIds": [
+          "factory-foundry-final-run:mission-route:1:factory:steam-bleed>factory:safety-interlock>factory:release-line-gate",
+          "factory-foundry-final-run:mission-route:2:factory:safety-interlock>factory:steam-bleed>factory:release-line-gate"
+        ],
+        "minimumLegalRouteCount": 1,
+        "policy": {
+          "fixedStepSeconds": 0.016666666666666666,
+          "minimumWarningTicks": 120,
+          "maximumEventDurationTicks": 720,
+          "minimumEventCooldownTicks": 480,
+          "minimumSafeTicksBeforePressure": 480,
+          "minimumCalmTicksAfterEvent": 360,
+          "suspiciousBreatherTicks": 300,
+          "chaseBreatherTicks": 480,
+          "escapeBreatherTicks": 600,
+          "resourceRecoveryBreatherTicks": 300,
+          "criticalResourcePermille": 150,
+          "heightenedResourceFloorPermille": 350,
+          "safeRampStartTicks": 480,
+          "safeRampEndTicks": 1800,
+          "safeScoreMaximum": 550,
+          "missionScoreMaximum": 350,
+          "resourceScoreMaximum": 100,
+          "watchfulEnterScore": 360,
+          "watchfulExitScore": 260,
+          "heightenedEnterScore": 720,
+          "heightenedExitScore": 560
+        },
+        "events": [
+          {
+            "id": "public-address-sweep",
+            "label": "广播巡检",
+            "kind": "broadcast",
+            "minimumTier": "watchful",
+            "warningTicks": 120,
+            "durationTicks": 240,
+            "cooldownTicks": 660,
+            "publicChannelId": "factory-foundry-final-run:public-address",
+            "blockedRouteIds": [],
+            "intensityPermille": 620
+          },
+          {
+            "id": "patrol-pressure-window",
+            "label": "巡逻提速",
+            "kind": "patrol-pressure",
+            "minimumTier": "heightened",
+            "warningTicks": 150,
+            "durationTicks": 360,
+            "cooldownTicks": 780,
+            "publicChannelId": null,
+            "blockedRouteIds": [],
+            "intensityPermille": 180
+          },
+          {
+            "id": "lighting-load-shed",
+            "label": "照明降载",
+            "kind": "blackout",
+            "minimumTier": "watchful",
+            "warningTicks": 180,
+            "durationTicks": 300,
+            "cooldownTicks": 900,
+            "publicChannelId": "factory-foundry-final-run:lighting-grid",
+            "blockedRouteIds": [],
+            "intensityPermille": 480
+          }
+        ]
+      },
+      "state": {
+        "version": 1,
+        "definitionId": "factory-foundry-final-run:fair-tension-director",
+        "currentTick": 64,
+        "tier": "rest",
+        "score": 100,
+        "activeEvent": null,
+        "cooldowns": [
+          {
+            "eventId": "public-address-sweep",
+            "readyAtTick": 0
+          },
+          {
+            "eventId": "patrol-pressure-window",
+            "readyAtTick": 0
+          },
+          {
+            "eventId": "lighting-load-shed",
+            "readyAtTick": 0
+          }
+        ],
+        "globalReadyAtTick": 0,
+        "breatherUntilTick": 0,
+        "selectionCursor": 0,
+        "nextSequence": 1,
+        "lastEventId": null,
+        "completedEventCount": 0
+      },
+      "safeTicks": 64,
+      "chaseTicks": 0,
+      "ticksSinceChaseEscape": null
+    }
+  },
+  "ghost": {
+    "eligible": false,
+    "recording": null,
+    "state": null,
+    "race": null,
+    "viewport": {
+      "x": 0.31396018894412,
+      "y": -0.13445623137891205,
+      "depth": 0.9961987774522288,
+      "worldHeight": 1.139148728149988,
+      "pixelWidth": 20.604355349709568,
+      "pixelHeight": 36.90149835543334,
+      "bounds": {
+        "left": 0.30683346983199944,
+        "right": 0.3209267361450703,
+        "top": -0.15595526765527312,
+        "bottom": -0.11324520011426231
+      },
+      "centerInFrustum": false
+    }
+  },
+  "preferences": {
+    "version": 1,
+    "ruleset": "standard",
+    "personalGhostEnabled": true,
+    "hudDensity": "cinematic",
+    "hapticsEnabled": true,
+    "highContrast": false,
+    "reducedMotion": false
+  },
+  "environmentComposition": {
+    "profile": {
+      "levelId": "factory-foundry-final-run",
+      "propSet": "factory-foundry",
+      "theme": "factory",
+      "materialSalt": 109,
+      "landmarkSegments": [
+        {
+          "id": "factory-foundry-establish",
+          "role": "establish",
+          "nodeCandidates": [
+            "FactoryFurnaceCluster"
+          ],
+          "routeFraction": 0.14,
+          "lateralBias": -1
+        },
+        {
+          "id": "factory-foundry-pressure",
+          "role": "pressure",
+          "nodeCandidates": [
+            "FactoryCastingCluster"
+          ],
+          "routeFraction": 0.46,
+          "lateralBias": 1
+        },
+        {
+          "id": "factory-foundry-payoff",
+          "role": "payoff",
+          "nodeCandidates": [
+            "FactoryCoolingCluster"
+          ],
+          "routeFraction": 0.77,
+          "lateralBias": -1
+        }
+      ],
+      "arrivalNodeCandidates": [
+        "FactoryFoundryArrivalCluster"
+      ],
+      "hideDressingNodeCandidates": [
+        "FactoryFoundryHideDressing"
+      ],
+      "exitNodeCandidates": [
+        "FactoryFoundryExitCluster"
+      ],
+      "placementPolicy": "nearest-authored-room-anchor"
+    },
+    "theme": {
+      "theme": "factory",
+      "architecture": {
+        "wallVariants": [
+          "FactoryArchitectureWallA",
+          "FactoryArchitectureWallB",
+          "FactoryArchitectureWallC"
+        ],
+        "wallEnd": [
+          "FactoryArchitectureWallEnd"
+        ],
+        "corner": [
+          "FactoryArchitectureCorner"
+        ],
+        "floorPrimary": [
+          "FactoryFloorPrimary"
+        ],
+        "floorSecondary": [
+          "FactoryFloorSecondary"
+        ],
+        "floorService": [
+          "FactoryFloorService"
+        ],
+        "exteriorGround": [
+          "FactoryExteriorGround"
+        ]
+      },
+      "lightPools": [
+        {
+          "id": "factory-inspection-cyan",
+          "colorToken": "emissive",
+          "intensity": 1.8,
+          "rangeMeters": 5.2,
+          "heightMeters": 2.55,
+          "priority": 3,
+          "castShadow": false
+        },
+        {
+          "id": "factory-service-orange",
+          "colorToken": "accent",
+          "intensity": 1.65,
+          "rangeMeters": 4.7,
+          "heightMeters": 2.35,
+          "priority": 2,
+          "castShadow": false
+        },
+        {
+          "id": "factory-exit-cyan",
+          "colorToken": "trim",
+          "intensity": 2.05,
+          "rangeMeters": 5.6,
+          "heightMeters": 2.6,
+          "priority": 3,
+          "castShadow": false
+        }
+      ],
+      "materialVariation": {
+        "wall": [
+          {
+            "id": "factory-wall-painted",
+            "tintToken": "wall",
+            "colorMix": 0.015,
+            "roughnessDelta": 0.05,
+            "metalnessDelta": 0.02,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "factory-wall-oily",
+            "tintToken": "trim",
+            "colorMix": 0.055,
+            "roughnessDelta": -0.1,
+            "metalnessDelta": 0.05,
+            "sharedMaterialSlot": 1
+          },
+          {
+            "id": "factory-wall-heat",
+            "tintToken": "accent",
+            "colorMix": 0.065,
+            "roughnessDelta": 0.12,
+            "metalnessDelta": -0.01,
+            "sharedMaterialSlot": 2
+          }
+        ],
+        "floor": [
+          {
+            "id": "factory-floor-dry",
+            "tintToken": "floor",
+            "colorMix": 0.01,
+            "roughnessDelta": 0.04,
+            "metalnessDelta": 0.03,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "factory-floor-oily",
+            "tintToken": "trim",
+            "colorMix": 0.06,
+            "roughnessDelta": -0.17,
+            "metalnessDelta": 0.08,
+            "sharedMaterialSlot": 1
+          },
+          {
+            "id": "factory-floor-heat",
+            "tintToken": "accent",
+            "colorMix": 0.055,
+            "roughnessDelta": 0.1,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 2
+          }
+        ],
+        "trim": [
+          {
+            "id": "factory-trim-base",
+            "tintToken": "trim",
+            "colorMix": 0.02,
+            "roughnessDelta": 0.03,
+            "metalnessDelta": 0.06,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "factory-trim-service",
+            "tintToken": "accent",
+            "colorMix": 0.09,
+            "roughnessDelta": 0.08,
+            "metalnessDelta": 0.01,
+            "sharedMaterialSlot": 1
+          }
+        ],
+        "landmark": [
+          {
+            "id": "factory-hero-neutral",
+            "tintToken": "wall",
+            "colorMix": 0.015,
+            "roughnessDelta": 0.02,
+            "metalnessDelta": 0.03,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "factory-hero-powered",
+            "tintToken": "emissive",
+            "colorMix": 0.085,
+            "roughnessDelta": -0.07,
+            "metalnessDelta": 0.02,
+            "sharedMaterialSlot": 1
+          }
+        ],
+        "decal": {
+          "id": "factory-service-chevron",
+          "pattern": "service-chevron",
+          "foregroundToken": "accent",
+          "secondaryToken": "emissive",
+          "opacity": 0.7,
+          "repeatCount": 4,
+          "strokeFraction": 0.1,
+          "maximumInstances": 24,
+          "batchKey": "environment-composition-markings",
+          "generatedResolution": 64
+        }
+      },
+      "edgeClosure": {
+        "capNodeCandidates": [
+          "FactoryExteriorGround"
+        ],
+        "wallEndNodeCandidates": [
+          "FactoryArchitectureWallEnd"
+        ],
+        "cornerNodeCandidates": [
+          "FactoryArchitectureCorner"
+        ],
+        "groundMarginCells": 1.35,
+        "skirtDepthMeters": 3.8,
+        "fogColorToken": "fog",
+        "fogOpacity": 0.95,
+        "geometryMode": "single-batched-skirt",
+        "castShadow": false,
+        "receiveShadow": false
+      },
+      "mechanicFeedback": {
+        "sourceNodeCandidates": [
+          "FactoryControlConsole"
+        ],
+        "partMotion": {
+          "kind": "vibrate",
+          "axis": "x",
+          "targetNodeCandidates": [
+            "ConsoleScreen_-1",
+            "ConsoleScreen_0",
+            "ConsoleScreen_1",
+            "ConsoleEmergencyButton"
+          ]
+        },
+        "stages": {
+          "warning": {
+            "stage": "warning",
+            "colorToken": "emissive",
+            "pulseCycles": 2,
+            "peakEmissiveIntensity": 1.24,
+            "peakLightIntensity": 2.45,
+            "lightRangeMeters": 5.5,
+            "rootScaleAmplitude": 0.012,
+            "partMotionAmplitude": 0.017,
+            "particleKind": "sparks",
+            "maximumParticles": 32,
+            "effectOpacity": 0.28
+          },
+          "active": {
+            "stage": "active",
+            "colorToken": "emissive",
+            "pulseCycles": 6,
+            "peakEmissiveIntensity": 1.24,
+            "peakLightIntensity": 2.45,
+            "lightRangeMeters": 5.5,
+            "rootScaleAmplitude": 0.012,
+            "partMotionAmplitude": 0.017,
+            "particleKind": "sparks",
+            "maximumParticles": 32,
+            "effectOpacity": 0.28
+          },
+          "recover": {
+            "stage": "recover",
+            "colorToken": "emissive",
+            "pulseCycles": 1,
+            "peakEmissiveIntensity": 1.24,
+            "peakLightIntensity": 2.45,
+            "lightRangeMeters": 5.5,
+            "rootScaleAmplitude": 0.012,
+            "partMotionAmplitude": 0.017,
+            "particleKind": "sparks",
+            "maximumParticles": 32,
+            "effectOpacity": 0.28
+          }
+        },
+        "usesPooledLocalLight": true,
+        "usesAtmosphereParticleBuffer": true
+      }
+    },
+    "budget": {
+      "tier": "high",
+      "additionalNetworkRequests": 0,
+      "additionalNetworkBytes": 0,
+      "additionalTextureFiles": 0,
+      "maximumRuntimeTextureBytes": 16384,
+      "maximumAdditionalDrawCalls": 2,
+      "maximumAdditionalTriangles": 256,
+      "maximumLocalLightPools": 2,
+      "maximumProceduralDecals": 24,
+      "maximumMechanicParticles": 48,
+      "maximumMaterialVariantsPerSurface": 3
+    },
+    "criticalRoute": [
+      {
+        "x": 1,
+        "y": 23
+      },
+      {
+        "x": 2,
+        "y": 23
+      },
+      {
+        "x": 3,
+        "y": 23
+      },
+      {
+        "x": 4,
+        "y": 23
+      },
+      {
+        "x": 4,
+        "y": 22
+      },
+      {
+        "x": 4,
+        "y": 21
+      },
+      {
+        "x": 5,
+        "y": 21
+      },
+      {
+        "x": 6,
+        "y": 21
+      },
+      {
+        "x": 6,
+        "y": 20
+      },
+      {
+        "x": 6,
+        "y": 19
+      },
+      {
+        "x": 6,
+        "y": 18
+      },
+      {
+        "x": 7,
+        "y": 18
+      },
+      {
+        "x": 8,
+        "y": 18
+      },
+      {
+        "x": 8,
+        "y": 17
+      },
+      {
+        "x": 8,
+        "y": 16
+      },
+      {
+        "x": 8,
+        "y": 15
+      },
+      {
+        "x": 9,
+        "y": 15
+      },
+      {
+        "x": 10,
+        "y": 15
+      },
+      {
+        "x": 11,
+        "y": 15
+      },
+      {
+        "x": 12,
+        "y": 15
+      },
+      {
+        "x": 12,
+        "y": 14
+      },
+      {
+        "x": 12,
+        "y": 13
+      },
+      {
+        "x": 12,
+        "y": 12
+      },
+      {
+        "x": 13,
+        "y": 12
+      },
+      {
+        "x": 13,
+        "y": 11
+      },
+      {
+        "x": 13,
+        "y": 10
+      },
+      {
+        "x": 13,
+        "y": 9
+      },
+      {
+        "x": 13,
+        "y": 8
+      },
+      {
+        "x": 13,
+        "y": 7
+      },
+      {
+        "x": 14,
+        "y": 7
+      },
+      {
+        "x": 15,
+        "y": 7
+      },
+      {
+        "x": 15,
+        "y": 6
+      },
+      {
+        "x": 16,
+        "y": 6
+      },
+      {
+        "x": 17,
+        "y": 6
+      },
+      {
+        "x": 17,
+        "y": 5
+      },
+      {
+        "x": 17,
+        "y": 4
+      },
+      {
+        "x": 18,
+        "y": 4
+      },
+      {
+        "x": 19,
+        "y": 4
+      },
+      {
+        "x": 20,
+        "y": 4
+      },
+      {
+        "x": 21,
+        "y": 4
+      },
+      {
+        "x": 21,
+        "y": 3
+      },
+      {
+        "x": 21,
+        "y": 2
+      },
+      {
+        "x": 22,
+        "y": 2
+      },
+      {
+        "x": 23,
+        "y": 2
+      },
+      {
+        "x": 23,
+        "y": 1
+      }
+    ],
+    "landmarkBeats": [
+      {
+        "id": "factory-foundry-establish",
+        "role": "establish",
+        "nodeCandidates": [
+          "FactoryFurnaceCluster"
+        ],
+        "routeFraction": 0.14,
+        "lateralBias": -1,
+        "label": "熔炼炉",
+        "routeIndex": 7,
+        "resolvedRouteFraction": 0.1590909090909091,
+        "focusCell": {
+          "x": 6,
+          "y": 21
+        },
+        "routeTangent": {
+          "x": 0.7071067811865475,
+          "y": -0.7071067811865475
+        },
+        "junctionDegree": 3,
+        "decisionStrength": 0.7
+      },
+      {
+        "id": "factory-foundry-pressure",
+        "role": "pressure",
+        "nodeCandidates": [
+          "FactoryCastingCluster"
+        ],
+        "routeFraction": 0.46,
+        "lateralBias": 1,
+        "label": "浇铸平台",
+        "routeIndex": 19,
+        "resolvedRouteFraction": 0.4318181818181818,
+        "focusCell": {
+          "x": 12,
+          "y": 15
+        },
+        "routeTangent": {
+          "x": 0.7071067811865475,
+          "y": -0.7071067811865475
+        },
+        "junctionDegree": 3,
+        "decisionStrength": 0.7
+      },
+      {
+        "id": "factory-foundry-payoff",
+        "role": "payoff",
+        "nodeCandidates": [
+          "FactoryCoolingCluster"
+        ],
+        "routeFraction": 0.77,
+        "lateralBias": -1,
+        "label": "冷却水环廊",
+        "routeIndex": 33,
+        "resolvedRouteFraction": 0.75,
+        "focusCell": {
+          "x": 17,
+          "y": 6
+        },
+        "routeTangent": {
+          "x": 0.7071067811865475,
+          "y": -0.7071067811865475
+        },
+        "junctionDegree": 4,
+        "decisionStrength": 1
+      }
+    ],
+    "activeLightPools": [
+      {
+        "id": "factory-inspection-cyan",
+        "colorToken": "emissive",
+        "intensity": 1.8,
+        "rangeMeters": 5.2,
+        "heightMeters": 2.55,
+        "priority": 3,
+        "castShadow": false,
+        "segmentId": "factory-foundry-establish",
+        "position": {
+          "x": 6,
+          "y": 21
+        },
+        "color": "#ff9a32"
+      },
+      {
+        "id": "factory-exit-cyan",
+        "colorToken": "trim",
+        "intensity": 2.05,
+        "rangeMeters": 5.6,
+        "heightMeters": 2.6,
+        "priority": 3,
+        "castShadow": false,
+        "segmentId": "factory-foundry-payoff",
+        "position": {
+          "x": 17,
+          "y": 6
+        },
+        "color": "#1d1b1a"
+      }
+    ],
+    "edgeClosure": {
+      "capNodeCandidates": [
+        "FactoryExteriorGround"
+      ],
+      "wallEndNodeCandidates": [
+        "FactoryArchitectureWallEnd"
+      ],
+      "cornerNodeCandidates": [
+        "FactoryArchitectureCorner"
+      ],
+      "groundMarginCells": 1.35,
+      "skirtDepthMeters": 3.8,
+      "fogColorToken": "fog",
+      "fogOpacity": 0.95,
+      "geometryMode": "single-batched-skirt",
+      "castShadow": false,
+      "receiveShadow": false,
+      "segments": [
+        {
+          "side": "north",
+          "center": {
+            "x": 12,
+            "y": -0.5
+          },
+          "outward": {
+            "x": 0,
+            "y": -1
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "east",
+          "center": {
+            "x": 24.5,
+            "y": 12
+          },
+          "outward": {
+            "x": 1,
+            "y": 0
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "south",
+          "center": {
+            "x": 12,
+            "y": 24.5
+          },
+          "outward": {
+            "x": 0,
+            "y": 1
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "west",
+          "center": {
+            "x": -0.5,
+            "y": 12
+          },
+          "outward": {
+            "x": -1,
+            "y": 0
+          },
+          "lengthCells": 25
+        }
+      ],
+      "fogColor": "#6f3f2f",
+      "proceduralTriangles": 8,
+      "additionalDrawCalls": 1
+    },
+    "materialVariation": {
+      "wall": [
+        {
+          "id": "factory-wall-painted",
+          "tintToken": "wall",
+          "colorMix": 0.015,
+          "roughnessDelta": 0.05,
+          "metalnessDelta": 0.02,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "factory-wall-oily",
+          "tintToken": "trim",
+          "colorMix": 0.055,
+          "roughnessDelta": -0.1,
+          "metalnessDelta": 0.05,
+          "sharedMaterialSlot": 1
+        },
+        {
+          "id": "factory-wall-heat",
+          "tintToken": "accent",
+          "colorMix": 0.065,
+          "roughnessDelta": 0.12,
+          "metalnessDelta": -0.01,
+          "sharedMaterialSlot": 2
+        }
+      ],
+      "floor": [
+        {
+          "id": "factory-floor-dry",
+          "tintToken": "floor",
+          "colorMix": 0.01,
+          "roughnessDelta": 0.04,
+          "metalnessDelta": 0.03,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "factory-floor-oily",
+          "tintToken": "trim",
+          "colorMix": 0.06,
+          "roughnessDelta": -0.17,
+          "metalnessDelta": 0.08,
+          "sharedMaterialSlot": 1
+        },
+        {
+          "id": "factory-floor-heat",
+          "tintToken": "accent",
+          "colorMix": 0.055,
+          "roughnessDelta": 0.1,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 2
+        }
+      ],
+      "trim": [
+        {
+          "id": "factory-trim-base",
+          "tintToken": "trim",
+          "colorMix": 0.02,
+          "roughnessDelta": 0.03,
+          "metalnessDelta": 0.06,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "factory-trim-service",
+          "tintToken": "accent",
+          "colorMix": 0.09,
+          "roughnessDelta": 0.08,
+          "metalnessDelta": 0.01,
+          "sharedMaterialSlot": 1
+        }
+      ],
+      "landmark": [
+        {
+          "id": "factory-hero-neutral",
+          "tintToken": "wall",
+          "colorMix": 0.015,
+          "roughnessDelta": 0.02,
+          "metalnessDelta": 0.03,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "factory-hero-powered",
+          "tintToken": "emissive",
+          "colorMix": 0.085,
+          "roughnessDelta": -0.07,
+          "metalnessDelta": 0.02,
+          "sharedMaterialSlot": 1
+        }
+      ],
+      "decal": {
+        "id": "factory-service-chevron",
+        "pattern": "service-chevron",
+        "foregroundToken": "accent",
+        "secondaryToken": "emissive",
+        "opacity": 0.7,
+        "repeatCount": 4,
+        "strokeFraction": 0.1,
+        "maximumInstances": 24,
+        "batchKey": "environment-composition-markings",
+        "generatedResolution": 64
+      }
+    },
+    "decalInstanceLimit": 24
+  },
+  "telemetry": {
+    "detections": 0,
+    "hideEntries": 1,
+    "safeHideExits": 0,
+    "lockerSearches": 0,
+    "telemetryVersion": 2,
+    "hideExits": 0,
+    "threatReacquisitions": 0,
+    "decoysDeployed": 0,
+    "decoyInvestigations": 0,
+    "themeMechanicUses": 0,
+    "themeMechanicAdvantages": 0,
+    "routeReplans": 0,
+    "deployedDecoyIds": [],
+    "investigatedDecoyIds": [],
+    "usedThemeMechanicIds": [],
+    "benefitedThemeMechanicIds": [],
+    "lastRouteId": null,
+    "pendingSafeHideExitSeconds": null,
+    "masteryContext": {
+      "levelId": "factory-foundry-final-run",
+      "theme": "factory",
+      "ruleset": "standard"
+    }
+  },
+  "sceneIntegrity": {
+    "expectedMovementBlockers": 0,
+    "renderedMovementBlockers": 0,
+    "expectedVisionObscurers": 10,
+    "renderedVisionObscurers": 10
+  },
+  "assets": {
+    "decorativeReady": true,
+    "deferredDressingSettled": true,
+    "qaDecorativeSceneCompiled": true,
+    "qaDecorativeSceneCompileCount": 1,
+    "qaTransientArtPrewarmCount": 1,
+    "qaCleanFrame": false,
+    "kidAssetUrl": "/models/characters/kid-bootstrap.glb?v=m2-20260829",
+    "kidLoadedIdentity": {
+      "requestedUrl": "/models/characters/kid-bootstrap.glb?v=m2-20260829",
+      "resolvedUrl": "http://127.0.0.1:3000/models/characters/kid-bootstrap.glb?v=m2-20260829",
+      "transferBytes": 1561604,
+      "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "nodes": 92,
+      "meshes": 35,
+      "primitives": 35,
+      "triangles": 92680,
+      "materials": 12,
+      "textures": 3,
+      "skins": 1,
+      "joints": 21,
+      "jointNames": [
+        "Chest",
+        "Head",
+        "Hips",
+        "LeftFoot",
+        "LeftHand",
+        "LeftLowerArm",
+        "LeftLowerLeg",
+        "LeftShoulder",
+        "LeftToes",
+        "LeftUpperArm",
+        "LeftUpperLeg",
+        "Neck",
+        "RightFoot",
+        "RightHand",
+        "RightLowerArm",
+        "RightLowerLeg",
+        "RightShoulder",
+        "RightToes",
+        "RightUpperArm",
+        "RightUpperLeg",
+        "Spine"
+      ],
+      "runtimeMeshObjects": 35,
+      "runtimeSkinnedMeshes": 35,
+      "runtimeSkeletons": 1,
+      "runtimeBones": 21,
+      "clips": [
+        {
+          "name": "Caught",
+          "durationSeconds": 1,
+          "tracks": 22
+        },
+        {
+          "name": "EscapeCelebrate",
+          "durationSeconds": 1.233333,
+          "tracks": 22
+        },
+        {
+          "name": "HideEnter",
+          "durationSeconds": 1.3,
+          "tracks": 22
+        },
+        {
+          "name": "HideExit",
+          "durationSeconds": 1.033333,
+          "tracks": 22
+        },
+        {
+          "name": "HideIdle",
+          "durationSeconds": 1.666667,
+          "tracks": 22
+        },
+        {
+          "name": "HidePeek",
+          "durationSeconds": 1.6,
+          "tracks": 22
+        },
+        {
+          "name": "Idle",
+          "durationSeconds": 2.5,
+          "tracks": 22
+        },
+        {
+          "name": "Interact",
+          "durationSeconds": 2,
+          "tracks": 22
+        },
+        {
+          "name": "Run",
+          "durationSeconds": 0.666667,
+          "tracks": 22
+        },
+        {
+          "name": "TurnLeft",
+          "durationSeconds": 0.6,
+          "tracks": 22
+        },
+        {
+          "name": "TurnRight",
+          "durationSeconds": 0.6,
+          "tracks": 22
+        },
+        {
+          "name": "Walk",
+          "durationSeconds": 1.333333,
+          "tracks": 22
+        }
+      ]
+    },
+    "policeAssetUrl": "/models/characters/police-bootstrap.glb?v=m2-20260829",
+    "policeLoaded": false,
+    "policeLoadedIdentity": null,
+    "loadedAssetIds": [
+      "actor:kid",
+      "actor:villain",
+      "detail:ceilingLight",
+      "detail:extinguisher",
+      "detail:locker",
+      "detail:trash",
+      "stealth:corner-mirrors",
+      "structure:exit",
+      "structure:frontGate",
+      "theme:factory"
+    ],
+    "placedAssetIds": [
+      "actor:kid",
+      "actor:villain",
+      "detail:ceilingLight",
+      "detail:extinguisher",
+      "detail:locker",
+      "detail:trash",
+      "gameplay:hide-archetype:soft-cover",
+      "gameplay:hide-archetype:traversal-hide",
+      "gameplay:mission-objective:factory:release-line-gate",
+      "gameplay:mission-objective:factory:safety-interlock",
+      "gameplay:mission-objective:factory:steam-bleed",
+      "gameplay:stealth-evidence:door-state:campaign-stealth-evidence-v1:evidence:1",
+      "gameplay:theme-mechanic:factory-foundry-final-run:primary-mechanic",
+      "runtime:ambient-room-clusters",
+      "runtime:arrival-bay-markings",
+      "runtime:authored-room-floors",
+      "runtime:composition-edge-closure",
+      "runtime:composition-light:factory-exit-cyan",
+      "runtime:composition-light:factory-inspection-cyan",
+      "runtime:factory-service-chevron",
+      "runtime:maze-shadow-proxy",
+      "runtime:personal-best-ghost",
+      "runtime:prop-contact-shadows",
+      "runtime:vision-obscurer-vfx",
+      "runtime:wall-contact-shadows",
+      "stealth:corner-mirrors",
+      "structure:exit",
+      "structure:frontGate",
+      "theme-node:FactoryArchitectureCorner",
+      "theme-node:FactoryArchitectureDoorway",
+      "theme-node:FactoryArchitectureJunction",
+      "theme-node:FactoryArchitectureWallA",
+      "theme-node:FactoryArchitectureWallB",
+      "theme-node:FactoryArchitectureWallC",
+      "theme-node:FactoryArchitectureWallEnd",
+      "theme-node:FactoryArchitectureWallWide",
+      "theme-node:FactoryCastingCluster",
+      "theme-node:FactoryControlConsole",
+      "theme-node:FactoryCoolingCluster",
+      "theme-node:FactoryCrateStack",
+      "theme-node:FactoryDressingClusterA",
+      "theme-node:FactoryDressingClusterB",
+      "theme-node:FactoryDressingClusterC",
+      "theme-node:FactoryExteriorGround:entrance-plaza",
+      "theme-node:FactoryExteriorGround:exit-plaza",
+      "theme-node:FactoryFloorPrimary",
+      "theme-node:FactoryFloorSecondary",
+      "theme-node:FactoryFloorService",
+      "theme-node:FactoryFoundryArrivalCluster",
+      "theme-node:FactoryFoundryExitCluster",
+      "theme-node:FactoryFoundryHideDressing",
+      "theme-node:FactoryFurnaceCluster",
+      "theme-node:FactoryPipeAssembly",
+      "theme-node:FactorySafetyBarrier",
+      "theme-node:FactoryStorageTank",
+      "theme-node:FloorSeamX_-0003",
+      "theme:factory"
+    ],
+    "unusedLoadedAssetIds": []
+  },
+  "lockers": {
+    "foundry-slag-shield": {
+      "archetype": "hard-locker",
+      "alternateExit": null,
+      "approach": {
+        "x": 2,
+        "y": 7
+      },
+      "rootPosition": {
+        "x": -20.211656715098265,
+        "y": -0.12020886633058893,
+        "z": -9.99844043081043
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0,
+      "beaconViewport": {
+        "x": 0.6681782649180815,
+        "y": 0.2901209229448404,
+        "depth": 0.9877269025370603,
+        "centerInFrustum": true
+      },
+      "action": "Locker_Door_Open_Enter",
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0.637537466749835,
+      "timeScale": 1.2,
+      "doorQuaternion": {
+        "x": 0,
+        "y": 0.7878806942354417,
+        "z": 0,
+        "w": -0.6158279074961435
+      },
+      "owner": "player"
+    },
+    "foundry-maintenance-locker": {
+      "archetype": "soft-cover",
+      "alternateExit": null,
+      "approach": {
+        "x": 1,
+        "y": 15
+      },
+      "rootPosition": {
+        "x": -22.34,
+        "y": 0,
+        "z": 6
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0.5009406313080387,
+      "beaconViewport": {
+        "x": 0.43424512191984815,
+        "y": -0.07431321402181579,
+        "depth": 0.9938460050522744,
+        "centerInFrustum": false
+      },
+      "action": null,
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0,
+      "timeScale": 0,
+      "doorQuaternion": null,
+      "owner": "idle"
+    },
+    "foundry-coolant-cabinet": {
+      "archetype": "traversal-hide",
+      "alternateExit": {
+        "x": 3,
+        "y": 18
+      },
+      "approach": {
+        "x": 2,
+        "y": 21
+      },
+      "rootPosition": {
+        "x": -20,
+        "y": 0,
+        "z": 17.659999999999997
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0.5009406313080387,
+      "beaconViewport": {
+        "x": 0.29251540752236305,
+        "y": -0.16718512903918936,
+        "depth": 0.995395725849214,
+        "centerInFrustum": false
+      },
+      "action": null,
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0,
+      "timeScale": 0,
+      "doorQuaternion": null,
+      "owner": "idle"
+    },
+    "foundry-control-bay": {
+      "archetype": "hard-locker",
+      "alternateExit": null,
+      "approach": {
+        "x": 7,
+        "y": 22
+      },
+      "rootPosition": {
+        "x": -10.00155956918957,
+        "y": -0.12020886633058893,
+        "z": 19.788343284901732
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0.5009406313080387,
+      "beaconViewport": {
+        "x": 0.06761048354679056,
+        "y": -0.1393291963213228,
+        "depth": 0.9949134119347601,
+        "centerInFrustum": false
+      },
+      "action": null,
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0,
+      "timeScale": 0,
+      "doorQuaternion": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "owner": "idle"
+    }
+  },
+  "audio": {
+    "status": "playing",
+    "unlocked": true,
+    "muted": false,
+    "threat": 0,
+    "targetGains": {
+      "explore": 1,
+      "threat": 0
+    },
+    "contextState": "running",
+    "driftSeconds": -0.005336999999999925,
+    "explore": {
+      "url": "/audio/slow-drift-explore.m4a",
+      "currentTimeSeconds": 6.58622,
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "threatTrack": {
+      "url": "/audio/slow-drift-threat.m4a",
+      "currentTimeSeconds": 6.580883,
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "lastError": null
+  },
+  "camera": {
+    "fov": 56,
+    "aspect": 1.6921296296296295,
+    "distance": 11.70063039158924,
+    "zoom": 1,
+    "position": {
+      "x": -11.946948428904426,
+      "y": 9.442749823240689,
+      "z": -16.916089909483276
+    },
+    "focus": {
+      "x": -15.985380515552654,
+      "y": 0.8907759926915005,
+      "z": -10.02699987931865
+    },
+    "direction": {
+      "x": 0.3451465392455413,
+      "y": 0.7308985536964403,
+      "z": -0.588779390477688
+    },
+    "azimuthDegrees": 149.62087398863164,
+    "occlusion": {
+      "groups": 6,
+      "obscured": [
+        "factory-walls",
+        "hero-locker-foundry-slag-shield"
+      ],
+      "maxStrength": 0.9999977387662804
+    }
+  },
+  "render": {
+    "batching": "multi-draw",
+    "qualityTier": "high",
+    "qualityLock": {
+      "enabled": true,
+      "requestedTier": "high",
+      "appliedBeforeRendererCreation": true
+    },
+    "qualityTransitionCount": 0,
+    "emergencyTransitionCount": 0,
+    "pixelRatio": 1,
+    "shadowMapSize": 2048,
+    "shadowCamera": {
+      "halfExtent": 18,
+      "target": {
+        "x": -20.086145077158047,
+        "y": 0.004043680728433121,
+        "z": -10.10627476601447
+      },
+      "texelWorldSize": 0.017578125,
+      "lightSpaceX": -9.650390625,
+      "lightSpaceY": 15.75,
+      "texelIndexX": -549,
+      "texelIndexY": 896,
+      "residualTexelsX": 0,
+      "residualTexelsY": 0
+    },
+    "emergencyDegradation": {
+      "level": 0,
+      "overloadSeconds": 0,
+      "recoverySeconds": 0
+    },
+    "calls": 204,
+    "triangles": 407251,
+    "breakdown": {
+      "actor": {
+        "calls": 20,
+        "triangles": 118967
+      },
+      "maze-walls": {
+        "calls": 24,
+        "triangles": 60024
+      },
+      "props-dressing": {
+        "calls": 89,
+        "triangles": 121358
+      },
+      "shadow-pass": {
+        "calls": 71,
+        "triangles": 106902
+      },
+      "shadowSources": {
+        "actor": {
+          "calls": 2,
+          "triangles": 688
+        },
+        "maze-walls": {
+          "calls": 1,
+          "triangles": 4512
+        },
+        "props-dressing": {
+          "calls": 68,
+          "triangles": 101702
+        }
+      },
+      "total": {
+        "calls": 204,
+        "triangles": 407251
+      },
+      "reconciliation": {
+        "exact": true,
+        "callsError": 0,
+        "trianglesError": 0,
+        "fallbackCalls": 0,
+        "fallbackTriangles": 0,
+        "note": "Every renderer.info.update call was attributed by an object render callback."
+      }
+    },
+    "mazeShadowProxy": [
+      {
+        "name": "factory-maze-shadow-proxy",
+        "visible": true,
+        "castShadow": true,
+        "boxes": 376,
+        "triangles": 4512,
+        "sourceModules": 332
+      }
+    ],
+    "shadow": {
+      "shadowTriangles": 171776,
+      "shadowDrawCalls": 140
+    },
+    "memory": {
+      "geometries": 191,
+      "textures": 129
+    },
+    "programs": 80,
+    "sceneTextures": 20,
+    "invalidSceneTextures": [],
+    "textureDeduplication": {
+      "sourceTextures": 157,
+      "canonicalTextures": 137,
+      "assignmentsShared": 20,
+      "sourcesShared": 22
+    }
+  },
+  "firstPlayableBudget": {
+    "fits": true,
+    "fitsTransferBudget": true,
+    "fitsTimeBudget": true,
+    "criticalTransferBytes": 4671771,
+    "deferredTransferBytes": 0,
+    "requiredSavingsBytes": 0,
+    "estimatedSeconds": 4.8574168,
+    "criticalRequestCount": 10,
+    "categoryTransferBytes": {
+      "shell": 351227,
+      "navigation": 37336,
+      "player": 1561604,
+      "threat": 891784,
+      "hide-spot": 681996,
+      "theme": 1147824
+    },
+    "exceededCategories": [],
+    "duplicateUrls": [
+      "http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+      "http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2"
+    ],
+    "invalidEntryIds": []
+  }
+}

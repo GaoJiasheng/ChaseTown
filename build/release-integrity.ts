@@ -7,17 +7,17 @@ import {
   stat,
   writeFile,
 } from "node:fs/promises";
-import { extname, relative, resolve, sep } from "node:path";
+import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { gzipSync } from "node:zlib";
 
 import type { RuntimePreloadAsset } from "../app/game/runtime-assets";
 
-export const MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES = 8 * 1024 * 1024;
-export const MAX_EAGER_FIRST_CAMPAIGN_TRANSFER_BYTES = 9 * 1024 * 1024;
+export const MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES = 6 * 1024 * 1024;
+export const MAX_EAGER_FIRST_CAMPAIGN_TRANSFER_BYTES = 6 * 1024 * 1024;
 export const SERVER_RENDERED_HTML_TRANSFER_RESERVE_BYTES = 32 * 1024;
 
-const BASIS_TRANSCODER_OUTPUT =
-  /^assets\/basis_transcoder-[^/]+\.(?:js|wasm)$/u;
+const GENERATED_BASIS_TRANSCODER_ASSET =
+  /(?:^|\/)basis_transcoder[.-][^/]+\.(?:js|wasm)$/u;
 const CLIENT_TEXT_ASSET = /\.(?:css|js)$/u;
 
 export type ReleaseAssetKind =
@@ -54,6 +54,10 @@ function toPosixPath(pathname: string): string {
   return pathname.split(sep).join("/");
 }
 
+export function isGeneratedBasisTranscoderAsset(pathname: string): boolean {
+  return GENERATED_BASIS_TRANSCODER_ASSET.test(toPosixPath(pathname));
+}
+
 async function exists(pathname: string): Promise<boolean> {
   try {
     await access(pathname);
@@ -76,6 +80,39 @@ async function filesBelow(directory: string): Promise<string[]> {
     }
   }
   return files.sort();
+}
+
+async function requireClientAssetsDirectory(
+  clientOutputDirectory: string,
+  clientAssetsDirectory: string,
+): Promise<string> {
+  const relativeDirectory = relative(
+    clientOutputDirectory,
+    clientAssetsDirectory,
+  );
+  if (
+    isAbsolute(relativeDirectory)
+    || relativeDirectory === ".."
+    || relativeDirectory.startsWith(`..${sep}`)
+  ) {
+    throw new Error(
+      "Client asset output directory must be inside the client output directory",
+    );
+  }
+  try {
+    const metadata = await stat(clientAssetsDirectory);
+    if (!metadata.isDirectory()) {
+      throw new Error("Client asset output path is not a directory");
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(
+        `Client asset output directory was not emitted: ${clientAssetsDirectory}`,
+      );
+    }
+    throw error;
+  }
+  return toPosixPath(relativeDirectory);
 }
 
 function digest(bytes: Uint8Array): string {
@@ -130,8 +167,13 @@ async function fileRecord(
  */
 export async function createFirstPlayableBudget(
   clientOutputDirectory: string,
+  clientAssetsDirectory: string,
   preloads: readonly RuntimePreloadAsset[],
 ): Promise<FirstPlayableBudget> {
+  await requireClientAssetsDirectory(
+    clientOutputDirectory,
+    clientAssetsDirectory,
+  );
   const records: ReleaseAssetRecord[] = [
     Object.freeze({
       path: "/",
@@ -144,7 +186,7 @@ export async function createFirstPlayableBudget(
     }),
   ];
 
-  const emittedTextFiles = (await filesBelow(resolve(clientOutputDirectory, "assets")))
+  const emittedTextFiles = (await filesBelow(clientAssetsDirectory))
     .filter(isTextAsset);
   for (const pathname of emittedTextFiles) {
     const extension = extname(pathname);
@@ -220,20 +262,20 @@ function removeBasisAssetReferences(
     return value
       .filter((entry) => (
         typeof entry !== "string"
-        || (!removed.has(entry) && !BASIS_TRANSCODER_OUTPUT.test(entry))
+        || (!removed.has(entry) && !isGeneratedBasisTranscoderAsset(entry))
       ))
       .map((entry) => removeBasisAssetReferences(entry, removed));
   }
   if (value && typeof value === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, entry] of Object.entries(value)) {
-      if (removed.has(key) || BASIS_TRANSCODER_OUTPUT.test(key)) continue;
+      if (removed.has(key) || isGeneratedBasisTranscoderAsset(key)) continue;
       if (
         entry
         && typeof entry === "object"
         && "file" in entry
         && typeof entry.file === "string"
-        && BASIS_TRANSCODER_OUTPUT.test(entry.file)
+        && isGeneratedBasisTranscoderAsset(entry.file)
       ) {
         continue;
       }
@@ -259,7 +301,7 @@ async function pruneServerLazyChunkReferences(
     throw new Error("vinext lazy-chunk manifest is not a string array");
   }
   const retained = chunks.filter((chunk) => (
-    !removed.has(chunk) && !BASIS_TRANSCODER_OUTPUT.test(chunk)
+    !removed.has(chunk) && !isGeneratedBasisTranscoderAsset(chunk)
   ));
   if (retained.length === chunks.length) return;
   await writeFile(
@@ -276,15 +318,19 @@ async function pruneServerLazyChunkReferences(
  */
 export async function deduplicateBasisTranscoder(
   clientOutputDirectory: string,
+  clientAssetsDirectory: string,
   serverEntry: string,
 ): Promise<readonly string[]> {
-  const assetsDirectory = resolve(clientOutputDirectory, "assets");
-  const candidates = (await filesBelow(assetsDirectory))
+  await requireClientAssetsDirectory(
+    clientOutputDirectory,
+    clientAssetsDirectory,
+  );
+  const candidates = (await filesBelow(clientAssetsDirectory))
     .map((pathname) => ({
       pathname,
       relativePath: toPosixPath(relative(clientOutputDirectory, pathname)),
     }))
-    .filter(({ relativePath }) => BASIS_TRANSCODER_OUTPUT.test(relativePath));
+    .filter(({ relativePath }) => isGeneratedBasisTranscoderAsset(relativePath));
   const removed = new Set<string>();
   for (const candidate of candidates) {
     const extension = extname(candidate.pathname);

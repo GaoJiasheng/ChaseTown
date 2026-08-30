@@ -1,11 +1,11 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-07-23T13:23:36.186Z",
-  "method": "Chromium WebGL2; actual Three.js Meshopt and KTX2 decode; matched Idle pose, camera, lights and exposure.",
-  "url": "http://localhost:4174/",
+  "generatedAt": "2026-08-29T01:06:30.000Z",
+  "method": "Chromium WebGL2; actual Three.js Meshopt and KTX2 decode; matched Idle pose and formal game camera for Kid, with unchanged prior paired-render gates retained for Villain and Police.",
+  "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=1&qaCleanFrame=1&qaKidClip=Idle&qaKidTime=0.68",
   "viewport": {
-    "width": 1440,
-    "height": 900,
+    "width": 1280,
+    "height": 720,
     "deviceScaleFactor": 1,
     "mobile": false
   },
@@ -13,37 +13,37 @@
     "kid": {
       "reference": {
         "path": "public/models/characters/kid-lod1.glb",
-        "bytes": 2946584,
-        "sha256": "f803147b49b5a854e6bf232fb6795da4dab62a670397818612972a06e8f74395"
+        "bytes": 2935512,
+        "sha256": "8676e31fb32c77c734a1fa12a891eafde1acba720e0d2395caf9d26d6fd80d70"
       },
       "bootstrap": {
         "path": "public/models/characters/kid-bootstrap.glb",
-        "bytes": 1573988,
-        "sha256": "ebedbd74c3ac28ad6c2be05453fd684bc9e5ef98951156a7ecdd8646f00a0077"
+        "bytes": 1561604,
+        "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86"
       }
     },
     "villain": {
       "reference": {
         "path": "public/models/characters/villain-lod1.glb",
-        "bytes": 2570964,
-        "sha256": "0b0266b2c3b365cb286606dfdaea188fa2eeb2035dcc33d0ab7feff83a0cb4c2"
+        "bytes": 1526192,
+        "sha256": "66cccb2e32d0e771a7eef73a113ca8dd773d92563c665c983feba6dfae901352"
       },
       "bootstrap": {
         "path": "public/models/characters/villain-bootstrap.glb",
-        "bytes": 1474540,
-        "sha256": "91ad6c102194d06f6e4d6c5a8a7130e01dda42c5c0fa3ab1111c1942f0b9811f"
+        "bytes": 891784,
+        "sha256": "2193dc833f9b2ebd1864ea0b5af225e2947180e109572e15d8a589f49514855a"
       }
     },
     "police": {
       "reference": {
         "path": "public/models/characters/police.glb",
-        "bytes": 6873868,
-        "sha256": "768841bb45da54f12805e5593a5c1876f2eb6600422da821b9899a583efe9fa4"
+        "bytes": 7645844,
+        "sha256": "c062148256cbb26c51032e524b7f1401ea06ca5432327b267c7c1d2618113cf5"
       },
       "bootstrap": {
         "path": "public/models/characters/police-bootstrap.glb",
-        "bytes": 1736768,
-        "sha256": "a429aee2b409052888ac59e6f808f9ac963a482eafac37d04f4cee6e6126837a"
+        "bytes": 1926584,
+        "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1"
       }
     }
   },
@@ -54,17 +54,19 @@
     },
     "villain": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.6699217997611618
+      "rgbMeanAbsoluteError": 0.6097371463225122
     },
     "police": {
       "silhouetteIou": 1,
-      "rgbMeanAbsoluteError": 0.5591789585925004
+      "rgbMeanAbsoluteError": 0.5526101616091152
     }
   },
   "gates": {
     "minimumSilhouetteIou": 0.9999,
     "maximumRgbMeanAbsoluteError": 1
   },
-  "screenshotSha256": "a1b665d881f48f9a6f532fdfac38519c1b633f11eabe0a86f052ba66c14c941f",
-  "screenshot": "/tmp/chasing-character-bootstrap-visual-qa-police-final/character-bootstrap-comparison.png"
+  "screenshotBytes": 1998890,
+  "screenshotEncoding": "PNG",
+  "screenshotSha256": "962eea999c849483842583354d0988966e70ca3e63134c70a15be7c926bfc51c",
+  "screenshot": "docs/porting/m1-kid/evidence/bootstrap-visual-qa-comparison.png"
 }

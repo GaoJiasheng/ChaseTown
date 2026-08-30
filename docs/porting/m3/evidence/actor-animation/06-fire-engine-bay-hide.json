@@ -1,0 +1,3299 @@
+{
+  "ready": true,
+  "paused": false,
+  "campaign": {
+    "id": "fire-station-engine-bay",
+    "index": 5,
+    "number": 6,
+    "name": "空置车库",
+    "theme": "fire-station",
+    "propSet": "fire-engine-bay",
+    "config": {
+      "fixedStepSeconds": 0.016666666666666666,
+      "maxFrameDeltaSeconds": 0.25,
+      "aiTickSeconds": 0.05,
+      "playerSpeed": 2.64,
+      "chaserSpeed": 2.309,
+      "spawnDelaySeconds": 0,
+      "suspiciousSeconds": 0.18,
+      "lostSightGraceSeconds": 0.35,
+      "lastKnownScanSeconds": 1.5,
+      "searchSeconds": 5.8,
+      "searchWaypointSeconds": 0.7,
+      "searchHideCheckBudget": 1,
+      "searchHideRadiusCells": 3.4,
+      "checkHideSeconds": 2.3,
+      "hearingRange": 7,
+      "soundUncertaintyCells": 1.25,
+      "visionRange": 8,
+      "visionConeDegrees": 110,
+      "proximitySenseRange": 0.85,
+      "catchRange": 0.58,
+      "exitRange": 0.62,
+      "hideInteractRange": 1.05,
+      "hideAlignSpeed": 1.32,
+      "hideAlignTurnSpeed": 3.141592653589793,
+      "hideEnterSeconds": 1.8916666666666668,
+      "hideEnterExposureSeconds": 1.4833333333333334,
+      "hideExitSeconds": 1.6166666666666667,
+      "hideExitExposureSeconds": 0.3166666666666667,
+      "peekEnterSeconds": 0.15,
+      "peekExitSeconds": 0.15
+    },
+    "progress": {
+      "unlockedThrough": 1,
+      "bestSeconds": {},
+      "mastery": {},
+      "assistedBestSeconds": {},
+      "assistedMastery": {},
+      "assistedUnlockedThrough": 1,
+      "progressVersion": 3
+    },
+    "themeAsset": "/models/environment/themes/fire-station-kit-bootstrap.glb?v=m2-20260829",
+    "playerStart": {
+      "x": 12,
+      "y": 23
+    },
+    "exit": {
+      "x": 12,
+      "y": 1
+    },
+    "chaserStart": {
+      "x": 21,
+      "y": 7
+    },
+    "walkable": [
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    ],
+    "hideSpots": [
+      {
+        "id": "fire-turnout-locker",
+        "approach": {
+          "x": 10,
+          "y": 3
+        },
+        "concealed": {
+          "x": 9.65,
+          "y": 3
+        },
+        "facing": {
+          "x": 1,
+          "y": 0
+        },
+        "archetype": "traversal-hide",
+        "alternateExit": {
+          "x": 10,
+          "y": 8
+        }
+      },
+      {
+        "id": "fire-hose-cabinet",
+        "approach": {
+          "x": 22,
+          "y": 20
+        },
+        "concealed": {
+          "x": 22.35,
+          "y": 20
+        },
+        "facing": {
+          "x": -1,
+          "y": 0
+        },
+        "archetype": "hard-locker"
+      },
+      {
+        "id": "fire-breathing-gear",
+        "approach": {
+          "x": 23,
+          "y": 8
+        },
+        "concealed": {
+          "x": 23.35,
+          "y": 8
+        },
+        "facing": {
+          "x": -1,
+          "y": 0
+        },
+        "archetype": "soft-cover"
+      }
+    ]
+  },
+  "certifiedRemix": {
+    "selected": false,
+    "layoutNumber": null,
+    "missionVersion": "mission-v2",
+    "seed": null,
+    "contract": null,
+    "runIdentity": null,
+    "replayLevelId": "fire-station-engine-bay#mission-v2",
+    "recordStorageKey": null,
+    "record": null
+  },
+  "game": {
+    "phase": "playing",
+    "captureReason": null,
+    "elapsedSeconds": 0.9500000000000013,
+    "tick": 57,
+    "player": {
+      "position": {
+        "x": 10,
+        "y": 3
+      },
+      "heading": {
+        "x": 1,
+        "y": 0
+      },
+      "mode": "entering-hide",
+      "hideSpotId": "fire-turnout-locker",
+      "transitionRemainingSeconds": 1.1345000000000016,
+      "hideTurnDirection": 0,
+      "hideTurnCycle": -1,
+      "hideTurnSegmentDurationSeconds": 0
+    },
+    "chaser": {
+      "position": {
+        "x": 12,
+        "y": 22.012902499999957
+      },
+      "heading": {
+        "x": 0,
+        "y": -1
+      },
+      "mode": "patrol",
+      "modeElapsedSeconds": 0.9500000000000003,
+      "visualConfirmationSeconds": null,
+      "patrolIndex": 0,
+      "scanOriginHeading": {
+        "x": 0,
+        "y": 1
+      },
+      "searchSeed": 1,
+      "searchIndex": 0,
+      "searchWaypointElapsedSeconds": 0,
+      "searchHideSpotId": null,
+      "hideCheckSource": null,
+      "searchHideChecksCompleted": 0,
+      "inspectedHideSpotIds": [],
+      "memory": {
+        "lastKnownPosition": null,
+        "lastSeenAtSeconds": null,
+        "lastHeardAtSeconds": null,
+        "lastClueAtSeconds": null,
+        "lastKnownEvidence": null,
+        "deferredSoundEvidence": null,
+        "witnessedHideSpotId": null,
+        "evidenceTrail": []
+      }
+    },
+    "hideSpots": {
+      "fire-turnout-locker": {
+        "id": "fire-turnout-locker",
+        "occupiedByPlayer": true
+      },
+      "fire-hose-cabinet": {
+        "id": "fire-hose-cabinet",
+        "occupiedByPlayer": false
+      },
+      "fire-breathing-gear": {
+        "id": "fire-breathing-gear",
+        "occupiedByPlayer": false
+      }
+    },
+    "aiAccumulatorSeconds": 0,
+    "events": []
+  },
+  "interaction": null,
+  "activeHideArchetype": {
+    "hideSpotId": "fire-turnout-locker",
+    "archetype": "traversal-hide",
+    "profile": {
+      "kind": "traversal-hide",
+      "label": "穿越式藏点",
+      "playerHint": "可从另一侧离开并改变路线；穿行会制造更明显的两端动静。",
+      "risk": {
+        "entry": "medium",
+        "waiting": "low",
+        "search": "medium",
+        "exit": "high"
+      },
+      "capabilities": {
+        "concealment": "full",
+        "canPeek": false,
+        "canExitOrigin": true,
+        "canExitAlternate": true,
+        "requiresAlternateExit": true
+      },
+      "evidence": {
+        "entrySoundStrength": 0.36,
+        "exitSoundStrength": 0.46,
+        "peekSoundStrength": 0,
+        "occupiedVisualDisturbance": 0,
+        "publicSearchAppeal": 0.58,
+        "exactCheckRequiresWitnessedEntry": true
+      },
+      "timing": {
+        "enterDurationMultiplier": 0.82,
+        "exitDurationMultiplier": 0.76,
+        "peekDurationMultiplier": 0
+      }
+    },
+    "approach": {
+      "x": 10,
+      "y": 3
+    },
+    "concealed": {
+      "x": 9.65,
+      "y": 3
+    },
+    "facing": {
+      "x": 1,
+      "y": 0
+    },
+    "alternateExit": {
+      "x": 10,
+      "y": 8
+    },
+    "legacyDefault": false
+  },
+  "hideExitSelection": {
+    "hideSpotId": "fire-turnout-locker",
+    "selected": "origin",
+    "options": [
+      {
+        "kind": "origin",
+        "position": {
+          "x": 10,
+          "y": 3
+        }
+      },
+      {
+        "kind": "alternate",
+        "position": {
+          "x": 10,
+          "y": 8
+        }
+      }
+    ]
+  },
+  "animations": {
+    "kid": {
+      "state": "enterHide",
+      "clip": "HideEnter",
+      "clipDuration": 1.2999999523162842,
+      "timeScale": 0.8380788346296019,
+      "normalizedTime": 0.32711912398309495,
+      "playing": true
+    },
+    "villain": {
+      "state": "walk",
+      "clip": "PatrolWalk",
+      "clipDuration": 1.4666666984558105,
+      "timeScale": 1.259454545454601,
+      "normalizedTime": 0.026884552390242837,
+      "playing": true
+    },
+    "police": {
+      "state": "idle",
+      "clip": "Idle",
+      "clipDuration": 2.5,
+      "timeScale": 1,
+      "normalizedTime": 0.38663999999999926,
+      "playing": true
+    }
+  },
+  "actorOptimization": {
+    "kid": {
+      "batch": {
+        "beforeMeshes": 35,
+        "afterMeshes": 12,
+        "mergedGroups": 10,
+        "mergedSourceMeshes": 33,
+        "singletonGroups": 2,
+        "trianglesBefore": 92680,
+        "trianglesAfter": 92680,
+        "disposedGeometries": 33,
+        "fallbacks": []
+      },
+      "shadow": {
+        "created": true,
+        "sourceMeshes": 12,
+        "proxyMeshes": 1,
+        "proxyTriangles": 344,
+        "segments": 12,
+        "shadowLayer": 1
+      },
+      "fit": {
+        "requestedHeight": 1.12,
+        "authoredFittedHeight": 1.12,
+        "batchedHeight": 1.12
+      }
+    },
+    "villain": {
+      "batch": {
+        "beforeMeshes": 12,
+        "afterMeshes": 6,
+        "mergedGroups": 3,
+        "mergedSourceMeshes": 9,
+        "singletonGroups": 3,
+        "trianglesBefore": 25599,
+        "trianglesAfter": 25599,
+        "disposedGeometries": 9,
+        "fallbacks": []
+      },
+      "shadow": {
+        "created": true,
+        "sourceMeshes": 6,
+        "proxyMeshes": 1,
+        "proxyTriangles": 344,
+        "segments": 12,
+        "shadowLayer": 1
+      },
+      "fit": {
+        "requestedHeight": 1.88,
+        "authoredFittedHeight": 1.88,
+        "batchedHeight": 1.88
+      }
+    },
+    "police": {
+      "batch": {
+        "beforeMeshes": 26,
+        "afterMeshes": 14,
+        "mergedGroups": 6,
+        "mergedSourceMeshes": 18,
+        "singletonGroups": 8,
+        "trianglesBefore": 50800,
+        "trianglesAfter": 50800,
+        "disposedGeometries": 18,
+        "fallbacks": []
+      },
+      "shadow": {
+        "created": true,
+        "sourceMeshes": 14,
+        "proxyMeshes": 1,
+        "proxyTriangles": 344,
+        "segments": 12,
+        "shadowLayer": 1
+      },
+      "fit": {
+        "requestedHeight": 1.82,
+        "authoredFittedHeight": 1.82,
+        "batchedHeight": 1.82
+      }
+    }
+  },
+  "visibility": {
+    "kid": {
+      "rootVisible": true,
+      "alpha": 1,
+      "viewport": {
+        "x": 0.5563443310752308,
+        "y": 0.6236482275989806,
+        "depth": 0.9863486133935079,
+        "worldHeight": 1.139148728149988,
+        "pixelWidth": 49.90479848249507,
+        "pixelHeight": 85.70665923438871,
+        "bounds": {
+          "left": 0.5400246231889978,
+          "right": 0.5741592322741518,
+          "top": 0.5730591624898604,
+          "bottom": 0.6722566847518844
+        },
+        "centerInFrustum": true
+      },
+      "cameraClearance": {
+        "headClear": true,
+        "torsoClear": false,
+        "visibleSampleRatio": 0.2,
+        "samples": [
+          {
+            "label": "head",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "torso",
+            "clear": false,
+            "hit": "fire-station-corner-batch-6a80dea3",
+            "hitDistance": 8.68242100898274
+          },
+          {
+            "label": "hips",
+            "clear": false,
+            "hit": "fire-station-corner-batch-6a80dea3",
+            "hitDistance": 8.576733599334736
+          },
+          {
+            "label": "left-shoulder",
+            "clear": false,
+            "hit": "fire-station-corner-batch-6a80dea3",
+            "hitDistance": 8.698309710321405
+          },
+          {
+            "label": "right-shoulder",
+            "clear": false,
+            "hit": "fire-station-wall-batch-3669acf7",
+            "hitDistance": 8.91483129645053
+          }
+        ]
+      }
+    },
+    "villain": {
+      "rootVisible": true,
+      "alpha": 1,
+      "worldRendered": true,
+      "viewport": {
+        "x": 0.11841607368774171,
+        "y": -0.13456057334600335,
+        "depth": 0.9960039659777683,
+        "worldHeight": 1.90357765550281,
+        "pixelWidth": 52.03318764334492,
+        "pixelHeight": 63.95600206336967,
+        "bounds": {
+          "left": 0.10022801945710746,
+          "right": 0.1358184350818304,
+          "top": -0.17201649127598395,
+          "bottom": -0.09799334073967647
+        },
+        "centerInFrustum": false
+      },
+      "cameraClearance": {
+        "headClear": true,
+        "torsoClear": true,
+        "visibleSampleRatio": 0.8,
+        "samples": [
+          {
+            "label": "head",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "torso",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "hips",
+            "clear": false,
+            "hit": "fire-station-wall-wide-batch-3669acf7",
+            "hitDistance": 34.44801221774309
+          },
+          {
+            "label": "left-shoulder",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "right-shoulder",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          }
+        ]
+      }
+    },
+    "police": {
+      "rootVisible": true,
+      "alpha": 1,
+      "viewport": {
+        "x": 0.4180292509908945,
+        "y": 1.034406354126289,
+        "depth": 0.9801856953688548,
+        "worldHeight": 1.90215471003416,
+        "pixelWidth": 111.99214827980192,
+        "pixelHeight": 146.84224657716825,
+        "bounds": {
+          "left": 0.37638649368382726,
+          "right": 0.45298851029107895,
+          "top": 0.944674984496159,
+          "bottom": 1.1146312884049188
+        },
+        "centerInFrustum": false
+      },
+      "cameraClearance": {
+        "headClear": true,
+        "torsoClear": true,
+        "visibleSampleRatio": 1,
+        "samples": [
+          {
+            "label": "head",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "torso",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "hips",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "left-shoulder",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          },
+          {
+            "label": "right-shoulder",
+            "clear": true,
+            "hit": null,
+            "hitDistance": null
+          }
+        ]
+      }
+    }
+  },
+  "knowledge": {
+    "chaserObservable": false,
+    "publicThreat": {
+      "threat": "calm",
+      "quietSeconds": 0.75
+    }
+  },
+  "chaserArchetype": {
+    "profile": {
+      "theme": "fire-station",
+      "kind": "fire-sound-tracker",
+      "rule": "focus-perceived-sound",
+      "label": "消防听觉追踪者",
+      "readableRule": "听到足够明确的公开声音后会停步侧耳，再提高这条已感知声音的追踪优先级。",
+      "warningSeconds": 0.55,
+      "cueLabel": "追踪者侧身倾听，声音即将被锁定",
+      "cueAudioToken": "fire-breath-hold",
+      "cueAnimationToken": "ListenFocus"
+    },
+    "runtime": {
+      "enabled": true,
+      "archetype": "fire-sound-tracker",
+      "rule": "focus-perceived-sound",
+      "phase": "idle",
+      "warningSeconds": 0.55,
+      "cueProgress": 0,
+      "cueLabel": null,
+      "cueAudioToken": null,
+      "cueAnimationToken": null,
+      "action": null,
+      "navigationTarget": null,
+      "speedMultiplier": 1
+    }
+  },
+  "themeMechanic": {
+    "definition": {
+      "id": "fire-station-engine-bay:primary-mechanic",
+      "theme": "fire-station",
+      "kind": "fire-smoke",
+      "position": {
+        "x": 14,
+        "y": 14
+      },
+      "interactionRadius": 1.35,
+      "warningSeconds": 1.2,
+      "activeDurationSeconds": 4.8,
+      "effectRadius": 6,
+      "cooldownSeconds": 11.2,
+      "label": "训练烟幕",
+      "warningHint": "训练烟幕正在预热，完成前保持位置",
+      "activeHint": "烟幕升起，利用遮蔽切断视线",
+      "maximumSoundMasking": 0.3,
+      "minimumVisionRangeMultiplier": 0.68,
+      "soundSource": {
+        "sourceId": "fire-station-engine-bay:primary-mechanic:emitter",
+        "sourceType": "environment-hazard",
+        "strength": 0.82,
+        "confidence": 0.78,
+        "decayPerSecond": 0.12
+      },
+      "activationCost": {
+        "kind": "time",
+        "amount": 0.4,
+        "label": "排烟阀需要预热"
+      }
+    },
+    "state": {
+      "definition": {
+        "id": "fire-station-engine-bay:primary-mechanic",
+        "theme": "fire-station",
+        "kind": "fire-smoke",
+        "position": {
+          "x": 14,
+          "y": 14
+        },
+        "interactionRadius": 1.35,
+        "warningSeconds": 1.2,
+        "activeDurationSeconds": 4.8,
+        "effectRadius": 6,
+        "cooldownSeconds": 11.2,
+        "label": "训练烟幕",
+        "warningHint": "训练烟幕正在预热，完成前保持位置",
+        "activeHint": "烟幕升起，利用遮蔽切断视线",
+        "maximumSoundMasking": 0.3,
+        "minimumVisionRangeMultiplier": 0.68,
+        "soundSource": {
+          "sourceId": "fire-station-engine-bay:primary-mechanic:emitter",
+          "sourceType": "environment-hazard",
+          "strength": 0.82,
+          "confidence": 0.78,
+          "decayPerSecond": 0.12
+        },
+        "activationCost": {
+          "kind": "time",
+          "amount": 0.4,
+          "label": "排烟阀需要预热"
+        }
+      },
+      "phase": "ready",
+      "phaseElapsedSeconds": 0,
+      "activationCount": 0,
+      "lastActivatedAtSeconds": null
+    },
+    "sample": {
+      "phase": "ready",
+      "progress": 0,
+      "canActivate": false,
+      "inEffectArea": false,
+      "label": "训练烟幕",
+      "hudHint": "训练烟幕",
+      "soundMasking": 0,
+      "visionRangeMultiplier": 1
+    },
+    "view": {
+      "beaconVisible": false,
+      "beaconOpacity": 0,
+      "viewport": {
+        "x": 0.006038324738902812,
+        "y": 0.07364847497165156,
+        "depth": 0.9931998730093345,
+        "pixelWidth": 95.56374963043498,
+        "pixelHeight": 104.71951447961172,
+        "bounds": {
+          "left": -0.028405063456067192,
+          "right": 0.03696001837049573,
+          "top": 0.01301130087563368,
+          "bottom": 0.13421444263444354
+        },
+        "centerInFrustum": true
+      }
+    }
+  },
+  "themeMission": {
+    "definition": {
+      "id": "theme-mission:fire-station:v1",
+      "theme": "fire-station",
+      "title": "打开消防车库",
+      "briefing": "预热排烟机并释放卷帘液压制动；完成后升起车库卷帘。",
+      "exitObjectiveId": "fire-station:raise-shutter",
+      "objectives": [
+        {
+          "id": "fire-station:smoke-extractor",
+          "theme": "fire-station",
+          "stage": "preparation",
+          "verb": "prime-smoke-extractor",
+          "label": "预热排烟机",
+          "interactionPrompt": "启动训练塔排烟机",
+          "completionHint": "排烟风道已建立稳定负压",
+          "commitmentSeconds": 1.15,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "fire-station:hydraulic-brake",
+          "theme": "fire-station",
+          "stage": "preparation",
+          "verb": "release-hydraulic-brake",
+          "label": "释放液压制动",
+          "interactionPrompt": "扳下卷帘液压旁路",
+          "completionHint": "卷帘制动已经释放",
+          "commitmentSeconds": 0.95,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "fire-station:raise-shutter",
+          "theme": "fire-station",
+          "stage": "escape-unlock",
+          "verb": "raise-apparatus-shutter",
+          "label": "升起车库卷帘",
+          "interactionPrompt": "持续按住卷帘上升开关",
+          "completionHint": "消防车库出口已打开",
+          "commitmentSeconds": 1.25,
+          "prerequisites": [
+            "fire-station:smoke-extractor",
+            "fire-station:hydraulic-brake"
+          ],
+          "unlocksExit": true,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        }
+      ]
+    },
+    "runtimeObjectives": [
+      {
+        "id": "fire-station:smoke-extractor",
+        "theme": "fire-station",
+        "stage": "preparation",
+        "verb": "prime-smoke-extractor",
+        "label": "预热排烟机",
+        "interactionPrompt": "启动训练塔排烟机",
+        "completionHint": "排烟风道已建立稳定负压",
+        "commitmentSeconds": 1.15,
+        "prerequisites": [],
+        "unlocksExit": false,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      },
+      {
+        "id": "fire-station:hydraulic-brake",
+        "theme": "fire-station",
+        "stage": "preparation",
+        "verb": "release-hydraulic-brake",
+        "label": "释放液压制动",
+        "interactionPrompt": "扳下卷帘液压旁路",
+        "completionHint": "卷帘制动已经释放",
+        "commitmentSeconds": 0.95,
+        "prerequisites": [],
+        "unlocksExit": false,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      },
+      {
+        "id": "fire-station:raise-shutter",
+        "theme": "fire-station",
+        "stage": "escape-unlock",
+        "verb": "raise-apparatus-shutter",
+        "label": "升起车库卷帘",
+        "interactionPrompt": "持续按住卷帘上升开关",
+        "completionHint": "消防车库出口已打开",
+        "commitmentSeconds": 1.25,
+        "prerequisites": [
+          "fire-station:smoke-extractor",
+          "fire-station:hydraulic-brake"
+        ],
+        "unlocksExit": true,
+        "safety": {
+          "retryable": true,
+          "consumesRequiredResource": false,
+          "closesRequiredRoute": false
+        }
+      }
+    ],
+    "state": {
+      "definitionId": "theme-mission:fire-station:v1",
+      "stage": "preparation",
+      "completedObjectiveIds": [],
+      "exitUnlocked": false
+    },
+    "playerRuleProgress": {
+      "version": 1,
+      "tick": 57,
+      "stage": "preparation",
+      "normalizedProgress": 0,
+      "routeProgress": 0,
+      "completedObjectiveIds": [],
+      "committedMechanicIds": [],
+      "exitUnlocked": false,
+      "runCompleted": false,
+      "events": []
+    },
+    "views": [
+      {
+        "id": "fire-station:smoke-extractor",
+        "position": {
+          "x": 16,
+          "y": 20
+        },
+        "lightColor": 16757311,
+        "lightIntensity": 0.08
+      },
+      {
+        "id": "fire-station:hydraulic-brake",
+        "position": {
+          "x": 19,
+          "y": 22
+        },
+        "lightColor": 16757311,
+        "lightIntensity": 0.08
+      },
+      {
+        "id": "fire-station:raise-shutter",
+        "position": {
+          "x": 12,
+          "y": 4
+        },
+        "lightColor": 5333098,
+        "lightIntensity": 0.08
+      }
+    ],
+    "commitment": null,
+    "library": null,
+    "placements": [
+      {
+        "objectiveId": "fire-station:smoke-extractor",
+        "position": {
+          "x": 16,
+          "y": 20
+        }
+      },
+      {
+        "objectiveId": "fire-station:hydraulic-brake",
+        "position": {
+          "x": 19,
+          "y": 22
+        }
+      },
+      {
+        "objectiveId": "fire-station:raise-shutter",
+        "position": {
+          "x": 12,
+          "y": 4
+        }
+      }
+    ],
+    "availableObjectiveIds": [
+      "fire-station:smoke-extractor",
+      "fire-station:hydraulic-brake"
+    ],
+    "audit": {
+      "passed": true,
+      "failures": [],
+      "orders": [
+        {
+          "objectiveIds": [
+            "fire-station:smoke-extractor",
+            "fire-station:hydraulic-brake",
+            "fire-station:raise-shutter"
+          ],
+          "reachable": true,
+          "failedLeg": null,
+          "routeDistanceCells": 54
+        },
+        {
+          "objectiveIds": [
+            "fire-station:hydraulic-brake",
+            "fire-station:smoke-extractor",
+            "fire-station:raise-shutter"
+          ],
+          "reachable": true,
+          "failedLeg": null,
+          "routeDistanceCells": 54
+        }
+      ],
+      "directRouteDistanceCells": 40,
+      "shortestOrderDistanceCells": 54,
+      "longestOrderDistanceCells": 54,
+      "shortestDetourRatio": 1.35,
+      "orderImbalanceRatio": 0
+    }
+  },
+  "portableDecoy": null,
+  "stealth": {
+    "selectedTool": "door-wedge",
+    "evidence": {
+      "tick": 57,
+      "countermeasureBudgetRemaining": 10,
+      "countermeasureBudgetSpent": 0,
+      "countermeasureBusyUntilTick": 0,
+      "erasedEvidenceCount": 0,
+      "forgedEvidenceCount": 0,
+      "records": [
+        {
+          "id": "campaign-stealth-evidence-v1:evidence:1",
+          "kind": "door-state",
+          "position": {
+            "x": 10,
+            "y": 3
+          },
+          "source": {
+            "publicId": "fire-station-engine-bay:hide-door:fire-turnout-locker",
+            "kind": "door",
+            "publicity": "world-observable"
+          },
+          "detail": {
+            "state": "closed"
+          },
+          "createdAtTick": 32,
+          "expiresAtTick": 1832
+        }
+      ],
+      "deliveredIds": [],
+      "investigatedIds": [],
+      "worldClueDelivery": {
+        "pending": [],
+        "acceptedCount": 0,
+        "deliveredCount": 0,
+        "lastDeliveredClueId": null
+      },
+      "views": [
+        {
+          "id": "campaign-stealth-evidence-v1:evidence:1",
+          "rootName": "stealth-evidence-campaign-stealth-evidence-v1:evidence:1",
+          "createdAtTick": 32,
+          "expiresAtTick": 1832,
+          "worldPosition": {
+            "x": -4,
+            "y": 0,
+            "z": -18
+          },
+          "meshCount": 3,
+          "materialCount": 3,
+          "texturedMaterialCount": 1,
+          "semanticNames": [
+            "stealth-evidence-campaign-stealth-evidence-v1:evidence:1",
+            "authored-door-state-evidence"
+          ],
+          "parts": [],
+          "authoredSources": [
+            {
+              "node": "FireSafetyCones",
+              "label": "训练区门楔锁",
+              "assetId": "theme-kit:fire-station",
+              "sourceUrl": "/models/environment/themes/fire-station-kit-bootstrap.glb?v=m2-20260829",
+              "geometrySignature": "192:372:1623.0000:2433.0000:1622.0000|192:372:1623.0000:2433.0000:1622.0000|192:372:1623.0000:2433.0000:1622.0000|24:36:1005.0000:357.0000:1005.0000|24:36:1005.0000:357.0000:1005.0000|24:36:1005.0000:357.0000:1005.0000|24:36:1881.0000:260.0000:1881.0000|24:36:1881.0000:260.0000:1881.0000|24:36:1881.0000:260.0000:1881.0000",
+              "fallbackUsed": false
+            }
+          ],
+          "viewport": {
+            "x": 0.5504709629738237,
+            "y": 0.6469840321153985,
+            "depth": 0.9866821451841896,
+            "pixelWidth": 70.75653947151422,
+            "pixelHeight": 68.54054776596853,
+            "bounds": {
+              "left": 0.5266600427625504,
+              "right": 0.5750571285843796,
+              "top": 0.6080226175721949,
+              "bottom": 0.6873519552642882
+            },
+            "centerInFrustum": true
+          }
+        }
+      ]
+    },
+    "toolbelt": {
+      "state": {
+        "definition": {
+          "id": "gold-stealth-toolbelt",
+          "ticksPerSecond": 60,
+          "maximumFailsafeTicks": 1200,
+          "receiptLedgerCapacity": 12,
+          "tools": {
+            "door-wedge": {
+              "kind": "door-wedge",
+              "capacity": 2,
+              "interactionRangeCells": 1.45,
+              "commitmentTicks": 24,
+              "cooldownTicks": 180,
+              "effectTicks": 300,
+              "chaserTraversalDelayTicks": 72,
+              "risk": {
+                "channel": "sound",
+                "strength": 0.34,
+                "confidence": 0.76,
+                "evidenceLifetimeTicks": 240
+              }
+            },
+            "corner-mirror": {
+              "kind": "corner-mirror",
+              "capacity": 4,
+              "interactionRangeCells": 1.2,
+              "commitmentTicks": 9,
+              "cooldownTicks": 45,
+              "effectTicks": 90,
+              "observationRangeCells": 8,
+              "observationConeDegrees": 58,
+              "risk": {
+                "channel": "visual",
+                "strength": 0.14,
+                "confidence": 0.58,
+                "evidenceLifetimeTicks": 90
+              }
+            },
+            "temporary-blackout": {
+              "kind": "temporary-blackout",
+              "capacity": 1,
+              "interactionRangeCells": 1.5,
+              "commitmentTicks": 36,
+              "cooldownTicks": 600,
+              "effectTicks": 420,
+              "visionRangeMultiplier": 0.52,
+              "ambientSoundMasking": 0.3,
+              "risk": {
+                "channel": "infrastructure",
+                "strength": 0.7,
+                "confidence": 0.9,
+                "evidenceLifetimeTicks": 420
+              }
+            }
+          }
+        },
+        "tick": 57,
+        "useSequence": 0,
+        "tools": {
+          "door-wedge": {
+            "inventoryRemaining": 2,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          },
+          "corner-mirror": {
+            "inventoryRemaining": 4,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          },
+          "temporary-blackout": {
+            "inventoryRemaining": 1,
+            "nextUseAtTick": 0,
+            "cooldownEventPending": false
+          }
+        },
+        "commitment": null,
+        "activeEffects": {},
+        "receiptLedger": []
+      },
+      "sample": {
+        "tick": 57,
+        "tools": {
+          "door-wedge": {
+            "tool": "door-wedge",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 2,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          },
+          "corner-mirror": {
+            "tool": "corner-mirror",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 4,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          },
+          "temporary-blackout": {
+            "tool": "temporary-blackout",
+            "phase": "ready",
+            "canUse": true,
+            "inventoryRemaining": 1,
+            "commitmentRemainingTicks": 0,
+            "cooldownRemainingTicks": 0,
+            "effectRemainingTicks": 0
+          }
+        }
+      },
+      "qaPlacementAnchors": {
+        "door-wedge": {
+          "player": {
+            "x": 10,
+            "y": 3
+          },
+          "target": {
+            "kind": "door",
+            "id": "fire-station-engine-bay:threshold:10:4",
+            "interactionPoint": {
+              "x": 10,
+              "y": 4
+            },
+            "routeSafetyAuditId": "fire-station-engine-bay:player-route-remains-open:v1",
+            "traversalAxis": "vertical",
+            "playerPassageRemainsAvailable": true,
+            "autoReleaseTicks": 300
+          }
+        },
+        "corner-mirror": {
+          "player": {
+            "x": 10,
+            "y": 3
+          },
+          "target": {
+            "kind": "corner",
+            "id": "fire-station-engine-bay:corner:10:3",
+            "interactionPoint": {
+              "x": 10,
+              "y": 3
+            },
+            "hasOpaqueCorner": true,
+            "outwardHeading": {
+              "x": 0,
+              "y": 1
+            }
+          }
+        },
+        "temporary-blackout": {
+          "player": {
+            "x": 14,
+            "y": 14
+          },
+          "target": {
+            "kind": "power-circuit",
+            "id": "fire-station-engine-bay:primary-lighting-circuit",
+            "interactionPoint": {
+              "x": 14,
+              "y": 14
+            },
+            "autoRestoreTicks": 360,
+            "emergencyVisibilityFloor": 0.35
+          }
+        }
+      },
+      "views": [],
+      "mirrorThreatVisible": false,
+      "activeWedgeHoldUntilTick": 0
+    },
+    "resources": {
+      "registeredLights": 0,
+      "sceneRoots": 1,
+      "transientPlacedAssetIds": [
+        "stealth-evidence-campaign-stealth-evidence-v1:evidence:1"
+      ]
+    },
+    "director": {
+      "definition": {
+        "version": 1,
+        "id": "fire-station-engine-bay:fair-tension-director",
+        "routeIds": [
+          "fire-station-engine-bay:mission-route:1:fire-station:smoke-extractor>fire-station:hydraulic-brake>fire-station:raise-shutter",
+          "fire-station-engine-bay:mission-route:2:fire-station:hydraulic-brake>fire-station:smoke-extractor>fire-station:raise-shutter"
+        ],
+        "minimumLegalRouteCount": 1,
+        "policy": {
+          "fixedStepSeconds": 0.016666666666666666,
+          "minimumWarningTicks": 120,
+          "maximumEventDurationTicks": 720,
+          "minimumEventCooldownTicks": 480,
+          "minimumSafeTicksBeforePressure": 480,
+          "minimumCalmTicksAfterEvent": 360,
+          "suspiciousBreatherTicks": 300,
+          "chaseBreatherTicks": 480,
+          "escapeBreatherTicks": 600,
+          "resourceRecoveryBreatherTicks": 300,
+          "criticalResourcePermille": 150,
+          "heightenedResourceFloorPermille": 350,
+          "safeRampStartTicks": 480,
+          "safeRampEndTicks": 1800,
+          "safeScoreMaximum": 550,
+          "missionScoreMaximum": 350,
+          "resourceScoreMaximum": 100,
+          "watchfulEnterScore": 360,
+          "watchfulExitScore": 260,
+          "heightenedEnterScore": 720,
+          "heightenedExitScore": 560
+        },
+        "events": [
+          {
+            "id": "public-address-sweep",
+            "label": "广播巡检",
+            "kind": "broadcast",
+            "minimumTier": "watchful",
+            "warningTicks": 120,
+            "durationTicks": 240,
+            "cooldownTicks": 660,
+            "publicChannelId": "fire-station-engine-bay:public-address",
+            "blockedRouteIds": [],
+            "intensityPermille": 620
+          },
+          {
+            "id": "patrol-pressure-window",
+            "label": "巡逻提速",
+            "kind": "patrol-pressure",
+            "minimumTier": "heightened",
+            "warningTicks": 150,
+            "durationTicks": 360,
+            "cooldownTicks": 780,
+            "publicChannelId": null,
+            "blockedRouteIds": [],
+            "intensityPermille": 180
+          },
+          {
+            "id": "lighting-load-shed",
+            "label": "照明降载",
+            "kind": "blackout",
+            "minimumTier": "watchful",
+            "warningTicks": 180,
+            "durationTicks": 300,
+            "cooldownTicks": 900,
+            "publicChannelId": "fire-station-engine-bay:lighting-grid",
+            "blockedRouteIds": [],
+            "intensityPermille": 480
+          }
+        ]
+      },
+      "state": {
+        "version": 1,
+        "definitionId": "fire-station-engine-bay:fair-tension-director",
+        "currentTick": 57,
+        "tier": "rest",
+        "score": 100,
+        "activeEvent": null,
+        "cooldowns": [
+          {
+            "eventId": "public-address-sweep",
+            "readyAtTick": 0
+          },
+          {
+            "eventId": "patrol-pressure-window",
+            "readyAtTick": 0
+          },
+          {
+            "eventId": "lighting-load-shed",
+            "readyAtTick": 0
+          }
+        ],
+        "globalReadyAtTick": 0,
+        "breatherUntilTick": 0,
+        "selectionCursor": 0,
+        "nextSequence": 1,
+        "lastEventId": null,
+        "completedEventCount": 0
+      },
+      "safeTicks": 57,
+      "chaseTicks": 0,
+      "ticksSinceChaseEscape": null
+    }
+  },
+  "ghost": {
+    "eligible": false,
+    "recording": null,
+    "state": null,
+    "race": null,
+    "viewport": {
+      "x": 0.11836776158439949,
+      "y": -0.13451277801364214,
+      "depth": 0.9962176526117983,
+      "worldHeight": 1.139148728149988,
+      "pixelWidth": 26.99994242395857,
+      "pixelHeight": 36.75907357734508,
+      "bounds": {
+        "left": 0.10902931740265348,
+        "right": 0.12749713027813814,
+        "top": -0.15592828060508424,
+        "bottom": -0.11338305655723113
+      },
+      "centerInFrustum": false
+    }
+  },
+  "preferences": {
+    "version": 1,
+    "ruleset": "standard",
+    "personalGhostEnabled": true,
+    "hudDensity": "cinematic",
+    "hapticsEnabled": true,
+    "highContrast": false,
+    "reducedMotion": false
+  },
+  "environmentComposition": {
+    "profile": {
+      "levelId": "fire-station-engine-bay",
+      "propSet": "fire-engine-bay",
+      "theme": "fire-station",
+      "materialSalt": 67,
+      "landmarkSegments": [
+        {
+          "id": "fire-engine-bay-establish",
+          "role": "establish",
+          "nodeCandidates": [
+            "FireStationEngineBayCluster"
+          ],
+          "routeFraction": 0.18,
+          "lateralBias": -1
+        },
+        {
+          "id": "fire-engine-bay-pressure",
+          "role": "pressure",
+          "nodeCandidates": [
+            "FireStationTurnoutCluster"
+          ],
+          "routeFraction": 0.47,
+          "lateralBias": 1
+        },
+        {
+          "id": "fire-engine-bay-payoff",
+          "role": "payoff",
+          "nodeCandidates": [
+            "FireStationHoseServiceCluster"
+          ],
+          "routeFraction": 0.79,
+          "lateralBias": -1
+        }
+      ],
+      "arrivalNodeCandidates": [
+        "FireStationEngineBayArrivalCluster"
+      ],
+      "hideDressingNodeCandidates": [
+        "FireStationEngineBayHideDressing"
+      ],
+      "exitNodeCandidates": [
+        "FireStationEngineBayExitCluster"
+      ],
+      "placementPolicy": "nearest-authored-room-anchor"
+    },
+    "theme": {
+      "theme": "fire-station",
+      "architecture": {
+        "wallVariants": [
+          "FireStationArchitectureWallA",
+          "FireStationArchitectureWallB",
+          "FireStationArchitectureWallC"
+        ],
+        "wallEnd": [
+          "FireStationArchitectureWallEnd"
+        ],
+        "corner": [
+          "FireStationArchitectureCorner"
+        ],
+        "floorPrimary": [
+          "FireStationFloorPrimary"
+        ],
+        "floorSecondary": [
+          "FireStationFloorSecondary"
+        ],
+        "floorService": [
+          "FireStationFloorService"
+        ],
+        "exteriorGround": [
+          "FireStationExteriorGround"
+        ]
+      },
+      "lightPools": [
+        {
+          "id": "fire-engine-amber",
+          "colorToken": "accent",
+          "intensity": 2.05,
+          "rangeMeters": 5.7,
+          "heightMeters": 2.65,
+          "priority": 3,
+          "castShadow": false
+        },
+        {
+          "id": "fire-smoke-red",
+          "colorToken": "emissive",
+          "intensity": 1.7,
+          "rangeMeters": 4.8,
+          "heightMeters": 2.35,
+          "priority": 2,
+          "castShadow": false
+        },
+        {
+          "id": "fire-exit-amber",
+          "colorToken": "trim",
+          "intensity": 2.2,
+          "rangeMeters": 5.9,
+          "heightMeters": 2.65,
+          "priority": 3,
+          "castShadow": false
+        }
+      ],
+      "materialVariation": {
+        "wall": [
+          {
+            "id": "fire-wall-sealed",
+            "tintToken": "wall",
+            "colorMix": 0.015,
+            "roughnessDelta": 0.04,
+            "metalnessDelta": 0.01,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "fire-wall-soot",
+            "tintToken": "fog",
+            "colorMix": 0.075,
+            "roughnessDelta": 0.16,
+            "metalnessDelta": -0.02,
+            "sharedMaterialSlot": 1
+          },
+          {
+            "id": "fire-wall-beacon",
+            "tintToken": "accent",
+            "colorMix": 0.055,
+            "roughnessDelta": 0.08,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 2
+          }
+        ],
+        "floor": [
+          {
+            "id": "fire-floor-clean",
+            "tintToken": "floor",
+            "colorMix": 0.01,
+            "roughnessDelta": 0.02,
+            "metalnessDelta": 0.01,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "fire-floor-wet",
+            "tintToken": "trim",
+            "colorMix": 0.05,
+            "roughnessDelta": -0.15,
+            "metalnessDelta": 0.04,
+            "sharedMaterialSlot": 1
+          },
+          {
+            "id": "fire-floor-soot",
+            "tintToken": "fog",
+            "colorMix": 0.08,
+            "roughnessDelta": 0.14,
+            "metalnessDelta": -0.02,
+            "sharedMaterialSlot": 2
+          }
+        ],
+        "trim": [
+          {
+            "id": "fire-trim-base",
+            "tintToken": "trim",
+            "colorMix": 0.02,
+            "roughnessDelta": 0.02,
+            "metalnessDelta": 0.04,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "fire-trim-warning",
+            "tintToken": "accent",
+            "colorMix": 0.09,
+            "roughnessDelta": 0.07,
+            "metalnessDelta": 0,
+            "sharedMaterialSlot": 1
+          }
+        ],
+        "landmark": [
+          {
+            "id": "fire-hero-neutral",
+            "tintToken": "wall",
+            "colorMix": 0.015,
+            "roughnessDelta": 0.02,
+            "metalnessDelta": 0.02,
+            "sharedMaterialSlot": 0
+          },
+          {
+            "id": "fire-hero-beacon",
+            "tintToken": "accent",
+            "colorMix": 0.095,
+            "roughnessDelta": -0.04,
+            "metalnessDelta": 0.01,
+            "sharedMaterialSlot": 1
+          }
+        ],
+        "decal": {
+          "id": "fire-hazard-stripe",
+          "pattern": "hazard-stripe",
+          "foregroundToken": "accent",
+          "secondaryToken": "fog",
+          "opacity": 0.72,
+          "repeatCount": 5,
+          "strokeFraction": 0.12,
+          "maximumInstances": 24,
+          "batchKey": "environment-composition-markings",
+          "generatedResolution": 64
+        }
+      },
+      "edgeClosure": {
+        "capNodeCandidates": [
+          "FireStationExteriorGround"
+        ],
+        "wallEndNodeCandidates": [
+          "FireStationArchitectureWallEnd"
+        ],
+        "cornerNodeCandidates": [
+          "FireStationArchitectureCorner"
+        ],
+        "groundMarginCells": 1.35,
+        "skirtDepthMeters": 3.6,
+        "fogColorToken": "fog",
+        "fogOpacity": 0.93,
+        "geometryMode": "single-batched-skirt",
+        "castShadow": false,
+        "receiveShadow": false
+      },
+      "mechanicFeedback": {
+        "sourceNodeCandidates": [
+          "FireHoseReel"
+        ],
+        "partMotion": {
+          "kind": "spin",
+          "axis": "z",
+          "targetNodeCandidates": [
+            "ReelHub",
+            "HoseCoil_0.23",
+            "HoseCoil_0.31",
+            "HoseCoil_0.39",
+            "HoseCoil_0.47"
+          ]
+        },
+        "stages": {
+          "warning": {
+            "stage": "warning",
+            "colorToken": "accent",
+            "pulseCycles": 3,
+            "peakEmissiveIntensity": 1.38,
+            "peakLightIntensity": 2.75,
+            "lightRangeMeters": 6.1,
+            "rootScaleAmplitude": 0.018,
+            "partMotionAmplitude": 0.3,
+            "particleKind": "smoke",
+            "maximumParticles": 48,
+            "effectOpacity": 0.42
+          },
+          "active": {
+            "stage": "active",
+            "colorToken": "accent",
+            "pulseCycles": 5,
+            "peakEmissiveIntensity": 1.38,
+            "peakLightIntensity": 2.75,
+            "lightRangeMeters": 6.1,
+            "rootScaleAmplitude": 0.018,
+            "partMotionAmplitude": 0.3,
+            "particleKind": "smoke",
+            "maximumParticles": 48,
+            "effectOpacity": 0.42
+          },
+          "recover": {
+            "stage": "recover",
+            "colorToken": "accent",
+            "pulseCycles": 1,
+            "peakEmissiveIntensity": 1.38,
+            "peakLightIntensity": 2.75,
+            "lightRangeMeters": 6.1,
+            "rootScaleAmplitude": 0.018,
+            "partMotionAmplitude": 0.3,
+            "particleKind": "smoke",
+            "maximumParticles": 48,
+            "effectOpacity": 0.42
+          }
+        },
+        "usesPooledLocalLight": true,
+        "usesAtmosphereParticleBuffer": true
+      }
+    },
+    "budget": {
+      "tier": "high",
+      "additionalNetworkRequests": 0,
+      "additionalNetworkBytes": 0,
+      "additionalTextureFiles": 0,
+      "maximumRuntimeTextureBytes": 16384,
+      "maximumAdditionalDrawCalls": 2,
+      "maximumAdditionalTriangles": 256,
+      "maximumLocalLightPools": 2,
+      "maximumProceduralDecals": 24,
+      "maximumMechanicParticles": 48,
+      "maximumMaterialVariantsPerSurface": 3
+    },
+    "criticalRoute": [
+      {
+        "x": 12,
+        "y": 23
+      },
+      {
+        "x": 12,
+        "y": 22
+      },
+      {
+        "x": 12,
+        "y": 21
+      },
+      {
+        "x": 12,
+        "y": 20
+      },
+      {
+        "x": 12,
+        "y": 19
+      },
+      {
+        "x": 12,
+        "y": 18
+      },
+      {
+        "x": 13,
+        "y": 18
+      },
+      {
+        "x": 14,
+        "y": 18
+      },
+      {
+        "x": 14,
+        "y": 17
+      },
+      {
+        "x": 14,
+        "y": 16
+      },
+      {
+        "x": 14,
+        "y": 15
+      },
+      {
+        "x": 14,
+        "y": 14
+      },
+      {
+        "x": 14,
+        "y": 13
+      },
+      {
+        "x": 14,
+        "y": 12
+      },
+      {
+        "x": 14,
+        "y": 11
+      },
+      {
+        "x": 15,
+        "y": 11
+      },
+      {
+        "x": 16,
+        "y": 11
+      },
+      {
+        "x": 17,
+        "y": 11
+      },
+      {
+        "x": 18,
+        "y": 11
+      },
+      {
+        "x": 19,
+        "y": 11
+      },
+      {
+        "x": 20,
+        "y": 11
+      },
+      {
+        "x": 21,
+        "y": 11
+      },
+      {
+        "x": 21,
+        "y": 10
+      },
+      {
+        "x": 21,
+        "y": 9
+      },
+      {
+        "x": 21,
+        "y": 8
+      },
+      {
+        "x": 21,
+        "y": 7
+      },
+      {
+        "x": 21,
+        "y": 6
+      },
+      {
+        "x": 21,
+        "y": 5
+      },
+      {
+        "x": 20,
+        "y": 5
+      },
+      {
+        "x": 19,
+        "y": 5
+      },
+      {
+        "x": 18,
+        "y": 5
+      },
+      {
+        "x": 17,
+        "y": 5
+      },
+      {
+        "x": 16,
+        "y": 5
+      },
+      {
+        "x": 15,
+        "y": 5
+      },
+      {
+        "x": 14,
+        "y": 5
+      },
+      {
+        "x": 13,
+        "y": 5
+      },
+      {
+        "x": 12,
+        "y": 5
+      },
+      {
+        "x": 12,
+        "y": 4
+      },
+      {
+        "x": 12,
+        "y": 3
+      },
+      {
+        "x": 12,
+        "y": 2
+      },
+      {
+        "x": 12,
+        "y": 1
+      }
+    ],
+    "landmarkBeats": [
+      {
+        "id": "fire-engine-bay-establish",
+        "role": "establish",
+        "nodeCandidates": [
+          "FireStationEngineBayCluster"
+        ],
+        "routeFraction": 0.18,
+        "lateralBias": -1,
+        "label": "消防车库",
+        "routeIndex": 7,
+        "resolvedRouteFraction": 0.175,
+        "focusCell": {
+          "x": 14,
+          "y": 18
+        },
+        "routeTangent": {
+          "x": 0.7071067811865475,
+          "y": -0.7071067811865475
+        },
+        "junctionDegree": 3,
+        "decisionStrength": 0.7
+      },
+      {
+        "id": "fire-engine-bay-pressure",
+        "role": "pressure",
+        "nodeCandidates": [
+          "FireStationTurnoutCluster"
+        ],
+        "routeFraction": 0.47,
+        "lateralBias": 1,
+        "label": "战斗服整备墙",
+        "routeIndex": 19,
+        "resolvedRouteFraction": 0.475,
+        "focusCell": {
+          "x": 19,
+          "y": 11
+        },
+        "routeTangent": {
+          "x": 1,
+          "y": 0
+        },
+        "junctionDegree": 3,
+        "decisionStrength": 0.5
+      },
+      {
+        "id": "fire-engine-bay-payoff",
+        "role": "payoff",
+        "nodeCandidates": [
+          "FireStationHoseServiceCluster"
+        ],
+        "routeFraction": 0.79,
+        "lateralBias": -1,
+        "label": "水带维护区",
+        "routeIndex": 32,
+        "resolvedRouteFraction": 0.8,
+        "focusCell": {
+          "x": 16,
+          "y": 5
+        },
+        "routeTangent": {
+          "x": -1,
+          "y": 0
+        },
+        "junctionDegree": 3,
+        "decisionStrength": 0.5
+      }
+    ],
+    "activeLightPools": [
+      {
+        "id": "fire-engine-amber",
+        "colorToken": "accent",
+        "intensity": 2.05,
+        "rangeMeters": 5.7,
+        "heightMeters": 2.65,
+        "priority": 3,
+        "castShadow": false,
+        "segmentId": "fire-engine-bay-establish",
+        "position": {
+          "x": 14,
+          "y": 18
+        },
+        "color": "#c93d31"
+      },
+      {
+        "id": "fire-exit-amber",
+        "colorToken": "trim",
+        "intensity": 2.2,
+        "rangeMeters": 5.9,
+        "heightMeters": 2.65,
+        "priority": 3,
+        "castShadow": false,
+        "segmentId": "fire-engine-bay-payoff",
+        "position": {
+          "x": 16,
+          "y": 5
+        },
+        "color": "#2b3033"
+      }
+    ],
+    "edgeClosure": {
+      "capNodeCandidates": [
+        "FireStationExteriorGround"
+      ],
+      "wallEndNodeCandidates": [
+        "FireStationArchitectureWallEnd"
+      ],
+      "cornerNodeCandidates": [
+        "FireStationArchitectureCorner"
+      ],
+      "groundMarginCells": 1.35,
+      "skirtDepthMeters": 3.6,
+      "fogColorToken": "fog",
+      "fogOpacity": 0.93,
+      "geometryMode": "single-batched-skirt",
+      "castShadow": false,
+      "receiveShadow": false,
+      "segments": [
+        {
+          "side": "north",
+          "center": {
+            "x": 12,
+            "y": -0.5
+          },
+          "outward": {
+            "x": 0,
+            "y": -1
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "east",
+          "center": {
+            "x": 24.5,
+            "y": 12
+          },
+          "outward": {
+            "x": 1,
+            "y": 0
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "south",
+          "center": {
+            "x": 12,
+            "y": 24.5
+          },
+          "outward": {
+            "x": 0,
+            "y": 1
+          },
+          "lengthCells": 25
+        },
+        {
+          "side": "west",
+          "center": {
+            "x": -0.5,
+            "y": 12
+          },
+          "outward": {
+            "x": -1,
+            "y": 0
+          },
+          "lengthCells": 25
+        }
+      ],
+      "fogColor": "#5f5650",
+      "proceduralTriangles": 8,
+      "additionalDrawCalls": 1
+    },
+    "materialVariation": {
+      "wall": [
+        {
+          "id": "fire-wall-sealed",
+          "tintToken": "wall",
+          "colorMix": 0.015,
+          "roughnessDelta": 0.04,
+          "metalnessDelta": 0.01,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "fire-wall-soot",
+          "tintToken": "fog",
+          "colorMix": 0.075,
+          "roughnessDelta": 0.16,
+          "metalnessDelta": -0.02,
+          "sharedMaterialSlot": 1
+        },
+        {
+          "id": "fire-wall-beacon",
+          "tintToken": "accent",
+          "colorMix": 0.055,
+          "roughnessDelta": 0.08,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 2
+        }
+      ],
+      "floor": [
+        {
+          "id": "fire-floor-clean",
+          "tintToken": "floor",
+          "colorMix": 0.01,
+          "roughnessDelta": 0.02,
+          "metalnessDelta": 0.01,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "fire-floor-wet",
+          "tintToken": "trim",
+          "colorMix": 0.05,
+          "roughnessDelta": -0.15,
+          "metalnessDelta": 0.04,
+          "sharedMaterialSlot": 1
+        },
+        {
+          "id": "fire-floor-soot",
+          "tintToken": "fog",
+          "colorMix": 0.08,
+          "roughnessDelta": 0.14,
+          "metalnessDelta": -0.02,
+          "sharedMaterialSlot": 2
+        }
+      ],
+      "trim": [
+        {
+          "id": "fire-trim-base",
+          "tintToken": "trim",
+          "colorMix": 0.02,
+          "roughnessDelta": 0.02,
+          "metalnessDelta": 0.04,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "fire-trim-warning",
+          "tintToken": "accent",
+          "colorMix": 0.09,
+          "roughnessDelta": 0.07,
+          "metalnessDelta": 0,
+          "sharedMaterialSlot": 1
+        }
+      ],
+      "landmark": [
+        {
+          "id": "fire-hero-neutral",
+          "tintToken": "wall",
+          "colorMix": 0.015,
+          "roughnessDelta": 0.02,
+          "metalnessDelta": 0.02,
+          "sharedMaterialSlot": 0
+        },
+        {
+          "id": "fire-hero-beacon",
+          "tintToken": "accent",
+          "colorMix": 0.095,
+          "roughnessDelta": -0.04,
+          "metalnessDelta": 0.01,
+          "sharedMaterialSlot": 1
+        }
+      ],
+      "decal": {
+        "id": "fire-hazard-stripe",
+        "pattern": "hazard-stripe",
+        "foregroundToken": "accent",
+        "secondaryToken": "fog",
+        "opacity": 0.72,
+        "repeatCount": 5,
+        "strokeFraction": 0.12,
+        "maximumInstances": 24,
+        "batchKey": "environment-composition-markings",
+        "generatedResolution": 64
+      }
+    },
+    "decalInstanceLimit": 24
+  },
+  "telemetry": {
+    "detections": 0,
+    "hideEntries": 1,
+    "safeHideExits": 0,
+    "lockerSearches": 0,
+    "telemetryVersion": 2,
+    "hideExits": 0,
+    "threatReacquisitions": 0,
+    "decoysDeployed": 0,
+    "decoyInvestigations": 0,
+    "themeMechanicUses": 0,
+    "themeMechanicAdvantages": 0,
+    "routeReplans": 0,
+    "deployedDecoyIds": [],
+    "investigatedDecoyIds": [],
+    "usedThemeMechanicIds": [],
+    "benefitedThemeMechanicIds": [],
+    "lastRouteId": null,
+    "pendingSafeHideExitSeconds": null,
+    "masteryContext": {
+      "levelId": "fire-station-engine-bay",
+      "theme": "fire-station",
+      "ruleset": "standard"
+    }
+  },
+  "sceneIntegrity": {
+    "expectedMovementBlockers": 0,
+    "renderedMovementBlockers": 0,
+    "expectedVisionObscurers": 6,
+    "renderedVisionObscurers": 6
+  },
+  "assets": {
+    "decorativeReady": true,
+    "deferredDressingSettled": true,
+    "qaDecorativeSceneCompiled": true,
+    "qaDecorativeSceneCompileCount": 1,
+    "qaTransientArtPrewarmCount": 1,
+    "qaCleanFrame": false,
+    "kidAssetUrl": "/models/characters/kid-bootstrap.glb?v=m2-20260829",
+    "kidLoadedIdentity": {
+      "requestedUrl": "/models/characters/kid-bootstrap.glb?v=m2-20260829",
+      "resolvedUrl": "http://127.0.0.1:3000/models/characters/kid-bootstrap.glb?v=m2-20260829",
+      "transferBytes": 1561604,
+      "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+      "nodes": 92,
+      "meshes": 35,
+      "primitives": 35,
+      "triangles": 92680,
+      "materials": 12,
+      "textures": 3,
+      "skins": 1,
+      "joints": 21,
+      "jointNames": [
+        "Chest",
+        "Head",
+        "Hips",
+        "LeftFoot",
+        "LeftHand",
+        "LeftLowerArm",
+        "LeftLowerLeg",
+        "LeftShoulder",
+        "LeftToes",
+        "LeftUpperArm",
+        "LeftUpperLeg",
+        "Neck",
+        "RightFoot",
+        "RightHand",
+        "RightLowerArm",
+        "RightLowerLeg",
+        "RightShoulder",
+        "RightToes",
+        "RightUpperArm",
+        "RightUpperLeg",
+        "Spine"
+      ],
+      "runtimeMeshObjects": 35,
+      "runtimeSkinnedMeshes": 35,
+      "runtimeSkeletons": 1,
+      "runtimeBones": 21,
+      "clips": [
+        {
+          "name": "Caught",
+          "durationSeconds": 1,
+          "tracks": 22
+        },
+        {
+          "name": "EscapeCelebrate",
+          "durationSeconds": 1.233333,
+          "tracks": 22
+        },
+        {
+          "name": "HideEnter",
+          "durationSeconds": 1.3,
+          "tracks": 22
+        },
+        {
+          "name": "HideExit",
+          "durationSeconds": 1.033333,
+          "tracks": 22
+        },
+        {
+          "name": "HideIdle",
+          "durationSeconds": 1.666667,
+          "tracks": 22
+        },
+        {
+          "name": "HidePeek",
+          "durationSeconds": 1.6,
+          "tracks": 22
+        },
+        {
+          "name": "Idle",
+          "durationSeconds": 2.5,
+          "tracks": 22
+        },
+        {
+          "name": "Interact",
+          "durationSeconds": 2,
+          "tracks": 22
+        },
+        {
+          "name": "Run",
+          "durationSeconds": 0.666667,
+          "tracks": 22
+        },
+        {
+          "name": "TurnLeft",
+          "durationSeconds": 0.6,
+          "tracks": 22
+        },
+        {
+          "name": "TurnRight",
+          "durationSeconds": 0.6,
+          "tracks": 22
+        },
+        {
+          "name": "Walk",
+          "durationSeconds": 1.333333,
+          "tracks": 22
+        }
+      ]
+    },
+    "policeAssetUrl": "/models/characters/police-bootstrap.glb?v=m2-20260829",
+    "policeLoaded": true,
+    "policeLoadedIdentity": {
+      "requestedUrl": "/models/characters/police-bootstrap.glb?v=m2-20260829",
+      "resolvedUrl": "http://127.0.0.1:3000/models/characters/police-bootstrap.glb?v=m2-20260829",
+      "transferBytes": 1926584,
+      "sha256": "28c5babea7d6cc4a13da1fe6b163050b1a3440b93a893dfd67b19fbd936ef0a1",
+      "nodes": 47,
+      "meshes": 25,
+      "primitives": 26,
+      "triangles": 50800,
+      "materials": 14,
+      "textures": 7,
+      "skins": 1,
+      "joints": 21,
+      "jointNames": [
+        "Chest",
+        "Head",
+        "Hips",
+        "LeftFoot",
+        "LeftHand",
+        "LeftLowerArm",
+        "LeftLowerLeg",
+        "LeftShoulder",
+        "LeftToes",
+        "LeftUpperArm",
+        "LeftUpperLeg",
+        "Neck",
+        "RightFoot",
+        "RightHand",
+        "RightLowerArm",
+        "RightLowerLeg",
+        "RightShoulder",
+        "RightToes",
+        "RightUpperArm",
+        "RightUpperLeg",
+        "Spine"
+      ],
+      "runtimeMeshObjects": 26,
+      "runtimeSkinnedMeshes": 26,
+      "runtimeSkeletons": 1,
+      "runtimeBones": 21,
+      "clips": [
+        {
+          "name": "Alert",
+          "durationSeconds": 1.4,
+          "tracks": 22
+        },
+        {
+          "name": "Idle",
+          "durationSeconds": 2.5,
+          "tracks": 22
+        },
+        {
+          "name": "Interact",
+          "durationSeconds": 2,
+          "tracks": 22
+        },
+        {
+          "name": "Resolve",
+          "durationSeconds": 1.233333,
+          "tracks": 22
+        },
+        {
+          "name": "Run",
+          "durationSeconds": 0.933333,
+          "tracks": 22
+        }
+      ]
+    },
+    "loadedAssetIds": [
+      "actor:kid",
+      "actor:police",
+      "actor:villain",
+      "detail:ceilingLight",
+      "detail:extinguisher",
+      "detail:locker",
+      "detail:trash",
+      "stealth:corner-mirrors",
+      "structure:exit",
+      "structure:frontGate",
+      "theme:fire-station"
+    ],
+    "placedAssetIds": [
+      "actor:kid",
+      "actor:police",
+      "actor:villain",
+      "detail:ceilingLight",
+      "detail:extinguisher",
+      "detail:locker",
+      "detail:trash",
+      "gameplay:hide-archetype:soft-cover",
+      "gameplay:hide-archetype:traversal-hide",
+      "gameplay:mission-objective:fire-station:hydraulic-brake",
+      "gameplay:mission-objective:fire-station:raise-shutter",
+      "gameplay:mission-objective:fire-station:smoke-extractor",
+      "gameplay:stealth-evidence:door-state:campaign-stealth-evidence-v1:evidence:1",
+      "gameplay:theme-mechanic:fire-station-engine-bay:primary-mechanic",
+      "runtime:ambient-room-clusters",
+      "runtime:arrival-bay-markings",
+      "runtime:authored-room-floors",
+      "runtime:composition-edge-closure",
+      "runtime:composition-light:fire-engine-amber",
+      "runtime:composition-light:fire-exit-amber",
+      "runtime:fire-hazard-stripe",
+      "runtime:maze-shadow-proxy",
+      "runtime:personal-best-ghost",
+      "runtime:prop-contact-shadows",
+      "runtime:vision-obscurer-vfx",
+      "runtime:wall-contact-shadows",
+      "stealth:corner-mirrors",
+      "structure:exit",
+      "structure:frontGate",
+      "theme-node:FireEngine",
+      "theme-node:FireGearRack",
+      "theme-node:FireHoseReel",
+      "theme-node:FireHydrant",
+      "theme-node:FireSafetyCones",
+      "theme-node:FireStationArchitectureCorner",
+      "theme-node:FireStationArchitectureDoorway",
+      "theme-node:FireStationArchitectureJunction",
+      "theme-node:FireStationArchitectureWallA",
+      "theme-node:FireStationArchitectureWallB",
+      "theme-node:FireStationArchitectureWallC",
+      "theme-node:FireStationArchitectureWallEnd",
+      "theme-node:FireStationArchitectureWallWide",
+      "theme-node:FireStationDressingClusterA",
+      "theme-node:FireStationDressingClusterB",
+      "theme-node:FireStationDressingClusterC",
+      "theme-node:FireStationEngineBayArrivalCluster",
+      "theme-node:FireStationEngineBayCluster",
+      "theme-node:FireStationEngineBayExitCluster",
+      "theme-node:FireStationEngineBayHideDressing",
+      "theme-node:FireStationExteriorGround:entrance-plaza",
+      "theme-node:FireStationExteriorGround:exit-plaza",
+      "theme-node:FireStationFloorPrimary",
+      "theme-node:FireStationFloorSecondary",
+      "theme-node:FireStationFloorService",
+      "theme-node:FireStationHoseServiceCluster",
+      "theme-node:FireStationTurnoutCluster",
+      "theme-node:FireStationWayfinding",
+      "theme-node:FloorSeamX_-0002",
+      "theme:fire-station"
+    ],
+    "unusedLoadedAssetIds": []
+  },
+  "lockers": {
+    "fire-turnout-locker": {
+      "archetype": "traversal-hide",
+      "alternateExit": {
+        "x": 10,
+        "y": 8
+      },
+      "approach": {
+        "x": 10,
+        "y": 3
+      },
+      "rootPosition": {
+        "x": -4.34,
+        "y": 0,
+        "z": -17.945001593907367
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0,
+      "beaconViewport": {
+        "x": 0.5741653697975119,
+        "y": 0.49774722532289045,
+        "depth": 0.9843265307756591,
+        "centerInFrustum": true
+      },
+      "action": null,
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0,
+      "timeScale": 0,
+      "doorQuaternion": null,
+      "owner": "player"
+    },
+    "fire-hose-cabinet": {
+      "archetype": "hard-locker",
+      "alternateExit": null,
+      "approach": {
+        "x": 22,
+        "y": 20
+      },
+      "rootPosition": {
+        "x": 20.211656715098268,
+        "y": -0.12020886633058893,
+        "z": 15.99844043081043
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0.5029022359045898,
+      "beaconViewport": {
+        "x": -0.47747356524023876,
+        "y": -0.05099128718175605,
+        "depth": 0.9934715284121416,
+        "centerInFrustum": false
+      },
+      "action": null,
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0,
+      "timeScale": 0,
+      "doorQuaternion": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "owner": "idle"
+    },
+    "fire-breathing-gear": {
+      "archetype": "soft-cover",
+      "alternateExit": null,
+      "approach": {
+        "x": 23,
+        "y": 8
+      },
+      "rootPosition": {
+        "x": 22.340000000000003,
+        "y": 0,
+        "z": -8
+      },
+      "beaconVisible": false,
+      "beaconOpacity": 0.5029022359045898,
+      "beaconViewport": {
+        "x": -1.8895201615562551,
+        "y": 1.041223363190071,
+        "depth": 0.9753542502978463,
+        "centerInFrustum": false
+      },
+      "action": null,
+      "peeking": false,
+      "peekClosing": false,
+      "holdFinal": false,
+      "delayRemaining": 0,
+      "normalizedTime": 0,
+      "timeScale": 0,
+      "doorQuaternion": null,
+      "owner": "idle"
+    }
+  },
+  "audio": {
+    "status": "playing",
+    "unlocked": true,
+    "muted": false,
+    "threat": 0,
+    "targetGains": {
+      "explore": 1,
+      "threat": 0
+    },
+    "contextState": "running",
+    "driftSeconds": 0,
+    "explore": {
+      "url": "/audio/slow-drift-explore.m4a",
+      "currentTimeSeconds": 6.144,
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "threatTrack": {
+      "url": "/audio/slow-drift-threat.m4a",
+      "currentTimeSeconds": 6.144,
+      "durationSeconds": 38.02,
+      "paused": false,
+      "readyState": 4,
+      "mediaErrorCode": null
+    },
+    "lastError": null
+  },
+  "camera": {
+    "fov": 56,
+    "aspect": 1.6921296296296295,
+    "distance": 11.746113581303337,
+    "zoom": 1,
+    "position": {
+      "x": 0.06995164926922737,
+      "y": 9.476005087083001,
+      "z": -22.944336639274724
+    },
+    "focus": {
+      "x": -3.9841788029026706,
+      "y": 0.8907876589542773,
+      "z": -16.028467044393253
+    },
+    "direction": {
+      "x": 0.3451465392455413,
+      "y": 0.7308985536964403,
+      "z": -0.588779390477688
+    },
+    "azimuthDegrees": 149.62087398863164,
+    "occlusion": {
+      "groups": 5,
+      "obscured": [
+        "fire-station-walls"
+      ],
+      "maxStrength": 0.9999908265764595
+    }
+  },
+  "render": {
+    "batching": "multi-draw",
+    "qualityTier": "high",
+    "qualityLock": {
+      "enabled": true,
+      "requestedTier": "high",
+      "appliedBeforeRendererCreation": true
+    },
+    "qualityTransitionCount": 0,
+    "emergencyTransitionCount": 0,
+    "pixelRatio": 1,
+    "shadowMapSize": 2048,
+    "shadowCamera": {
+      "halfExtent": 18,
+      "target": {
+        "x": -4.127212972729245,
+        "y": -0.004867497892512884,
+        "z": -17.99023202484347
+      },
+      "texelWorldSize": 0.017578125,
+      "lightSpaceX": 7.787109375,
+      "lightSpaceY": 12.97265625,
+      "texelIndexX": 443,
+      "texelIndexY": 738,
+      "residualTexelsX": 0,
+      "residualTexelsY": 0
+    },
+    "emergencyDegradation": {
+      "level": 0,
+      "overloadSeconds": 0,
+      "recoverySeconds": 0
+    },
+    "calls": 208,
+    "triangles": 427751,
+    "breakdown": {
+      "actor": {
+        "calls": 35,
+        "triangles": 170111
+      },
+      "maze-walls": {
+        "calls": 30,
+        "triangles": 115736
+      },
+      "props-dressing": {
+        "calls": 75,
+        "triangles": 84892
+      },
+      "shadow-pass": {
+        "calls": 68,
+        "triangles": 57012
+      },
+      "shadowSources": {
+        "actor": {
+          "calls": 3,
+          "triangles": 1032
+        },
+        "maze-walls": {
+          "calls": 1,
+          "triangles": 3780
+        },
+        "props-dressing": {
+          "calls": 64,
+          "triangles": 52200
+        }
+      },
+      "total": {
+        "calls": 208,
+        "triangles": 427751
+      },
+      "reconciliation": {
+        "exact": true,
+        "callsError": 0,
+        "trianglesError": 0,
+        "fallbackCalls": 0,
+        "fallbackTriangles": 0,
+        "note": "Every renderer.info.update call was attributed by an object render callback."
+      }
+    },
+    "mazeShadowProxy": [
+      {
+        "name": "fire-station-maze-shadow-proxy",
+        "visible": true,
+        "castShadow": true,
+        "boxes": 315,
+        "triangles": 3780,
+        "sourceModules": 281
+      }
+    ],
+    "shadow": {
+      "shadowTriangles": 113714,
+      "shadowDrawCalls": 123
+    },
+    "memory": {
+      "geometries": 198,
+      "textures": 140
+    },
+    "programs": 77,
+    "sceneTextures": 27,
+    "invalidSceneTextures": [],
+    "textureDeduplication": {
+      "sourceTextures": 128,
+      "canonicalTextures": 132,
+      "assignmentsShared": 0,
+      "sourcesShared": 0
+    }
+  },
+  "firstPlayableBudget": {
+    "fits": true,
+    "fitsTransferBudget": true,
+    "fitsTimeBudget": true,
+    "criticalTransferBytes": 4491527,
+    "deferredTransferBytes": 0,
+    "requiredSavingsBytes": 0,
+    "estimatedSeconds": 4.7132216,
+    "criticalRequestCount": 10,
+    "categoryTransferBytes": {
+      "shell": 40876,
+      "navigation": 347687,
+      "player": 1561604,
+      "threat": 891784,
+      "hide-spot": 681996,
+      "theme": 967580
+    },
+    "exceededCategories": [],
+    "duplicateUrls": [
+      "http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
+      "http://127.0.0.1:3000/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2"
+    ],
+    "invalidEntryIds": []
+  }
+}

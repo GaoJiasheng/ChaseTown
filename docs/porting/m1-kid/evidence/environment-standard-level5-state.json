@@ -1,0 +1,1519 @@
+{
+  "capturedAt": "2026-08-29T00:58:10.693Z",
+  "url": "http://localhost:3002/?qa=1&qaQuality=high&qaLevel=5&qaCleanFrame=1&autostart=1&qaSpawnDelay=60&m1=kid-level-smoke-v3",
+  "qa": {
+    "ready": true,
+    "campaign": {
+      "id": "hospital-isolation-basement",
+      "index": 4,
+      "number": 5,
+      "name": "隔离层",
+      "theme": "hospital",
+      "propSet": "hospital-isolation",
+      "config": {
+        "fixedStepSeconds": 0.016666666666666666,
+        "maxFrameDeltaSeconds": 0.25,
+        "aiTickSeconds": 0.05,
+        "playerSpeed": 2.64,
+        "chaserSpeed": 2.309,
+        "spawnDelaySeconds": 0.9,
+        "suspiciousSeconds": 0.19,
+        "lostSightGraceSeconds": 0.35,
+        "lastKnownScanSeconds": 1.5,
+        "searchSeconds": 5.5,
+        "searchWaypointSeconds": 0.72,
+        "searchHideCheckBudget": 1,
+        "searchHideRadiusCells": 3,
+        "checkHideSeconds": 2.34,
+        "hearingRange": 6.8,
+        "soundUncertaintyCells": 1.3,
+        "visionRange": 7.8,
+        "visionConeDegrees": 110,
+        "proximitySenseRange": 0.85,
+        "catchRange": 0.58,
+        "exitRange": 0.62,
+        "hideInteractRange": 1.05,
+        "hideAlignSpeed": 1.32,
+        "hideAlignTurnSpeed": 3.141592653589793,
+        "hideEnterSeconds": 1.8916666666666668,
+        "hideEnterExposureSeconds": 1.4833333333333334,
+        "hideExitSeconds": 1.6166666666666667,
+        "hideExitExposureSeconds": 0.3166666666666667,
+        "peekEnterSeconds": 0.15,
+        "peekExitSeconds": 0.15
+      },
+      "progress": {
+        "unlockedThrough": 5,
+        "bestSeconds": {
+          "school-maze-v1": 0.02,
+          "factory-turbine-hall": 0.02
+        },
+        "mastery": {
+          "school-maze-v1": {
+            "rank": "silver",
+            "challengeIds": [
+              "beat-target",
+              "ghost-escape"
+            ],
+            "profileId": "level:school-maze-v1:v2"
+          },
+          "factory-turbine-hall": {
+            "rank": "silver",
+            "challengeIds": [
+              "beat-target",
+              "ghost-escape"
+            ],
+            "profileId": "level:factory-turbine-hall:v2"
+          }
+        },
+        "assistedBestSeconds": {},
+        "assistedMastery": {},
+        "assistedUnlockedThrough": 5,
+        "progressVersion": 3
+      },
+      "themeAsset": "/models/environment/themes/hospital-kit-bootstrap.glb?v=1",
+      "playerStart": {
+        "x": 1,
+        "y": 1
+      },
+      "exit": {
+        "x": 23,
+        "y": 23
+      },
+      "chaserStart": {
+        "x": 11,
+        "y": 13
+      },
+      "walkable": [
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          true,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          true,
+          false,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          true,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      ],
+      "hideSpots": [
+        {
+          "id": "isolation-decon-cabinet",
+          "approach": {
+            "x": 12,
+            "y": 9
+          },
+          "concealed": {
+            "x": 12,
+            "y": 9.35
+          },
+          "facing": {
+            "x": 0,
+            "y": -1
+          },
+          "archetype": "hard-locker"
+        },
+        {
+          "id": "isolation-morgue-locker",
+          "approach": {
+            "x": 1,
+            "y": 16
+          },
+          "concealed": {
+            "x": 0.65,
+            "y": 16
+          },
+          "facing": {
+            "x": 1,
+            "y": 0
+          },
+          "archetype": "soft-cover"
+        },
+        {
+          "id": "isolation-oxygen-store",
+          "approach": {
+            "x": 19,
+            "y": 8
+          },
+          "concealed": {
+            "x": 19.35,
+            "y": 8
+          },
+          "facing": {
+            "x": -1,
+            "y": 0
+          },
+          "archetype": "hard-locker"
+        }
+      ]
+    },
+    "game": {
+      "phase": "playing",
+      "player": {
+        "position": {
+          "x": 1,
+          "y": 1
+        },
+        "heading": {
+          "x": 0,
+          "y": 1
+        },
+        "mode": "free",
+        "hideSpotId": null,
+        "transitionRemainingSeconds": 0,
+        "hideTurnDirection": 0,
+        "hideTurnCycle": -1,
+        "hideTurnSegmentDurationSeconds": 0
+      },
+      "chaser": {
+        "position": {
+          "x": 10.930729999999997,
+          "y": 13
+        },
+        "heading": {
+          "x": -1,
+          "y": 0
+        },
+        "mode": "patrol",
+        "modeElapsedSeconds": 0.05,
+        "visualConfirmationSeconds": null,
+        "patrolIndex": 0,
+        "scanOriginHeading": {
+          "x": -1,
+          "y": 0
+        },
+        "searchSeed": 1,
+        "searchIndex": 0,
+        "searchWaypointElapsedSeconds": 0,
+        "searchHideSpotId": null,
+        "hideCheckSource": null,
+        "searchHideChecksCompleted": 0,
+        "inspectedHideSpotIds": [],
+        "memory": {
+          "lastKnownPosition": null,
+          "lastSeenAtSeconds": null,
+          "lastHeardAtSeconds": null,
+          "lastClueAtSeconds": null,
+          "lastKnownEvidence": null,
+          "deferredSoundEvidence": null,
+          "witnessedHideSpotId": null,
+          "evidenceTrail": []
+        }
+      }
+    },
+    "animations": {
+      "kid": {
+        "state": "idle",
+        "clip": "Idle",
+        "clipDuration": 2.5,
+        "timeScale": 1,
+        "normalizedTime": 0.3848399999999999,
+        "playing": true
+      },
+      "villain": {
+        "state": "walk",
+        "clip": "PatrolWalk",
+        "clipDuration": 1.4666666984558105,
+        "timeScale": 1.259454545454601,
+        "normalizedTime": 0.03583849706840185,
+        "playing": true
+      }
+    },
+    "visibility": {
+      "kid": {
+        "rootVisible": true,
+        "alpha": 1,
+        "viewport": {
+          "x": 0.7029540198440349,
+          "y": 0.5931949947209295,
+          "depth": 0.9869835934303826,
+          "worldHeight": 1.12,
+          "pixelWidth": 49.12906521331095,
+          "pixelHeight": 56.959988674086844,
+          "bounds": {
+            "left": 0.6839642038429947,
+            "right": 0.7235206170582209,
+            "top": 0.5453054937305584,
+            "bottom": 0.6392988743808667
+          },
+          "centerInFrustum": true
+        },
+        "cameraClearance": {
+          "headClear": true,
+          "torsoClear": true,
+          "visibleSampleRatio": 1,
+          "samples": [
+            {
+              "label": "head",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "torso",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "hips",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "left-shoulder",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            },
+            {
+              "label": "right-shoulder",
+              "clear": true,
+              "hit": null,
+              "hitDistance": null
+            }
+          ]
+        }
+      },
+      "villain": {
+        "rootVisible": true,
+        "alpha": 1,
+        "worldRendered": true,
+        "viewport": {
+          "x": -0.10817101938982177,
+          "y": 0.14634414401595836,
+          "depth": 0.9923379422312298,
+          "worldHeight": 1.88,
+          "pixelWidth": 86.61735083978105,
+          "pixelHeight": 71.6495280357955,
+          "bounds": {
+            "left": -0.1450387455807851,
+            "right": -0.07529852751332855,
+            "top": 0.08618453303983276,
+            "bottom": 0.20441807765335668
+          },
+          "centerInFrustum": false
+        },
+        "cameraClearance": {
+          "headClear": false,
+          "torsoClear": false,
+          "visibleSampleRatio": 0,
+          "samples": [
+            {
+              "label": "head",
+              "clear": false,
+              "hit": "hospital-wall-wide-batch-543f25e9",
+              "hitDistance": 29.7037460793549
+            },
+            {
+              "label": "torso",
+              "clear": false,
+              "hit": "hospital-wall-wide-batch-543f25e9",
+              "hitDistance": 29.836822751237893
+            },
+            {
+              "label": "hips",
+              "clear": false,
+              "hit": "hospital-wall-wide-batch-543f25e9",
+              "hitDistance": 29.977785209475467
+            },
+            {
+              "label": "left-shoulder",
+              "clear": false,
+              "hit": "hospital-wall-wide-batch-543f25e9",
+              "hitDistance": 29.84183960562725
+            },
+            {
+              "label": "right-shoulder",
+              "clear": false,
+              "hit": "hospital-wall-wide-batch-543f25e9",
+              "hitDistance": 29.754369177338127
+            }
+          ]
+        }
+      }
+    },
+    "assets": {
+      "decorativeReady": true,
+      "deferredDressingSettled": true,
+      "qaDecorativeSceneCompiled": true,
+      "qaDecorativeSceneCompileCount": 1,
+      "qaTransientArtPrewarmCount": 1,
+      "qaCleanFrame": true,
+      "kidAssetUrl": "/models/characters/kid-bootstrap.glb?v=3",
+      "kidLoadedIdentity": {
+        "requestedUrl": "/models/characters/kid-bootstrap.glb?v=3",
+        "resolvedUrl": "http://localhost:3002/models/characters/kid-bootstrap.glb?v=3",
+        "transferBytes": 1561604,
+        "sha256": "d0a02cc5d3f52880d51a09996377ebb784d067c2d0f89547965aca40661def86",
+        "nodes": 92,
+        "meshes": 35,
+        "primitives": 35,
+        "triangles": 92680,
+        "materials": 12,
+        "textures": 3,
+        "skins": 1,
+        "joints": 21,
+        "jointNames": [
+          "Chest",
+          "Head",
+          "Hips",
+          "LeftFoot",
+          "LeftHand",
+          "LeftLowerArm",
+          "LeftLowerLeg",
+          "LeftShoulder",
+          "LeftToes",
+          "LeftUpperArm",
+          "LeftUpperLeg",
+          "Neck",
+          "RightFoot",
+          "RightHand",
+          "RightLowerArm",
+          "RightLowerLeg",
+          "RightShoulder",
+          "RightToes",
+          "RightUpperArm",
+          "RightUpperLeg",
+          "Spine"
+        ],
+        "runtimeMeshObjects": 35,
+        "runtimeSkinnedMeshes": 35,
+        "runtimeSkeletons": 1,
+        "runtimeBones": 21,
+        "clips": [
+          {
+            "name": "Caught",
+            "durationSeconds": 1,
+            "tracks": 22
+          },
+          {
+            "name": "EscapeCelebrate",
+            "durationSeconds": 1.233333,
+            "tracks": 22
+          },
+          {
+            "name": "HideEnter",
+            "durationSeconds": 1.3,
+            "tracks": 22
+          },
+          {
+            "name": "HideExit",
+            "durationSeconds": 1.033333,
+            "tracks": 22
+          },
+          {
+            "name": "HideIdle",
+            "durationSeconds": 1.666667,
+            "tracks": 22
+          },
+          {
+            "name": "HidePeek",
+            "durationSeconds": 1.6,
+            "tracks": 22
+          },
+          {
+            "name": "Idle",
+            "durationSeconds": 2.5,
+            "tracks": 22
+          },
+          {
+            "name": "Interact",
+            "durationSeconds": 2,
+            "tracks": 22
+          },
+          {
+            "name": "Run",
+            "durationSeconds": 0.666667,
+            "tracks": 22
+          },
+          {
+            "name": "TurnLeft",
+            "durationSeconds": 0.6,
+            "tracks": 22
+          },
+          {
+            "name": "TurnRight",
+            "durationSeconds": 0.6,
+            "tracks": 22
+          },
+          {
+            "name": "Walk",
+            "durationSeconds": 1.333333,
+            "tracks": 22
+          }
+        ]
+      },
+      "policeAssetUrl": "/models/characters/police-bootstrap.glb?v=4",
+      "policeLoaded": false,
+      "policeLoadedIdentity": null,
+      "loadedAssetIds": [
+        "actor:kid",
+        "actor:villain",
+        "detail:bulletin",
+        "detail:ceilingLight",
+        "detail:locker",
+        "detail:trash",
+        "stealth:corner-mirrors",
+        "structure:exit",
+        "structure:frontGate",
+        "theme:hospital"
+      ],
+      "placedAssetIds": [
+        "actor:kid",
+        "actor:villain",
+        "detail:bulletin",
+        "detail:ceilingLight",
+        "detail:locker",
+        "detail:trash",
+        "gameplay:hide-archetype:soft-cover",
+        "gameplay:mission-objective:hospital:backup-generator",
+        "gameplay:mission-objective:hospital:pressure-bypass",
+        "gameplay:mission-objective:hospital:release-isolation",
+        "gameplay:theme-mechanic:hospital-isolation-basement:primary-mechanic",
+        "runtime:ambient-room-clusters",
+        "runtime:authored-room-floors",
+        "runtime:composition-edge-closure",
+        "runtime:composition-light:hospital-exit-panel",
+        "runtime:composition-light:hospital-triage-cool",
+        "runtime:hospital-threshold-dash",
+        "runtime:personal-best-ghost",
+        "runtime:prop-contact-shadows",
+        "runtime:vision-obscurer-vfx",
+        "runtime:wall-contact-shadows",
+        "stealth:corner-mirrors",
+        "structure:exit",
+        "structure:frontGate",
+        "theme-node:FloorSeamX_-0001",
+        "theme-node:HospitalAirlockCluster",
+        "theme-node:HospitalArchitectureCorner",
+        "theme-node:HospitalArchitectureDoorway",
+        "theme-node:HospitalArchitectureJunction",
+        "theme-node:HospitalArchitectureWallA",
+        "theme-node:HospitalArchitectureWallB",
+        "theme-node:HospitalArchitectureWallC",
+        "theme-node:HospitalArchitectureWallEnd",
+        "theme-node:HospitalArchitectureWallWide",
+        "theme-node:HospitalBed",
+        "theme-node:HospitalCrashCart",
+        "theme-node:HospitalDeconCluster",
+        "theme-node:HospitalDressingClusterA",
+        "theme-node:HospitalDressingClusterB",
+        "theme-node:HospitalDressingClusterC",
+        "theme-node:HospitalExteriorGround:entrance-plaza",
+        "theme-node:HospitalExteriorGround:exit-plaza",
+        "theme-node:HospitalFloorPrimary",
+        "theme-node:HospitalFloorSecondary",
+        "theme-node:HospitalFloorService",
+        "theme-node:HospitalIVStation",
+        "theme-node:HospitalIsolationArrivalCluster",
+        "theme-node:HospitalIsolationExitCluster",
+        "theme-node:HospitalIsolationHideDressing",
+        "theme-node:HospitalIsolationWardCluster",
+        "theme-node:HospitalPrivacyScreen",
+        "theme-node:HospitalWayfinding",
+        "theme-node:HospitalWheelchair",
+        "theme:hospital"
+      ],
+      "unusedLoadedAssetIds": []
+    },
+    "preferences": {
+      "version": 1,
+      "ruleset": "standard",
+      "personalGhostEnabled": true,
+      "hudDensity": "cinematic",
+      "hapticsEnabled": true,
+      "highContrast": false,
+      "reducedMotion": false
+    },
+    "themeMission": {
+      "definition": {
+        "id": "theme-mission:hospital:v1",
+        "theme": "hospital",
+        "title": "解除隔离封锁",
+        "briefing": "启用备用电源并平衡负压；两项准备完成后才能释放隔离门。",
+        "exitObjectiveId": "hospital:release-isolation",
+        "objectives": [
+          {
+            "id": "hospital:backup-generator",
+            "theme": "hospital",
+            "stage": "preparation",
+            "verb": "engage-backup-generator",
+            "label": "启动备用电源",
+            "interactionPrompt": "切入医疗备用发电机",
+            "completionHint": "隔离门控制器已重新上电",
+            "commitmentSeconds": 1.2,
+            "prerequisites": [],
+            "unlocksExit": false,
+            "safety": {
+              "retryable": true,
+              "consumesRequiredResource": false,
+              "closesRequiredRoute": false
+            }
+          },
+          {
+            "id": "hospital:pressure-bypass",
+            "theme": "hospital",
+            "stage": "preparation",
+            "verb": "equalize-isolation-pressure",
+            "label": "平衡负压",
+            "interactionPrompt": "开启负压旁通阀",
+            "completionHint": "门体两侧压差已回到安全范围",
+            "commitmentSeconds": 1.1,
+            "prerequisites": [],
+            "unlocksExit": false,
+            "safety": {
+              "retryable": true,
+              "consumesRequiredResource": false,
+              "closesRequiredRoute": false
+            }
+          },
+          {
+            "id": "hospital:release-isolation",
+            "theme": "hospital",
+            "stage": "escape-unlock",
+            "verb": "release-isolation-lock",
+            "label": "释放隔离门",
+            "interactionPrompt": "解除隔离区磁力锁",
+            "completionHint": "隔离门已解锁，立即撤离",
+            "commitmentSeconds": 0.9,
+            "prerequisites": [
+              "hospital:backup-generator",
+              "hospital:pressure-bypass"
+            ],
+            "unlocksExit": true,
+            "safety": {
+              "retryable": true,
+              "consumesRequiredResource": false,
+              "closesRequiredRoute": false
+            }
+          }
+        ]
+      },
+      "runtimeObjectives": [
+        {
+          "id": "hospital:backup-generator",
+          "theme": "hospital",
+          "stage": "preparation",
+          "verb": "engage-backup-generator",
+          "label": "启动备用电源",
+          "interactionPrompt": "切入医疗备用发电机",
+          "completionHint": "隔离门控制器已重新上电",
+          "commitmentSeconds": 1.2,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "hospital:pressure-bypass",
+          "theme": "hospital",
+          "stage": "preparation",
+          "verb": "equalize-isolation-pressure",
+          "label": "平衡负压",
+          "interactionPrompt": "开启负压旁通阀",
+          "completionHint": "门体两侧压差已回到安全范围",
+          "commitmentSeconds": 1.1,
+          "prerequisites": [],
+          "unlocksExit": false,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        },
+        {
+          "id": "hospital:release-isolation",
+          "theme": "hospital",
+          "stage": "escape-unlock",
+          "verb": "release-isolation-lock",
+          "label": "释放隔离门",
+          "interactionPrompt": "解除隔离区磁力锁",
+          "completionHint": "隔离门已解锁，立即撤离",
+          "commitmentSeconds": 0.9,
+          "prerequisites": [
+            "hospital:backup-generator",
+            "hospital:pressure-bypass"
+          ],
+          "unlocksExit": true,
+          "safety": {
+            "retryable": true,
+            "consumesRequiredResource": false,
+            "closesRequiredRoute": false
+          }
+        }
+      ],
+      "state": {
+        "definitionId": "theme-mission:hospital:v1",
+        "stage": "preparation",
+        "completedObjectiveIds": [],
+        "exitUnlocked": false
+      },
+      "playerRuleProgress": {
+        "version": 1,
+        "tick": 57,
+        "stage": "preparation",
+        "normalizedProgress": 0,
+        "routeProgress": 0,
+        "completedObjectiveIds": [],
+        "committedMechanicIds": [],
+        "exitUnlocked": false,
+        "runCompleted": false,
+        "events": []
+      },
+      "views": [
+        {
+          "id": "hospital:backup-generator",
+          "position": {
+            "x": 10,
+            "y": 3
+          },
+          "lightColor": 15623769,
+          "lightIntensity": 0.08
+        },
+        {
+          "id": "hospital:pressure-bypass",
+          "position": {
+            "x": 16,
+            "y": 3
+          },
+          "lightColor": 15623769,
+          "lightIntensity": 0.08
+        },
+        {
+          "id": "hospital:release-isolation",
+          "position": {
+            "x": 17,
+            "y": 19
+          },
+          "lightColor": 5333098,
+          "lightIntensity": 0.08
+        }
+      ],
+      "commitment": null,
+      "library": null,
+      "placements": [
+        {
+          "objectiveId": "hospital:backup-generator",
+          "position": {
+            "x": 10,
+            "y": 3
+          }
+        },
+        {
+          "objectiveId": "hospital:pressure-bypass",
+          "position": {
+            "x": 16,
+            "y": 3
+          }
+        },
+        {
+          "objectiveId": "hospital:release-isolation",
+          "position": {
+            "x": 17,
+            "y": 19
+          }
+        }
+      ],
+      "availableObjectiveIds": [
+        "hospital:backup-generator",
+        "hospital:pressure-bypass"
+      ],
+      "audit": {
+        "passed": true,
+        "failures": [],
+        "orders": [
+          {
+            "objectiveIds": [
+              "hospital:backup-generator",
+              "hospital:pressure-bypass",
+              "hospital:release-isolation"
+            ],
+            "reachable": true,
+            "failedLeg": null,
+            "routeDistanceCells": 66
+          },
+          {
+            "objectiveIds": [
+              "hospital:pressure-bypass",
+              "hospital:backup-generator",
+              "hospital:release-isolation"
+            ],
+            "reachable": true,
+            "failedLeg": null,
+            "routeDistanceCells": 66
+          }
+        ],
+        "directRouteDistanceCells": 50,
+        "shortestOrderDistanceCells": 66,
+        "longestOrderDistanceCells": 66,
+        "shortestDetourRatio": 1.32,
+        "orderImbalanceRatio": 0
+      }
+    },
+    "sceneIntegrity": {
+      "expectedMovementBlockers": 0,
+      "renderedMovementBlockers": 0,
+      "expectedVisionObscurers": 8,
+      "renderedVisionObscurers": 8
+    },
+    "camera": {
+      "fov": 56,
+      "aspect": 2.0495049504950495,
+      "distance": 11.99880493182886,
+      "zoom": 1,
+      "position": {
+        "x": -14.155622898795617,
+        "y": 9.63677312399678,
+        "z": -25.43948812150646
+      },
+      "focus": {
+        "x": -18.29696889609868,
+        "y": 0.8668639532373519,
+        "z": -18.374839067283588
+      },
+      "direction": {
+        "x": 0.3451465392455413,
+        "y": 0.7308985536964403,
+        "z": -0.588779390477688
+      },
+      "azimuthDegrees": 149.62087398863164,
+      "occlusion": {
+        "groups": 6,
+        "obscured": [],
+        "maxStrength": 0.07118140005867572
+      }
+    },
+    "render": {
+      "batching": "multi-draw",
+      "qualityTier": "high",
+      "qualityLock": {
+        "enabled": true,
+        "requestedTier": "high",
+        "appliedBeforeRendererCreation": true
+      },
+      "qualityTransitionCount": 0,
+      "emergencyTransitionCount": 0,
+      "pixelRatio": 1,
+      "shadowMapSize": 2048,
+      "emergencyDegradation": {
+        "level": 0,
+        "overloadSeconds": 0,
+        "recoverySeconds": 0
+      },
+      "calls": 283,
+      "triangles": 461346,
+      "shadow": {
+        "shadowTriangles": 264415,
+        "shadowDrawCalls": 192
+      },
+      "memory": {
+        "geometries": 170,
+        "textures": 166
+      },
+      "programs": 75,
+      "sceneTextures": 19,
+      "invalidSceneTextures": [],
+      "textureDeduplication": {
+        "sourceTextures": 139,
+        "canonicalTextures": 123,
+        "assignmentsShared": 16,
+        "sourcesShared": 24
+      }
+    },
+    "firstPlayableBudget": {
+      "fits": true,
+      "fitsTransferBudget": true,
+      "fitsTimeBudget": true,
+      "criticalTransferBytes": 5927341,
+      "deferredTransferBytes": 0,
+      "requiredSavingsBytes": 0,
+      "estimatedSeconds": 5.8618728,
+      "criticalRequestCount": 10,
+      "categoryTransferBytes": {
+        "shell": 40876,
+        "navigation": 1102244,
+        "player": 1561604,
+        "threat": 891784,
+        "hide-spot": 1213672,
+        "theme": 1117161
+      },
+      "exceededCategories": [],
+      "duplicateUrls": [
+        "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/52296b1fc01087fabbba71997e3cc29996529b103d6ba6ba6c0814393477ae91.ktx2",
+        "http://localhost:3002/models/environment/SharedTexturesBootstrapKTX2/9bf9934adeb5f6152f6ab96e9450405775db96d7f279044840c01cd5da8328d9.ktx2"
+      ],
+      "invalidEntryIds": []
+    }
+  },
+  "console": []
+}

@@ -15,6 +15,9 @@ const OUTPUT = path.resolve(
 const CANONICAL_REPORT = process.env.CHASING_QA_REPORT
   ? path.resolve(process.env.CHASING_QA_REPORT)
   : null;
+const CANONICAL_SCREENSHOT = process.env.CHASING_QA_SCREENSHOT
+  ? path.resolve(process.env.CHASING_QA_SCREENSHOT)
+  : null;
 const VIEWPORT = { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false };
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const sha256 = (payload) => createHash("sha256").update(payload).digest("hex");
@@ -346,6 +349,10 @@ try {
   const screenshotPath = path.join(OUTPUT, "character-bootstrap-comparison.png");
   const screenshotPayload = Buffer.from(screenshot.data, "base64");
   await writeFile(screenshotPath, screenshotPayload);
+  if (CANONICAL_SCREENSHOT) {
+    await mkdir(path.dirname(CANONICAL_SCREENSHOT), { recursive: true });
+    await writeFile(CANONICAL_SCREENSHOT, screenshotPayload);
+  }
   for (const [role, metrics] of Object.entries(result)) {
     assert.ok(metrics.silhouetteIou >= 0.9999, `${role} silhouette IoU regressed`);
     assert.ok(metrics.rgbMeanAbsoluteError <= 1, `${role} colour delta is too high`);
@@ -380,8 +387,12 @@ try {
     assets,
     result,
     gates: { minimumSilhouetteIou: 0.9999, maximumRgbMeanAbsoluteError: 1 },
+    screenshotBytes: screenshotPayload.length,
+    screenshotEncoding: "PNG",
     screenshotSha256: sha256(screenshotPayload),
-    screenshot: screenshotPath,
+    screenshot: CANONICAL_SCREENSHOT
+      ? path.relative(ROOT, CANONICAL_SCREENSHOT).split(path.sep).join("/")
+      : screenshotPath,
   };
   await writeFile(
     path.join(OUTPUT, "character-bootstrap-visual-qa.json"),

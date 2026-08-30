@@ -69,17 +69,12 @@ def main() -> None:
     # side effect to the candidate directory, then preserve the requested
     # report name for deterministic QA tooling.
     animation_builder.REPORT_DIR = report.parent
-    # The production report normally stores a repository-relative output.  A
-    # candidate intentionally lives outside the repository, so give the report
-    # formatter a common absolute ancestor without changing any resolved input
-    # or output path in the RoleSpec above.
-    animation_builder.ROOT = Path("/")
     result = animation_builder.build_role(candidate, source_motion, make_preview=False)
     generated_report = report.parent / f"{args.role}_web_animation_set.json"
     if generated_report != report:
         generated_report.replace(report)
     result["candidateOnly"] = True
-    result["sourceBlend"] = str(source_blend)
+    result["sourceBlend"] = animation_builder.display_path(source_blend)
     result["sourceGeneration"] = args.source_generation
     result["officialRuntimeOverwritten"] = False
     report.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

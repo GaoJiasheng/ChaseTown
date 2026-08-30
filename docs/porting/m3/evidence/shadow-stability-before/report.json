@@ -1,0 +1,153 @@
+{
+  "source": "c99404b",
+  "expectedSnapped": false,
+  "method": "1280x720 DPR1 high formal camera; authentic W-key movement; ten sequential 90ms captures",
+  "movementCells": 4.73235,
+  "frames": [
+    {
+      "index": 0,
+      "screenshot": "move-00.png",
+      "player": {
+        "x": 8.84423839408857,
+        "y": 15.265710974790078
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.45965988,
+        "y": 0.49257517
+      }
+    },
+    {
+      "index": 1,
+      "screenshot": "move-01.png",
+      "player": {
+        "x": 8.176688654468158,
+        "y": 16.404472295318985
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.03914229,
+        "y": 0.36266452
+      }
+    },
+    {
+      "index": 2,
+      "screenshot": "move-02.png",
+      "player": {
+        "x": 7.242119018999612,
+        "y": 16.48038971668758
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.27657828,
+        "y": 0.30495352
+      }
+    },
+    {
+      "index": 3,
+      "screenshot": "move-03.png",
+      "player": {
+        "x": 6.3075493835310725,
+        "y": 16.48038971668758
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.21096993,
+        "y": 0.31418075
+      }
+    },
+    {
+      "index": 4,
+      "screenshot": "move-04.png",
+      "player": {
+        "x": 5.528741353973956,
+        "y": 16.48038971668758
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.1562963,
+        "y": 0.49679264
+      }
+    },
+    {
+      "index": 5,
+      "screenshot": "move-05.png",
+      "player": {
+        "x": 4.594171718505416,
+        "y": 16.48038971668758
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.09068794,
+        "y": 0.11592691
+      }
+    },
+    {
+      "index": 6,
+      "screenshot": "move-06.png",
+      "player": {
+        "x": 4.5051650865560315,
+        "y": 16.48038971668758
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.08443952,
+        "y": 0.06320316
+      }
+    },
+    {
+      "index": 7,
+      "screenshot": "move-07.png",
+      "player": {
+        "x": 4.5051650865560315,
+        "y": 16.48038971668758
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.08443952,
+        "y": 0.06320316
+      }
+    },
+    {
+      "index": 8,
+      "screenshot": "move-08.png",
+      "player": {
+        "x": 4.5051650865560315,
+        "y": 16.48038971668758
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.08443952,
+        "y": 0.06320316
+      }
+    },
+    {
+      "index": 9,
+      "screenshot": "move-09.png",
+      "player": {
+        "x": 4.5051650865560315,
+        "y": 16.48038971668758
+      },
+      "snapped": null,
+      "unsnappedResidualTexels": {
+        "x": 0.08443952,
+        "y": 0.06320316
+      }
+    }
+  ],
+  "adjacentRgbMae": [
+    39.9535,
+    38.6786,
+    37.4129,
+    34.522,
+    33.5237,
+    18.831,
+    0.8746,
+    0.407,
+    0.5942
+  ],
+  "maximumUnsnappedResidualTexels": {
+    "x": 0.45965988,
+    "y": 0.49679264
+  }
+}
