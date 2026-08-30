@@ -14,6 +14,7 @@ import {
 } from "../app/game/runtime-assets.ts";
 import {
   assertFirstPlayableBudget,
+  isGeneratedBasisTranscoderAsset,
   MAX_CRITICAL_FIRST_PLAYABLE_TRANSFER_BYTES,
   MAX_EAGER_FIRST_CAMPAIGN_TRANSFER_BYTES,
   SERVER_RENDERED_HTML_TRANSFER_RESERVE_BYTES,
@@ -32,6 +33,19 @@ async function treeBytes(directory) {
     total += entry.isDirectory() ? await treeBytes(target) : (await stat(target)).size;
   }
   return total;
+}
+
+async function filesBelow(directory) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await filesBelow(target));
+    } else if (entry.isFile()) {
+      files.push(target);
+    }
+  }
+  return files.sort();
 }
 
 function publicPathForHref(href) {
@@ -169,9 +183,11 @@ test("first-playable accounting includes every preload plus HTML, JS, CSS, WASM 
 });
 
 test("the built artifact ships one canonical Basis transcoder without stale preload references", async () => {
-  const assets = await readdir(path.join(CLIENT_OUTPUT, "assets"));
+  const emittedFiles = await filesBelow(CLIENT_OUTPUT);
   assert.deepEqual(
-    assets.filter((filename) => /^basis_transcoder-.+\.(?:js|wasm)$/u.test(filename)),
+    emittedFiles
+      .map((pathname) => path.relative(CLIENT_OUTPUT, pathname))
+      .filter(isGeneratedBasisTranscoderAsset),
     [],
   );
   for (const basename of ["basis_transcoder.js", "basis_transcoder.wasm"]) {
@@ -183,15 +199,26 @@ test("the built artifact ships one canonical Basis transcoder without stale prel
     "utf8",
   );
   const serverEntry = await readFile(path.join(ROOT, "dist", "server", "index.js"), "utf8");
-  assert.doesNotMatch(viteManifest, /assets\/basis_transcoder-[^"]+/u);
+  assert.doesNotMatch(
+    viteManifest,
+    /(?:^|\/)basis_transcoder[.-][^/"]+\.(?:js|wasm)/u,
+  );
   assert.doesNotMatch(
     serverEntry.match(/globalThis\.__VINEXT_LAZY_CHUNKS__\s*=\s*\[[^;]*\]/u)?.[0] ?? "",
-    /assets\/basis_transcoder-/u,
+    /(?:^|\/)basis_transcoder[.-][^/"]+\.(?:js|wasm)/u,
   );
 
-  const gameChunk = assets.find((filename) => /^chasing-game-.+\.js$/u.test(filename));
-  assert.ok(gameChunk, "the production game chunk is missing");
-  const gameSource = await readFile(path.join(CLIENT_OUTPUT, "assets", gameChunk), "utf8");
+  const manifest = JSON.parse(
+    await readFile(path.join(CLIENT_OUTPUT, "runtime-asset-manifest.json"), "utf8"),
+  );
+  const gameChunk = manifest.firstPlayableBudget.assets.find((asset) => (
+    asset.kind === "javascript" && /\/chasing-game-[^/]+\.js$/u.test(asset.path)
+  ));
+  assert.ok(gameChunk, "the production game chunk is missing from release accounting");
+  const gameSource = await readFile(
+    path.join(CLIENT_OUTPUT, gameChunk.path.replace(/^\/+/, "")),
+    "utf8",
+  );
   assert.match(gameSource, /\/basis\/basis_transcoder\.wasm/u);
   assert.match(gameSource, /\/basis\/basis_transcoder\.js/u);
 });

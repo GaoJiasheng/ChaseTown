@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "generatedAt": "2026-08-30T02:50:42.608Z",
+  "generatedAt": "2026-08-30T04:16:48.301Z",
   "measurement": "raw filesystem bytes except manifest criticalEncodedTransfer, which is encoded-transfer bytes",
   "baseline": {
     "publicModels": {
@@ -34,12 +34,12 @@
       "files": 30
     },
     "distClient": {
-      "bytes": 14499956,
-      "files": 72
+      "bytes": 14641739,
+      "files": 76
     },
     "criticalEncodedTransfer": {
-      "bytes": 6214641,
-      "remainingToTarget": 76815
+      "bytes": 6255237,
+      "remainingToTarget": 36219
     }
   },
   "deltas": {
@@ -52,12 +52,12 @@
       "percent": -13.587
     },
     "distClient": {
-      "bytes": -1490913,
-      "percent": -9.324
+      "bytes": -1349130,
+      "percent": -8.437
     },
     "criticalEncodedTransfer": {
-      "bytes": -1502252,
-      "percent": -19.467
+      "bytes": -1461656,
+      "percent": -18.941
     }
   },
   "targetResults": {
@@ -67,7 +67,7 @@
     },
     "distClient": {
       "passed": false,
-      "overBy": 1917044
+      "overBy": 2058827
     },
     "criticalEncodedTransfer": {
       "passed": true,

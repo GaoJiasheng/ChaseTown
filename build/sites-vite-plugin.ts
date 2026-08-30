@@ -11,6 +11,7 @@ import {
   assertFirstPlayableBudget,
   createFirstPlayableBudget,
   deduplicateBasisTranscoder,
+  isGeneratedBasisTranscoderAsset,
 } from "./release-integrity";
 
 async function exists(path: string): Promise<boolean> {
@@ -36,7 +37,7 @@ export function sites(): Plugin {
       return {
         experimental: {
           renderBuiltUrl(filename: string) {
-            if (/^(?:assets\/)?basis_transcoder-[^/]+\.(?:js|wasm)$/u.test(filename)) {
+            if (isGeneratedBasisTranscoderAsset(filename)) {
               const extension = filename.endsWith(".wasm") ? "wasm" : "js";
               return `/basis/basis_transcoder.${extension}`;
             }
@@ -49,8 +50,22 @@ export function sites(): Plugin {
       root = config.root;
     },
     async closeBundle() {
+      if (this.environment.name !== "client") return;
       const outputDirectory = resolve(root, "dist", ".openai");
-      const clientOutputDirectory = resolve(root, "dist", "client");
+      const clientOutputDirectory = resolve(
+        root,
+        this.environment.config.build.outDir,
+      );
+      const expectedClientOutputDirectory = resolve(root, "dist", "client");
+      if (clientOutputDirectory !== expectedClientOutputDirectory) {
+        throw new Error(
+          `Client output directory changed: ${clientOutputDirectory}`,
+        );
+      }
+      const clientAssetsDirectory = resolve(
+        clientOutputDirectory,
+        this.environment.config.build.assetsDir,
+      );
       const serverEntry = resolve(root, "dist", "server", "index.js");
       const hostingConfig = resolve(root, ".openai", "hosting.json");
       const drizzleSource = resolve(root, "drizzle");
@@ -88,9 +103,14 @@ export function sites(): Plugin {
         return;
       }
 
-      await deduplicateBasisTranscoder(clientOutputDirectory, serverEntry);
+      await deduplicateBasisTranscoder(
+        clientOutputDirectory,
+        clientAssetsDirectory,
+        serverEntry,
+      );
       const firstPlayableBudget = await createFirstPlayableBudget(
         clientOutputDirectory,
+        clientAssetsDirectory,
         FIRST_CAMPAIGN_PRELOAD_ASSETS,
       );
       assertFirstPlayableBudget(firstPlayableBudget);
