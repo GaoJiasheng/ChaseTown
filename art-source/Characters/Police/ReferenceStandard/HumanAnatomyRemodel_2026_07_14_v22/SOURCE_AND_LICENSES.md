@@ -89,7 +89,7 @@ rather than conceal, its unresolved provenance.
 | 7 | `tools/third_party/makehuman-assets/base/eyes/materials/brown_eye.png` | `4659691c7295ad6206c78b003e5fd0e5f91dcd53032fa914a229bb48cabe424b` | 610,817 | MakeHuman / MPFB core graphical asset; CC0 1.0 |
 | 8 | `Universal Animation Library 2.0 · Standard.zip` | `18ff1a7215f4852b320203e8aaf02a1578b5c8eef9027fbaedfcedc7b85a3ac2` | 14,541,205 | Quaternius UAL 2.0 Standard; CC0 1.0; external build input, not distributed |
 | 9 | `AnimationLibrary_Godot_Standard.glb` | `1b7bf67866360665426bb99e4c71bd619f19b408453c24e30f0c3071601eee5c` | 6,671,104 | Quaternius UAL 2.0 Standard; CC0 1.0; external retargeting input, not distributed |
-| 10 | `art-source/Concepts/03_police_character_sheet.png` | `a551266ed8458d8f256236425d971a4437050b5c8d5a235db4d51dc08dcc6ae2` | 2,275,478 | Internal visual reference; author, creation tool, upstream source, and license are not recorded; product confirmation required |
+| 10 | `art-source/Concepts/03_police_character_sheet.png` | `a551266ed8458d8f256236425d971a4437050b5c8d5a235db4d51dc08dcc6ae2` | 2,275,478 | Internal visual reference; embedded C2PA identifies OpenAI Media Service API / gpt-image 2.0, while author/requestor, prompt, reference inputs, account agreement and license remain unrecorded; product confirmation required |
 
 The seven MakeHuman paths, byte lengths, and hashes describe the audited local
 working copy. They do not claim that the root repository's current submodule
@@ -174,10 +174,14 @@ remote product line's controls, FSM, win condition, or load policy.
 ## Concept 03 unresolved provenance gate
 
 `art-source/Concepts/03_police_character_sheet.png` is a useful internal design
-reference and has a fixed repository hash, but the available repository history
-does not record its author, generation tool, prompt or references, upstream URL,
-commission terms, or license. The file's presence in Git is not evidence of
-ownership or permission.
+reference and has a fixed repository hash. Its embedded C2PA claim identifies
+`OpenAI Media Service API`, `gpt-image 2.0`, and a
+`2026-07-11T00:00:00Z` created action. The available repository history still
+does not record its author/requesting entity, prompt or reference inputs,
+upstream request record, applicable account agreement, commission terms, or
+license. The file's presence in Git and its embedded metadata are not evidence
+of ownership or permission. The complete eight-image audit is in
+`art-source/Concepts/SOURCE_AND_LICENSES.md`.
 
 The only repository-history anchor found for the concept is its presence in
 initial commit `eafa8221258482f3546100a98b8abe120f34e8ce` (2026-07-15). That
