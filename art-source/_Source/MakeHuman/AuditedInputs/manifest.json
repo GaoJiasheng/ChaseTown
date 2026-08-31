@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-31",
+  "sourceProject": "MakeHuman / MPFB core graphical assets",
+  "sourceSubmodule": "tools/third_party/makehuman-assets",
+  "sourceSubmodulePin": "8cf9645b975a98eea056b140df11a1d278da0d10",
+  "license": "CC0-1.0",
+  "licenseRecord": "docs/licenses/MAKEHUMAN_CORE_ASSETS_CC0.md",
+  "warning": "The source submodule worktree contains audited bytes that cannot all be reproduced from its pinned commit. Do not clean, reset, or force-update that submodule.",
+  "inputs": [
+    {"originalSubmodulePath":"base/skins/textures/young_lightskinned_male_diffuse2.png","archivePath":"base/skins/textures/young_lightskinned_male_diffuse2.png","bytes":3595270,"sha256":"03efe1f6b0ae52429649dcefc9dcaef6058032f874a251169cc3e2ed473c3874"},
+    {"originalSubmodulePath":"base/hair/short01/short01_diffuse.png","archivePath":"base/hair/short01/short01_diffuse.png","bytes":2354146,"sha256":"f34a0957184e3d1e911ed59245f874f8d4843f61ee44ff49f43edb4be0196949"},
+    {"originalSubmodulePath":"base/clothes/male_casualsuit03/male_casualsuit03_normal.png","archivePath":"base/clothes/male_casualsuit03/male_casualsuit03_normal.png","bytes":9610278,"sha256":"412c4610d3b2ea1cb04aa3c0715e747a7c9f61d865133b7d69f70eaa738cf99b"},
+    {"originalSubmodulePath":"base/eyebrows/eyebrow001/eyebrow001.png","archivePath":"base/eyebrows/eyebrow001/eyebrow001.png","bytes":89619,"sha256":"9940f7d0b1b223709a19b05156ba6f6e9e4dbdbced02d7574f4d51d72c58967b"},
+    {"originalSubmodulePath":"base/eyelashes/eyelashes01/eyelashes01.png","archivePath":"base/eyelashes/eyelashes01/eyelashes01.png","bytes":91600,"sha256":"4b69c0fff2648874460e9caf80c31413c444218a5c50afebc425aeaa65484a35"},
+    {"originalSubmodulePath":"base/eyes/high-poly/high-poly.obj","archivePath":"base/eyes/high-poly/high-poly.obj","bytes":100882,"sha256":"da2493215b708a344c33dc72f2a9a5b8fa985dcc5a70ad3b208995cf871da8e1"},
+    {"originalSubmodulePath":"base/eyes/materials/brown_eye.png","archivePath":"base/eyes/materials/brown_eye.png","bytes":610817,"sha256":"4659691c7295ad6206c78b003e5fd0e5f91dcd53032fa914a229bb48cabe424b"}
+  ]
+}

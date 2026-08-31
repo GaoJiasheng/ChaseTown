@@ -28,7 +28,9 @@ MakeHuman 官方许可页明确将 core graphical assets 以 CC0 发布。本记
 | `tools/third_party/makehuman-assets/base/eyes/high-poly/high-poly.obj` | 眼球几何来源 | `da2493215b708a344c33dc72f2a9a5b8fa985dcc5a70ad3b208995cf871da8e1` | 100,882 bytes |
 | `tools/third_party/makehuman-assets/base/eyes/materials/brown_eye.png` | 棕色虹膜/眼球颜色来源 | `4659691c7295ad6206c78b003e5fd0e5f91dcd53032fa914a229bb48cabe424b` | 610,817 bytes |
 
-根仓库把 `tools/third_party/makehuman-assets` 记录为 submodule commit `8cf9645b975a98eea056b140df11a1d278da0d10`。审计时，上表前五个路径相对该 submodule pin 为 modified，`high-poly.obj` 与 `brown_eye.png` 为 untracked。因此当前可证明的是“本机 path + bytes + SHA 锁定”和 CC0 许可范围，不是“干净 clone 可从 Git pin 逐字节还原七项输入”。本轮不修改第三方 submodule。可复建的项目源边界从仓库保留的 Police v22 Blend 开始；若未来要求从七项原始输入完全重建，必须另行保留可审查的上游下载清单/归档或干净 submodule 提交。
+根仓库把 `tools/third_party/makehuman-assets` 记录为 submodule commit `8cf9645b975a98eea056b140df11a1d278da0d10`。审计时，上表前五个路径相对该 submodule pin 为 modified，`high-poly.obj` 与 `brown_eye.png` 为 untracked；pin 本身不能还原全部七项字节。现已把七项输入按原相对路径和原字节归档到 `art-source/_Source/MakeHuman/AuditedInputs/`，由同目录 `manifest.json` 固定原始子模块路径、大小和 SHA-256，并由自动化测试逐项复算。Police 从七项原始输入开始的仓库内可复建证据条件据此关闭。
+
+> **保存警告：** `tools/third_party/makehuman-assets` 的脏工作区含不能从 gitlink 恢复的审计输入。禁止 clean、reset、restore 或 `git submodule update --force`；不得以任何清理操作替代仓库内归档。
 
 ## 本地 CC0 条款副本
 

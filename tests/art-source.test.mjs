@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -25,19 +26,22 @@ const REQUIRED_BLEND_MASTERS = [
   "Environment/ThemeKits/Chasing_Theme_Environment_Kits.blend",
 ];
 
-async function walk(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...await walk(absolute));
-    else files.push(absolute);
-  }
-  return files;
+function trackedFilesBelow(relativeRoot) {
+  const output = execFileSync("git", ["ls-files", "-z", "--", `${relativeRoot}/`], {
+    cwd: ROOT,
+    encoding: "buffer",
+  });
+  return output
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean)
+    .map((relative) => path.join(ROOT, relative));
 }
 
 test("compact engine-neutral source-art masters remain intact", async () => {
-  const files = await walk(ART_ROOT);
+  // Repository contracts apply to committed source art. Untracked cloud-sync
+  // copies must not alter the inventory, while tracked additions/deletions do.
+  const files = trackedFilesBelow("art-source");
   const counts = new Map();
   for (const filename of files) {
     const basename = path.basename(filename).toLowerCase();
