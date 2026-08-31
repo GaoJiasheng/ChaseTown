@@ -2,6 +2,8 @@
   "name": "chasing",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
+  "author": "Gao Jiasheng",
   "engines": {
     "node": ">=22.13.0"
   },

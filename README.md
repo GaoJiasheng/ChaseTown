@@ -104,3 +104,7 @@ package.json                 开发、构建、测试与依赖入口
 [`docs/13_长期产品与技术路线图_2026-2028.md`](docs/13_长期产品与技术路线图_2026-2028.md)。
 当前经确认的生产发布见 [`docs/releases/LATEST.md`](docs/releases/LATEST.md)。
 第三方运行资产声明见 [`public/THIRD_PARTY_NOTICES.txt`](public/THIRD_PARTY_NOTICES.txt)。
+
+## 版权与使用边界
+
+Copyright © 2026 Gao Jiasheng. All Rights Reserved. 本项目为专有项目，不是开源软件；除适用法律另有规定或版权主体另行书面许可外，不授予复制、分发、再许可或制作衍生作品的权利。项目自身权利声明见 [`LICENSE`](LICENSE)。仓库同时包含受各自条款约束的第三方软件与素材；其来源、notice、限制和发行前置事项分别见 [`public/THIRD_PARTY_NOTICES.txt`](public/THIRD_PARTY_NOTICES.txt)、[`docs/licenses/`](docs/licenses/) 与 [`docs/23_版权与第三方素材登记册.md`](docs/23_版权与第三方素材登记册.md)。

@@ -134,18 +134,22 @@ file is not retained in this branch, origin/main, or origin/local-polish-line;
 no bytes or SHA-256 are claimed for it. The retained source chain begins at the
 v22 Police Blender masters.
 
-PUBLIC RELEASE REVIEW REQUIRED — CONCEPT 03 PROVENANCE UNCONFIRMED:
+PUBLIC RELEASE REVIEW REQUIRED — CONCEPT ART PROVENANCE INCOMPLETE:
 
-`art-source/Concepts/03_police_character_sheet.png` is an internal visual
-reference and is not copied into the public runtime bundle. Its file hash and
-initial Git commit are known, but its author, generation tool, upstream source,
-commission terms, and license are not recorded. Product ownership or replacement
-evidence must be documented before public release. This notice does not apply
-CC0 to Concept 03.
+The eight PNGs under `art-source/Concepts/` are internal visual references and
+are not copied into the public runtime bundle. Their hashes, initial Git commit,
+and embedded C2PA claims are recorded. The claims identify OpenAI Media Service
+API / gpt-image 2.0 and created actions dated 2026-07-11 or 2026-07-12. The
+repository does not preserve the requesting author/entity, prompts, reference
+inputs, applicable account agreement, commission terms, or a confirmed license.
+Product ownership evidence or fully sourced replacement images must be
+documented before public release. This notice does not apply CC0 or any other
+license to the concept images.
 
 Detailed fixed inputs and the unresolved internal concept-reference gate are
 recorded in:
   docs/licenses/MAKEHUMAN_CORE_ASSETS_CC0.md
+  art-source/Concepts/SOURCE_AND_LICENSES.md
   art-source/Characters/Police/ReferenceStandard/HumanAnatomyRemodel_2026_07_14_v22/SOURCE_AND_LICENSES.md
 
 
@@ -192,10 +196,10 @@ React family
 ------------
 
 Packages:
-  react 19.2.6
-  react-dom 19.2.6
+  react 19.2.8
+  react-dom 19.2.8
   scheduler 0.27.0
-  react-server-dom-webpack 19.2.6
+  react-server-dom-webpack 19.2.8
 
 MIT License
 
@@ -272,7 +276,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-vinext 0.0.50
+vinext 1.0.0-beta.8
 -------------
 
 MIT License
@@ -298,7 +302,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-vite 8.0.13
+vite 8.1.5
 -----------
 
 Vite core license

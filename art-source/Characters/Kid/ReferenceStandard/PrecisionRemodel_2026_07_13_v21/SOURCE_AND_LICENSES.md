@@ -93,9 +93,13 @@ loop.
 `art-source/Concepts/01_kid_character_sheet.png` is used only as an internal
 visual reference. It is 2,227,358 bytes with SHA-256
 `13d96f94936df69ed1f793202b1235e4250e62b9e0f1b447ed45bd15ea4c2017`.
-Repository history does not record its author, generation tool, prompt,
-reference-image rights, upstream URL or license. Its presence is not proof of
-ownership or permission.
+The PNG's embedded C2PA claim identifies `OpenAI Media Service API`,
+`gpt-image 2.0`, and a `2026-07-11T00:00:00Z` created action. Repository
+history still does not record its author/requesting entity, prompt,
+reference-image use or rights, upstream request record, applicable account
+agreement, or license. Its presence and embedded metadata are not proof of
+ownership or permission. The eight-image audit and exact C2PA evidence are in
+`art-source/Concepts/SOURCE_AND_LICENSES.md`.
 
 Status: `PUBLIC RELEASE REVIEW REQUIRED — CONCEPT 01 PROVENANCE UNCONFIRMED`.
 The runtime model does not embed the concept image, and no license is invented
