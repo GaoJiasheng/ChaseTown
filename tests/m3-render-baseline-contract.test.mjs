@@ -74,3 +74,14 @@ test("M3 freezes a reproducible post-M2 render baseline before optimization", as
     );
   }
 });
+
+test("QA schema keeps theoretical caster estimates separate from measured shadow-pass work", async () => {
+  const [source, report] = await Promise.all([
+    readFile(path.join(ROOT, "app", "chasing-game.tsx"), "utf8"),
+    readFile(path.join(ROOT, "docs", "22_M3_择优渲染优化报告.md"), "utf8"),
+  ]);
+  assert.match(source, /breakdown: qaRenderBreakdownTracker\?\.snapshot\(\)/u);
+  assert.match(source, /shadow: estimateShadowWorkload\(\)/u);
+  assert.match(report, /render\.breakdown\["shadow-pass"\].*实际进入阴影 pass 的 GPU 工作量/u);
+  assert.match(report, /render\.shadow.*场景遍历得到的理论可投影清单估算/u);
+});

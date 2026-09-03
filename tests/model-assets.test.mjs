@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -28,17 +29,16 @@ const AUDITED_QUANTIZED_CHARACTER_GLBS = new Set([
   "/models/characters/villain-bootstrap.glb",
 ]);
 
-async function walk(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const files = [];
-
-  for (const entry of entries) {
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...await walk(absolute));
-    else files.push(absolute);
-  }
-
-  return files;
+function trackedFilesBelow(relativeRoot) {
+  const output = execFileSync("git", ["ls-files", "-z", "--", `${relativeRoot}/`], {
+    cwd: ROOT,
+    encoding: "buffer",
+  });
+  return output
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean)
+    .map((relative) => path.join(ROOT, relative));
 }
 
 const GLB_JSON_CHUNK = 0x4e4f534a;
@@ -360,7 +360,7 @@ test("every shipped GLB is referenced, valid, and has all external textures", as
     [...gameSource.matchAll(/["'](\/models\/[^"'?]+\.glb)(?:\?[^"']*)?["']/gu)]
       .map((match) => match[1]),
   );
-  const files = await walk(MODELS_ROOT);
+  const files = trackedFilesBelow("public/models");
   const shipped = files
     .filter((filename) => filename.endsWith(".glb"))
     .map((filename) => `/${path.relative(path.join(ROOT, "public"), filename).split(path.sep).join("/")}`);
@@ -1014,8 +1014,8 @@ for (const contract of THEME_KIT_CONTRACTS) {
 }
 
 test("authoring PNG textures are real reproducible sources, not LFS pointers", async () => {
-  const sourceRoot = path.join(ROOT, "art-source", "Environment", "SharedTextures");
-  const files = (await walk(sourceRoot)).filter((filename) => filename.endsWith(".png"));
+  const files = trackedFilesBelow("art-source/Environment/SharedTextures")
+    .filter((filename) => filename.endsWith(".png"));
   const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
   assert.equal(files.length, 22, "all 22 lossless authoring textures must be retained");
