@@ -43,6 +43,17 @@ const mutations = [
   },
 ];
 
+// Captured test output carries per-run timings and absolute paths. Both are
+// environment noise: they make every re-run rewrite this committed evidence
+// file even when nothing about the mutations changed. Strip them so an
+// unchanged run produces byte-identical evidence.
+const normalizeOutput = (output) => output
+  .trim()
+  .replaceAll(`file://${ROOT}/`, "")
+  .replaceAll(ROOT + "/", "")
+  .replace(/ \(\d+(?:\.\d+)?ms\)/gu, "")
+  .replace(/\bduration_ms [\d.]+/gu, "duration_ms <elapsed>");
+
 const run = (command, args) => spawnSync(command, args, {
   cwd: ROOT,
   encoding: "utf8",
@@ -98,10 +109,28 @@ for (const mutation of mutations) {
     command: command.join(" "),
     exitCode: result.status,
     assertionMarker: mutation.assertionMarker,
-    failureOutput: output.trim().split("\n").slice(-30),
+    failureOutput: normalizeOutput(output).split("\n").slice(-30),
     restoreCheck: `git diff --quiet -- ${mutation.file}`,
     restoredDiffQuiet: true,
   });
+}
+
+// Preserve the previous timestamp when nothing else changed, so re-running this
+// verification does not dirty the working tree with a timestamp-only diff.
+const withoutTimestamp = (value) => {
+  const { generatedAt, ...rest } = value;
+  return rest;
+};
+try {
+  const previous = JSON.parse(readFileSync(REPORT_PATH, "utf8"));
+  if (
+    JSON.stringify(withoutTimestamp(previous))
+    === JSON.stringify(withoutTimestamp(report))
+  ) {
+    report.generatedAt = previous.generatedAt;
+  }
+} catch {
+  // No previous report to compare against; keep the fresh timestamp.
 }
 
 mkdirSync(dirname(REPORT_PATH), { recursive: true });
