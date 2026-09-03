@@ -118,7 +118,8 @@ for (const mutation of mutations) {
 // Preserve the previous timestamp when nothing else changed, so re-running this
 // verification does not dirty the working tree with a timestamp-only diff.
 const withoutTimestamp = (value) => {
-  const { generatedAt, ...rest } = value;
+  const rest = { ...value };
+  delete rest.generatedAt;
   return rest;
 };
 try {
