@@ -69,19 +69,19 @@ export const FIRST_CAMPAIGN_PRELOAD_ASSETS: readonly RuntimePreloadAsset[] = Obj
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: versionRuntimeAsset("/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2"),
+    href: "/models/environment/SharedTexturesBootstrapKTX2/26e2227d2c99500cbc061f32e49c34262951dc7bd612158d9194845cf9ddc04b.ktx2",
     type: "image/ktx2",
     fetchPriority: "high",
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: versionRuntimeAsset("/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2"),
+    href: "/models/environment/SharedTexturesBootstrapKTX2/632b8926fdcb9c69f1b486dc8faa4458677644760d8e19df5399b8fd0db5429b.ktx2",
     type: "image/ktx2",
     fetchPriority: "high",
     blocksFirstPlayable: true,
   }),
   Object.freeze({
-    href: versionRuntimeAsset("/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2"),
+    href: "/models/environment/SharedTexturesBootstrapKTX2/523513c55c44e4f5907b55a2448d0db2b1ee3739fe6691b9f4d4e6a4a350e95b.ktx2",
     type: "image/ktx2",
     fetchPriority: "auto",
     blocksFirstPlayable: true,

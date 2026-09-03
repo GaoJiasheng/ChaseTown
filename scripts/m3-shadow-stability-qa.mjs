@@ -12,6 +12,18 @@ const DEBUG_PORT = Number(process.env.CHROME_DEBUG_PORT ?? 9223);
 const OUTPUT = path.resolve(process.env.CHASING_QA_OUT ?? "docs/porting/m3/evidence/shadow-stability-after");
 const SOURCE = process.env.CHASING_QA_SOURCE ?? "working-tree";
 const EXPECT_SNAPPED = process.env.CHASING_QA_EXPECT_SNAPPED === "1";
+// Guard: the default OUTPUT is the committed acceptance evidence directory.
+// Without CHASING_QA_EXPECT_SNAPPED this run records `expectedSnapped: false`
+// and skips the texel-snapping assertions — a weaker artifact. Refuse to
+// overwrite committed evidence with it; ad-hoc runs must redirect CHASING_QA_OUT.
+const COMMITTED_OUTPUT = path.resolve("docs/porting/m3/evidence/shadow-stability-after");
+if (OUTPUT === COMMITTED_OUTPUT && !EXPECT_SNAPPED) {
+  throw new Error(
+    "Refusing to overwrite committed evidence at "
+      + "docs/porting/m3/evidence/shadow-stability-after without CHASING_QA_EXPECT_SNAPPED=1. "
+      + "Set it for an acceptance run, or set CHASING_QA_OUT to a scratch path for an ad-hoc run.",
+  );
+}
 const VIEWPORT = { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false };
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
