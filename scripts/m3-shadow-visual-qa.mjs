@@ -14,6 +14,18 @@ const REFERENCE = process.env.CHASING_QA_REFERENCE
   ? path.resolve(process.env.CHASING_QA_REFERENCE)
   : null;
 const SOURCE = process.env.CHASING_QA_SOURCE ?? "working-tree";
+// Guard: the default OUTPUT is the committed acceptance evidence directory.
+// Without a reference set this run produces a report with `reference: null` and
+// `thresholds: null` — a weaker, non-comparative artifact. Refuse to overwrite
+// committed evidence with it; ad-hoc runs must redirect CHASING_QA_OUT.
+const COMMITTED_OUTPUT = path.resolve("docs/porting/m3/evidence/shadow-after");
+if (OUTPUT === COMMITTED_OUTPUT && !REFERENCE) {
+  throw new Error(
+    "Refusing to overwrite committed evidence at docs/porting/m3/evidence/shadow-after "
+      + "without CHASING_QA_REFERENCE. Set CHASING_QA_REFERENCE to the before/ directory "
+      + "for an acceptance run, or set CHASING_QA_OUT to a scratch path for an ad-hoc run.",
+  );
+}
 const VIEWPORT = { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false };
 const CASES = [
   { level: 1, player: { x: 9, y: 15 }, chaser: { x: 21, y: 10 } },

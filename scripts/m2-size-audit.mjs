@@ -90,15 +90,45 @@ const report = {
   },
   publicModelCategories: categories,
 };
+// `criticalEncodedTransfer` is derived from real gzip compression, whose output
+// size shifts by a few bytes across zlib versions and platforms. Comparing it
+// byte-exactly makes this gate reproducible only on the machine that froze the
+// report, so it is compared against an explicit tolerance instead. Everything
+// else in the report is deterministic file bytes and stays byte-exact.
+const GZIP_ESTIMATE_TOLERANCE_BYTES = 4096;
 const canonical = (value) => {
   const clone = structuredClone(value);
   delete clone.generatedAt;
+  delete clone.current.criticalEncodedTransfer;
+  delete clone.deltas.criticalEncodedTransfer;
+  delete clone.targetResults.criticalEncodedTransfer;
   return clone;
 };
 if (process.argv.includes("--check")) {
   const expected = JSON.parse(await readFile(REPORT, "utf8"));
   assert.deepEqual(canonical(report), canonical(expected), "M2 size report drifted");
-  process.stdout.write(`M2 size report verified: first playable ${criticalEncodedTransfer.bytes} bytes.\n`);
+
+  // The hard release gate stays exact: first playable must fit the target.
+  assert.ok(
+    criticalEncodedTransfer.bytes <= TARGETS.criticalEncodedTransferBytes,
+    `first playable ${criticalEncodedTransfer.bytes} B exceeds target `
+      + `${TARGETS.criticalEncodedTransferBytes} B`,
+  );
+
+  const frozenBytes = expected.current.criticalEncodedTransfer.bytes;
+  const drift = criticalEncodedTransfer.bytes - frozenBytes;
+  assert.ok(
+    Math.abs(drift) <= GZIP_ESTIMATE_TOLERANCE_BYTES,
+    `first playable drifted ${drift} B from the frozen ${frozenBytes} B, `
+      + `beyond the ${GZIP_ESTIMATE_TOLERANCE_BYTES} B gzip-estimate tolerance`,
+  );
+
+  process.stdout.write(
+    `M2 size report verified: first playable ${criticalEncodedTransfer.bytes} bytes `
+      + `(frozen ${frozenBytes}, drift ${drift >= 0 ? "+" : ""}${drift} B, `
+      + `tolerance ±${GZIP_ESTIMATE_TOLERANCE_BYTES} B; target `
+      + `${TARGETS.criticalEncodedTransferBytes} B).\n`,
+  );
 } else {
   await writeFile(REPORT, `${JSON.stringify(report, null, 2)}\n`);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
